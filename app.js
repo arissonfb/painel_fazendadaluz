@@ -102,6 +102,102 @@ const IMPORTED_SANITARY_RECORDS = {
   ]
 };
 
+const IMPORTED_FARM_BASELINE_VERSION = 1;
+const IMPORTED_FARM_BASELINES = {
+  chiquita: {
+    declaredTotal: 3667,
+    note: "Inventario bovino importado do relatorio de novembro/2025. Os saldos ovinos, valores comerciais e notas operacionais foram levados para os dados mensais.",
+    categories: [
+      { id: "vaca-prenha", name: "Vaca prenha", quantity: 1481 },
+      { id: "vaca-invernar", name: "Vaca invernar", quantity: 1 },
+      { id: "terneiros-0-a-1-machos", name: "Terneiros 0 a 1 - machos", quantity: 630 },
+      { id: "terneiras-0-a-1-femeas", name: "Terneiras 0 a 1 - femeas", quantity: 653 },
+      { id: "novilho-1-a-2", name: "Novilho 1 a 2", quantity: 225 },
+      { id: "novilhos-2-a-3", name: "Novilhos 2 a 3", quantity: 44 },
+      { id: "vaquilona-1-a-2", name: "Vaquilona 1 a 2", quantity: 167 },
+      { id: "vacas-solteiras", name: "Vacas solteiras", quantity: 162 },
+      { id: "bois-do-fernando", name: "Bois do Fernando", quantity: 72 },
+      { id: "terneiros-do-fernando", name: "Terneiros do Fernando", quantity: 34 },
+      { id: "touros", name: "Touros", quantity: 116 },
+      { id: "touros-2-ano", name: "Touros 2 ano", quantity: 24 },
+      { id: "touro-1-ano", name: "Touro 1 ano", quantity: 49 },
+      { id: "touro-refugo", name: "Touro refugo", quantity: 9 }
+    ]
+  },
+  "passa-da-guarda": {
+    declaredTotal: 1532,
+    note: "Inventario bovino importado do relatorio de novembro/2025. Os saldos ovinos, valores comerciais e notas operacionais foram levados para os dados mensais.",
+    categories: [
+      { id: "vaca-prenha", name: "Vaca prenha", quantity: 571 },
+      { id: "vaca-invernar", name: "Vaca invernar", quantity: 44 },
+      { id: "terneiros-0-a-1-machos", name: "Terneiros 0 a 1 - machos", quantity: 542 },
+      { id: "vacas-solteiras", name: "Vacas solteiras", quantity: 104 },
+      { id: "vaquilona-1-a-2", name: "Vaquilona 1 a 2", quantity: 159 },
+      { id: "bois", name: "Bois", quantity: 72 },
+      { id: "touros", name: "Touros", quantity: 27 },
+      { id: "refugos-rengos", name: "Refugos / Rengos", quantity: 13 }
+    ]
+  },
+  colorado: {
+    declaredTotal: 490,
+    note: "Inventario bovino importado do relatorio de novembro/2025. Os saldos ovinos e valores comerciais foram levados para os dados mensais quando identificados no PDF.",
+    categories: [
+      { id: "bois", name: "Bois", quantity: 375 },
+      { id: "vacas-solteiras", name: "Vacas solteiras", quantity: 108 },
+      { id: "vaquillonas", name: "Vaquillonas", quantity: 0 },
+      { id: "terneiros", name: "Terneiros", quantity: 0 },
+      { id: "touros", name: "Touros", quantity: 7 }
+    ]
+  },
+  sarandi: {
+    declaredTotal: 269,
+    note: "Inventario bovino importado do relatorio de novembro/2025. Os saldos ovinos e as movimentacoes comerciais do PDF foram levados para os dados mensais.",
+    categories: [
+      { id: "bois", name: "Bois", quantity: 269 }
+    ]
+  }
+};
+
+const IMPORTED_MONTHLY_RECORDS = {
+  arapey: [
+    { sourceId: "pdf-2025-10-arapey-estoque-bovino", period: "2025-10", category: "estoque", title: "Saldo bovino do relatorio", quantity: 3015, value: 0, notes: "Outubro/2025: saldo bovino consolidado do relatorio mensal." },
+    { sourceId: "pdf-2025-10-arapey-estoque-ovino", period: "2025-10", category: "estoque", title: "Saldo ovino do relatorio", quantity: 3730, value: 0, notes: "Outubro/2025: saldo ovino consolidado do relatorio mensal." },
+    { sourceId: "pdf-2025-10-arapey-operacional-esquila", period: "2025-10", category: "operacional", title: "Esquila de borregos", quantity: 357, value: 0, notes: "Apontamento operacional do relatorio: ESQUILA BORREGOS - 357." },
+    { sourceId: "pdf-2025-11-arapey-estoque-bovino", period: "2025-11", category: "estoque", title: "Saldo bovino do relatorio", quantity: 2974, value: 0, notes: "Novembro/2025: soma das categorias bovinas listadas no PDF. O inventario da fazenda segue com total declarado de 3015 cabeças." },
+    { sourceId: "pdf-2025-11-arapey-estoque-ovino", period: "2025-11", category: "estoque", title: "Saldo ovino do relatorio", quantity: 3730, value: 0, notes: "Novembro/2025: saldo ovino consolidado do relatorio mensal." }
+  ],
+  chiquita: [
+    { sourceId: "pdf-2025-10-chiquita-estoque-bovino", period: "2025-10", category: "estoque", title: "Saldo bovino do relatorio", quantity: 3778, value: 0, notes: "Outubro/2025: saldo bovino consolidado do relatorio mensal." },
+    { sourceId: "pdf-2025-10-chiquita-estoque-ovino", period: "2025-10", category: "estoque", title: "Saldo ovino do relatorio", quantity: 2889, value: 0, notes: "Outubro/2025: saldo ovino consolidado do relatorio mensal." },
+    { sourceId: "pdf-2025-10-chiquita-comercial-compras", period: "2025-10", category: "comercial", title: "Compras registradas no relatorio", quantity: 54, value: 48450, notes: "23/10: 28 terneiros (19031) e 26 novilhos (29419)." },
+    { sourceId: "pdf-2025-11-chiquita-estoque-bovino", period: "2025-11", category: "estoque", title: "Saldo bovino do relatorio", quantity: 3667, value: 0, notes: "Novembro/2025: saldo bovino consolidado do relatorio mensal." },
+    { sourceId: "pdf-2025-11-chiquita-estoque-ovino", period: "2025-11", category: "estoque", title: "Saldo ovino do relatorio", quantity: 2498, value: 0, notes: "Novembro/2025: saldo ovino consolidado do relatorio mensal." }
+  ],
+  "passa-da-guarda": [
+    { sourceId: "pdf-2025-10-passa-da-guarda-estoque-bovino", period: "2025-10", category: "estoque", title: "Saldo bovino do relatorio", quantity: 1592, value: 0, notes: "Outubro/2025: saldo bovino consolidado do relatorio mensal." },
+    { sourceId: "pdf-2025-10-passa-da-guarda-estoque-ovino", period: "2025-10", category: "estoque", title: "Saldo ovino do relatorio", quantity: 672, value: 0, notes: "Outubro/2025: saldo ovino consolidado do relatorio mensal." },
+    { sourceId: "pdf-2025-10-passa-da-guarda-comercial-vendas", period: "2025-10", category: "comercial", title: "Vendas registradas no relatorio", quantity: 49, value: 238275.5, notes: "06/10: 22 vacas (97092) e 12 bois (61646). 21/10: 15 bois (79537,50)." },
+    { sourceId: "pdf-2025-10-passa-da-guarda-operacional-esquila", period: "2025-10", category: "operacional", title: "Esquila de ovinos", quantity: 670, value: 0, notes: "Relatorio operacional: 658 ovelhas e borregas + 12 carneiros; 15 pelegos apontados a parte." },
+    { sourceId: "pdf-2025-11-passa-da-guarda-estoque-bovino", period: "2025-11", category: "estoque", title: "Saldo bovino do relatorio", quantity: 1532, value: 0, notes: "Novembro/2025: saldo bovino consolidado do relatorio mensal." },
+    { sourceId: "pdf-2025-11-passa-da-guarda-estoque-ovino", period: "2025-11", category: "estoque", title: "Saldo ovino do relatorio", quantity: 673, value: 0, notes: "Novembro/2025: saldo ovino consolidado do relatorio mensal." },
+    { sourceId: "pdf-2025-11-passa-da-guarda-comercial-vendas", period: "2025-11", category: "comercial", title: "Vendas registradas no relatorio", quantity: 45, value: 196665, notes: "04/11: 10 bois (47670) e 35 vacas (148995)." }
+  ],
+  colorado: [
+    { sourceId: "pdf-2025-10-colorado-estoque-bovino", period: "2025-10", category: "estoque", title: "Saldo bovino do relatorio", quantity: 478, value: 0, notes: "Outubro/2025: saldo bovino consolidado do relatorio mensal." },
+    { sourceId: "pdf-2025-10-colorado-comercial-compras", period: "2025-10", category: "comercial", title: "Compras registradas no relatorio", quantity: 20, value: 69747, notes: "17/10: compra de 20 bois de 1 ano." },
+    { sourceId: "pdf-2025-11-colorado-estoque-bovino", period: "2025-11", category: "estoque", title: "Saldo bovino do relatorio", quantity: 490, value: 0, notes: "Novembro/2025: saldo bovino consolidado do relatorio mensal." }
+  ],
+  sarandi: [
+    { sourceId: "pdf-2025-08-sarandi-comercial-vendas", period: "2025-08", category: "comercial", title: "Vendas registradas no relatorio", quantity: 50, value: 255904, notes: "25/08: venda de 50 bois." },
+    { sourceId: "pdf-2025-10-sarandi-estoque-bovino", period: "2025-10", category: "estoque", title: "Saldo bovino do relatorio", quantity: 370, value: 0, notes: "Outubro/2025: saldo bovino consolidado do relatorio mensal." },
+    { sourceId: "pdf-2025-10-sarandi-estoque-ovino", period: "2025-10", category: "estoque", title: "Saldo ovino do relatorio", quantity: 156, value: 0, notes: "Outubro/2025: saldo ovino consolidado do relatorio mensal." },
+    { sourceId: "pdf-2025-10-sarandi-comercial-compras", period: "2025-10", category: "comercial", title: "Compras registradas no relatorio", quantity: 74, value: 242155.3, notes: "09/10: 23 bois (71112,50). 21/10: 20 bois (73371,90), 21 bois (73371,90) e 10 terneiros (24299)." },
+    { sourceId: "pdf-2025-10-sarandi-comercial-vendas", period: "2025-10", category: "comercial", title: "Vendas registradas no relatorio", quantity: 16, value: 91077, notes: "21/10: venda de 16 bois." },
+    { sourceId: "pdf-2025-11-sarandi-estoque-bovino", period: "2025-11", category: "estoque", title: "Saldo bovino do relatorio", quantity: 269, value: 0, notes: "Novembro/2025: saldo bovino consolidado do relatorio mensal." },
+    { sourceId: "pdf-2025-11-sarandi-estoque-ovino", period: "2025-11", category: "estoque", title: "Saldo ovino do relatorio", quantity: 156, value: 0, notes: "Novembro/2025: saldo ovino consolidado do relatorio mensal." }
+  ]
+};
+
 const seedData = {
   selectedFarmId: "arapey",
   auth: {
@@ -776,6 +872,7 @@ function createStandardFarm(id, name) {
     name,
     declaredTotal: 0,
     note: "Estrutura pronta para receber o inventario inicial e futuras mudancas de manejo.",
+    importedBaselineVersion: 0,
     sanitaryProducts: [...DEFAULT_SANITARY_PRODUCTS],
     potreiros: normalizePotreroEntries([], DEFAULT_POTREIROS),
     categories: STANDARD_FARM_CATEGORIES.map((category) => ({
@@ -3196,6 +3293,7 @@ function ensureDataShape(data) {
     if (!Array.isArray(farm.sanitaryProducts) || !farm.sanitaryProducts.length) {
       farm.sanitaryProducts = [...DEFAULT_SANITARY_PRODUCTS];
     }
+    farm.importedBaselineVersion = Number(farm.importedBaselineVersion || 0);
     if (!Array.isArray(farm.potreiros)) {
       farm.potreiros = normalizePotreroEntries([], DEFAULT_POTREIROS);
     } else {
@@ -3213,6 +3311,7 @@ function ensureDataShape(data) {
     }));
     farm.monthlyRecords = farm.monthlyRecords.map((record) => ({
       id: record.id || createMovementId(),
+      sourceId: record.sourceId || "",
       period: record.period || `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`,
       category: record.category || "outros",
       title: record.title || "Indicador mensal",
@@ -3221,6 +3320,7 @@ function ensureDataShape(data) {
       notes: record.notes || ""
     }));
     pruneLegacyPotreiros(farm);
+    applyImportedFarmBaseline(farm);
   });
 
   Object.entries(IMPORTED_SANITARY_RECORDS).forEach(([farmId, records]) => {
@@ -3250,7 +3350,57 @@ function ensureDataShape(data) {
     });
   });
 
+  Object.entries(IMPORTED_MONTHLY_RECORDS).forEach(([farmId, records]) => {
+    const farm = data.farms[farmId];
+    if (!farm) {
+      return;
+    }
+
+    records.forEach((record) => {
+      if (!farm.monthlyRecords.some((item) => item.sourceId === record.sourceId)) {
+        farm.monthlyRecords.push({
+          ...record,
+          id: createMovementId()
+        });
+      }
+    });
+  });
+
   return data;
+}
+
+function applyImportedFarmBaseline(farm) {
+  const imported = IMPORTED_FARM_BASELINES[farm.id];
+  if (!imported || farm.importedBaselineVersion >= IMPORTED_FARM_BASELINE_VERSION) {
+    return;
+  }
+  if (!isPlaceholderInventory(farm)) {
+    return;
+  }
+
+  farm.declaredTotal = Number(imported.declaredTotal || 0);
+  farm.note = imported.note || farm.note;
+  farm.categories = imported.categories.map((category) => ({
+    id: category.id || slugify(category.name || "categoria"),
+    name: category.name || "Categoria",
+    quantity: Number(category.quantity || 0)
+  }));
+  farm.importedBaselineVersion = IMPORTED_FARM_BASELINE_VERSION;
+}
+
+function isPlaceholderInventory(farm) {
+  const categories = Array.isArray(farm.categories) ? farm.categories : [];
+  const hasAnyCategoryValue = categories.some((category) => Number(category.quantity || 0) > 0);
+  const usesOnlyStandardCategories = categories.every((category) => STANDARD_FARM_CATEGORIES.some((template) => template.id === category.id));
+  const hasOperationalHistory = (farm.movements?.length || 0) > 0
+    || getPotreroEntries(farm).some((potrero) => normalizePotreroQuantity(potrero.quantity) > 0);
+  const normalizedNote = normalizeText(farm.note || "");
+
+  return !hasAnyCategoryValue
+    && !hasOperationalHistory
+    && usesOnlyStandardCategories
+    && Number(farm.declaredTotal || 0) === 0
+    && (!normalizedNote || normalizedNote.includes("estrutura pronta para receber o inventario inicial"));
 }
 
 function cloneDeep(value) {
