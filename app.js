@@ -152,7 +152,9 @@ const state = {
     inventory: null,
     movement: null,
     ranking: null
-  }
+  },
+  userEditingId: null,
+  userEditingMode: null
 };
 
 const elements = {
@@ -242,6 +244,12 @@ const elements = {
   closeMovementDialog: document.getElementById("closeMovementDialog"),
   closeCategoryDialog: document.getElementById("closeCategoryDialog"),
   manageUsersDialog: document.getElementById("manageUsersDialog"),
+  userEditorPanel: document.getElementById("userEditorPanel"),
+  userEditorTitle: document.getElementById("userEditorTitle"),
+  editUserLogin: document.getElementById("editUserLogin"),
+  editUserPassword: document.getElementById("editUserPassword"),
+  saveUserEditsButton: document.getElementById("saveUserEditsButton"),
+  cancelUserEditButton: document.getElementById("cancelUserEditButton"),
   manageUsersForm: document.getElementById("manageUsersForm"),
   closeManageUsersDialog: document.getElementById("closeManageUsersDialog"),
   newUserLogin: document.getElementById("newUserLogin"),
@@ -377,9 +385,99 @@ function renderUserList() {
         <strong>${escapeHtml(user.login)}</strong>
         <span>${user.id === currentUser?.id ? "Usuario em uso agora" : "Acesso local salvo no navegador"}</span>
       </div>
-      <span class="chip">${user.id === "user-da-luz" ? "Principal" : "Adicional"}</span>
+      <div class="user-row-actions">
+        <button type="button" class="ghost-btn" data-edit-user-id="${user.id}">Editar</button>
+        <button type="button" class="ghost-btn" data-reset-user-id="${user.id}">Resetar senha</button>
+      </div>
     </article>
   `).join("");
+  closeUserEditor();
+}
+
+function handleUserListInteraction(event) {
+  const editTrigger = event.target.closest("[data-edit-user-id]");
+  if (editTrigger) {
+    openUserEditor(editTrigger.dataset.editUserId, false);
+    return;
+  }
+
+  const resetTrigger = event.target.closest("[data-reset-user-id]");
+  if (resetTrigger) {
+    openUserEditor(resetTrigger.dataset.resetUserId, true);
+  }
+}
+
+function openUserEditor(userId, resetOnly = false) {
+  const user = state.data.auth.users.find((item) => item.id === userId);
+  if (!user) {
+    return;
+  }
+
+  state.userEditingId = userId;
+  state.userEditingMode = resetOnly ? "reset" : "edit";
+  elements.userEditorPanel.hidden = false;
+  elements.userEditorTitle.textContent = resetOnly ? `Redefinir senha de ${user.login}` : `Editar ${user.login}`;
+  elements.editUserLogin.value = user.login;
+  elements.editUserPassword.value = "";
+  elements.editUserPassword.placeholder = resetOnly ? "Digite a nova senha" : "Nova senha (opcional)";
+  elements.editUserPassword.required = resetOnly;
+}
+
+function closeUserEditor() {
+  state.userEditingId = null;
+  state.userEditingMode = null;
+  elements.userEditorPanel.hidden = true;
+  elements.editUserLogin.value = "";
+  elements.editUserPassword.value = "";
+  elements.editUserPassword.required = false;
+}
+
+function handleUserEditSave() {
+  if (!state.userEditingId) {
+    return;
+  }
+
+  const user = state.data.auth.users.find((item) => item.id === state.userEditingId);
+  if (!user) {
+    return;
+  }
+
+  const nextLogin = elements.editUserLogin.value.trim();
+  const nextPassword = elements.editUserPassword.value;
+
+  if (!nextLogin) {
+    alert("O login nao pode ficar vazio.");
+    return;
+  }
+
+  if (state.data.auth.users.some((item) => item.id !== user.id && normalizeText(item.login) === normalizeText(nextLogin))) {
+    alert("Ja existe outro usuario com esse login.");
+    return;
+  }
+
+  if (state.userEditingMode === "reset" && !nextPassword) {
+    alert("Digite uma nova senha para redefinir a senha deste usuario.");
+    return;
+  }
+
+  user.login = nextLogin;
+  if (nextPassword) {
+    user.password = nextPassword;
+  }
+
+  saveData();
+  renderUserList();
+  renderAuthState();
+
+  if (user.id === state.data.auth.sessionUserId) {
+    elements.currentUserLabel.textContent = `Usuario: ${user.login}`;
+  }
+
+  if (nextPassword) {
+    alert("Senha atualizada com sucesso.");
+  }
+
+  closeUserEditor();
 }
 
 function handleManageUsersSubmit(event) {
@@ -463,6 +561,9 @@ function bindEvents() {
   elements.manageUsersButton.addEventListener("click", openManageUsersDialog);
   elements.logoutButton.addEventListener("click", handleLogout);
   elements.manageUsersForm.addEventListener("submit", handleManageUsersSubmit);
+  elements.userList.addEventListener("click", handleUserListInteraction);
+  elements.saveUserEditsButton.addEventListener("click", handleUserEditSave);
+  elements.cancelUserEditButton.addEventListener("click", closeUserEditor);
   elements.closeManageUsersDialog.addEventListener("click", () => elements.manageUsersDialog.close());
 
   document.querySelectorAll("[data-view]").forEach((button) => {
@@ -617,11 +718,11 @@ function renderGlobalSummary() {
   const totals = farms.reduce((accumulator, farm) => {
     const monthly = summarizePeriod(farm, state.filters.year, state.filters.month);
     accumulator.animais += getFarmTotal(farm);
-    accumulator.compras += monthly.byType.compra;
-    accumulator.vendas += monthly.byType.venda;
+    accumulator.entradas += monthly.byType.compra + monthly.byType.nascimento + monthly.adjustPositive;
+    accumulator.saidas += monthly.byType.venda + monthly.byType.consumo + monthly.byType.morte + monthly.adjustNegative;
     accumulator.sanitario += getFilteredSanitaryRecords(farm).length;
     return accumulator;
-  }, { animais: 0, compras: 0, vendas: 0, sanitario: 0 });
+  }, { animais: 0, entradas: 0, saidas: 0, sanitario: 0 });
 
   const cards = [
     {
@@ -630,14 +731,14 @@ function renderGlobalSummary() {
       detail: "estoque consolidado do grupo"
     },
     {
-      title: "Compras consolidadas",
-      value: formatInteger(totals.compras),
-      detail: "compras no periodo filtrado"
+      title: "Entradas consolidadas",
+      value: formatInteger(totals.entradas),
+      detail: "compras, nascimentos e ajustes positivos"
     },
     {
-      title: "Vendas consolidadas",
-      value: formatInteger(totals.vendas),
-      detail: "vendas no periodo filtrado"
+      title: "Saidas consolidadas",
+      value: formatInteger(totals.saidas),
+      detail: "vendas, mortes, consumo e ajustes negativos"
     },
     {
       title: "Registros sanitarios",
@@ -662,6 +763,7 @@ function renderGlobalSummary() {
         <p class="panel-kicker">${escapeHtml(farm.name)}</p>
         <strong>${formatInteger(getFarmTotal(farm))}</strong>
         <p>Compra ${formatInteger(summary.byType.compra)} | Venda ${formatInteger(summary.byType.venda)}</p>
+        <p>Nasc. ${formatInteger(summary.byType.nascimento)} | Mortes ${formatInteger(summary.byType.morte)}</p>
         <span>${formatInteger(sanitaryCount)} registro(s) sanitarios no periodo</span>
       </article>
     `;

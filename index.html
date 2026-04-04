@@ -546,6 +546,29 @@
       </div>
 
       <div class="user-list" id="userList"></div>
+
+      <div class="user-editor-panel" id="userEditorPanel" hidden>
+        <div class="panel-header">
+          <div>
+            <p class="panel-kicker">Editar usuario</p>
+            <h3 id="userEditorTitle">Atualizar credenciais</h3>
+          </div>
+        </div>
+        <div class="form-grid">
+          <label>
+            Login
+            <input type="text" id="editUserLogin" maxlength="40" required>
+          </label>
+          <label>
+            Senha
+            <input type="password" id="editUserPassword" maxlength="60" placeholder="Nova senha (opcional)">
+          </label>
+        </div>
+        <div class="modal-actions user-actions">
+          <button type="button" class="action-btn secondary" id="saveUserEditsButton">Salvar alteracoes</button>
+          <button type="button" class="ghost-btn" id="cancelUserEditButton">Cancelar</button>
+        </div>
+      </div>
     </form>
   </dialog>
 
