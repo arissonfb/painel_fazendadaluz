@@ -84,6 +84,9 @@
           <span class="sidebar-label">Acesso rápido</span>
           <button type="button" class="sidebar-shortcut" id="sanitaryShortcut">Sanitário</button>
           <button type="button" class="sidebar-shortcut" id="manageUsersButton">Usuários</button>
+          <button type="button" class="sidebar-shortcut backup-btn" id="backupButton">Backup dos dados</button>
+          <button type="button" class="sidebar-shortcut subtle" id="restoreButton">Restaurar backup</button>
+          <input type="file" id="restoreFileInput" accept=".json" hidden>
           <button type="button" class="sidebar-shortcut subtle" id="logoutButton">Sair</button>
         </div>
 
@@ -550,6 +553,20 @@
           Observação
           <input type="text" id="movementNotes" maxlength="120" placeholder="Ex.: lote comprado em leilão">
         </label>
+        <label class="form-span-2" id="movementPhotoWrap" hidden>
+          Fotos do registro
+          <input type="file" id="movementPhotos" accept="image/*" multiple>
+          <span class="field-note">Disponível para compra, venda e gado morto. Até 6 fotos por lançamento, com impressão automática no PDF.</span>
+        </label>
+        <div class="movement-photo-panel form-span-2" id="movementPhotoPanel" hidden>
+          <div class="movement-photo-header">
+            <div>
+              <p class="panel-kicker">Anexos fotográficos</p>
+              <strong id="movementPhotoCounter">Nenhuma foto anexada.</strong>
+            </div>
+          </div>
+          <div class="movement-photo-grid" id="movementPhotoPreview"></div>
+        </div>
       </div>
 
       <div class="modal-actions">
@@ -808,6 +825,18 @@
 
         <aside class="georef-legend" id="georefLegend"></aside>
       </section>
+    </div>
+  </dialog>
+
+  <dialog id="backupWarningDialog" class="modal">
+    <div class="modal-card backup-warning-card">
+      <div class="backup-warning-icon">!</div>
+      <h2 id="backupWarningTitle">Atenção: backup desatualizado</h2>
+      <p id="backupWarningMessage" class="backup-warning-msg"></p>
+      <div class="modal-actions backup-warning-actions">
+        <button type="button" class="action-btn" id="backupWarningDoNow">Fazer backup agora</button>
+        <button type="button" class="ghost-btn" id="backupWarningDismiss">Agora não</button>
+      </div>
     </div>
   </dialog>
 

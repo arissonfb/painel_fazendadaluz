@@ -298,6 +298,52 @@ body::before {
   color: var(--text);
 }
 
+.sidebar-shortcut.backup-btn {
+  background: #d39b5c;
+  color: #fff;
+  border-color: transparent;
+}
+
+.sidebar-shortcut.backup-btn:hover {
+  background: #bf7e42;
+}
+
+.backup-warning-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 14px;
+  padding: 36px 32px;
+  max-width: 420px;
+}
+
+.backup-warning-icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: #d39b5c;
+  color: #fff;
+  font-size: 28px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.backup-warning-msg {
+  color: var(--muted);
+  font-size: 0.97rem;
+  line-height: 1.5;
+}
+
+.backup-warning-actions {
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .topbar {
   display: flex;
   justify-content: space-between;
@@ -1599,6 +1645,82 @@ th {
   font-size: 0.88rem;
   line-height: 1.5;
   font-weight: 700;
+}
+
+.movement-photo-panel {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(55, 91, 67, 0.14);
+  background: rgba(55, 91, 67, 0.05);
+}
+
+.movement-photo-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.movement-photo-header strong {
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.movement-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+}
+
+.movement-photo-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 18px;
+  background: rgba(255, 252, 247, 0.95);
+  border: 1px solid rgba(76, 55, 34, 0.1);
+}
+
+.movement-photo-card img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 14px;
+  background: rgba(55, 91, 67, 0.08);
+}
+
+.movement-photo-meta {
+  display: grid;
+  gap: 4px;
+}
+
+.movement-photo-meta strong {
+  font-size: 0.9rem;
+}
+
+.movement-photo-meta span {
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.movement-photo-remove {
+  justify-self: flex-start;
+}
+
+.photo-flag {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(55, 91, 67, 0.12);
+  color: var(--green);
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 .modal-actions {

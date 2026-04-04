@@ -90,6 +90,14 @@ const ARAPEY_PRIMARY_GEO_KEYS = new Set([
 ]);
 const PDF_LOGO_PATH = "./assets/logo-da-luz.jpg";
 const TECHNICAL_MANAGER_NAME = "Hugo Fabricio Fernandes Balbuena";
+const MOVEMENT_PHOTO_TYPES = new Set(["compra", "venda", "morte"]);
+const MAX_MOVEMENT_PHOTOS = 6;
+const MOVEMENT_PHOTO_MAX_DIMENSION = 1280;
+const MOVEMENT_PHOTO_QUALITY = 0.82;
+const CLOUDINARY_CLOUD_NAME = "dsmpclqqa";
+const CLOUDINARY_UPLOAD_PRESET = "m6pymz4w";
+const BACKUP_DATE_KEY = "painelPecuario.lastBackup";
+const BACKUP_WARN_DAYS = 7;
 const DEFAULT_USERS = [
   { id: "user-da-luz", login: "Hugo Balbuena", password: "hugo123" }
 ];
@@ -308,7 +316,7 @@ const IMPORTED_COMMERCIAL_MOVEMENTS = {
 };
 
 const seedData = {
-  selectedFarmId: "arapey",
+  selectedFarmId: TOTAL_FARM_ID,
   auth: {
     sessionUserId: "",
     users: DEFAULT_USERS.map((user) => ({ ...user }))
@@ -355,6 +363,7 @@ const runtime = {
   storageEnabled: true,
   appInitialized: false,
   splashDismissed: false,
+  movementPhotoDrafts: [],
   arapeyKmlData: null,
   arapeyKmlPromise: null
 };
@@ -433,6 +442,11 @@ const elements = {
   movementValueLabel: document.getElementById("movementValueLabel"),
   movementValue: document.getElementById("movementValue"),
   movementNotes: document.getElementById("movementNotes"),
+  movementPhotoWrap: document.getElementById("movementPhotoWrap"),
+  movementPhotos: document.getElementById("movementPhotos"),
+  movementPhotoPanel: document.getElementById("movementPhotoPanel"),
+  movementPhotoCounter: document.getElementById("movementPhotoCounter"),
+  movementPhotoPreview: document.getElementById("movementPhotoPreview"),
   categoryDialog: document.getElementById("categoryDialog"),
   categoryForm: document.getElementById("categoryForm"),
   categoryName: document.getElementById("categoryName"),
@@ -475,6 +489,14 @@ const elements = {
   monthlyDataButton: document.getElementById("monthlyDataButton"),
   currentUserLabel: document.getElementById("currentUserLabel"),
   manageUsersButton: document.getElementById("manageUsersButton"),
+  backupButton: document.getElementById("backupButton"),
+  restoreButton: document.getElementById("restoreButton"),
+  restoreFileInput: document.getElementById("restoreFileInput"),
+  backupWarningDialog: document.getElementById("backupWarningDialog"),
+  backupWarningTitle: document.getElementById("backupWarningTitle"),
+  backupWarningMessage: document.getElementById("backupWarningMessage"),
+  backupWarningDoNow: document.getElementById("backupWarningDoNow"),
+  backupWarningDismiss: document.getElementById("backupWarningDismiss"),
   logoutButton: document.getElementById("logoutButton"),
   adjustButton: document.getElementById("adjustButton"),
   addCategoryButton: document.getElementById("addCategoryButton"),
@@ -546,17 +568,20 @@ function loadData() {
     const stored = window.localStorage.getItem(STORAGE_KEY);
     if (!stored) {
       const freshData = ensureDataShape(cloneSeedData());
+      freshData.selectedFarmId = TOTAL_FARM_ID;
       freshData.auth.sessionUserId = "";
       return freshData;
     }
 
     const parsedData = ensureDataShape(JSON.parse(stored));
+    parsedData.selectedFarmId = TOTAL_FARM_ID;
     parsedData.auth.sessionUserId = "";
     return parsedData;
   } catch (error) {
     runtime.storageEnabled = false;
     console.warn("Armazenamento local indisponível. O painel vai funcionar sem persistência.", error);
     const fallbackData = ensureDataShape(cloneSeedData());
+    fallbackData.selectedFarmId = TOTAL_FARM_ID;
     fallbackData.auth.sessionUserId = "";
     return fallbackData;
   }
@@ -634,6 +659,7 @@ function handleLoginSubmit(event) {
   renderAuthState();
   initializeAppShell();
   render();
+  checkBackupWarning();
 }
 
 function handleLogout() {
@@ -1047,6 +1073,11 @@ function createStandardFarm(id, name) {
 function bindEvents() {
   elements.loginForm.addEventListener("submit", handleLoginSubmit);
   elements.manageUsersButton.addEventListener("click", openManageUsersDialog);
+  elements.backupButton.addEventListener("click", exportBackup);
+  elements.restoreButton.addEventListener("click", () => elements.restoreFileInput.click());
+  elements.restoreFileInput.addEventListener("change", handleRestoreFile);
+  elements.backupWarningDoNow.addEventListener("click", () => { elements.backupWarningDialog.close(); exportBackup(); });
+  elements.backupWarningDismiss.addEventListener("click", () => elements.backupWarningDialog.close());
   elements.logoutButton.addEventListener("click", handleLogout);
   elements.splashShell.addEventListener("click", dismissSplash);
   elements.manageUsersForm.addEventListener("submit", handleManageUsersSubmit);
@@ -1072,6 +1103,8 @@ function bindEvents() {
   elements.movementType.addEventListener("change", () => {
     updateMovementFormForType(elements.movementType.value);
   });
+  elements.movementPhotos.addEventListener("change", handleMovementPhotosChange);
+  elements.movementPhotoPreview.addEventListener("click", handleMovementPhotoPreviewClick);
 
   elements.movementSaleMode.addEventListener("change", updateSaleFieldVisibility);
   [
@@ -1502,7 +1535,7 @@ function renderSalesAnalysis(farm) {
   elements.salesTableBody.innerHTML = summary.movements.slice(0, 10).map((movement) => `
     <tr>
       <td data-label="Data">${formatDate(movement.date)}</td>
-      <td data-label="Categoria">${escapeHtml(movement.categoryName)}</td>
+      <td data-label="Categoria">${escapeHtml(movement.categoryName)}${getMovementPhotoFlagMarkup(movement)}</td>
       <td data-label="Base">${movement.saleDetails ? escapeHtml(getSaleModeLabel(movement.saleDetails.mode || "vivo")) : "Relatório mensal"}</td>
       <td data-label="Kg">${movement.saleDetails ? formatWeight(movement.saleDetails.weightKg || 0) : "-"}</td>
       <td data-label="R$/kg">${movement.saleDetails ? formatCurrency(movement.saleDetails.pricePerKg || 0) : "-"}</td>
@@ -1528,7 +1561,7 @@ function renderMovementsTable(farm) {
       <td data-label="Tipo">${capitalize(movement.type)}</td>
       <td data-label="Categoria">${escapeHtml(movement.categoryName)}</td>
       <td data-label="Qtd.">${formatInteger(movement.quantity)}</td>
-      <td data-label="Obs.">${escapeHtml(getMovementNotes(movement))}</td>
+      <td data-label="Obs.">${escapeHtml(getMovementNotes(movement))}${getMovementPhotoFlagMarkup(movement)}</td>
     </tr>
   `).join("");
 }
@@ -2767,8 +2800,103 @@ function openMovementDialog(initialType) {
   elements.movementCarcassKg.value = "";
   elements.movementValue.value = "";
   elements.movementNotes.value = "";
+  resetMovementPhotoDrafts();
   updateMovementFormForType(initialType);
   elements.movementDialog.showModal();
+}
+
+function resetMovementPhotoDrafts() {
+  runtime.movementPhotoDrafts = [];
+  if (elements.movementPhotos) {
+    elements.movementPhotos.value = "";
+  }
+  renderMovementPhotoDrafts();
+}
+
+function movementTypeSupportsPhotos(type) {
+  return MOVEMENT_PHOTO_TYPES.has(type);
+}
+
+function renderMovementPhotoDrafts() {
+  const count = runtime.movementPhotoDrafts.length;
+  const visible = movementTypeSupportsPhotos(elements.movementType.value);
+
+  elements.movementPhotoWrap.hidden = !visible;
+  elements.movementPhotoPanel.hidden = !visible || !count;
+  elements.movementPhotoCounter.textContent = count
+    ? `${formatInteger(count)} ${count === 1 ? "foto anexada" : "fotos anexadas"}`
+    : "Nenhuma foto anexada.";
+
+  if (!visible || !count) {
+    elements.movementPhotoPreview.innerHTML = "";
+    return;
+  }
+
+  elements.movementPhotoPreview.innerHTML = runtime.movementPhotoDrafts.map((photo, index) => `
+    <article class="movement-photo-card">
+      <img src="${photo.url || photo.dataUrl}" alt="${escapeHtml(photo.name || `Foto ${index + 1}`)}">
+      <div class="movement-photo-meta">
+        <strong>${escapeHtml(photo.name || `Foto ${index + 1}`)}</strong>
+        <span>${formatInteger(index + 1)} de ${formatInteger(count)} | ${escapeHtml(photo.caption || "Pronto para o PDF")}</span>
+      </div>
+      <button type="button" class="ghost-btn movement-photo-remove" data-remove-movement-photo="${escapeHtml(photo.id)}">Remover</button>
+    </article>
+  `).join("");
+}
+
+async function handleMovementPhotosChange(event) {
+  const files = [...(event.target.files || [])];
+  if (!files.length) {
+    return;
+  }
+
+  if (!movementTypeSupportsPhotos(elements.movementType.value)) {
+    resetMovementPhotoDrafts();
+    return;
+  }
+
+  const availableSlots = Math.max(0, MAX_MOVEMENT_PHOTOS - runtime.movementPhotoDrafts.length);
+  if (availableSlots === 0) {
+    alert(`Cada lançamento aceita até ${MAX_MOVEMENT_PHOTOS} fotos.`);
+    event.target.value = "";
+    return;
+  }
+
+  const nextFiles = files.slice(0, availableSlots);
+  if (files.length > availableSlots) {
+    alert(`Foram consideradas apenas ${availableSlots} fotos para manter o limite de ${MAX_MOVEMENT_PHOTOS} por lançamento.`);
+  }
+
+  elements.movementPhotoCounter.textContent = "Enviando fotos para o servidor...";
+  elements.movementPhotoPanel.hidden = false;
+
+  const processed = [];
+  for (const file of nextFiles) {
+    if (!String(file.type || "").startsWith("image/")) {
+      continue;
+    }
+
+    try {
+      processed.push(await createMovementPhotoAttachment(file));
+    } catch (error) {
+      console.warn("Não foi possível preparar a foto para o lançamento.", error);
+      alert(`Falha ao enviar a foto "${file.name}". Verifique sua conexão e tente novamente.`);
+    }
+  }
+
+  runtime.movementPhotoDrafts = [...runtime.movementPhotoDrafts, ...processed];
+  event.target.value = "";
+  renderMovementPhotoDrafts();
+}
+
+function handleMovementPhotoPreviewClick(event) {
+  const trigger = event.target.closest("[data-remove-movement-photo]");
+  if (!trigger) {
+    return;
+  }
+
+  runtime.movementPhotoDrafts = runtime.movementPhotoDrafts.filter((photo) => photo.id !== trigger.dataset.removeMovementPhoto);
+  renderMovementPhotoDrafts();
 }
 
 function openCategoryDialog() {
@@ -3026,6 +3154,11 @@ function updateMovementFormForType(type) {
   if (!isSale) {
     elements.movementValue.value = "";
   }
+  if (!movementTypeSupportsPhotos(type)) {
+    resetMovementPhotoDrafts();
+  } else {
+    renderMovementPhotoDrafts();
+  }
   updateSaleFieldVisibility();
 }
 
@@ -3155,7 +3288,7 @@ function updateSanitaryPotreroMode() {
   }
 }
 
-function handleMovementSubmit(event) {
+async function handleMovementSubmit(event) {
   event.preventDefault();
   const farm = getFarm();
   const type = elements.movementType.value;
@@ -3211,7 +3344,8 @@ function handleMovementSubmit(event) {
     delta,
     value,
     saleDetails,
-    notes
+    notes,
+    photos: movementTypeSupportsPhotos(type) ? runtime.movementPhotoDrafts.map((photo) => ({ ...photo })) : []
   });
 
   if (farm.declaredTotal === 0) {
@@ -3220,6 +3354,7 @@ function handleMovementSubmit(event) {
 
   saveData();
   populateYearFilter();
+  resetMovementPhotoDrafts();
   elements.movementDialog.close();
   render();
 }
@@ -3887,7 +4022,7 @@ function appendSaleSummaryPdfTable(doc, saleSummary) {
 function appendSaleDetailsPdfTable(doc, saleSummary) {
   doc.autoTable({
     startY: doc.lastAutoTable.finalY + 10,
-    head: [["Data", "Categoria", "Base", "Kg", "R$/kg", "Total"]],
+    head: [["Data", "Categoria", "Base", "Kg", "R$/kg", "Total", "Fotos"]],
     body: saleSummary.movements.length
       ? saleSummary.movements.map((movement) => [
         formatDate(movement.date),
@@ -3895,9 +4030,10 @@ function appendSaleDetailsPdfTable(doc, saleSummary) {
         movement.saleDetails ? getSaleModeLabel(movement.saleDetails.mode || "vivo") : "Relatório mensal",
         movement.saleDetails ? formatWeight(movement.saleDetails.weightKg || 0) : "-",
         movement.saleDetails ? formatCurrency(movement.saleDetails.pricePerKg || 0) : "-",
-        formatCurrency(movement.value || 0)
+        formatCurrency(movement.value || 0),
+        formatMovementPhotoCount(movement)
       ])
-      : [["-", "-", "-", "-", "-", "Sem vendas no período"]],
+      : [["-", "-", "-", "-", "-", "Sem vendas no período", "-"]],
     theme: "striped",
     headStyles: { fillColor: [201, 140, 79] }
   });
@@ -3997,7 +4133,7 @@ function appendInsightsPdfTable(doc, insights) {
 function appendRecentMovementsPdfTable(doc, recentMovements) {
   doc.autoTable({
     startY: doc.lastAutoTable.finalY + 10,
-    head: [["Data", "Tipo", "Categoria", "Qtd.", "Valor", "Observação"]],
+    head: [["Data", "Tipo", "Categoria", "Qtd.", "Valor", "Fotos", "Observação"]],
     body: recentMovements.length
       ? recentMovements.map((movement) => [
         formatDate(movement.date),
@@ -4005,12 +4141,66 @@ function appendRecentMovementsPdfTable(doc, recentMovements) {
         movement.categoryName,
         formatInteger(movement.quantity),
         movement.value ? formatCurrency(movement.value) : "-",
+        formatMovementPhotoCount(movement),
         getMovementNotes(movement)
       ])
-      : [["-", "-", "-", "-", "-", "Sem movimentações recentes"]],
+      : [["-", "-", "-", "-", "-", "-", "Sem movimentações recentes"]],
     theme: "striped",
     headStyles: { fillColor: [138, 75, 56] }
   });
+}
+
+async function appendMovementPhotoPages(doc, farm, year, month) {
+  const photoEntries = getMovementPhotoEntries(farm, year, month);
+  if (!photoEntries.length) {
+    return;
+  }
+
+  const chunkSize = 3;
+  for (let index = 0; index < photoEntries.length; index += chunkSize) {
+    const chunk = photoEntries.slice(index, index + chunkSize);
+    doc.addPage();
+
+    doc.setFillColor(248, 244, 236);
+    doc.rect(0, 0, 210, 297, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.setTextColor(45, 35, 25);
+    doc.text(`Anexos fotográficos - ${farm.name}`, 105, 18, { align: "center" });
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10.5);
+    doc.setTextColor(112, 94, 76);
+    doc.text("Até 3 fotos por página, centralizadas para leitura e impressão.", 105, 25, { align: "center" });
+
+    for (let chunkIndex = 0; chunkIndex < chunk.length; chunkIndex++) {
+      const entry = chunk[chunkIndex];
+      const boxX = 22;
+      const boxY = 34 + (chunkIndex * 80);
+      const boxWidth = 166;
+      const boxHeight = 68;
+
+      doc.setFillColor(255, 252, 247);
+      doc.roundedRect(boxX, boxY, boxWidth, boxHeight, 5, 5, "F");
+      doc.setDrawColor(219, 209, 191);
+      doc.roundedRect(boxX, boxY, boxWidth, boxHeight, 5, 5, "S");
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(50, 74, 55);
+      doc.text(`${capitalize(entry.movement.type)} | ${formatDate(entry.movement.date)} | ${entry.movement.categoryName}`, 105, boxY + 10, { align: "center" });
+
+      const imageData = await fetchPhotoForPdf(entry.photo);
+      if (imageData) {
+        drawPdfMovementPhoto(doc, imageData, boxX + 8, boxY + 14, boxWidth - 16, 40);
+      }
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9.5);
+      doc.setTextColor(112, 94, 76);
+      doc.text(trimLabel(entry.photo.name || `Foto ${index + chunkIndex + 1}`, 44), 105, boxY + 60, { align: "center" });
+      doc.text(trimLabel(getMovementNotes(entry.movement) || "Sem observação", 74), 105, boxY + 65, { align: "center" });
+    }
+  }
 }
 
 function appendConsolidatedPdfIntro(doc, farms, periodLabel, year, month) {
@@ -4110,6 +4300,7 @@ async function appendFarmPdfSection(doc, farm, periodLabel, year, month) {
   appendSanitaryDetailsPdfTable(doc, sanitaryRecords);
   appendInsightsPdfTable(doc, insights);
   appendRecentMovementsPdfTable(doc, recentMovements);
+  await appendMovementPhotoPages(doc, farm, year, month);
 }
 
 function getPdfFileName(farms, year, month) {
@@ -4176,6 +4367,10 @@ function ensureDataShape(data) {
     data.farms = {};
   }
 
+  if (typeof data.selectedFarmId !== "string") {
+    data.selectedFarmId = TOTAL_FARM_ID;
+  }
+
   if (!data.auth || typeof data.auth !== "object") {
     data.auth = cloneDeep(seedData.auth);
   }
@@ -4210,6 +4405,10 @@ function ensureDataShape(data) {
       data.farms[farmId] = cloneDeep(farmTemplate);
     }
   });
+
+  if (data.selectedFarmId !== TOTAL_FARM_ID && !data.farms[data.selectedFarmId]) {
+    data.selectedFarmId = TOTAL_FARM_ID;
+  }
 
   Object.values(data.farms).forEach((farm) => {
     if (!Array.isArray(farm.categories)) {
@@ -4251,6 +4450,7 @@ function ensureDataShape(data) {
       delta: Number(movement.delta || 0),
       value: Number(movement.value || 0),
       notes: movement.notes || "",
+      photos: normalizeMovementPhotos(movement.photos),
       saleDetails: movement.saleDetails
         ? {
           mode: movement.saleDetails.mode || "vivo",
@@ -4500,6 +4700,187 @@ async function loadAssetAsDataUrl(path) {
   return dataUrl;
 }
 
+function normalizeMovementPhotos(photos) {
+  if (!Array.isArray(photos)) {
+    return [];
+  }
+
+  return photos
+    .filter((photo) => photo && (
+      (typeof photo.url === "string" && photo.url.startsWith("https://")) ||
+      (typeof photo.dataUrl === "string" && photo.dataUrl.startsWith("data:image/"))
+    ))
+    .map((photo, index) => ({
+      id: photo.id || `photo-${index + 1}`,
+      name: String(photo.name || `Foto ${index + 1}`),
+      caption: String(photo.caption || ""),
+      mimeType: String(photo.mimeType || (photo.dataUrl ? getDataUrlMimeType(photo.dataUrl) : "image/jpeg")),
+      url: photo.url || null,
+      dataUrl: photo.dataUrl || null
+    }));
+}
+
+function getDataUrlMimeType(dataUrl = "") {
+  const match = String(dataUrl).match(/^data:([^;]+);/i);
+  return match ? match[1] : "image/jpeg";
+}
+
+function getDataUrlImageFormat(dataUrl = "") {
+  const mimeType = getDataUrlMimeType(dataUrl).toLowerCase();
+  if (mimeType.includes("png")) {
+    return "PNG";
+  }
+  if (mimeType.includes("webp")) {
+    return "WEBP";
+  }
+  return "JPEG";
+}
+
+function getMovementPhotoCount(movement) {
+  return normalizeMovementPhotos(movement?.photos).length;
+}
+
+function formatMovementPhotoCount(movement) {
+  const count = getMovementPhotoCount(movement);
+  return count ? `${formatInteger(count)} ${count === 1 ? "foto" : "fotos"}` : "-";
+}
+
+function getMovementPhotoFlagMarkup(movement) {
+  const count = getMovementPhotoCount(movement);
+  if (!count) {
+    return "";
+  }
+
+  return `<span class="photo-flag">${formatInteger(count)} ${count === 1 ? "foto" : "fotos"}</span>`;
+}
+
+async function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error(`Falha ao ler o arquivo ${file?.name || ""}.`));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function loadImageFromDataUrl(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Falha ao preparar a imagem selecionada."));
+    image.src = dataUrl;
+  });
+}
+
+async function uploadToCloudinary(blob, fileName) {
+  const formData = new FormData();
+  formData.append("file", blob, fileName);
+  formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+  formData.append("folder", "painel-pecuario");
+
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+    { method: "POST", body: formData }
+  );
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Cloudinary: ${err}`);
+  }
+
+  const data = await response.json();
+  return data.secure_url;
+}
+
+async function fetchPhotoForPdf(photo) {
+  if (photo.dataUrl) {
+    return photo.dataUrl;
+  }
+  if (!photo.url) {
+    return null;
+  }
+  try {
+    const response = await fetch(photo.url);
+    const blob = await response.blob();
+    return await readFileAsDataUrl(blob);
+  } catch (error) {
+    console.warn("Não foi possível carregar a foto do servidor para o PDF.", error);
+    return null;
+  }
+}
+
+async function createMovementPhotoAttachment(file) {
+  const originalDataUrl = await readFileAsDataUrl(file);
+  const image = await loadImageFromDataUrl(originalDataUrl);
+  const scale = Math.min(1, MOVEMENT_PHOTO_MAX_DIMENSION / Math.max(image.width, image.height));
+  const targetWidth = Math.max(1, Math.round(image.width * scale));
+  const targetHeight = Math.max(1, Math.round(image.height * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
+
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("Falha ao preparar a imagem para o lançamento.");
+  }
+
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, targetWidth, targetHeight);
+  context.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+  const fileName = file.name || `foto-${Date.now()}.jpg`;
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", MOVEMENT_PHOTO_QUALITY));
+  const url = await uploadToCloudinary(blob, fileName);
+
+  return {
+    id: createMovementId(),
+    name: fileName,
+    caption: "Anexo do lançamento",
+    mimeType: "image/jpeg",
+    url
+  };
+}
+
+function movementMatchesPeriod(movement, year, month) {
+  const movementDate = new Date(movement.date);
+  const movementYear = String(movementDate.getFullYear());
+  const movementMonth = String(movementDate.getMonth() + 1).padStart(2, "0");
+  return movementYear === String(year) && (month === "all" || movementMonth === month);
+}
+
+function getMovementPhotoEntries(farm, year, month) {
+  return farm.movements
+    .filter((movement) => movementMatchesPeriod(movement, year, month) && movementTypeSupportsPhotos(movement.type) && getMovementPhotoCount(movement) > 0)
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
+    .flatMap((movement) => normalizeMovementPhotos(movement.photos).map((photo, index) => ({
+      movement,
+      photo,
+      sequence: index + 1
+    })));
+}
+
+function drawPdfMovementPhoto(doc, dataUrl, x, y, maxWidth, maxHeight) {
+  try {
+    const imageFormat = getDataUrlImageFormat(dataUrl);
+    const properties = doc.getImageProperties(dataUrl);
+    const ratio = Math.min(maxWidth / properties.width, maxHeight / properties.height);
+    const width = properties.width * ratio;
+    const height = properties.height * ratio;
+    const originX = x + ((maxWidth - width) / 2);
+    const originY = y + ((maxHeight - height) / 2);
+    doc.addImage(dataUrl, imageFormat, originX, originY, width, height);
+  } catch (error) {
+    console.warn("Não foi possível incluir uma foto no PDF.", error);
+    doc.setDrawColor(219, 209, 191);
+    doc.rect(x, y, maxWidth, maxHeight);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(112, 94, 76);
+    doc.text("Imagem indisponível", x + (maxWidth / 2), y + (maxHeight / 2), { align: "center" });
+    doc.setTextColor(45, 35, 25);
+  }
+}
+
 function formatInteger(value) {
   return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(value || 0);
 }
@@ -4608,4 +4989,99 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+}
+
+// ── Backup / Restore ─────────────────────────────────────────────────────────
+
+function getLastBackupDate() {
+  const stored = localStorage.getItem(BACKUP_DATE_KEY);
+  return stored ? new Date(stored) : null;
+}
+
+function getDaysSinceBackup() {
+  const last = getLastBackupDate();
+  if (!last) return null;
+  return Math.floor((Date.now() - last.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function markBackupDone() {
+  localStorage.setItem(BACKUP_DATE_KEY, new Date().toISOString());
+}
+
+function exportBackup() {
+  const snapshot = JSON.parse(JSON.stringify(state.data));
+  snapshot.auth = { ...snapshot.auth, sessionUserId: "" };
+
+  const payload = {
+    sistema: "Painel Pecuário Da Luz",
+    versao: 2,
+    dataBackup: new Date().toISOString(),
+    dados: snapshot
+  };
+
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  const dateTag = new Date().toISOString().slice(0, 10);
+  anchor.href = url;
+  anchor.download = `backup-painel-pecuario-${dateTag}.json`;
+  anchor.click();
+  URL.revokeObjectURL(url);
+
+  markBackupDone();
+  alert(`Backup realizado com sucesso!\nArquivo: backup-painel-pecuario-${dateTag}.json\nGuarde em local seguro (Drive, pen drive, etc).`);
+}
+
+async function handleRestoreFile(event) {
+  const file = event.target.files[0];
+  event.target.value = "";
+  if (!file) return;
+
+  const confirmed = confirm(
+    "Restaurar o backup vai substituir TODOS os dados atuais do sistema.\n\nTem certeza que deseja continuar?"
+  );
+  if (!confirmed) return;
+
+  try {
+    const text = await readFileAsDataUrl(file).catch(() => null) || await file.text();
+    const raw = typeof text === "string" && text.startsWith("data:") ? atob(text.split(",")[1]) : text;
+    const payload = JSON.parse(raw);
+
+    if (!payload.dados || !payload.dados.farms || !payload.dados.auth) {
+      alert("Arquivo inválido. Este não parece ser um backup do Painel Pecuário.");
+      return;
+    }
+
+    const restored = ensureDataShape(payload.dados);
+    restored.selectedFarmId = TOTAL_FARM_ID;
+    restored.auth.sessionUserId = state.data.auth.sessionUserId;
+
+    Object.assign(state.data, restored);
+    saveData();
+    markBackupDone();
+    render();
+    alert(`Backup restaurado com sucesso!\nData do backup: ${payload.dataBackup ? new Date(payload.dataBackup).toLocaleString("pt-BR") : "desconhecida"}`);
+  } catch (error) {
+    console.error("Falha ao restaurar backup.", error);
+    alert("Não foi possível restaurar o backup. Verifique se o arquivo está correto.");
+  }
+}
+
+function checkBackupWarning() {
+  const days = getDaysSinceBackup();
+  const neverDid = days === null;
+
+  if (!neverDid && days < BACKUP_WARN_DAYS) return;
+
+  if (neverDid) {
+    elements.backupWarningTitle.textContent = "Nenhum backup realizado";
+    elements.backupWarningMessage.textContent =
+      "Você ainda não fez nenhum backup dos dados do sistema. Em caso de problema no navegador, todos os registros podem ser perdidos. Faça um backup agora.";
+  } else {
+    elements.backupWarningTitle.textContent = `Backup há ${days} dias`;
+    elements.backupWarningMessage.textContent =
+      `O último backup foi realizado há ${days} dias. Recomendamos fazer backup a cada ${BACKUP_WARN_DAYS} dias para proteger seus dados.`;
+  }
+
+  elements.backupWarningDialog.showModal();
 }
