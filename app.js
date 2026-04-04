@@ -319,6 +319,7 @@ function renderAuthState() {
   const currentUser = getCurrentUser();
   elements.authShell.hidden = Boolean(currentUser);
   elements.pageShell.hidden = !currentUser;
+  document.body.classList.toggle("login-mode", !currentUser);
   elements.currentUserLabel.textContent = currentUser ? `Usuario: ${currentUser.login}` : "Usuario";
 }
 
@@ -772,10 +773,10 @@ function renderInventoryTable(farm) {
 
     return `
       <tr>
-        <td>${escapeHtml(category.name)}</td>
-        <td>${formatInteger(category.quantity)}</td>
-        <td>${share.toFixed(1)}%</td>
-        <td><span class="status-pill ${status.className}">${status.label}</span></td>
+        <td data-label="Categoria">${escapeHtml(category.name)}</td>
+        <td data-label="Qtd.">${formatInteger(category.quantity)}</td>
+        <td data-label="Participacao">${share.toFixed(1)}%</td>
+        <td data-label="Status"><span class="status-pill ${status.className}">${status.label}</span></td>
       </tr>
     `;
   }).join("");
@@ -833,7 +834,7 @@ function renderSalesAnalysis(farm) {
   if (!summary.movements.length) {
     elements.salesTableBody.innerHTML = `
       <tr>
-        <td colspan="6">Nenhuma venda encontrada para o periodo selecionado.</td>
+        <td colspan="6" class="table-empty-cell">Nenhuma venda encontrada para o periodo selecionado.</td>
       </tr>
     `;
     return;
@@ -841,12 +842,12 @@ function renderSalesAnalysis(farm) {
 
   elements.salesTableBody.innerHTML = summary.movements.slice(0, 10).map((movement) => `
     <tr>
-      <td>${formatDate(movement.date)}</td>
-      <td>${escapeHtml(movement.categoryName)}</td>
-      <td>${escapeHtml(getSaleModeLabel(movement.saleDetails?.mode || "vivo"))}</td>
-      <td>${formatWeight(movement.saleDetails?.weightKg || 0)}</td>
-      <td>${formatCurrency(movement.saleDetails?.pricePerKg || 0)}</td>
-      <td>${formatCurrency(movement.value || 0)}</td>
+      <td data-label="Data">${formatDate(movement.date)}</td>
+      <td data-label="Categoria">${escapeHtml(movement.categoryName)}</td>
+      <td data-label="Base">${escapeHtml(getSaleModeLabel(movement.saleDetails?.mode || "vivo"))}</td>
+      <td data-label="Kg">${formatWeight(movement.saleDetails?.weightKg || 0)}</td>
+      <td data-label="R$/kg">${formatCurrency(movement.saleDetails?.pricePerKg || 0)}</td>
+      <td data-label="Total">${formatCurrency(movement.value || 0)}</td>
     </tr>
   `).join("");
 }
@@ -856,7 +857,7 @@ function renderMovementsTable(farm) {
   if (!movements.length) {
     elements.movementsTableBody.innerHTML = `
       <tr>
-        <td colspan="5">Ainda nao ha lancamentos para ${farm.name}. Use os botoes acima para iniciar o controle.</td>
+        <td colspan="5" class="table-empty-cell">Ainda nao ha lancamentos para ${farm.name}. Use os botoes acima para iniciar o controle.</td>
       </tr>
     `;
     return;
@@ -864,11 +865,11 @@ function renderMovementsTable(farm) {
 
   elements.movementsTableBody.innerHTML = movements.map((movement) => `
     <tr>
-      <td>${formatDate(movement.date)}</td>
-      <td>${capitalize(movement.type)}</td>
-      <td>${escapeHtml(movement.categoryName)}</td>
-      <td>${formatInteger(movement.quantity)}</td>
-      <td>${escapeHtml(getMovementNotes(movement))}</td>
+      <td data-label="Data">${formatDate(movement.date)}</td>
+      <td data-label="Tipo">${capitalize(movement.type)}</td>
+      <td data-label="Categoria">${escapeHtml(movement.categoryName)}</td>
+      <td data-label="Qtd.">${formatInteger(movement.quantity)}</td>
+      <td data-label="Obs.">${escapeHtml(getMovementNotes(movement))}</td>
     </tr>
   `).join("");
 }
@@ -1005,7 +1006,7 @@ function renderSanitaryTable(farm) {
   if (!records.length) {
     elements.sanitaryTableBody.innerHTML = `
       <tr>
-        <td colspan="6">Nenhum registro sanitario encontrado para o periodo selecionado.</td>
+        <td colspan="6" class="table-empty-cell">Nenhum registro sanitario encontrado para o periodo selecionado.</td>
       </tr>
     `;
     return;
@@ -1013,24 +1014,24 @@ function renderSanitaryTable(farm) {
 
   elements.sanitaryTableBody.innerHTML = records.map((record) => `
     <tr>
-      <td>${formatDate(record.date)}</td>
-      <td>
+      <td data-label="Data">${formatDate(record.date)}</td>
+      <td data-label="Manejo">
         <div class="sanitary-main">
           <strong>${escapeHtml(record.categoryName)}</strong>
           <span>${formatMaybeQuantity(record.quantity)} cabecas</span>
         </div>
       </td>
-      <td>
+      <td data-label="Destino e produto">
         <div class="sanitary-main">
           <strong>${escapeHtml(record.potreiro || "-")}</strong>
           <span>${escapeHtml(record.product)}</span>
         </div>
       </td>
-      <td>
+      <td data-label="Origem">
         <span class="sanitary-origin ${record.sourceId ? "imported" : "manual"}">${record.sourceId ? "Importado" : "Manual"}</span>
       </td>
-      <td>${escapeHtml(record.notes || "-")}</td>
-      <td>
+      <td data-label="Obs.">${escapeHtml(record.notes || "-")}</td>
+      <td data-label="Acoes">
         <button type="button" class="table-action-btn" data-edit-sanitary-id="${record.id || record.sourceId}">Editar</button>
       </td>
     </tr>

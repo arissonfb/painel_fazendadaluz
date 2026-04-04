@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Yrsa:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./styles.css">
 </head>
-<body>
+<body class="login-mode">
   <section class="auth-shell" id="authShell">
     <div class="auth-card">
       <div class="auth-visual-panel">
@@ -35,11 +35,11 @@
         <form id="loginForm" class="auth-form">
           <label>
             Login
-            <input type="text" id="loginUsername" autocomplete="username" required placeholder="Ex.: Da Luz">
+            <input type="text" id="loginUsername" autocomplete="username" required>
           </label>
           <label>
             Senha
-            <input type="password" id="loginPassword" autocomplete="current-password" required placeholder="Digite sua senha">
+            <input type="password" id="loginPassword" autocomplete="current-password" required>
           </label>
           <p class="auth-feedback" id="loginFeedback" hidden></p>
           <button type="submit" class="action-btn purchase auth-submit">Entrar</button>
