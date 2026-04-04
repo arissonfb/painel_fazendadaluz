@@ -1211,6 +1211,10 @@ canvas {
   display: block;
 }
 
+#monthlyCategoryChart {
+  height: 380px !important;
+}
+
 .table-wrap {
   overflow: auto;
   -webkit-overflow-scrolling: touch;

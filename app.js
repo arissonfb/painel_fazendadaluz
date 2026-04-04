@@ -3008,7 +3008,7 @@ function renderCharts(farm) {
   renderMovementChart(farm);
   renderRankingChart(farm);
   renderMonthlyEvolutionChart(farm);
-  renderMonthlyCategoryChart(farm);
+  renderMonthlyCategoryModernChart(farm);
 }
 
 function renderInventoryChart(farm) {
@@ -3371,6 +3371,151 @@ function renderMonthlyCategoryChart(farm) {
       title: summary.count ? formatInteger(summary.count) : "0",
       subtitle: summary.count ? "dados mensais" : "Sem dados"
     }))]
+  });
+}
+
+function renderMonthlyCategoryModernChart(farm) {
+  if (typeof window.Chart !== "function") {
+    drawChartFallback("monthlyCategoryChart", "Grafico indisponivel no momento.");
+    return;
+  }
+
+  const context = document.getElementById("monthlyCategoryChart");
+  const summary = getMonthlySummary(farm);
+  const categories = [...summary.byCategory]
+    .map((item) => ({
+      ...item,
+      metric: item.value > 0 ? item.value : item.quantity > 0 ? item.quantity : item.count
+    }))
+    .filter((item) => item.metric > 0)
+    .sort((a, b) => b.metric - a.metric)
+    .slice(0, 8);
+
+  if (!hasMeaningfulMonthlyData(summary) || !categories.length) {
+    if (state.charts.monthlyCategory) {
+      state.charts.monthlyCategory.destroy();
+      state.charts.monthlyCategory = null;
+    }
+    drawChartFallback("monthlyCategoryChart", "Sem dados mensais para distribuir por categoria.");
+    return;
+  }
+
+  const labels = categories.map((item) => item.label);
+  const values = categories.map((item) => item.metric);
+  const total = values.reduce((sum, value) => sum + value, 0) || 1;
+  const usesValue = categories.some((item) => item.value > 0);
+  const usesQuantity = !usesValue && categories.some((item) => item.quantity > 0);
+  const metricLabel = usesValue ? "Valor" : usesQuantity ? "Quantidade" : "Registros";
+
+  if (state.charts.monthlyCategory) {
+    state.charts.monthlyCategory.destroy();
+  }
+
+  context.setAttribute(
+    "aria-label",
+    `Grafico de barras da distribuicao dos dados mensais por categoria em ${metricLabel.toLowerCase()}`
+  );
+
+  state.charts.monthlyCategory = new Chart(context, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: metricLabel,
+        data: values,
+        backgroundColor: labels.map((_, index) => createLinearColor(
+          context,
+          lightenColor(COLORS[index % COLORS.length], 0.2),
+          COLORS[index % COLORS.length]
+        )),
+        borderRadius: 14,
+        borderSkipped: false,
+        barThickness: 18,
+        maxBarThickness: 22
+      }]
+    },
+    options: {
+      indexAxis: "y",
+      maintainAspectRatio: false,
+      layout: {
+        padding: {
+          right: 12
+        }
+      },
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          backgroundColor: "rgba(38, 31, 24, 0.94)",
+          padding: 12,
+          displayColors: false,
+          callbacks: {
+            title(items) {
+              return items[0]?.label || "";
+            },
+            label(chartContext) {
+              const item = categories[chartContext.dataIndex];
+              if (!item) {
+                return `${metricLabel}: ${chartContext.raw}`;
+              }
+
+              if (usesValue) {
+                return `Valor: ${formatCurrency(item.value)}`;
+              }
+
+              if (usesQuantity) {
+                return `Quantidade: ${formatInteger(item.quantity)}`;
+              }
+
+              return `Registros: ${formatInteger(item.count)}`;
+            },
+            afterLabel(chartContext) {
+              const item = categories[chartContext.dataIndex];
+              if (!item) {
+                return "";
+              }
+
+              return `Participacao: ${((item.metric / total) * 100).toFixed(1)}%`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          grid: {
+            color: "rgba(76, 55, 34, 0.08)"
+          },
+          ticks: {
+            color: "#6a5a47",
+            font: {
+              weight: "700"
+            },
+            callback(value) {
+              return usesValue
+                ? formatCurrency(value).replace(",00", "")
+                : formatInteger(value);
+            }
+          }
+        },
+        y: {
+          grid: {
+            display: false
+          },
+          ticks: {
+            color: "#4c4032",
+            font: {
+              size: 12,
+              weight: "700"
+            },
+            callback(value) {
+              return trimLabel(labels[value] || "", 24);
+            }
+          }
+        }
+      }
+    }
   });
 }
 
