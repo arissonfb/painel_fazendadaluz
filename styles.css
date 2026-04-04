@@ -1096,6 +1096,67 @@ input {
   background: linear-gradient(180deg, rgba(244, 232, 210, 0.96), rgba(233, 219, 194, 0.92));
 }
 
+/* Potreiros view accordion */
+.potreiros-farm-item {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  margin-bottom: 10px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.potreiros-farm-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 22px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  gap: 12px;
+  transition: background 0.15s;
+}
+
+.potreiros-farm-header:hover {
+  background: rgba(76, 55, 34, 0.04);
+}
+
+.potreiros-farm-header-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.potreiros-farm-header-copy strong {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.potreiros-farm-header-copy span {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.potreiros-farm-chevron {
+  font-size: 1.6rem;
+  line-height: 1;
+  color: var(--muted);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.potreiros-farm-header.open .potreiros-farm-chevron {
+  transform: rotate(90deg);
+}
+
+.potreiros-farm-body {
+  padding: 0 22px 22px;
+}
+
 .content-grid-strong {
   grid-template-columns: 1fr 1fr 1fr;
 }

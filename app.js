@@ -470,7 +470,9 @@ const elements = {
   sanitaryFarmSwitch: document.getElementById("sanitaryFarmSwitch"),
   sanitaryViewNote: document.getElementById("sanitaryViewNote"),
   sanitaryFormPanel: document.getElementById("sanitaryFormPanel"),
-  dashboardPotreroSummary: document.getElementById("dashboardPotreroSummary"),
+  potreirosShortcut: document.getElementById("potreirosShortcut"),
+  potreirosView: document.getElementById("potreirosView"),
+  potreirosAccordion: document.getElementById("potreirosAccordion"),
   editStockDialog: document.getElementById("editStockDialog"),
   editStockForm: document.getElementById("editStockForm"),
   editStockButton: document.getElementById("editStockButton"),
@@ -1130,6 +1132,21 @@ function bindEvents() {
     render();
   });
 
+  elements.potreirosShortcut.addEventListener("click", () => {
+    state.activeView = "potreiros";
+    render();
+  });
+
+  elements.potreirosAccordion.addEventListener("click", (event) => {
+    const header = event.target.closest("[data-toggle-farm]");
+    if (!header) return;
+    const farmId = header.dataset.toggleFarm;
+    const body = document.getElementById(`potreiros-body-${farmId}`);
+    if (!body) return;
+    body.hidden = !body.hidden;
+    header.classList.toggle("open", !body.hidden);
+  });
+
   elements.yearFilter.addEventListener("change", (event) => {
     state.filters.year = event.target.value;
     render();
@@ -1289,7 +1306,6 @@ function render() {
   renderSanitaryComposerState(farm);
   renderMonthlySummary(farm);
   renderMonthlyTable(farm);
-  renderPotreroSummaries(farm);
   renderInsights(farm);
   renderCharts(farm);
   renderActiveView();
@@ -1388,10 +1404,15 @@ function renderGlobalSummary() {
 }
 
 function renderActiveView() {
-  const isDashboard = state.activeView === "dashboard";
-  elements.dashboardView.hidden = !isDashboard;
-  elements.sanitaryView.hidden = isDashboard;
-  elements.sanitaryShortcut.classList.toggle("active", !isDashboard);
+  const view = state.activeView;
+  elements.dashboardView.hidden = view !== "dashboard";
+  elements.sanitaryView.hidden = view !== "sanitary";
+  elements.potreirosView.hidden = view !== "potreiros";
+  elements.sanitaryShortcut.classList.toggle("active", view === "sanitary");
+  elements.potreirosShortcut.classList.toggle("active", view === "potreiros");
+  if (view === "potreiros") {
+    renderPotreirosView();
+  }
 }
 
 function renderActionButtonsState() {
@@ -1891,37 +1912,37 @@ function handleMonthlyTableInteraction(event) {
   openMonthlyDataEditor(trigger.dataset.editMonthlyId);
 }
 
-function renderPotreroSummaries(farm) {
-  const totals = getPotreroTotals(farm);
-  const balance = getPotreroBalance(farm);
-  const scopeText = farm.id === TOTAL_FARM_ID ? "do rebanho consolidado" : "do rebanho atual desta fazenda";
-  const cards = totals.length
-    ? totals.map((item) => `
-      <article class="potrero-card">
-        <p class="panel-kicker">${escapeHtml(farm.id === TOTAL_FARM_ID ? (item.farmName || item.name) : item.name)}</p>
-        <strong>${formatInteger(item.quantity)}</strong>
-        <p>${farm.id === TOTAL_FARM_ID ? `${escapeHtml(item.name)} | ` : ""}${item.share.toFixed(1)}% ${scopeText}</p>
-      </article>
-    `).join("") + `
-      <article class="potrero-card potrero-card-highlight">
-        <p class="panel-kicker">${balance === 0 ? "Conferência de lotação" : balance > 0 ? "Saldo sem potreiro" : "Excedente nos potreiros"}</p>
-        <strong>${balance === 0 ? "OK" : `${balance > 0 ? "+" : ""}${formatInteger(balance)}`}</strong>
-        <p>${balance === 0
-          ? farm.id === TOTAL_FARM_ID ? "A soma dos potreiros esta alinhada ao rebanho consolidado." : "A soma dos potreiros esta alinhada ao rebanho atual."
-          : balance > 0
-            ? farm.id === TOTAL_FARM_ID ? "Ainda há animais no consolidado sem distribuição registrada em potreiro." : "Ainda há animais no estoque sem distribuição registrada em potreiro."
-            : farm.id === TOTAL_FARM_ID ? "A soma dos potreiros esta acima do estoque consolidado informado." : "A soma dos potreiros esta acima do estoque atual informado para a fazenda."}</p>
-      </article>
-    `
-    : `
-      <article class="potrero-card">
-        <p class="panel-kicker">Sem cadastro</p>
-        <strong>0</strong>
-        <p>Cadastre os potreiros da fazenda para visualizar a lotação atual.</p>
-      </article>
-    `;
 
-  elements.dashboardPotreroSummary.innerHTML = cards;
+function renderPotreirosView() {
+  const farms = getAllFarms();
+  elements.potreirosAccordion.innerHTML = farms.map((farm) => {
+    const potreiros = getPotreroTotals(farm);
+    const totalAnimals = getFarmTotal(farm);
+    const potreirosHtml = potreiros.length
+      ? potreiros.map((p) => `
+          <article class="potrero-card">
+            <p class="panel-kicker">${escapeHtml(p.name)}</p>
+            <strong>${formatInteger(p.quantity)}</strong>
+            <p>${p.share.toFixed(1)}% do rebanho</p>
+          </article>
+        `).join("")
+      : `<p class="field-note">Nenhum potreiro cadastrado para esta fazenda.</p>`;
+
+    return `
+      <div class="potreiros-farm-item">
+        <button type="button" class="potreiros-farm-header" data-toggle-farm="${escapeHtml(farm.id)}">
+          <div class="potreiros-farm-header-copy">
+            <strong>${escapeHtml(farm.name)}</strong>
+            <span>${formatInteger(totalAnimals)} animais &middot; ${potreiros.length} potreiro(s)</span>
+          </div>
+          <span class="potreiros-farm-chevron">&#8250;</span>
+        </button>
+        <div class="potreiros-farm-body" id="potreiros-body-${escapeHtml(farm.id)}" hidden>
+          <div class="potrero-grid potrero-grid-compact">${potreirosHtml}</div>
+        </div>
+      </div>
+    `;
+  }).join("");
 }
 
 async function openGeorefDialog() {
