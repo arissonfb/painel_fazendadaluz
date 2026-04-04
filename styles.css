@@ -758,6 +758,10 @@ input {
   line-height: 1.5;
 }
 
+.potrero-card-highlight {
+  background: linear-gradient(180deg, rgba(244, 232, 210, 0.96), rgba(233, 219, 194, 0.92));
+}
+
 .content-grid-strong {
   grid-template-columns: 1fr 1fr 1fr;
 }
@@ -1108,6 +1112,13 @@ th {
   background: rgba(255, 252, 247, 0.82);
 }
 
+.edit-stock-row label {
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
 .edit-stock-row strong {
   display: block;
   margin-bottom: 6px;
@@ -1119,6 +1130,42 @@ th {
   color: var(--muted);
   font-size: 0.88rem;
   line-height: 1.5;
+}
+
+.edit-stock-section {
+  margin-top: 22px;
+  padding-top: 22px;
+  border-top: 1px solid rgba(75, 56, 34, 0.12);
+}
+
+.edit-stock-section-header {
+  margin-bottom: 10px;
+}
+
+.edit-stock-section h3 {
+  margin: 0;
+  font-size: 1.12rem;
+}
+
+.potrero-stock-list {
+  margin-top: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.potrero-stock-row {
+  display: grid;
+  grid-template-columns: 1.3fr 0.8fr auto;
+  gap: 14px;
+  align-items: end;
+  padding: 14px;
+  border: 1px solid rgba(75, 56, 34, 0.1);
+  border-radius: 18px;
+  background: rgba(255, 252, 247, 0.82);
+}
+
+.potrero-remove-btn {
+  min-height: 44px;
 }
 
 @keyframes rise {
@@ -1144,7 +1191,8 @@ th {
 
   .summary-grid,
   .visual-herd-grid,
-  .content-grid-strong {
+  .content-grid-strong,
+  .potrero-stock-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1179,7 +1227,8 @@ th {
   .form-grid,
   .sale-input-group,
   .hero-metrics,
-  .edit-stock-row {
+  .edit-stock-row,
+  .potrero-stock-row {
     grid-template-columns: 1fr;
   }
 

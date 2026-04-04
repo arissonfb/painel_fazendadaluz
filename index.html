@@ -105,10 +105,10 @@
       <section class="panel global-panel">
         <div class="panel-header">
           <div>
-            <p class="panel-kicker">Painel inicial</p>
-            <h2>Consolidado das fazendas</h2>
+            <p class="panel-kicker" id="globalPanelKicker">Painel inicial</p>
+            <h2 id="globalPanelTitle">Consolidado das fazendas</h2>
           </div>
-          <span class="chip">Grupo Da Luz</span>
+          <span class="chip" id="globalPanelChip">Grupo Da Luz</span>
         </div>
         <section class="summary-grid global-summary-grid" id="globalSummaryGrid"></section>
         <section class="global-farm-breakdown" id="globalFarmBreakdown"></section>
@@ -324,8 +324,8 @@
                   <select id="sanitaryPotrero" required></select>
                 </label>
                 <label id="newProductWrap" hidden>
-                  Novo produto
-                  <input type="text" id="newProductName" maxlength="80" placeholder="Ex.: Vacina aftosa">
+                  Descreva o produto
+                  <input type="text" id="newProductName" maxlength="80" placeholder="Ex.: Vacina aftosa, Ivermectina 1%, Carrapaticida">
                 </label>
                 <label id="newPotreroWrap" hidden>
                   Novo potreiro
@@ -496,15 +496,15 @@
       <div class="modal-header">
         <div>
           <p class="panel-kicker">Edicao direta</p>
-          <h2>Editar estoque e total declarado</h2>
+          <h2>Editar estoque, potreiros e total declarado</h2>
         </div>
         <button type="button" class="ghost-btn" id="closeEditStockDialog">Fechar</button>
       </div>
 
       <div class="form-grid">
         <label>
-          Fazenda
-          <input type="text" id="editFarmName" readonly>
+          Fazenda vinculada
+          <select id="editFarmName" required></select>
         </label>
         <label>
           Total declarado da fazenda
@@ -513,6 +513,18 @@
       </div>
 
       <div class="edit-stock-list" id="editStockList"></div>
+
+      <section class="edit-stock-section">
+        <div class="panel-header edit-stock-section-header">
+          <div>
+            <p class="panel-kicker">Distribuicao por potreiro</p>
+            <h3>Cadastro atual de lotacao</h3>
+          </div>
+          <button type="button" class="ghost-btn" id="addPotreroButton">Novo potreiro</button>
+        </div>
+        <p class="field-note">Registre cada campo ou potreiro com a fazenda vinculada acima. Os campos importados hoje ficam vinculados a Arapey.</p>
+        <div class="potrero-stock-list" id="potreroStockList"></div>
+      </section>
 
       <div class="modal-actions">
         <button type="submit" class="action-btn secondary">Salvar edicao</button>

@@ -54,8 +54,10 @@ const STANDARD_FARM_CATEGORIES = [
 ];
 
 const DEFAULT_SANITARY_PRODUCTS = ["Vacina aftosa", "Vermifugo", "Ivermectina"];
-const DEFAULT_POTREIROS = ["Potreiro 1", "Potreiro 2"];
+const DEFAULT_POTREIROS = [];
+const LEGACY_POTREIRO_PLACEHOLDERS = ["Potreiro 1", "Potreiro 2", "Potreiro Norte"];
 const PREMIUM_SALE_FARMS = new Set(["arapey", "chiquita"]);
+const TOTAL_FARM_ID = "total";
 const PDF_LOGO_PATH = "./assets/logo-da-luz.jpg";
 const TECHNICAL_MANAGER_NAME = "Hugo Fabricio Fernandes Balbuena";
 const DEFAULT_USERS = [
@@ -105,7 +107,7 @@ const seedData = {
       declaredTotal: 3015,
       note: "Controle inicial carregado com os grupos informados e ajuste de conferencia para manter o total declarado.",
       sanitaryProducts: ["Vacina aftosa", "Vermifugo", "Ivermectina"],
-      potreiros: ["Potreiro 1", "Potreiro 2", "Potreiro Norte"],
+      potreiros: [],
       categories: [
         { id: "vacas-cria", name: "Vacas de cria", quantity: 990 },
         { id: "terneiros-machos", name: "Terneiros 1 a 2 anos - machos", quantity: 425 },
@@ -173,6 +175,9 @@ const elements = {
   visualHerdGrid: document.getElementById("visualHerdGrid"),
   globalSummaryGrid: document.getElementById("globalSummaryGrid"),
   globalFarmBreakdown: document.getElementById("globalFarmBreakdown"),
+  globalPanelKicker: document.getElementById("globalPanelKicker"),
+  globalPanelTitle: document.getElementById("globalPanelTitle"),
+  globalPanelChip: document.getElementById("globalPanelChip"),
   summaryGrid: document.getElementById("summaryGrid"),
   periodSummary: document.getElementById("periodSummary"),
   salesSummary: document.getElementById("salesSummary"),
@@ -235,6 +240,8 @@ const elements = {
   editFarmName: document.getElementById("editFarmName"),
   editDeclaredTotal: document.getElementById("editDeclaredTotal"),
   editStockList: document.getElementById("editStockList"),
+  addPotreroButton: document.getElementById("addPotreroButton"),
+  potreroStockList: document.getElementById("potreroStockList"),
   exportPdfButton: document.getElementById("exportPdfButton"),
   currentUserLabel: document.getElementById("currentUserLabel"),
   manageUsersButton: document.getElementById("manageUsersButton"),
@@ -507,11 +514,143 @@ function handleManageUsersSubmit(event) {
 }
 
 function getFarm() {
+  if (state.data.selectedFarmId === TOTAL_FARM_ID) {
+    return getAggregateFarm();
+  }
+
   return state.data.farms[state.data.selectedFarmId];
+}
+
+function getAggregateFarm() {
+  const farms = getAllFarms();
+  const categoryMap = new Map();
+  const sanitaryProducts = new Set();
+  const potreroMap = new Map();
+  let declaredTotal = 0;
+  const movements = [];
+  const sanitaryRecords = [];
+
+  farms.forEach((farm) => {
+    declaredTotal += Number(farm.declaredTotal || 0);
+    farm.categories.forEach((category) => {
+      const existing = categoryMap.get(category.id);
+      if (existing) {
+        existing.quantity += Number(category.quantity || 0);
+      } else {
+        categoryMap.set(category.id, {
+          id: category.id,
+          name: category.name,
+          quantity: Number(category.quantity || 0)
+        });
+      }
+    });
+    farm.movements.forEach((movement) => {
+      movements.push({ ...movement, farmId: farm.id, farmName: farm.name });
+    });
+    farm.sanitaryRecords.forEach((record) => {
+      sanitaryRecords.push({ ...record, farmId: farm.id, farmName: farm.name });
+    });
+    farm.sanitaryProducts.forEach((product) => sanitaryProducts.add(product));
+    getPotreroEntries(farm).forEach((potrero) => {
+      const normalizedName = `${farm.id}::${normalizeText(potrero.name)}`;
+      const existing = potreroMap.get(normalizedName);
+      if (existing) {
+        existing.quantity += Number(potrero.quantity || 0);
+      } else {
+        potreroMap.set(normalizedName, {
+          id: potrero.id || createPotreroId(potrero.name),
+          name: potrero.name,
+          quantity: Number(potrero.quantity || 0),
+          farmId: farm.id,
+          farmName: farm.name
+        });
+      }
+    });
+  });
+
+  return {
+    id: TOTAL_FARM_ID,
+    name: "Total",
+    declaredTotal,
+    note: "Visão consolidada de todas as fazendas.",
+    sanitaryProducts: [...sanitaryProducts],
+    potreiros: [...potreroMap.values()].sort((a, b) => b.quantity - a.quantity || a.name.localeCompare(b.name)),
+    categories: [...categoryMap.values()],
+    movements,
+    sanitaryRecords
+  };
 }
 
 function getAllFarms() {
   return Object.values(state.data.farms);
+}
+
+function createPotreroId(name = "potreiro") {
+  const base = slugify(name) || "potreiro";
+  return `pot-${base}-${Math.random().toString(16).slice(2, 8)}`;
+}
+
+function normalizePotreroQuantity(value) {
+  const quantity = Number(value);
+  if (!Number.isFinite(quantity) || quantity < 0) {
+    return 0;
+  }
+
+  return Math.round(quantity);
+}
+
+function getPotreroEntries(farm) {
+  return Array.isArray(farm?.potreiros) ? farm.potreiros : [];
+}
+
+function normalizePotreroEntries(entries, fallbackNames = []) {
+  const normalizedEntries = Array.isArray(entries) && entries.length
+    ? entries
+    : fallbackNames.map((name) => ({ name, quantity: 0 }));
+  const registry = new Map();
+
+  normalizedEntries.forEach((entry) => {
+    const name = typeof entry === "string" ? entry.trim() : String(entry?.name || "").trim();
+    if (!name) {
+      return;
+    }
+
+    const key = normalizeText(name);
+    const quantity = typeof entry === "string" ? 0 : normalizePotreroQuantity(entry.quantity);
+    const existing = registry.get(key);
+    if (existing) {
+      existing.quantity += quantity;
+      return;
+    }
+
+    registry.set(key, {
+      id: typeof entry === "string" ? createPotreroId(name) : entry.id || createPotreroId(name),
+      name,
+      quantity
+    });
+  });
+
+  return [...registry.values()];
+}
+
+function pruneLegacyPotreiros(farm) {
+  const referencedPotreiros = new Set(farm.sanitaryRecords.map((record) => normalizeText(record.potreiro || "")));
+  farm.potreiros = getPotreroEntries(farm).filter((potrero) => {
+    const isLegacyPlaceholder = LEGACY_POTREIRO_PLACEHOLDERS.includes(potrero.name);
+    if (!isLegacyPlaceholder) {
+      return true;
+    }
+
+    return normalizePotreroQuantity(potrero.quantity) > 0 || referencedPotreiros.has(normalizeText(potrero.name));
+  });
+}
+
+function getRegisteredPotreroAnimals(farm) {
+  return getPotreroEntries(farm).reduce((sum, potrero) => sum + normalizePotreroQuantity(potrero.quantity), 0);
+}
+
+function getPotreroBalance(farm) {
+  return getFarmTotal(farm) - getRegisteredPotreroAnimals(farm);
 }
 
 function getFarmTotal(farm) {
@@ -546,7 +685,7 @@ function createStandardFarm(id, name) {
     declaredTotal: 0,
     note: "Estrutura pronta para receber o inventario inicial e futuras mudancas de manejo.",
     sanitaryProducts: [...DEFAULT_SANITARY_PRODUCTS],
-    potreiros: [...DEFAULT_POTREIROS],
+    potreiros: normalizePotreroEntries([], DEFAULT_POTREIROS),
     categories: STANDARD_FARM_CATEGORIES.map((category) => ({
       ...category,
       quantity: 0
@@ -621,6 +760,9 @@ function bindEvents() {
   elements.adjustButton.addEventListener("click", () => openMovementDialog("ajuste"));
   elements.editStockButton.addEventListener("click", openEditStockDialog);
   elements.addCategoryButton.addEventListener("click", openCategoryDialog);
+  elements.editFarmName.addEventListener("change", handleEditFarmChange);
+  elements.addPotreroButton.addEventListener("click", handleAddPotreroRow);
+  elements.potreroStockList.addEventListener("click", handlePotreroListInteraction);
   elements.closeMovementDialog.addEventListener("click", () => elements.movementDialog.close());
   elements.closeCategoryDialog.addEventListener("click", () => elements.categoryDialog.close());
   elements.closeEditStockDialog.addEventListener("click", () => elements.editStockDialog.close());
@@ -711,10 +853,21 @@ function renderFarmSwitch() {
     });
     elements.farmSwitch.appendChild(button);
   });
+
+  const totalButton = document.createElement("button");
+  totalButton.className = `farm-btn ${TOTAL_FARM_ID === state.data.selectedFarmId ? "active" : ""}`;
+  totalButton.textContent = "Total";
+  totalButton.addEventListener("click", () => {
+    state.data.selectedFarmId = TOTAL_FARM_ID;
+    saveData();
+    render();
+  });
+  elements.farmSwitch.appendChild(totalButton);
 }
 
 function renderGlobalSummary() {
-  const farms = getAllFarms();
+  const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
+  const farms = isTotalView ? getAllFarms() : [state.data.farms[state.data.selectedFarmId]].filter(Boolean);
   const totals = farms.reduce((accumulator, farm) => {
     const monthly = summarizePeriod(farm, state.filters.year, state.filters.month);
     accumulator.animais += getFarmTotal(farm);
@@ -723,27 +876,32 @@ function renderGlobalSummary() {
     accumulator.sanitario += getFilteredSanitaryRecords(farm).length;
     return accumulator;
   }, { animais: 0, entradas: 0, saidas: 0, sanitario: 0 });
+  const selectedFarm = farms[0];
+
+  elements.globalPanelKicker.textContent = isTotalView ? "Painel inicial" : "Fazenda selecionada";
+  elements.globalPanelTitle.textContent = isTotalView ? "Consolidado das fazendas" : `Resumo de ${selectedFarm?.name || "fazenda"}`;
+  elements.globalPanelChip.textContent = isTotalView ? "Grupo Da Luz" : selectedFarm?.name || "Fazenda";
 
   const cards = [
     {
-      title: "Animais em todas as fazendas",
+      title: isTotalView ? "Animais em todas as fazendas" : "Animais da fazenda",
       value: formatInteger(totals.animais),
-      detail: "estoque consolidado do grupo"
+      detail: isTotalView ? "estoque consolidado do grupo" : `estoque atual de ${selectedFarm?.name || "fazenda"}`
     },
     {
-      title: "Entradas consolidadas",
+      title: isTotalView ? "Entradas consolidadas" : "Entradas no periodo",
       value: formatInteger(totals.entradas),
-      detail: "compras, nascimentos e ajustes positivos"
+      detail: isTotalView ? "compras, nascimentos e ajustes positivos" : "compras, nascimentos e ajustes positivos"
     },
     {
-      title: "Saidas consolidadas",
+      title: isTotalView ? "Saidas consolidadas" : "Saidas no periodo",
       value: formatInteger(totals.saidas),
-      detail: "vendas, mortes, consumo e ajustes negativos"
+      detail: isTotalView ? "vendas, mortes, consumo e ajustes negativos" : "vendas, mortes, consumo e ajustes negativos"
     },
     {
       title: "Registros sanitarios",
       value: formatInteger(totals.sanitario),
-      detail: "manejos sanitarios no periodo filtrado"
+      detail: isTotalView ? "manejos sanitarios no periodo filtrado" : `manejos sanitarios de ${selectedFarm?.name || "fazenda"}`
     }
   ];
 
@@ -1148,19 +1306,31 @@ function renderSanitaryTable(farm) {
 
 function renderPotreroSummaries(farm) {
   const totals = getPotreroTotals(farm);
+  const balance = getPotreroBalance(farm);
+  const scopeText = farm.id === TOTAL_FARM_ID ? "do rebanho consolidado" : "do rebanho atual desta fazenda";
   const cards = totals.length
     ? totals.map((item) => `
       <article class="potrero-card">
-        <p class="panel-kicker">${escapeHtml(item.name)}</p>
+        <p class="panel-kicker">${escapeHtml(farm.id === TOTAL_FARM_ID ? (item.farmName || item.name) : item.name)}</p>
         <strong>${formatInteger(item.quantity)}</strong>
-        <p>animais registrados para este potreiro no periodo filtrado</p>
+        <p>${farm.id === TOTAL_FARM_ID ? `${escapeHtml(item.name)} | ` : ""}${item.share.toFixed(1)}% ${scopeText}</p>
       </article>
-    `).join("")
+    `).join("") + `
+      <article class="potrero-card potrero-card-highlight">
+        <p class="panel-kicker">${balance === 0 ? "Conferencia de lotacao" : balance > 0 ? "Saldo sem potreiro" : "Excedente nos potreiros"}</p>
+        <strong>${balance === 0 ? "OK" : `${balance > 0 ? "+" : ""}${formatInteger(balance)}`}</strong>
+        <p>${balance === 0
+          ? farm.id === TOTAL_FARM_ID ? "A soma dos potreiros esta alinhada ao rebanho consolidado." : "A soma dos potreiros esta alinhada ao rebanho atual."
+          : balance > 0
+            ? farm.id === TOTAL_FARM_ID ? "Ainda ha animais no consolidado sem distribuicao registrada em potreiro." : "Ainda ha animais no estoque sem distribuicao registrada em potreiro."
+            : farm.id === TOTAL_FARM_ID ? "A soma dos potreiros esta acima do estoque consolidado informado." : "A soma dos potreiros esta acima do estoque atual informado para a fazenda."}</p>
+      </article>
+    `
     : `
       <article class="potrero-card">
-        <p class="panel-kicker">Sem dados</p>
+        <p class="panel-kicker">Sem cadastro</p>
         <strong>0</strong>
-        <p>Nenhum potreiro com registro no periodo selecionado.</p>
+        <p>Cadastre os potreiros da fazenda para visualizar a lotacao atual.</p>
       </article>
     `;
 
@@ -1393,6 +1563,11 @@ function renderRankingChart(farm) {
 }
 
 function openMovementDialog(initialType) {
+  if (state.data.selectedFarmId === TOTAL_FARM_ID) {
+    alert("Selecione uma fazenda especifica para registrar movimentacoes.");
+    return;
+  }
+
   syncMovementTypeOptions(initialType);
   syncCategoryOptions();
   elements.movementDate.value = new Date().toISOString().slice(0, 10);
@@ -1410,36 +1585,142 @@ function openMovementDialog(initialType) {
 }
 
 function openCategoryDialog() {
+  if (state.data.selectedFarmId === TOTAL_FARM_ID) {
+    alert("Selecione uma fazenda especifica para adicionar uma categoria.");
+    return;
+  }
+
   elements.categoryName.value = "";
   elements.categoryInitialQuantity.value = "0";
   elements.categoryDialog.showModal();
 }
 
 function openEditStockDialog() {
-  const farm = getFarm();
-  elements.editFarmName.value = farm.name;
-  elements.editDeclaredTotal.value = String(farm.declaredTotal || getFarmTotal(farm));
-  elements.editStockList.innerHTML = farm.categories.map((category) => `
-    <label class="edit-stock-row">
-      <div>
-        <strong>${escapeHtml(category.name)}</strong>
-        <p>Ajuste manual da quantidade atual desta categoria.</p>
-      </div>
-      <input
-        type="number"
-        min="0"
-        step="1"
-        value="${Number(category.quantity || 0)}"
-        data-category-id="${category.id}"
-        aria-label="Quantidade de ${escapeHtml(category.name)}"
-        required
-      >
-    </label>
-  `).join("");
+  if (state.data.selectedFarmId === TOTAL_FARM_ID) {
+    alert("Selecione uma fazenda especifica para editar o estoque.");
+    return;
+  }
+
+  renderEditStockForm(state.data.selectedFarmId);
   elements.editStockDialog.showModal();
 }
 
+function renderEditStockForm(farmId) {
+  const farm = state.data.farms[farmId];
+  if (!farm) {
+    return;
+  }
+
+  elements.editFarmName.innerHTML = getAllFarms().map((item) => `
+    <option value="${item.id}" ${item.id === farm.id ? "selected" : ""}>${escapeHtml(item.name)}</option>
+  `).join("");
+  elements.editFarmName.value = farm.id;
+  elements.editDeclaredTotal.value = String(farm.declaredTotal || getFarmTotal(farm));
+  elements.editStockList.innerHTML = farm.categories.map((category) => `
+    <div class="edit-stock-row" data-category-row data-category-id="${category.id}">
+      <label class="edit-stock-main-field">
+        Categoria
+        <input
+          type="text"
+          maxlength="80"
+          value="${escapeHtml(category.name)}"
+          data-category-name
+          aria-label="Nome da categoria ${escapeHtml(category.name)}"
+          required
+        >
+        <p>Edite o nome da categoria e a quantidade atual do gado.</p>
+      </label>
+      <label>
+        Quantidade atual
+        <input
+          type="number"
+          min="0"
+          step="1"
+          value="${Number(category.quantity || 0)}"
+          data-category-quantity
+          aria-label="Quantidade de ${escapeHtml(category.name)}"
+          required
+        >
+      </label>
+    </div>
+  `).join("");
+  renderPotreroStockList(getPotreroEntries(farm));
+}
+
+function handleEditFarmChange() {
+  renderEditStockForm(elements.editFarmName.value);
+}
+
+function createPotreroStockRow(entry = {}) {
+  const name = String(entry.name || "").trim();
+  const quantity = normalizePotreroQuantity(entry.quantity);
+  const potreroId = entry.id || createPotreroId(name || "potreiro");
+
+  return `
+    <div class="potrero-stock-row" data-potrero-row data-potrero-id="${escapeHtml(potreroId)}">
+      <label>
+        Nome do potreiro
+        <input
+          type="text"
+          maxlength="80"
+          value="${escapeHtml(name)}"
+          data-potrero-name
+          placeholder="Ex.: Potreiro Norte"
+          required
+        >
+      </label>
+      <label>
+        Quantidade de animais
+        <input
+          type="number"
+          min="0"
+          step="1"
+          value="${quantity}"
+          data-potrero-quantity
+          placeholder="0"
+          required
+        >
+      </label>
+      <button type="button" class="ghost-btn potrero-remove-btn" data-remove-potrero-id="${escapeHtml(potreroId)}">Remover</button>
+    </div>
+  `;
+}
+
+function renderPotreroStockList(entries = []) {
+  const potreiros = entries.length ? entries : [];
+  elements.potreroStockList.innerHTML = potreiros.length
+    ? potreiros.map((entry) => createPotreroStockRow(entry)).join("")
+    : "";
+}
+
+function handleAddPotreroRow() {
+  elements.potreroStockList.insertAdjacentHTML("beforeend", createPotreroStockRow());
+  const lastNameInput = elements.potreroStockList.querySelector('[data-potrero-row]:last-child [data-potrero-name]');
+  lastNameInput?.focus();
+}
+
+function handlePotreroListInteraction(event) {
+  const removeTrigger = event.target.closest("[data-remove-potrero-id]");
+  if (!removeTrigger) {
+    return;
+  }
+
+  removeTrigger.closest("[data-potrero-row]")?.remove();
+}
+
 function openSanitaryEditor(recordId) {
+  if (state.data.selectedFarmId === TOTAL_FARM_ID) {
+    const aggregateFarm = getAggregateFarm();
+    const aggregateRecord = aggregateFarm.sanitaryRecords.find((item) => item.id === recordId || item.sourceId === recordId);
+    if (aggregateRecord?.farmId && state.data.farms[aggregateRecord.farmId]) {
+      state.data.selectedFarmId = aggregateRecord.farmId;
+      saveData();
+      render();
+      openSanitaryEditor(recordId);
+    }
+    return;
+  }
+
   const farm = getFarm();
   const record = farm.sanitaryRecords.find((item) => item.id === recordId || item.sourceId === recordId);
   if (!record) {
@@ -1550,20 +1831,21 @@ function syncSanitaryFormOptions() {
   const productOptions = farm.sanitaryProducts.map((product) => `
     <option value="${escapeHtml(product)}" ${product === selectedProduct ? "selected" : ""}>${escapeHtml(product)}</option>
   `);
-  productOptions.push(`<option value="__new__" ${selectedProduct === "__new__" ? "selected" : ""}>Adicionar novo produto</option>`);
+  productOptions.push(`<option value="__new__" ${selectedProduct === "__new__" ? "selected" : ""}>Outros</option>`);
 
   elements.sanitaryProduct.innerHTML = productOptions.join("");
   if (!elements.sanitaryProduct.value && farm.sanitaryProducts.length) {
     elements.sanitaryProduct.value = farm.sanitaryProducts[0];
   }
 
-  const potreroOptions = farm.potreiros.map((potreiro) => `
-    <option value="${escapeHtml(potreiro)}" ${potreiro === selectedPotrero ? "selected" : ""}>${escapeHtml(potreiro)}</option>
+  const potreroOptions = getPotreroEntries(farm).map((potreiro) => `
+    <option value="${escapeHtml(potreiro.name)}" ${potreiro.name === selectedPotrero ? "selected" : ""}>${escapeHtml(potreiro.name)}</option>
   `);
   potreroOptions.push(`<option value="__new__" ${selectedPotrero === "__new__" ? "selected" : ""}>Adicionar novo potreiro</option>`);
   elements.sanitaryPotrero.innerHTML = potreroOptions.join("");
-  if (!elements.sanitaryPotrero.value && farm.potreiros.length) {
-    elements.sanitaryPotrero.value = farm.potreiros[0];
+  if (!elements.sanitaryPotrero.value) {
+    const firstPotrero = getPotreroEntries(farm)[0];
+    elements.sanitaryPotrero.value = firstPotrero ? firstPotrero.name : "__new__";
   }
 
   if (!elements.sanitaryDate.value) {
@@ -1704,6 +1986,11 @@ function handleCategorySubmit(event) {
 
 function handleSanitarySubmit(event) {
   event.preventDefault();
+  if (state.data.selectedFarmId === TOTAL_FARM_ID) {
+    alert("Selecione uma fazenda especifica para registrar ou editar o manejo sanitario.");
+    return;
+  }
+
   const farm = getFarm();
   const editingId = elements.sanitaryEditingId.value;
   const date = elements.sanitaryDate.value;
@@ -1725,8 +2012,13 @@ function handleSanitarySubmit(event) {
   if (selectedProduct === "__new__" && !farm.sanitaryProducts.includes(product)) {
     farm.sanitaryProducts.push(product);
   }
-  if (selectedPotrero === "__new__" && !farm.potreiros.includes(potreiro)) {
-    farm.potreiros.push(potreiro);
+  const hasPotrero = getPotreroEntries(farm).some((item) => normalizeText(item.name) === normalizeText(potreiro));
+  if (selectedPotrero === "__new__" && !hasPotrero) {
+    farm.potreiros.push({
+      id: createPotreroId(potreiro),
+      name: potreiro,
+      quantity: 0
+    });
   }
 
   const recordPayload = {
@@ -1757,7 +2049,7 @@ function handleSanitarySubmit(event) {
   elements.sanitaryQuantity.value = "";
   elements.sanitaryNotes.value = "";
   elements.sanitaryProduct.value = farm.sanitaryProducts[0] || "__new__";
-  elements.sanitaryPotrero.value = farm.potreiros[0] || "__new__";
+  elements.sanitaryPotrero.value = getPotreroEntries(farm)[0]?.name || "__new__";
   elements.sanitarySubmitButton.textContent = "Salvar registro sanitario";
   updateSanitaryProductMode();
   updateSanitaryPotreroMode();
@@ -1766,27 +2058,85 @@ function handleSanitarySubmit(event) {
 
 function handleEditStockSubmit(event) {
   event.preventDefault();
-  const farm = getFarm();
+  const farm = state.data.farms[elements.editFarmName.value];
+  if (!farm) {
+    alert("Selecione uma fazenda valida para salvar.");
+    return;
+  }
   const declaredTotal = Number(elements.editDeclaredTotal.value);
   if (!Number.isFinite(declaredTotal) || declaredTotal < 0) {
     return;
   }
 
-  const inputs = elements.editStockList.querySelectorAll("[data-category-id]");
-  for (const input of inputs) {
-    const categoryId = input.dataset.categoryId;
-    const quantity = Number(input.value);
+  const categoryRows = [...elements.editStockList.querySelectorAll("[data-category-row]")];
+  const seenCategories = new Set();
+  for (const row of categoryRows) {
+    const categoryId = row.dataset.categoryId;
+    const name = row.querySelector("[data-category-name]")?.value.trim() || "";
+    const quantity = Number(row.querySelector("[data-category-quantity]")?.value);
+    if (!name) {
+      alert("Informe o nome de todas as categorias.");
+      return;
+    }
     if (!Number.isFinite(quantity) || quantity < 0) {
       return;
     }
+    const normalizedName = normalizeText(name);
+    if (seenCategories.has(normalizedName)) {
+      alert(`A categoria ${name} foi informada mais de uma vez. Ajuste os nomes para continuar.`);
+      return;
+    }
+    seenCategories.add(normalizedName);
 
     const category = farm.categories.find((item) => item.id === categoryId);
     if (category) {
+      category.name = name;
       category.quantity = quantity;
+      farm.movements.forEach((movement) => {
+        if (movement.categoryId === category.id) {
+          movement.categoryName = name;
+        }
+      });
+      farm.sanitaryRecords.forEach((record) => {
+        if (record.categoryId === category.id) {
+          record.categoryName = name;
+        }
+      });
     }
   }
 
+  const potreroRows = [...elements.potreroStockList.querySelectorAll("[data-potrero-row]")];
+  const nextPotreiros = [];
+  const seenPotreiros = new Set();
+  for (const row of potreroRows) {
+    const name = row.querySelector("[data-potrero-name]")?.value.trim() || "";
+    const quantity = Number(row.querySelector("[data-potrero-quantity]")?.value);
+    if (!name) {
+      alert("Informe o nome de todos os potreiros cadastrados.");
+      return;
+    }
+    if (!Number.isFinite(quantity) || quantity < 0) {
+      alert(`Informe uma quantidade valida para o potreiro ${name}.`);
+      return;
+    }
+
+    const normalizedName = normalizeText(name);
+    if (seenPotreiros.has(normalizedName)) {
+      alert(`O potreiro ${name} foi informado mais de uma vez. Ajuste os nomes para continuar.`);
+      return;
+    }
+
+    seenPotreiros.add(normalizedName);
+    nextPotreiros.push({
+      id: row.dataset.potreroId || createPotreroId(name),
+      name,
+      quantity: normalizePotreroQuantity(quantity)
+    });
+  }
+
+  farm.potreiros = nextPotreiros;
   farm.declaredTotal = declaredTotal;
+  state.data.selectedFarmId = farm.id;
   saveData();
   elements.editStockDialog.close();
   render();
@@ -1845,15 +2195,20 @@ function getFilteredSanitaryRecords(farm) {
 }
 
 function getPotreroTotals(farm) {
-  const map = new Map();
-  getFilteredSanitaryRecords(farm).forEach((record) => {
-    const key = record.potreiro || "Sem potreiro";
-    map.set(key, (map.get(key) || 0) + Number(record.quantity || 0));
-  });
-
-  return [...map.entries()]
-    .map(([name, quantity]) => ({ name, quantity }))
-    .sort((a, b) => b.quantity - a.quantity);
+  const totalAnimals = Math.max(getFarmTotal(farm), 1);
+  return getPotreroEntries(farm)
+    .map((potrero) => {
+      const quantity = normalizePotreroQuantity(potrero.quantity);
+      return {
+        id: potrero.id,
+        name: potrero.name,
+        farmId: potrero.farmId || (farm.id === TOTAL_FARM_ID ? "" : farm.id),
+        farmName: potrero.farmName || (farm.id === TOTAL_FARM_ID ? "" : farm.name),
+        quantity,
+        share: (quantity / totalAnimals) * 100
+      };
+    })
+    .sort((a, b) => b.quantity - a.quantity || a.name.localeCompare(b.name));
 }
 
 function getMovementDelta(type, quantity, adjustDirection) {
@@ -1881,7 +2236,7 @@ function getDiscrepancyText(farm) {
 
 function openPdfOptionsDialog() {
   elements.pdfOptionsForm.reset();
-  renderPdfFarmOptions([state.data.selectedFarmId]);
+  renderPdfFarmOptions(state.data.selectedFarmId === TOTAL_FARM_ID ? getAllFarms().map((farm) => farm.id) : [state.data.selectedFarmId]);
   const currentScope = elements.pdfOptionsForm.querySelector('input[name="pdfScope"][value="current"]');
   if (currentScope) {
     currentScope.checked = true;
@@ -1928,6 +2283,10 @@ function getSelectedPdfFarmIds() {
 
   if (scope === "custom") {
     return [...elements.pdfFarmList.querySelectorAll('input[name="pdfFarmIds"]:checked')].map((input) => input.value);
+  }
+
+  if (state.data.selectedFarmId === TOTAL_FARM_ID) {
+    return getAllFarms().map((farm) => farm.id);
   }
 
   return [state.data.selectedFarmId];
@@ -1984,6 +2343,9 @@ function addPdfFooters(doc) {
 }
 
 function appendExecutivePdfTable(doc, farm, monthly, discrepancy, topY) {
+  const registeredPotreiros = getPotreroEntries(farm).length;
+  const registeredAnimals = getRegisteredPotreroAnimals(farm);
+  const potreroBalance = getPotreroBalance(farm);
   doc.autoTable({
     startY: topY + 4,
     head: [["Indicador executivo", "Valor"]],
@@ -1991,6 +2353,9 @@ function appendExecutivePdfTable(doc, farm, monthly, discrepancy, topY) {
       ["Estoque atual", `${formatInteger(getFarmTotal(farm))} animais`],
       ["Total declarado", farm.declaredTotal ? `${formatInteger(farm.declaredTotal)} animais` : "Nao informado"],
       ["Conferencia de estoque", discrepancy === 0 ? "Alinhado" : `${discrepancy > 0 ? "+" : ""}${formatInteger(discrepancy)} animais`],
+      ["Potreiros cadastrados", formatInteger(registeredPotreiros)],
+      ["Animais distribuidos em potreiros", `${formatInteger(registeredAnimals)} animais`],
+      ["Saldo da distribuicao", potreroBalance === 0 ? "Alinhado" : `${potreroBalance > 0 ? "+" : ""}${formatInteger(potreroBalance)} animais`],
       ["Movimentacoes no periodo", formatInteger(monthly.totalMovements)],
       ["Saldo do periodo", `${monthly.netChange > 0 ? "+" : ""}${formatInteger(monthly.netChange)}`],
       ["Responsavel tecnico", TECHNICAL_MANAGER_NAME]
@@ -2067,10 +2432,10 @@ function appendSaleDetailsPdfTable(doc, saleSummary) {
 function appendPotreroPdfTable(doc, potreroTotals) {
   doc.autoTable({
     startY: doc.lastAutoTable.finalY + 10,
-    head: [["Potreiro", "Animais no periodo"]],
+    head: [["Potreiro", "Animais atuais", "% do rebanho"]],
     body: potreroTotals.length
-      ? potreroTotals.map((item) => [item.name, formatInteger(item.quantity)])
-      : [["Sem dados", "0"]],
+      ? potreroTotals.map((item) => [item.name, formatInteger(item.quantity), `${item.share.toFixed(1)}%`])
+      : [["Sem cadastro", "0", "0,0%"]],
     theme: "striped",
     headStyles: { fillColor: [55, 91, 67] }
   });
@@ -2146,11 +2511,13 @@ function appendConsolidatedPdfIntro(doc, farms, periodLabel) {
     const saleSummary = summarizeSalePeriod(farm, state.filters.year, state.filters.month);
     const sanitarySummary = getSanitarySummary(farm);
     summary.animals += getFarmTotal(farm);
+    summary.allocatedAnimals += getRegisteredPotreroAnimals(farm);
+    summary.potreiros += getPotreroEntries(farm).length;
     summary.movements += monthly.totalMovements;
     summary.salesValue += saleSummary.totalValue;
     summary.sanitaryRecords += sanitarySummary.totalApplications;
     return summary;
-  }, { animals: 0, movements: 0, salesValue: 0, sanitaryRecords: 0 });
+  }, { animals: 0, allocatedAnimals: 0, potreiros: 0, movements: 0, salesValue: 0, sanitaryRecords: 0 });
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(20);
@@ -2168,6 +2535,8 @@ function appendConsolidatedPdfIntro(doc, farms, periodLabel) {
     body: [
       ["Fazendas selecionadas", formatInteger(farms.length)],
       ["Estoque consolidado", `${formatInteger(totals.animals)} animais`],
+      ["Potreiros cadastrados", formatInteger(totals.potreiros)],
+      ["Animais alocados em potreiros", `${formatInteger(totals.allocatedAnimals)} animais`],
       ["Movimentacoes no periodo", formatInteger(totals.movements)],
       ["Faturamento de vendas", formatCurrency(totals.salesValue)],
       ["Registros sanitarios", formatInteger(totals.sanitaryRecords)]
@@ -2178,7 +2547,7 @@ function appendConsolidatedPdfIntro(doc, farms, periodLabel) {
 
   doc.autoTable({
     startY: doc.lastAutoTable.finalY + 10,
-    head: [["Fazenda", "Estoque", "Mov.", "Vendas", "Sanitario"]],
+    head: [["Fazenda", "Estoque", "Potreiros", "Alocados", "Mov.", "Vendas", "Sanitario"]],
     body: farms.map((farm) => {
       const monthly = summarizePeriod(farm, state.filters.year, state.filters.month);
       const saleSummary = summarizeSalePeriod(farm, state.filters.year, state.filters.month);
@@ -2186,6 +2555,8 @@ function appendConsolidatedPdfIntro(doc, farms, periodLabel) {
       return [
         farm.name,
         formatInteger(getFarmTotal(farm)),
+        formatInteger(getPotreroEntries(farm).length),
+        formatInteger(getRegisteredPotreroAnimals(farm)),
         formatInteger(monthly.totalMovements),
         formatCurrency(saleSummary.totalValue),
         formatInteger(sanitarySummary.totalApplications)
@@ -2326,8 +2697,10 @@ function ensureDataShape(data) {
     if (!Array.isArray(farm.sanitaryProducts) || !farm.sanitaryProducts.length) {
       farm.sanitaryProducts = [...DEFAULT_SANITARY_PRODUCTS];
     }
-    if (!Array.isArray(farm.potreiros) || !farm.potreiros.length) {
-      farm.potreiros = [...DEFAULT_POTREIROS];
+    if (!Array.isArray(farm.potreiros)) {
+      farm.potreiros = normalizePotreroEntries([], DEFAULT_POTREIROS);
+    } else {
+      farm.potreiros = normalizePotreroEntries(farm.potreiros);
     }
     STANDARD_FARM_CATEGORIES.forEach((template) => {
       if (!farm.categories.some((category) => category.id === template.id)) {
@@ -2339,6 +2712,7 @@ function ensureDataShape(data) {
       id: record.id || record.sourceId || createMovementId(),
       potreiro: record.potreiro || "Sem potreiro"
     }));
+    pruneLegacyPotreiros(farm);
   });
 
   Object.entries(IMPORTED_SANITARY_RECORDS).forEach(([farmId, records]) => {
@@ -2358,8 +2732,12 @@ function ensureDataShape(data) {
       if (!farm.sanitaryProducts.includes(record.product)) {
         farm.sanitaryProducts.push(record.product);
       }
-      if (record.potreiro && !farm.potreiros.includes(record.potreiro)) {
-        farm.potreiros.push(record.potreiro);
+      if (record.potreiro && !getPotreroEntries(farm).some((item) => normalizeText(item.name) === normalizeText(record.potreiro))) {
+        farm.potreiros.push({
+          id: createPotreroId(record.potreiro),
+          name: record.potreiro,
+          quantity: 0
+        });
       }
     });
   });
