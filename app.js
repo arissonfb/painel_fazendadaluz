@@ -59,7 +59,7 @@ const PREMIUM_SALE_FARMS = new Set(["arapey", "chiquita"]);
 const PDF_LOGO_PATH = "./assets/logo-da-luz.jpg";
 const TECHNICAL_MANAGER_NAME = "Hugo Fabricio Fernandes Balbuena";
 const DEFAULT_USERS = [
-  { id: "user-da-luz", login: "Da Luz", password: "hugobalbuena" }
+  { id: "user-da-luz", login: "Hugo Balbuena", password: "hugo123" }
 ];
 
 const IMPORTED_SANITARY_RECORDS = {
@@ -283,14 +283,20 @@ function loadData() {
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY);
     if (!stored) {
-      return ensureDataShape(cloneSeedData());
+      const freshData = ensureDataShape(cloneSeedData());
+      freshData.auth.sessionUserId = "";
+      return freshData;
     }
 
-    return ensureDataShape(JSON.parse(stored));
+    const parsedData = ensureDataShape(JSON.parse(stored));
+    parsedData.auth.sessionUserId = "";
+    return parsedData;
   } catch (error) {
     runtime.storageEnabled = false;
     console.warn("Armazenamento local indisponivel. O painel vai funcionar sem persistencia.", error);
-    return ensureDataShape(cloneSeedData());
+    const fallbackData = ensureDataShape(cloneSeedData());
+    fallbackData.auth.sessionUserId = "";
+    return fallbackData;
   }
 }
 
@@ -2184,6 +2190,17 @@ function ensureDataShape(data) {
     login: user.login || `Usuario ${index + 1}`,
     password: user.password || ""
   }));
+  data.auth.users = data.auth.users.map((user) => {
+    if (user.id === "user-da-luz") {
+      return {
+        ...user,
+        login: "Hugo Balbuena",
+        password: "hugo123"
+      };
+    }
+
+    return user;
+  });
   if (!data.auth.users.some((user) => user.id === data.auth.sessionUserId)) {
     data.auth.sessionUserId = "";
   }
