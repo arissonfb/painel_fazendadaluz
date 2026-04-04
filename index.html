@@ -360,17 +360,6 @@
           </article>
         </section>
 
-        <section class="content-grid lower-grid">
-          <article class="panel">
-            <div class="panel-header">
-              <div>
-                <p class="panel-kicker">Distribuição por potreiro</p>
-                <h2>Animais alocados nos potreiros</h2>
-              </div>
-            </div>
-            <div class="potrero-grid" id="dashboardPotreroSummary"></div>
-          </article>
-        </section>
       </div>
 
       <div id="sanitaryView" hidden>
@@ -806,7 +795,10 @@
           <p class="panel-kicker">Arapey</p>
           <h2>Georreferenciamento dos potreiros</h2>
         </div>
-        <button type="button" class="ghost-btn" id="closeGeorefDialog">Fechar</button>
+        <div class="georef-header-actions">
+          <button type="button" class="action-btn secondary" id="georefSaveButton">Salvar</button>
+          <button type="button" class="ghost-btn" id="closeGeorefDialog">Fechar</button>
+        </div>
       </div>
 
       <section class="georef-summary" id="georefStatus"></section>

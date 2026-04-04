@@ -1260,6 +1260,13 @@ th {
   gap: 18px;
 }
 
+.georef-header-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .georef-summary {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
@@ -1366,6 +1373,10 @@ th {
   stroke-dasharray: 10 8;
 }
 
+.georef-feature.is-active polygon {
+  filter: drop-shadow(0 10px 18px rgba(191, 126, 66, 0.28));
+}
+
 .georef-label rect {
   fill: rgba(255, 252, 247, 0.92);
   stroke: rgba(55, 91, 67, 0.18);
@@ -1384,6 +1395,20 @@ th {
   font-size: 14px;
   font-weight: 700;
   fill: #58745e;
+}
+
+.georef-feature.is-active .georef-label rect {
+  fill: rgba(255, 246, 234, 0.98);
+  stroke: rgba(191, 126, 66, 0.72);
+  stroke-width: 2;
+}
+
+.georef-feature.is-active .georef-label text {
+  fill: #7a4820;
+}
+
+.georef-feature.is-active .georef-label text tspan:last-child {
+  fill: #9e6231;
 }
 
 .georef-legend {
@@ -1420,6 +1445,10 @@ th {
   background: rgba(250, 245, 236, 0.72);
 }
 
+.georef-editor-card {
+  cursor: pointer;
+}
+
 .georef-legend-item.is-linked {
   border-color: rgba(55, 91, 67, 0.18);
   background: rgba(224, 236, 224, 0.5);
@@ -1428,6 +1457,12 @@ th {
 .georef-legend-item.is-unmatched {
   border-color: rgba(140, 75, 56, 0.16);
   background: rgba(243, 221, 212, 0.44);
+}
+
+.georef-editor-card.is-active {
+  border-color: rgba(191, 126, 66, 0.42);
+  background: rgba(255, 246, 234, 0.94);
+  box-shadow: 0 16px 28px rgba(191, 126, 66, 0.12);
 }
 
 .georef-legend-head {
@@ -1439,6 +1474,19 @@ th {
 
 .georef-legend-head strong {
   font-size: 1rem;
+}
+
+.georef-card-title {
+  display: grid;
+  gap: 4px;
+}
+
+.georef-card-index {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--muted);
 }
 
 .georef-badge {
@@ -1474,6 +1522,17 @@ th {
 
 .georef-legend-note {
   font-size: 0.88rem;
+}
+
+.georef-field {
+  display: grid;
+  gap: 8px;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.georef-field input {
+  width: 100%;
 }
 
 .modal-header {

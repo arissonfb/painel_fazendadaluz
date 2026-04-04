@@ -365,7 +365,8 @@ const runtime = {
   splashDismissed: false,
   movementPhotoDrafts: [],
   arapeyKmlData: null,
-  arapeyKmlPromise: null
+  arapeyKmlPromise: null,
+  georefDraft: null
 };
 
 const today = new Date();
@@ -481,6 +482,7 @@ const elements = {
   potreroStockList: document.getElementById("potreroStockList"),
   georefButton: document.getElementById("georefButton"),
   georefDialog: document.getElementById("georefDialog"),
+  georefSaveButton: document.getElementById("georefSaveButton"),
   closeGeorefDialog: document.getElementById("closeGeorefDialog"),
   georefStatus: document.getElementById("georefStatus"),
   georefMap: document.getElementById("georefMap"),
@@ -935,6 +937,44 @@ function normalizePotreroEntries(entries, fallbackNames = []) {
   return [...registry.values()];
 }
 
+function clonePotreroEntries(entries = []) {
+  return normalizePotreroEntries(entries).map((entry) => ({
+    id: entry.id || createPotreroId(entry.name),
+    name: String(entry.name || "").trim(),
+    quantity: normalizePotreroQuantity(entry.quantity)
+  }));
+}
+
+function clearGeorefDraft() {
+  runtime.georefDraft = null;
+}
+
+function ensureGeorefDraft(farm, forceReset = false) {
+  if (farm?.id !== "arapey") {
+    clearGeorefDraft();
+    return [];
+  }
+
+  if (forceReset || !runtime.georefDraft || runtime.georefDraft.farmId !== farm.id) {
+    const potreiros = clonePotreroEntries(getPotreroEntries(farm));
+    runtime.georefDraft = {
+      farmId: farm.id,
+      potreiros,
+      selectedId: potreiros[0]?.id || ""
+    };
+  }
+
+  if (!runtime.georefDraft.selectedId && runtime.georefDraft.potreiros.length) {
+    runtime.georefDraft.selectedId = runtime.georefDraft.potreiros[0].id;
+  }
+
+  return runtime.georefDraft.potreiros;
+}
+
+function getGeorefDraftPotreiros(farm) {
+  return ensureGeorefDraft(farm);
+}
+
 function pruneLegacyPotreiros(farm) {
   const referencedPotreiros = new Set(farm.sanitaryRecords.map((record) => normalizeText(record.potreiro || "")));
   farm.potreiros = getPotreroEntries(farm).filter((potrero) => {
@@ -1149,7 +1189,11 @@ function bindEvents() {
   elements.closeMovementDialog.addEventListener("click", () => elements.movementDialog.close());
   elements.closeCategoryDialog.addEventListener("click", () => elements.categoryDialog.close());
   elements.closeEditStockDialog.addEventListener("click", () => elements.editStockDialog.close());
+  elements.georefSaveButton.addEventListener("click", handleGeorefSave);
+  elements.georefLegend.addEventListener("click", handleGeorefLegendInteraction);
+  elements.georefLegend.addEventListener("change", handleGeorefLegendChange);
   elements.closeGeorefDialog.addEventListener("click", () => elements.georefDialog.close());
+  elements.georefDialog.addEventListener("close", clearGeorefDraft);
   elements.closeMonthlyDataDialog.addEventListener("click", () => elements.monthlyDataDialog.close());
   elements.exportPdfButton.addEventListener("click", openPdfOptionsDialog);
   elements.closePdfOptionsDialog.addEventListener("click", () => elements.pdfOptionsDialog.close());
@@ -1372,6 +1416,7 @@ function renderGeorefState(farm) {
   elements.georefButton.title = isArapeyDashboard ? "" : "Disponível apenas na fazenda Arapey.";
 
   if (!isArapeyDashboard && elements.georefDialog.open) {
+    clearGeorefDraft();
     elements.georefDialog.close();
     return;
   }
@@ -1885,6 +1930,7 @@ async function openGeorefDialog() {
     return;
   }
 
+  ensureGeorefDraft(farm, true);
   elements.georefStatus.innerHTML = createGeorefLoadingSummary();
   elements.georefMap.innerHTML = '<div class="georef-map-empty">Carregando o mapa georreferenciado da Arapey...</div>';
   elements.georefLegend.innerHTML = `
@@ -1905,15 +1951,19 @@ async function renderGeorefDialog() {
   }
 
   try {
+    const draftPotreiros = getGeorefDraftPotreiros(farm);
     const kmlData = await loadArapeyKmlData();
     if (!elements.georefDialog.open || getFarm().id !== "arapey") {
       return;
     }
 
-    const model = buildArapeyGeorefModel(farm, kmlData);
+    const model = buildArapeyGeorefModel(farm, kmlData, {
+      potreiros: draftPotreiros,
+      selectedId: runtime.georefDraft?.selectedId || ""
+    });
     elements.georefStatus.innerHTML = renderGeorefSummaryCards(model);
-    elements.georefMap.innerHTML = renderGeorefMap(model);
-    elements.georefLegend.innerHTML = renderGeorefLegend(model);
+    elements.georefMap.innerHTML = renderEditableGeorefMap(model);
+    elements.georefLegend.innerHTML = renderEditableGeorefLegend(model);
   } catch (error) {
     console.error("Falha ao carregar georreferenciamento da Arapey:", error);
     elements.georefStatus.innerHTML = `
@@ -1936,6 +1986,102 @@ async function renderGeorefDialog() {
       </section>
     `;
   }
+}
+
+function handleGeorefLegendInteraction(event) {
+  const card = event.target.closest("[data-georef-card-id]");
+  if (!card || event.target.closest("input") || !runtime.georefDraft) {
+    return;
+  }
+
+  runtime.georefDraft.selectedId = card.dataset.georefCardId || "";
+  void renderGeorefDialog();
+}
+
+function handleGeorefLegendChange(event) {
+  const card = event.target.closest("[data-georef-card-id]");
+  if (!card || !runtime.georefDraft) {
+    return;
+  }
+
+  const entry = runtime.georefDraft.potreiros.find((item) => item.id === card.dataset.georefCardId);
+  if (!entry) {
+    return;
+  }
+
+  if (event.target.matches("[data-georef-name]")) {
+    entry.name = event.target.value.trim();
+  }
+
+  if (event.target.matches("[data-georef-quantity]")) {
+    entry.quantity = normalizePotreroQuantity(event.target.value);
+  }
+
+  runtime.georefDraft.selectedId = entry.id;
+  void renderGeorefDialog();
+}
+
+function getGeorefEntriesFromLegend() {
+  const cards = [...elements.georefLegend.querySelectorAll("[data-georef-card-id]")];
+  if (!cards.length) {
+    return clonePotreroEntries(runtime.georefDraft?.potreiros || []);
+  }
+
+  return cards.map((card) => ({
+    id: card.dataset.georefCardId || createPotreroId("potreiro"),
+    name: card.querySelector("[data-georef-name]")?.value.trim() || "",
+    quantity: card.querySelector("[data-georef-quantity]")?.value
+  }));
+}
+
+function handleGeorefSave() {
+  const farm = getFarm();
+  if (farm.id !== "arapey") {
+    return;
+  }
+
+  const entries = getGeorefEntriesFromLegend();
+  const nextPotreiros = [];
+  const seenPotreiros = new Set();
+
+  for (const entry of entries) {
+    const name = String(entry.name || "").trim();
+    const quantity = Number(entry.quantity);
+
+    if (!name) {
+      alert("Informe o nome de todos os potreiros no georreferenciamento.");
+      return;
+    }
+
+    if (!Number.isFinite(quantity) || quantity < 0) {
+      alert(`Informe uma quantidade valida para o potreiro ${name}.`);
+      return;
+    }
+
+    const normalizedName = normalizeText(name);
+    if (seenPotreiros.has(normalizedName)) {
+      alert(`O potreiro ${name} foi informado mais de uma vez no georreferenciamento.`);
+      return;
+    }
+
+    seenPotreiros.add(normalizedName);
+    nextPotreiros.push({
+      id: entry.id || createPotreroId(name),
+      name,
+      quantity: normalizePotreroQuantity(quantity)
+    });
+  }
+
+  farm.potreiros = clonePotreroEntries(nextPotreiros);
+  runtime.georefDraft = {
+    farmId: farm.id,
+    potreiros: clonePotreroEntries(nextPotreiros),
+    selectedId: nextPotreiros.some((entry) => entry.id === runtime.georefDraft?.selectedId)
+      ? runtime.georefDraft?.selectedId || ""
+      : nextPotreiros[0]?.id || ""
+  };
+  saveData();
+  render();
 }
 
 function createGeorefLoadingSummary() {
@@ -2060,28 +2206,35 @@ function parseArapeyKml(kmlText) {
   return { features };
 }
 
-function buildArapeyGeorefModel(farm, kmlData) {
+function buildArapeyGeorefModel(farm, kmlData, options = {}) {
+  const potreiros = clonePotreroEntries(options.potreiros || getPotreroEntries(farm));
+  const selectedId = options.selectedId || "";
   const potreroGroups = new Map();
 
-  getPotreroEntries(farm).forEach((potrero) => {
+  potreiros.forEach((potrero) => {
     const key = resolveArapeyGeoKey(potrero.name);
     const quantity = normalizePotreroQuantity(potrero.quantity);
     const bucketKey = key || `unmatched::${slugify(potrero.name) || potrero.id || "potreiro"}`;
     const group = potreroGroups.get(bucketKey) || {
       key,
       names: [],
-      quantity: 0
+      quantity: 0,
+      entryIds: []
     };
 
     group.names.push(potrero.name);
     group.quantity += quantity;
+    group.entryIds.push(potrero.id);
     potreroGroups.set(bucketKey, group);
   });
 
+  const groupedPotreiros = [...potreroGroups.values()];
+  const groupsByKey = new Map(groupedPotreiros.filter((group) => group.key).map((group) => [group.key, group]));
+
   const visibleFeatures = kmlData.features
-    .filter((feature) => feature.areaHa !== null || ARAPEY_PRIMARY_GEO_KEYS.has(feature.key) || [...potreroGroups.values()].some((group) => group.key === feature.key))
+    .filter((feature) => feature.areaHa !== null || ARAPEY_PRIMARY_GEO_KEYS.has(feature.key) || groupsByKey.has(feature.key))
     .map((feature) => {
-      const group = [...potreroGroups.values()].find((item) => item.key === feature.key) || null;
+      const group = groupsByKey.get(feature.key) || null;
       return {
         ...feature,
         quantity: group?.quantity || 0,
@@ -2091,20 +2244,41 @@ function buildArapeyGeorefModel(farm, kmlData) {
     })
     .sort((a, b) => b.quantity - a.quantity || a.label.localeCompare(b.label));
 
-  const unmatchedPotreiros = [...potreroGroups.values()]
+  const unmatchedPotreiros = groupedPotreiros
     .filter((group) => !group.key || !visibleFeatures.some((feature) => feature.key === group.key))
     .sort((a, b) => b.quantity - a.quantity || a.names[0].localeCompare(b.names[0]));
 
-  const totalRegistered = getPotreroEntries(farm).length;
+  const editorEntries = potreiros
+    .map((potrero) => {
+      const key = resolveArapeyGeoKey(potrero.name);
+      const matchedFeature = key ? visibleFeatures.find((feature) => feature.key === key) || null : null;
+      return {
+        id: potrero.id,
+        name: potrero.name,
+        quantity: normalizePotreroQuantity(potrero.quantity),
+        key,
+        mapLabel: matchedFeature?.label || "",
+        areaHa: matchedFeature?.areaHa ?? null,
+        isLinked: Boolean(matchedFeature),
+        isSelected: potrero.id === selectedId
+      };
+    })
+    .sort((a, b) => b.quantity - a.quantity || a.name.localeCompare(b.name));
+
+  const totalRegistered = potreiros.length;
   const linkedPotreiros = visibleFeatures.reduce((sum, feature) => sum + feature.registeredNames.length, 0);
   const linkedAnimals = visibleFeatures.reduce((sum, feature) => sum + feature.quantity, 0);
   const unmatchedAnimals = unmatchedPotreiros.reduce((sum, item) => sum + item.quantity, 0);
+  const selectedKey = editorEntries.find((entry) => entry.id === selectedId)?.key || "";
 
   return {
     farmName: farm.name,
     totalRegistered,
     visibleFeatures,
     unmatchedPotreiros,
+    editorEntries,
+    selectedId,
+    selectedKey,
     stats: {
       mappedAreas: visibleFeatures.length,
       linkedPotreiros,
@@ -2138,6 +2312,157 @@ function renderGeorefSummaryCards(model) {
       <strong>${formatInteger(model.stats.unmatchedPotreiros)}</strong>
       <p>${formatInteger(model.stats.unmatchedAnimals)} animais em potreiros ainda sem correspondência automática no mapa.</p>
     </article>
+  `;
+}
+
+function renderEditableGeorefLegend(model) {
+  const editorCards = model.editorEntries.length
+    ? model.editorEntries.map((entry, index) => {
+      const areaText = Number.isFinite(entry.areaHa)
+        ? `<span class="georef-meta-pill">${formatWeight(entry.areaHa)} ha</span>`
+        : "";
+
+      return `
+        <article class="georef-legend-item georef-editor-card ${entry.isLinked ? "is-linked" : "is-unmatched"} ${entry.isSelected ? "is-active" : ""}" data-georef-card-id="${escapeHtml(entry.id)}">
+          <div class="georef-legend-head">
+            <div class="georef-card-title">
+              <span class="georef-card-index">Card ${index + 1}</span>
+              <strong>${escapeHtml(entry.name)}</strong>
+            </div>
+            <span class="georef-badge">${formatInteger(entry.quantity)} cab.</span>
+          </div>
+          <div class="georef-legend-meta">
+            <span class="georef-meta-pill">${entry.isLinked ? `Campo: ${escapeHtml(entry.mapLabel)}` : "Sem referencia no mapa"}</span>
+            ${areaText}
+          </div>
+          <label class="georef-field">
+            Nome do potreiro
+            <input
+              type="text"
+              maxlength="80"
+              value="${escapeHtml(entry.name)}"
+              data-georef-name
+              placeholder="Ex.: Campo 7"
+            >
+          </label>
+          <label class="georef-field">
+            Quantidade de animais
+            <input
+              type="number"
+              min="0"
+              step="1"
+              value="${entry.quantity}"
+              data-georef-quantity
+              placeholder="0"
+            >
+          </label>
+          <p class="georef-legend-note">${entry.isLinked ? "Clique no card para destacar este campo no mapa." : "Ajuste o nome para o KML reconhecer o campo correto."}</p>
+        </article>
+      `;
+    }).join("")
+    : "<p>Nenhum potreiro da Arapey esta disponivel para edicao neste momento.</p>";
+
+  const emptyFeatures = model.visibleFeatures.filter((feature) => !feature.isLinked);
+  const emptySection = emptyFeatures.length
+    ? `
+      <section class="georef-legend-section">
+        <h3>Campos do KML sem cadastro</h3>
+        <p>Essas areas existem no mapa, mas ainda nao possuem um potreiro vinculado no painel.</p>
+        ${emptyFeatures.map((feature) => `
+          <article class="georef-legend-item">
+            <div class="georef-legend-head">
+              <strong>${escapeHtml(feature.label)}</strong>
+              <span class="georef-badge">Livre</span>
+            </div>
+            <div class="georef-legend-meta">
+              ${Number.isFinite(feature.areaHa) ? `<span class="georef-meta-pill">${formatWeight(feature.areaHa)} ha</span>` : ""}
+              <span class="georef-meta-pill">Sem cadastro</span>
+            </div>
+            <p class="georef-legend-note">Renomeie um card lateral com esta referencia e salve para vincular o campo.</p>
+          </article>
+        `).join("")}
+      </section>
+    `
+    : `
+      <section class="georef-legend-section">
+        <h3>Mapa conferido</h3>
+        <p>Todos os campos principais visiveis no KML ja possuem alguma referencia cadastrada.</p>
+      </section>
+    `;
+
+  return `
+    <section class="georef-legend-section">
+      <h3>Cadastros editaveis</h3>
+      <p>Clique em um card para destacar a referencia no mapa. Edite nome e quantidade aqui e use o botao Salvar no topo.</p>
+      ${editorCards}
+    </section>
+    ${emptySection}
+  `;
+}
+
+function renderEditableGeorefMap(model) {
+  if (!model.visibleFeatures.length) {
+    return '<div class="georef-map-empty">Nenhuma area do KML foi localizada para montar o mapa da Arapey.</div>';
+  }
+
+  const bounds = getGeorefBounds(model.visibleFeatures);
+  if (!bounds) {
+    return '<div class="georef-map-empty">Nao encontrei coordenadas suficientes para desenhar o mapa georreferenciado.</div>';
+  }
+
+  const padding = 42;
+  const maxWidth = 1000;
+  const maxHeight = 760;
+  const lonSpan = Math.max(bounds.maxLon - bounds.minLon, 0.000001);
+  const latSpan = Math.max(bounds.maxLat - bounds.minLat, 0.000001);
+  const scale = Math.min((maxWidth - (padding * 2)) / lonSpan, (maxHeight - (padding * 2)) / latSpan);
+  const width = Math.max(720, Math.round((lonSpan * scale) + (padding * 2)));
+  const height = Math.max(420, Math.round((latSpan * scale) + (padding * 2)));
+  const maxQuantity = Math.max(...model.visibleFeatures.map((feature) => feature.quantity), 0);
+
+  const projectPoint = (point) => ({
+    x: padding + ((point.lon - bounds.minLon) * scale),
+    y: padding + ((bounds.maxLat - point.lat) * scale)
+  });
+
+  const featuresSvg = model.visibleFeatures.map((feature) => {
+    const isActive = Boolean(model.selectedKey) && feature.key === model.selectedKey;
+    const fill = getGeorefFeatureFill(feature.quantity, maxQuantity, feature.isLinked);
+    const stroke = isActive ? "#bf7e42" : feature.isLinked ? "#335c43" : "#8f6132";
+    const tooltip = feature.registeredNames.length
+      ? `${feature.label}: ${formatInteger(feature.quantity)} cab. | ${feature.registeredNames.join(", ")}`
+      : `${feature.label}: sem lotacao cadastrada`;
+    const polygons = feature.polygons.map((polygon) => {
+      const points = polygon.map(projectPoint).map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(" ");
+      return `<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${isActive ? "4.6" : "2.4"}"></polygon>`;
+    }).join("");
+
+    const labelAnchor = projectPoint(feature.markerPoint || getFeatureCenter(feature.polygons));
+    const quantityText = feature.quantity > 0 ? `${formatInteger(feature.quantity)} cab.` : "Sem gado";
+    const labelWidth = Math.max(feature.label.length, quantityText.length) * 8 + 26;
+    const labelX = clamp(labelAnchor.x, (labelWidth / 2) + 8, width - (labelWidth / 2) - 8);
+    const labelY = clamp(labelAnchor.y, 34, height - 46);
+
+    return `
+      <g class="georef-feature ${feature.isLinked ? "is-linked" : "is-unlinked"} ${isActive ? "is-active" : ""}">
+        <title>${escapeHtml(tooltip)}</title>
+        ${polygons}
+        <g class="georef-label">
+          <rect x="${(labelX - (labelWidth / 2)).toFixed(1)}" y="${(labelY - 26).toFixed(1)}" width="${labelWidth.toFixed(1)}" height="44" rx="14"></rect>
+          <text x="${labelX.toFixed(1)}" y="${(labelY - 6).toFixed(1)}">
+            <tspan x="${labelX.toFixed(1)}" dy="0">${escapeHtml(feature.label)}</tspan>
+            <tspan x="${labelX.toFixed(1)}" dy="16">${escapeHtml(quantityText)}</tspan>
+          </text>
+        </g>
+      </g>
+    `;
+  }).join("");
+
+  return `
+    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Mapa georreferenciado da fazenda Arapey">
+      <rect x="0" y="0" width="${width}" height="${height}" fill="rgba(255,255,255,0.18)"></rect>
+      ${featuresSvg}
+    </svg>
   `;
 }
 
