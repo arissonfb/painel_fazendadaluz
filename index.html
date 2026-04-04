@@ -323,41 +323,16 @@
           </article>
         </section>
 
-        <section class="content-grid lower-grid">
-          <article class="panel chart-panel">
-          <div class="panel-header">
-            <div>
-              <p class="panel-kicker">Categorias do relatório</p>
-              <h2>Distribuição dos dados mensais</h2>
-            </div>
-          </div>
-          <canvas id="monthlyCategoryChart" aria-label="Gráfico de distribuição dos dados mensais"></canvas>
-          </article>
-
-          <article class="panel timeline-panel">
+        <section class="content-grid lower-grid monthly-protocol-section">
+          <article class="panel monthly-protocol-panel">
           <div class="panel-header">
             <div>
               <p class="panel-kicker">Histórico mensal</p>
-              <h2>Dados consolidados para PDF</h2>
+              <h2>Protocolos registrados</h2>
             </div>
+            <span class="chip" id="monthlyProtocolCount">0 registros</span>
           </div>
-          <div class="table-wrap">
-            <table class="monthly-table">
-              <thead>
-                <tr>
-                  <th>Competência</th>
-                  <th>Fazenda</th>
-                  <th>Categoria</th>
-                  <th>Indicador</th>
-                  <th>Qtd.</th>
-                  <th>Valor</th>
-                  <th>Obs.</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody id="monthlyTableBody"></tbody>
-            </table>
-          </div>
+          <div id="monthlyProtocolList"></div>
           </article>
         </section>
 
@@ -846,6 +821,35 @@
       </div>
     </div>
   </dialog>
+
+  <nav class="mobile-bottom-nav" id="mobileBottomNav" hidden>
+    <button type="button" class="mobile-nav-btn active" id="mobileNavDashboard">
+      <span class="mobile-nav-icon">🏠</span>
+      <span>Painel</span>
+    </button>
+    <button type="button" class="mobile-nav-btn" id="mobileNavSanitary">
+      <span class="mobile-nav-icon">💉</span>
+      <span>Sanitário</span>
+    </button>
+    <button type="button" class="mobile-nav-btn" id="mobileNavPotreiros">
+      <span class="mobile-nav-icon">🌿</span>
+      <span>Potreiros</span>
+    </button>
+    <button type="button" class="mobile-nav-btn" id="mobileNavFarms">
+      <span class="mobile-nav-icon">🐄</span>
+      <span>Fazendas</span>
+    </button>
+  </nav>
+
+  <div class="mobile-farm-drawer" id="mobileFarmDrawer" hidden>
+    <div class="mobile-farm-drawer-inner">
+      <div class="mobile-farm-drawer-header">
+        <strong>Selecionar fazenda</strong>
+        <button type="button" class="ghost-btn" id="closeMobileFarmDrawer">Fechar</button>
+      </div>
+      <div id="mobileFarmSwitchList"></div>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>

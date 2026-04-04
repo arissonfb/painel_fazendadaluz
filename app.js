@@ -364,6 +364,7 @@ const runtime = {
   appInitialized: false,
   splashDismissed: false,
   movementPhotoDrafts: [],
+  editStockContextFarmId: TOTAL_FARM_ID,
   pdfContextFarmId: TOTAL_FARM_ID,
   arapeyKmlData: null,
   arapeyKmlPromise: null,
@@ -411,10 +412,15 @@ const elements = {
   globalPanelChip: document.getElementById("globalPanelChip"),
   monthlySummaryGrid: document.getElementById("monthlySummaryGrid"),
   monthlyTableBody: document.getElementById("monthlyTableBody"),
+  monthlyProtocolList: document.getElementById("monthlyProtocolList"),
+  monthlyProtocolCount: document.getElementById("monthlyProtocolCount"),
   summaryGrid: document.getElementById("summaryGrid"),
   periodSummary: document.getElementById("periodSummary"),
+  salesSummarySection: document.getElementById("salesSummary")?.closest("section") || null,
   salesSummary: document.getElementById("salesSummary"),
+  salesTimelinePanel: document.getElementById("salesTableBody")?.closest("article") || null,
   salesTableBody: document.getElementById("salesTableBody"),
+  monthlyCategoryPanel: document.getElementById("monthlyCategoryChart")?.closest("article") || null,
   movementsTableBody: document.getElementById("movementsTableBody"),
   discrepancyNote: document.getElementById("discrepancyNote"),
   insightList: document.getElementById("insightList"),
@@ -537,8 +543,55 @@ const elements = {
   monthlyDataQuantity: document.getElementById("monthlyDataQuantity"),
   monthlyDataValue: document.getElementById("monthlyDataValue"),
   monthlyDataNotes: document.getElementById("monthlyDataNotes"),
-  monthlyDataSubmitButton: document.getElementById("monthlyDataSubmitButton")
+  monthlyDataSubmitButton: document.getElementById("monthlyDataSubmitButton"),
+  mobileBottomNav: document.getElementById("mobileBottomNav"),
+  mobileNavDashboard: document.getElementById("mobileNavDashboard"),
+  mobileNavSanitary: document.getElementById("mobileNavSanitary"),
+  mobileNavPotreiros: document.getElementById("mobileNavPotreiros"),
+  mobileNavFarms: document.getElementById("mobileNavFarms"),
+  mobileFarmDrawer: document.getElementById("mobileFarmDrawer"),
+  mobileFarmSwitchList: document.getElementById("mobileFarmSwitchList"),
+  closeMobileFarmDrawer: document.getElementById("closeMobileFarmDrawer")
 };
+
+function collapseDashboardSection(section) {
+  if (!section) {
+  }
+
+  const remainingPanels = [...section.children].filter((child) => child.matches("article"));
+  if (!remainingPanels.length) {
+    section.remove();
+    return;
+  }
+
+  if (remainingPanels.length === 1) {
+    section.classList.add("single-panel-grid");
+  }
+}
+
+function removeDashboardPanel(panel, options = {}) {
+  if (!panel) {
+    return;
+  }
+
+  const section = panel.closest("section");
+  panel.remove();
+
+  if (options.removeSection) {
+    section?.remove();
+    return;
+  }
+
+  collapseDashboardSection(section);
+}
+
+removeDashboardPanel(elements.salesSummarySection, { removeSection: true });
+removeDashboardPanel(elements.salesTimelinePanel);
+removeDashboardPanel(elements.monthlyCategoryPanel);
+
+if (elements.salesSummary) {
+  elements.salesSummary.innerHTML = "";
+}
 
 boot();
 
@@ -619,6 +672,7 @@ function renderAuthState() {
   elements.splashShell.hidden = !showSplash;
   elements.authShell.hidden = showSplash || Boolean(currentUser);
   elements.pageShell.hidden = showSplash || !currentUser;
+  if (elements.mobileBottomNav) elements.mobileBottomNav.hidden = showSplash || !currentUser;
   document.body.classList.toggle("login-mode", !currentUser && !showSplash);
   document.body.classList.toggle("splash-mode", showSplash);
   elements.currentUserLabel.textContent = currentUser ? `Usuário: ${currentUser.login}` : "Usuário";
@@ -1146,6 +1200,34 @@ function bindEvents() {
     render();
   });
 
+  // Mobile bottom nav
+  if (elements.mobileNavDashboard) {
+    elements.mobileNavDashboard.addEventListener("click", () => {
+      state.activeView = "dashboard";
+      render();
+    });
+    elements.mobileNavSanitary.addEventListener("click", () => {
+      state.activeView = "sanitary";
+      render();
+    });
+    elements.mobileNavPotreiros.addEventListener("click", () => {
+      state.activeView = "potreiros";
+      render();
+    });
+    elements.mobileNavFarms.addEventListener("click", () => {
+      renderMobileFarmDrawer();
+      elements.mobileFarmDrawer.hidden = false;
+    });
+    elements.closeMobileFarmDrawer.addEventListener("click", () => {
+      elements.mobileFarmDrawer.hidden = true;
+    });
+    elements.mobileFarmDrawer.addEventListener("click", (event) => {
+      if (event.target === elements.mobileFarmDrawer) {
+        elements.mobileFarmDrawer.hidden = true;
+      }
+    });
+  }
+
   elements.potreirosAccordion.addEventListener("click", (event) => {
     const header = event.target.closest("[data-toggle-farm]");
     if (!header) return;
@@ -1314,7 +1396,7 @@ function render() {
   renderSanitaryFarmSwitch();
   renderSanitaryComposerState(farm);
   renderMonthlySummary(farm);
-  renderMonthlyTable(farm);
+  renderMonthlyProtocol(farm);
   renderInsights(farm);
   renderCharts(farm);
   renderActiveView();
@@ -1605,6 +1687,36 @@ function renderActiveView() {
   if (view === "potreiros") {
     renderPotreirosView();
   }
+  syncMobileNav(view);
+}
+
+function syncMobileNav(view) {
+  if (!elements.mobileBottomNav) return;
+  [elements.mobileNavDashboard, elements.mobileNavSanitary, elements.mobileNavPotreiros, elements.mobileNavFarms].forEach((btn) => {
+    if (btn) btn.classList.remove("active");
+  });
+  if (view === "dashboard" && elements.mobileNavDashboard) elements.mobileNavDashboard.classList.add("active");
+  if (view === "sanitary" && elements.mobileNavSanitary) elements.mobileNavSanitary.classList.add("active");
+  if (view === "potreiros" && elements.mobileNavPotreiros) elements.mobileNavPotreiros.classList.add("active");
+}
+
+function renderMobileFarmDrawer() {
+  if (!elements.mobileFarmSwitchList) return;
+  const farms = [{ id: TOTAL_FARM_ID, name: "Total (todas as fazendas)" }, ...getAllFarms()];
+  elements.mobileFarmSwitchList.innerHTML = farms.map((farm) => `
+    <button type="button" class="mobile-farm-option ${farm.id === state.data.selectedFarmId ? "active" : ""}" data-farm-id="${farm.id}">
+      ${escapeHtml(farm.name)}
+    </button>
+  `).join("");
+  elements.mobileFarmSwitchList.querySelectorAll("[data-farm-id]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      state.data.selectedFarmId = btn.dataset.farmId;
+      state.activeView = "dashboard";
+      elements.mobileFarmDrawer.hidden = true;
+      saveData();
+      render();
+    });
+  });
 }
 
 function renderActionButtonsState() {
@@ -1612,7 +1724,6 @@ function renderActionButtonsState() {
   const farmOnlyButtons = [
     ...document.querySelectorAll("[data-type]"),
     elements.adjustButton,
-    elements.editStockButton,
     elements.addCategoryButton
   ];
 
@@ -1620,6 +1731,10 @@ function renderActionButtonsState() {
     button.disabled = isTotalView;
     button.title = isTotalView ? "Selecione uma fazenda específica para lançar ou editar este registro." : "";
   });
+  elements.editStockButton.disabled = false;
+  elements.editStockButton.title = isTotalView
+    ? "Na aba total, o editor abre em modo global para escolher a fazenda dentro do modal."
+    : "";
 }
 
 function renderGeorefState(farm) {
@@ -1773,13 +1888,15 @@ function renderSalesAnalysis(farm) {
       { title: "Média R$/kg vivo", value: summary.liveKg > 0 ? formatCurrency(summary.totalValue / summary.liveKg) : formatCurrency(0), detail: "preço médio por kg vivo" }
     ];
 
-  elements.salesSummary.innerHTML = cards.map((card) => `
-    <article class="analytics-card">
-      <p class="panel-kicker">${card.title}</p>
-      <strong>${card.value}</strong>
-      <p>${card.detail}</p>
-    </article>
-  `).join("");
+  if (elements.salesSummary) {
+    elements.salesSummary.innerHTML = cards.map((card) => `
+      <article class="analytics-card">
+        <p class="panel-kicker">${card.title}</p>
+        <strong>${card.value}</strong>
+        <p>${card.detail}</p>
+      </article>
+    `).join("");
+  }
 
   if (!summary.movements.length) {
     elements.salesTableBody.innerHTML = `
@@ -1950,21 +2067,69 @@ function renderSanitarySummary(farm) {
 }
 
 function renderSanitaryTable(farm) {
-  const records = [...getFilteredSanitaryRecords(farm)]
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
+  const isTotalView = farm.id === TOTAL_FARM_ID;
+
+  if (isTotalView) {
+    // Group records by farm
+    const farms = getAllFarms();
+    const farmGroups = farms.map((f) => ({
+      farm: f,
+      records: [...getFilteredSanitaryRecords(f)].sort((a, b) => new Date(b.date) - new Date(a.date))
+    })).filter((g) => g.records.length > 0);
+
+    if (!farmGroups.length) {
+      elements.sanitaryTableBody.innerHTML = `<tr><td colspan="7" class="table-empty-cell">Nenhum registro sanitário encontrado para o período selecionado.</td></tr>`;
+      return;
+    }
+
+    elements.sanitaryTableBody.innerHTML = farmGroups.map((group) => `
+      <tr class="sanitary-farm-group-row">
+        <td colspan="7">
+          <div class="sanitary-farm-group-header">
+            <span class="sanitary-farm-tag">${escapeHtml(group.farm.name)}</span>
+            <span class="sanitary-farm-count">${group.records.length} registro(s)</span>
+          </div>
+        </td>
+      </tr>
+      ${group.records.map((record) => `
+        <tr>
+          <td data-label="Fazenda"><span class="sanitary-origin imported">${escapeHtml(group.farm.name)}</span></td>
+          <td data-label="Data">${formatDate(record.date)}</td>
+          <td data-label="Manejo">
+            <div class="sanitary-main">
+              <strong>${escapeHtml(record.categoryName)}</strong>
+              <span>${formatMaybeQuantity(record.quantity)} cabeças</span>
+            </div>
+          </td>
+          <td data-label="Potreiro / Produto">
+            <div class="sanitary-main">
+              <strong>${escapeHtml(record.potreiro || "-")}</strong>
+              <span>${escapeHtml(record.product)}</span>
+            </div>
+          </td>
+          <td data-label="Origem">
+            <span class="sanitary-origin ${record.sourceId ? "imported" : "manual"}">${record.sourceId ? "Importado" : "Manual"}</span>
+          </td>
+          <td data-label="Obs.">${escapeHtml(record.notes || "-")}</td>
+          <td data-label="Ações">
+            <button type="button" class="table-action-btn" data-edit-sanitary-id="${record.id || record.sourceId}">Editar</button>
+          </td>
+        </tr>
+      `).join("")}
+    `).join("");
+    return;
+  }
+
+  const records = [...getFilteredSanitaryRecords(farm)].sort((a, b) => new Date(b.date) - new Date(a.date));
 
   if (!records.length) {
-    elements.sanitaryTableBody.innerHTML = `
-      <tr>
-        <td colspan="7" class="table-empty-cell">Nenhum registro sanitário encontrado para o período selecionado.</td>
-      </tr>
-    `;
+    elements.sanitaryTableBody.innerHTML = `<tr><td colspan="7" class="table-empty-cell">Nenhum registro sanitário encontrado para o período selecionado.</td></tr>`;
     return;
   }
 
   elements.sanitaryTableBody.innerHTML = records.map((record) => `
     <tr>
-      <td data-label="Fazenda">${escapeHtml(record.farmName || farm.name)}</td>
+      <td data-label="Fazenda">${escapeHtml(farm.name)}</td>
       <td data-label="Data">${formatDate(record.date)}</td>
       <td data-label="Manejo">
         <div class="sanitary-main">
@@ -1972,7 +2137,7 @@ function renderSanitaryTable(farm) {
           <span>${formatMaybeQuantity(record.quantity)} cabeças</span>
         </div>
       </td>
-      <td data-label="Destino e produto">
+      <td data-label="Potreiro / Produto">
         <div class="sanitary-main">
           <strong>${escapeHtml(record.potreiro || "-")}</strong>
           <span>${escapeHtml(record.product)}</span>
@@ -2072,37 +2237,58 @@ function renderMonthlySummary(farm) {
   }
 }
 
-function renderMonthlyTable(farm) {
+function renderMonthlyProtocol(farm) {
+  if (!elements.monthlyProtocolList) return;
+
   const records = [...getFilteredMonthlyRecords(farm)].sort((a, b) => {
-    if (a.period === b.period) {
-      return a.title.localeCompare(b.title);
-    }
-    return a.period < b.period ? 1 : -1;
+    if (a.period !== b.period) return a.period < b.period ? 1 : -1;
+    return a.title.localeCompare(b.title);
   });
 
+  if (elements.monthlyProtocolCount) {
+    elements.monthlyProtocolCount.textContent = `${records.length} registro${records.length !== 1 ? "s" : ""}`;
+  }
+
   if (!records.length) {
-    elements.monthlyTableBody.innerHTML = `
-      <tr>
-        <td colspan="8" class="table-empty-cell">Nenhum dado mensal encontrado para o recorte selecionado.</td>
-      </tr>
+    elements.monthlyProtocolList.innerHTML = `
+      <div class="protocol-empty">
+        <p>Nenhum protocolo encontrado para o recorte selecionado.</p>
+      </div>
     `;
     return;
   }
 
-  elements.monthlyTableBody.innerHTML = records.map((record) => `
-    <tr>
-      <td data-label="Competência">${formatMonthYear(record.period)}</td>
-      <td data-label="Fazenda">${escapeHtml(record.farmName || farm.name)}</td>
-      <td data-label="Categoria">${escapeHtml(getMonthlyCategoryLabel(record.category))}</td>
-      <td data-label="Indicador">${escapeHtml(record.title)}</td>
-      <td data-label="Qtd.">${record.quantity ? formatInteger(record.quantity) : "-"}</td>
-      <td data-label="Valor">${record.value ? formatCurrency(record.value) : "-"}</td>
-      <td data-label="Obs.">${escapeHtml(record.notes || "-")}</td>
-      <td data-label="Ações">
-        <button type="button" class="table-action-btn" data-edit-monthly-id="${record.id}">Editar</button>
-      </td>
-    </tr>
-  `).join("");
+  const CATEGORY_ICONS = {
+    estoque: "🐄",
+    sanitario: "💉",
+    comercial: "💰",
+    operacional: "⚙️",
+    outros: "📋"
+  };
+
+  elements.monthlyProtocolList.innerHTML = records.map((record) => {
+    const icon = CATEGORY_ICONS[record.category] || "📋";
+    const farmLabel = record.farmName || farm.name;
+    return `
+      <div class="protocol-row">
+        <div class="protocol-icon">${icon}</div>
+        <div class="protocol-body">
+          <div class="protocol-meta">
+            <span class="protocol-farm">${escapeHtml(farmLabel)}</span>
+            <span class="protocol-period">${formatMonthYear(record.period)}</span>
+            <span class="protocol-category">${escapeHtml(getMonthlyCategoryLabel(record.category))}</span>
+          </div>
+          <strong class="protocol-title">${escapeHtml(record.title)}</strong>
+          ${record.notes ? `<p class="protocol-notes">${escapeHtml(record.notes)}</p>` : ""}
+        </div>
+        <div class="protocol-values">
+          ${record.quantity ? `<span class="protocol-qty">${formatInteger(record.quantity)} cab.</span>` : ""}
+          ${record.value ? `<span class="protocol-val">${formatCurrency(record.value)}</span>` : ""}
+        </div>
+        <button type="button" class="table-action-btn protocol-edit-btn" data-edit-monthly-id="${record.id}">Editar</button>
+      </div>
+    `;
+  }).join("");
 }
 
 function handleMonthlyTableInteraction(event) {
@@ -2120,27 +2306,39 @@ function renderPotreirosView() {
   elements.potreirosAccordion.innerHTML = farms.map((farm) => {
     const potreiros = getPotreroTotals(farm);
     const totalAnimals = getFarmTotal(farm);
+    const allocated = potreiros.reduce((sum, p) => sum + p.quantity, 0);
+    const balance = totalAnimals - allocated;
+
     const potreirosHtml = potreiros.length
       ? potreiros.map((p) => `
           <article class="potrero-card">
+            <div class="potrero-card-bar" style="width:${Math.min(p.share, 100).toFixed(1)}%"></div>
             <p class="panel-kicker">${escapeHtml(p.name)}</p>
             <strong>${formatInteger(p.quantity)}</strong>
             <p>${p.share.toFixed(1)}% do rebanho</p>
           </article>
         `).join("")
-      : `<p class="field-note">Nenhum potreiro cadastrado para esta fazenda.</p>`;
+      : `<p class="field-note" style="padding:12px 0">Nenhum potreiro cadastrado. Use "Editar estoque" para cadastrar.</p>`;
+
+    const balanceHtml = potreiros.length ? `
+      <article class="potrero-card potrero-card-highlight">
+        <p class="panel-kicker">${balance === 0 ? "Conferência" : balance > 0 ? "Sem potreiro" : "Excedente"}</p>
+        <strong>${balance === 0 ? "✓ OK" : (balance > 0 ? "+" : "") + formatInteger(balance)}</strong>
+        <p>${balance === 0 ? "Distribuição conferida." : balance > 0 ? `${formatInteger(balance)} ainda não alocados.` : `${formatInteger(Math.abs(balance))} acima do estoque.`}</p>
+      </article>
+    ` : "";
 
     return `
       <div class="potreiros-farm-item">
         <button type="button" class="potreiros-farm-header" data-toggle-farm="${escapeHtml(farm.id)}">
           <div class="potreiros-farm-header-copy">
             <strong>${escapeHtml(farm.name)}</strong>
-            <span>${formatInteger(totalAnimals)} animais &middot; ${potreiros.length} potreiro(s)</span>
+            <span>${formatInteger(totalAnimals)} animais &middot; ${potreiros.length} potreiro(s) &middot; ${formatInteger(allocated)} alocados</span>
           </div>
           <span class="potreiros-farm-chevron">&#8250;</span>
         </button>
         <div class="potreiros-farm-body" id="potreiros-body-${escapeHtml(farm.id)}" hidden>
-          <div class="potrero-grid potrero-grid-compact">${potreirosHtml}</div>
+          <div class="potrero-grid potrero-grid-compact">${potreirosHtml}${balanceHtml}</div>
         </div>
       </div>
     `;
@@ -3009,7 +3207,6 @@ function renderCharts(farm) {
   renderMovementChart(farm);
   renderRankingChart(farm);
   renderMonthlyEvolutionChart(farm);
-  renderMonthlyCategoryModernChart(farm);
 }
 
 function renderInventoryChart(farm) {
@@ -3382,6 +3579,9 @@ function renderMonthlyCategoryModernChart(farm) {
   }
 
   const context = document.getElementById("monthlyCategoryChart");
+  if (!context) {
+    return;
+  }
   const summary = getMonthlySummary(farm);
   const categories = [...summary.byCategory]
     .map((item) => ({
@@ -3718,12 +3918,29 @@ function openMonthlyDataEditorForFarm(recordId, farmId) {
 }
 
 function openEditStockDialog() {
+  runtime.editStockContextFarmId = state.data.selectedFarmId;
+  const initialFarmId = state.data.selectedFarmId === TOTAL_FARM_ID
+    ? getAllFarms()[0]?.id
+    : state.data.selectedFarmId;
+  if (!initialFarmId || !state.data.farms[initialFarmId]) {
+    alert("Nenhuma fazenda está disponível para editar o estoque.");
+    return;
+  }
+
+  renderEditStockForm(initialFarmId);
+  elements.editStockDialog.showModal();
+  return;
   if (state.data.selectedFarmId === TOTAL_FARM_ID) {
     alert("Selecione uma fazenda específica para editar o estoque.");
     return;
   }
 
-  renderEditStockForm(state.data.selectedFarmId);
+  if (!initialFarmId || !state.data.farms[initialFarmId]) {
+    alert("Nenhuma fazenda estÃ¡ disponÃ­vel para editar o estoque.");
+    return;
+  }
+
+  renderEditStockForm(initialFarmId);
   elements.editStockDialog.showModal();
 }
 
@@ -4325,7 +4542,9 @@ function handleEditStockSubmit(event) {
 
   farm.potreiros = nextPotreiros;
   farm.declaredTotal = declaredTotal;
-  state.data.selectedFarmId = farm.id;
+  state.data.selectedFarmId = runtime.editStockContextFarmId === TOTAL_FARM_ID
+    ? TOTAL_FARM_ID
+    : farm.id;
   saveData();
   elements.editStockDialog.close();
   render();
