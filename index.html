@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Painel Pecuario | Fazendas Da Luz</title>
+  <title>Painel Pecuário | Fazendas Da Luz</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Yrsa:wght@500;600;700&display=swap" rel="stylesheet">
@@ -15,7 +15,7 @@
       <div class="splash-card">
         <img src="./assets/logo-da-luz.jpg" alt="Logo Da Luz" class="splash-logo">
         <span class="splash-kicker">Estabelecimentos Da Luz</span>
-        <strong class="splash-title">Painel pecuario</strong>
+        <strong class="splash-title">Painel Pecuário</strong>
         <p class="splash-text">Clique ou toque na tela para continuar.</p>
       </div>
     </div>
@@ -40,7 +40,7 @@
         <p class="eyebrow">Acesso ao painel</p>
         <h1>Entrar no sistema</h1>
         <p class="hero-text auth-text">
-          Use seu login e senha para acessar o painel das fazendas. O acesso inicial ja vem configurado para a equipe Da Luz.
+          Use seu login e senha para acessar o painel das fazendas. O acesso inicial já vem configurado para a equipe Da Luz.
         </p>
 
         <form id="loginForm" class="auth-form">
@@ -171,6 +171,7 @@
             <button class="action-btn secondary" id="monthlyDataButton">Registrar dado mensal</button>
             <button class="action-btn secondary" id="adjustButton">Ajuste manual</button>
             <button class="action-btn secondary" id="editStockButton">Editar estoque</button>
+            <button class="action-btn secondary" id="georefButton" hidden>Georreferenciamento</button>
             <button class="action-btn secondary" id="addCategoryButton">Nova categoria</button>
             <button class="action-btn pdf" id="exportPdfButton">Gerar PDF</button>
           </div>
@@ -188,7 +189,7 @@
               <h2>Distribuição por categoria</h2>
             </div>
           </div>
-          <canvas id="inventoryChart" aria-label="Grafico do estoque atual"></canvas>
+          <canvas id="inventoryChart" aria-label="Gráfico do estoque atual"></canvas>
           </article>
 
           <article class="panel chart-panel">
@@ -198,7 +199,7 @@
               <h2>Entradas, saídas e saldo</h2>
             </div>
           </div>
-          <canvas id="movementChart" aria-label="Grafico de entradas, saidas e saldo"></canvas>
+          <canvas id="movementChart" aria-label="Gráfico de entradas, saídas e saldo"></canvas>
           </article>
 
           <article class="panel chart-panel">
@@ -208,20 +209,7 @@
               <h2>Maiores lotes do rebanho</h2>
             </div>
           </div>
-          <canvas id="rankingChart" aria-label="Grafico de ranking por categoria"></canvas>
-          </article>
-        </section>
-
-        <section class="content-grid lower-grid">
-          <article class="panel analytics-panel">
-          <div class="panel-header">
-            <div>
-              <p class="panel-kicker">Fechamento do período</p>
-              <h2>Resumo mensal e anual</h2>
-            </div>
-          </div>
-          <div class="analytics-cards" id="periodSummary"></div>
-          <div class="note-box" id="discrepancyNote"></div>
+          <canvas id="rankingChart" aria-label="Gráfico de ranking por categoria"></canvas>
           </article>
         </section>
 
@@ -235,7 +223,9 @@
           </div>
           <div class="analytics-cards" id="salesSummary"></div>
           </article>
+        </section>
 
+        <section class="content-grid lower-grid sales-priority-grid">
           <article class="panel timeline-panel">
           <div class="panel-header">
             <div>
@@ -258,6 +248,17 @@
               <tbody id="salesTableBody"></tbody>
             </table>
           </div>
+          </article>
+
+          <article class="panel analytics-panel">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">Fechamento do período</p>
+              <h2>Resumo mensal e anual</h2>
+            </div>
+          </div>
+          <div class="analytics-cards" id="periodSummary"></div>
+          <div class="note-box" id="discrepancyNote"></div>
           </article>
         </section>
 
@@ -314,7 +315,7 @@
               <h2>Quantidade e valor por mês</h2>
             </div>
           </div>
-          <canvas id="monthlyEvolutionChart" aria-label="Grafico de evolucao mensal por quantidade e valor"></canvas>
+          <canvas id="monthlyEvolutionChart" aria-label="Gráfico de evolução mensal por quantidade e valor"></canvas>
           </article>
         </section>
 
@@ -326,7 +327,7 @@
               <h2>Distribuição dos dados mensais</h2>
             </div>
           </div>
-          <canvas id="monthlyCategoryChart" aria-label="Grafico de distribuicao dos dados mensais"></canvas>
+          <canvas id="monthlyCategoryChart" aria-label="Gráfico de distribuição dos dados mensais"></canvas>
           </article>
 
           <article class="panel timeline-panel">
@@ -480,8 +481,8 @@
     <form method="dialog" id="movementForm" class="modal-card">
       <div class="modal-header">
         <div>
-          <p class="panel-kicker">Novo lancamento</p>
-          <h2 id="movementDialogTitle">Registrar movimentacao</h2>
+          <p class="panel-kicker">Novo lançamento</p>
+          <h2 id="movementDialogTitle">Registrar movimentação</h2>
         </div>
         <button type="button" class="ghost-btn" id="closeMovementDialog">Fechar</button>
       </div>
@@ -514,7 +515,7 @@
           Base da venda
           <select id="movementSaleMode">
             <option value="vivo">Kg vivo</option>
-            <option value="carcaca">Kg carcaca</option>
+            <option value="carcaca">Kg carcaça</option>
           </select>
         </label>
         <div class="sale-input-group form-span-2" id="movementLiveFields" hidden>
@@ -529,30 +530,30 @@
         </div>
         <div class="sale-input-group form-span-2" id="movementCarcassFields" hidden>
           <label>
-            Valor kg carcaca
+            Valor kg carcaça
             <input type="number" id="movementCarcassPrice" min="0" step="0.01" placeholder="0,00">
           </label>
           <label>
-            Kg carcaca
+            Kg carcaça
             <input type="number" id="movementCarcassKg" min="0" step="0.01" placeholder="0,00">
           </label>
         </div>
         <label class="form-span-2" id="movementSaleHint" hidden>
           Análise da venda
-          <span class="field-note">O total sera calculado automaticamente a partir do valor por kg e do peso informado.</span>
+          <span class="field-note">O total será calculado automaticamente a partir do valor por kg e do peso informado.</span>
         </label>
         <label id="movementValueWrap">
           <span id="movementValueLabel">Valor total (opcional)</span>
           <input type="number" id="movementValue" min="0" step="0.01" placeholder="0,00">
         </label>
         <label>
-          Observacao
-          <input type="text" id="movementNotes" maxlength="120" placeholder="Ex.: lote comprado em leilao">
+          Observação
+          <input type="text" id="movementNotes" maxlength="120" placeholder="Ex.: lote comprado em leilão">
         </label>
       </div>
 
       <div class="modal-actions">
-        <button type="submit" class="action-btn purchase">Salvar lancamento</button>
+        <button type="submit" class="action-btn purchase">Salvar lançamento</button>
       </div>
     </form>
   </dialog>
@@ -561,7 +562,7 @@
     <form method="dialog" id="categoryForm" class="modal-card">
       <div class="modal-header">
         <div>
-          <p class="panel-kicker">Estrutura flexivel</p>
+          <p class="panel-kicker">Estrutura flexível</p>
           <h2>Adicionar nova categoria</h2>
         </div>
         <button type="button" class="ghost-btn" id="closeCategoryDialog">Fechar</button>
@@ -570,7 +571,7 @@
       <div class="form-grid">
         <label>
           Nome da categoria
-          <input type="text" id="categoryName" maxlength="60" required placeholder="Ex.: Vacas em terminacao">
+          <input type="text" id="categoryName" maxlength="60" required placeholder="Ex.: Vacas em terminação">
         </label>
         <label>
           Estoque inicial
@@ -588,7 +589,7 @@
     <form method="dialog" id="editStockForm" class="modal-card modal-card-wide">
       <div class="modal-header">
         <div>
-          <p class="panel-kicker">Edicao direta</p>
+          <p class="panel-kicker">Edição direta</p>
           <h2>Editar estoque, potreiros e total declarado</h2>
         </div>
         <button type="button" class="ghost-btn" id="closeEditStockDialog">Fechar</button>
@@ -611,16 +612,16 @@
         <div class="panel-header edit-stock-section-header">
           <div>
             <p class="panel-kicker">Distribuição por potreiro</p>
-            <h3>Cadastro atual de lotacao</h3>
+            <h3>Cadastro atual de lotação</h3>
           </div>
           <button type="button" class="ghost-btn" id="addPotreroButton">Novo potreiro</button>
         </div>
-        <p class="field-note">Registre cada campo ou potreiro com a fazenda vinculada acima. Os campos importados hoje ficam vinculados a Arapey.</p>
+        <p class="field-note">Registre cada campo ou potreiro com a fazenda vinculada acima. Os campos importados hoje ficam vinculados à Arapey.</p>
         <div class="potrero-stock-list" id="potreroStockList"></div>
       </section>
 
       <div class="modal-actions">
-        <button type="submit" class="action-btn secondary">Salvar edicao</button>
+        <button type="submit" class="action-btn secondary">Salvar edição</button>
       </div>
     </form>
   </dialog>
@@ -647,7 +648,7 @@
       </div>
 
       <div class="modal-actions user-actions">
-        <button type="submit" class="action-btn secondary">Adicionar usuario</button>
+        <button type="submit" class="action-btn secondary">Adicionar usuário</button>
       </div>
 
       <div class="user-list" id="userList"></div>
@@ -655,7 +656,7 @@
       <div class="user-editor-panel" id="userEditorPanel" hidden>
         <div class="panel-header">
           <div>
-            <p class="panel-kicker">Editar usuario</p>
+            <p class="panel-kicker">Editar usuário</p>
             <h3 id="userEditorTitle">Atualizar credenciais</h3>
           </div>
         </div>
@@ -681,7 +682,7 @@
     <form method="dialog" id="pdfOptionsForm" class="modal-card">
       <div class="modal-header">
         <div>
-          <p class="panel-kicker">Geracao de PDF</p>
+          <p class="panel-kicker">Geração de PDF</p>
           <h2>Escolher fazendas do relatório</h2>
         </div>
         <button type="button" class="ghost-btn" id="closePdfOptionsDialog">Fechar</button>
@@ -699,13 +700,13 @@
           <input type="radio" name="pdfScope" value="all">
           <div>
             <strong>Todas as fazendas</strong>
-            <span>Gera um unico PDF com todas as fazendas em sequencia.</span>
+            <span>Gera um único PDF com todas as fazendas em sequência.</span>
           </div>
         </label>
         <label class="scope-option">
           <input type="radio" name="pdfScope" value="custom">
           <div>
-            <strong>Por selecao</strong>
+            <strong>Por seleção</strong>
             <span>Permite escolher manualmente quais fazendas entram no relatório.</span>
           </div>
         </label>
@@ -766,7 +767,7 @@
           <input type="number" id="monthlyDataQuantity" min="0" step="1" placeholder="0">
         </label>
         <label>
-          Valor atribuido
+          Valor atribuído
           <input type="number" id="monthlyDataValue" min="0" step="0.01" placeholder="0,00">
         </label>
         <label class="form-span-2">
@@ -779,6 +780,35 @@
         <button type="submit" class="action-btn secondary" id="monthlyDataSubmitButton">Salvar dado mensal</button>
       </div>
     </form>
+  </dialog>
+
+  <dialog id="georefDialog" class="modal">
+    <div class="modal-card modal-card-wide georef-dialog-card">
+      <div class="modal-header">
+        <div>
+          <p class="panel-kicker">Arapey</p>
+          <h2>Georreferenciamento dos potreiros</h2>
+        </div>
+        <button type="button" class="ghost-btn" id="closeGeorefDialog">Fechar</button>
+      </div>
+
+      <section class="georef-summary" id="georefStatus"></section>
+
+      <section class="georef-layout">
+        <article class="georef-map-shell">
+          <div class="panel-header georef-map-header">
+            <div>
+              <p class="panel-kicker">Mapa dos campos</p>
+              <h3>Lotação atual por localidade</h3>
+            </div>
+            <span class="chip">A partir do arquivo KML</span>
+          </div>
+          <div class="georef-map" id="georefMap"></div>
+        </article>
+
+        <aside class="georef-legend" id="georefLegend"></aside>
+      </section>
+    </div>
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>

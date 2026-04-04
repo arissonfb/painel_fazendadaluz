@@ -11,7 +11,7 @@ const MOVEMENT_TYPES = [
 const MONTH_NAMES = [
   "Janeiro",
   "Fevereiro",
-  "Marco",
+  "Março",
   "Abril",
   "Maio",
   "Junho",
@@ -45,7 +45,7 @@ const CATEGORY_VISUALS = {
 const STANDARD_FARM_CATEGORIES = [
   { id: "vacas-cria", name: "Vacas de cria" },
   { id: "terneiros-machos", name: "Terneiros 1 a 2 anos - machos" },
-  { id: "terneiros-femeas", name: "Terneiros 1 a 2 anos - femeas" },
+  { id: "terneiros-femeas", name: "Terneiros 1 a 2 anos - fêmeas" },
   { id: "bois-abate", name: "Bois de abate" },
   { id: "novilhas-entouradas", name: "Novilhas entouradas" },
   { id: "touros", name: "Touros" },
@@ -61,11 +61,33 @@ const MONTHLY_REPORT_CATEGORIES = [
   { value: "outros", label: "Outros" }
 ];
 
-const DEFAULT_SANITARY_PRODUCTS = ["Vacina aftosa", "Vermifugo", "Ivermectina"];
+const DEFAULT_SANITARY_PRODUCTS = ["Vacina aftosa", "Vermífugo", "Ivermectina"];
 const DEFAULT_POTREIROS = [];
 const LEGACY_POTREIRO_PLACEHOLDERS = ["Potreiro 1", "Potreiro 2", "Potreiro Norte"];
 const PREMIUM_SALE_FARMS = new Set(["arapey", "chiquita"]);
 const TOTAL_FARM_ID = "total";
+const ARAPEY_PRIMARY_GEO_KEYS = new Set([
+  "2",
+  "3",
+  "4",
+  "5",
+  "6",
+  "7",
+  "8",
+  "9",
+  "10",
+  "11",
+  "tapera",
+  "pedreira",
+  "costa",
+  "molino",
+  "chacra 10",
+  "las pampas",
+  "cerrillada",
+  "piq rincon",
+  "prad 7",
+  "prad 8"
+]);
 const PDF_LOGO_PATH = "./assets/logo-da-luz.jpg";
 const TECHNICAL_MANAGER_NAME = "Hugo Fabricio Fernandes Balbuena";
 const DEFAULT_USERS = [
@@ -78,7 +100,7 @@ const IMPORTED_SANITARY_RECORDS = {
     { sourceId: "img-sanitario-2025-11-29-laspampas-terneiras", date: "2025-11-29", quantity: 74, categoryId: "terneiras", categoryName: "Terneiras", potreiro: "Las Pampas", product: "Fluron Gold", notes: "" },
     { sourceId: "img-sanitario-2025-11-27-molino-bois-pre-gordo", date: "2025-11-27", quantity: 66, categoryId: "bois-pre-gordo", categoryName: "Bois pre gordo", potreiro: "Molino", product: "Insemax", notes: "" },
     { sourceId: "img-sanitario-2025-11-27-tapera-terneiras", date: "2025-11-27", quantity: null, categoryId: "terneiras", categoryName: "Terneiras", potreiro: "Tapera", product: "Carbeson", notes: "Faltou conta." },
-    { sourceId: "img-sanitario-2025-11-27-campo7-vaca-primipara", date: "2025-11-27", quantity: null, categoryId: "vaca-primipara", categoryName: "Vaca primipara", potreiro: "Campo 7", product: "Carbeson", notes: "Faltou conta. Campo 3 e 7 se juntaram no 7 / ficou 265 vacas primiparas." },
+    { sourceId: "img-sanitario-2025-11-27-campo7-vaca-primipara", date: "2025-11-27", quantity: null, categoryId: "vaca-primipara", categoryName: "Vaca primípara", potreiro: "Campo 7", product: "Carbeson", notes: "Faltou conta. Campo 3 e 7 se juntaram no 7 / ficou 265 vacas primíparas." },
     { sourceId: "img-sanitario-2025-10-25-campo10e1-vacas-parindo", date: "2025-10-25", quantity: 176, categoryId: "vacas-parindo", categoryName: "Vacas parindo", potreiro: "Campo 10 e 1", product: "FC 30 + Amitraz + ABA 1%", notes: "166 terneiros + 9 touros." },
     { sourceId: "img-sanitario-2025-11-20-campo8-vacas-cria", date: "2025-11-20", quantity: 253, categoryId: "vacas-cria", categoryName: "Vacas cria", potreiro: "Campo 8", product: "FC 30 + Amitraz + ABA 1%", notes: "238 terneiros + 9 touros." },
     { sourceId: "img-sanitario-2025-11-19-campo7-vacas-cria", date: "2025-11-19", quantity: 111, categoryId: "vacas-cria", categoryName: "Vacas cria", potreiro: "Campo 7", product: "FC 30 + Amitraz + ABA 1%", notes: "92 terneiros." },
@@ -95,7 +117,7 @@ const IMPORTED_SANITARY_RECORDS = {
     { sourceId: "img-sanitario-2025-11-04-cerrillada-terneiros", date: "2025-11-04", quantity: 398, categoryId: "terneiros", categoryName: "Terneiros", potreiro: "Cerrillada", product: "FC 30 + Levamisol + Flok 1%", notes: "" },
     { sourceId: "img-sanitario-2025-10-31-pedreira-rincon-vaquillonas", date: "2025-10-31", quantity: 396, categoryId: "vaquillonas", categoryName: "Vaquillonas", potreiro: "Pedreira (Rincon)", product: "Furius + Flok 1%", notes: "Faltaria 1." },
     { sourceId: "img-sanitario-2025-10-31-costa-rincon-vacas-solteiras", date: "2025-10-31", quantity: 186, categoryId: "vacas-solteiras", categoryName: "Vacas solteiras", potreiro: "Costa (Rincon)", product: "Furius + Flok 1%", notes: "2 a mais do lote." },
-    { sourceId: "img-sanitario-2025-10-30-tapera-rincon-vacas-invernada", date: "2025-10-30", quantity: 60, categoryId: "vacas-invernada", categoryName: "Vacas invernada", potreiro: "Tapera (Rincon)", product: "Maximo", notes: "Observacao da imagem: 3 esta com cria ao pe; 2 sao arrena." },
+    { sourceId: "img-sanitario-2025-10-30-tapera-rincon-vacas-invernada", date: "2025-10-30", quantity: 60, categoryId: "vacas-invernada", categoryName: "Vacas invernada", potreiro: "Tapera (Rincon)", product: "Maximo", notes: "Observação da imagem: 3 está com cria ao pé; 2 são arrena." },
     { sourceId: "img-sanitario-2025-10-30-molino-rincon-bois-pre-gordo", date: "2025-10-30", quantity: 66, categoryId: "bois-pre-gordo", categoryName: "Bois pre gordo", potreiro: "Molino (Rincon)", product: "Maximo + Moxidectina", notes: "3 estao no 4." },
     { sourceId: "img-sanitario-2025-10-30-laspampas-terneiros-0-1", date: "2025-10-30", quantity: 74, categoryId: "terneiros-0-1", categoryName: "Terneiros 0-1", potreiro: "Las Pampas", product: "Furius + Flok 1%", notes: "Morreu 1." },
     { sourceId: "img-sanitario-2025-10-29-cerrillada-terneiros-0-1", date: "2025-10-29", quantity: 396, categoryId: "terneiros-0-1", categoryName: "Terneiros 0-1", potreiro: "Cerrillada", product: "Furius + Iver + Nitroxinil", notes: "" }
@@ -104,8 +126,8 @@ const IMPORTED_SANITARY_RECORDS = {
     { sourceId: "img-sanitario-2025-11-28-chiquita-campo2-bois-gordo", date: "2025-11-28", quantity: 147, categoryId: "bois-gordo", categoryName: "Bois gordo", potreiro: "Campo 2", product: "Insemax", notes: "Moxidectina nos abaixo de 450 kg." },
     { sourceId: "img-sanitario-2025-11-22-chiquita-costa-touros-adultos", date: "2025-11-22", quantity: 83, categoryId: "touros-adultos", categoryName: "Touros adultos", potreiro: "Costa", product: "Insemax + Abamectina 1%", notes: "" },
     { sourceId: "img-sanitario-2025-11-15-chiquita-charula-tourinhos-1-2", date: "2025-11-15", quantity: 49, categoryId: "tourinhos-1-2", categoryName: "Tourinhos 1-2", potreiro: "Charula", product: "Insemax + Bioperosol", notes: "23 terneiros." },
-    { sourceId: "img-sanitario-2025-11-12-chiquita-pradera-grande-primiparas", date: "2025-11-12", quantity: 34, categoryId: "primiparas", categoryName: "Primiparas", potreiro: "Pradera + Grande", product: "Insemax + Abamectina 1%", notes: "23 terneiros." },
-    { sourceId: "img-sanitario-2025-11-12-chiquita-o-posto-primiparas", date: "2025-11-12", quantity: 129, categoryId: "primiparas", categoryName: "Primiparas", potreiro: "O Posto", product: "Insemax + Abamectina 1%", notes: "198 terneiros e 6 touros." },
+    { sourceId: "img-sanitario-2025-11-12-chiquita-pradera-grande-primiparas", date: "2025-11-12", quantity: 34, categoryId: "primiparas", categoryName: "Primíparas", potreiro: "Pradera + Grande", product: "Insemax + Abamectina 1%", notes: "23 terneiros." },
+    { sourceId: "img-sanitario-2025-11-12-chiquita-o-posto-primiparas", date: "2025-11-12", quantity: 129, categoryId: "primiparas", categoryName: "Primíparas", potreiro: "O Posto", product: "Insemax + Abamectina 1%", notes: "198 terneiros e 6 touros." },
     { sourceId: "img-sanitario-2025-11-11-chiquita-curso-vacas-paridas", date: "2025-11-11", quantity: 202, categoryId: "vacas-paridas", categoryName: "Vacas paridas", potreiro: "Curso", product: "Insemax + Abamectina 1%", notes: "148 terneiros e 5 touros." },
     { sourceId: "img-sanitario-2025-11-10-chiquita-alamo-vacas-paridas", date: "2025-11-10", quantity: 147, categoryId: "vacas-paridas", categoryName: "Vacas paridas", potreiro: "Alamo", product: "Insemax + Abamectina 1%", notes: "148 terneiros e 5 touros." },
     { sourceId: "img-sanitario-2025-11-08-chiquita-a-posto-vacas-paridas", date: "2025-11-08", quantity: 164, categoryId: "vacas-paridas", categoryName: "Vacas paridas", potreiro: "A Posto", product: "Insemax + Abamectina 1%", notes: "162 terneiros." },
@@ -125,7 +147,7 @@ const IMPORTED_SANITARY_RECORDS = {
     { sourceId: "img-sanitario-2025-11-11-passo-da-guarda-delmar-terneiros", date: "2025-11-11", quantity: 136, categoryId: "terneiros", categoryName: "Terneiros", potreiro: "Delmar", product: "FC 30 + Dueto", notes: "" },
     { sourceId: "img-sanitario-2025-11-11-passo-da-guarda-frente-terneiros", date: "2025-11-11", quantity: 404, categoryId: "terneiros", categoryName: "Terneiros", potreiro: "Frente", product: "FC 30 + Dueto", notes: "" },
     { sourceId: "img-sanitario-2025-11-11-passo-da-guarda-boqueirao-vacas-velhas", date: "2025-11-11", quantity: 75, categoryId: "vacas-velhas", categoryName: "Vacas velhas", potreiro: "Boqueirao", product: "FC 30", notes: "" },
-    { sourceId: "img-sanitario-2025-11-11-passo-da-guarda-invernadinha-primiparas", date: "2025-11-11", quantity: 110, categoryId: "primiparas", categoryName: "Primiparas", potreiro: "Invernadinha", product: "FC 30", notes: "4 touros." },
+    { sourceId: "img-sanitario-2025-11-11-passo-da-guarda-invernadinha-primiparas", date: "2025-11-11", quantity: 110, categoryId: "primiparas", categoryName: "Primíparas", potreiro: "Invernadinha", product: "FC 30", notes: "4 touros." },
     { sourceId: "img-sanitario-2025-11-09-passo-da-guarda-cemiterio-vaca-parida", date: "2025-11-09", quantity: 90, categoryId: "vaca-parida", categoryName: "Vaca parida", potreiro: "Cemiterio", product: "FC 30", notes: "3 touros." },
     { sourceId: "img-sanitario-2025-11-11-passo-da-guarda-antena-vaca-parida", date: "2025-11-11", quantity: 224, categoryId: "vaca-parida", categoryName: "Vaca parida", potreiro: "Antena", product: "FC 30", notes: "5 touros." },
     { sourceId: "img-sanitario-2025-11-11-passo-da-guarda-umbu-vaca-parida", date: "2025-11-11", quantity: 193, categoryId: "vaca-parida", categoryName: "Vaca parida", potreiro: "Umbu", product: "FC 30", notes: "7 touros." },
@@ -168,7 +190,7 @@ const IMPORTED_FARM_BASELINE_VERSION = 1;
 const IMPORTED_FARM_BASELINES = {
   chiquita: {
     declaredTotal: 3667,
-    note: "Inventario bovino importado do relatorio de novembro/2025. Os saldos ovinos, valores comerciais e notas operacionais foram levados para os dados mensais.",
+    note: "Inventário bovino importado do relatório de novembro/2025. Os saldos ovinos, valores comerciais e notas operacionais foram levados para os dados mensais.",
     categories: [
       { id: "vaca-prenha", name: "Vaca prenha", quantity: 1481 },
       { id: "vaca-invernar", name: "Vaca invernar", quantity: 1 },
@@ -188,7 +210,7 @@ const IMPORTED_FARM_BASELINES = {
   },
   "passa-da-guarda": {
     declaredTotal: 1532,
-    note: "Inventario bovino importado do relatorio de novembro/2025. Os saldos ovinos, valores comerciais e notas operacionais foram levados para os dados mensais.",
+    note: "Inventário bovino importado do relatório de novembro/2025. Os saldos ovinos, valores comerciais e notas operacionais foram levados para os dados mensais.",
     categories: [
       { id: "vaca-prenha", name: "Vaca prenha", quantity: 571 },
       { id: "vaca-invernar", name: "Vaca invernar", quantity: 44 },
@@ -202,7 +224,7 @@ const IMPORTED_FARM_BASELINES = {
   },
   colorado: {
     declaredTotal: 490,
-    note: "Inventario bovino importado do relatorio de novembro/2025. Os saldos ovinos e valores comerciais foram levados para os dados mensais quando identificados no PDF.",
+    note: "Inventário bovino importado do relatório de novembro/2025. Os saldos ovinos e valores comerciais foram levados para os dados mensais quando identificados no PDF.",
     categories: [
       { id: "bois", name: "Bois", quantity: 375 },
       { id: "vacas-solteiras", name: "Vacas solteiras", quantity: 108 },
@@ -213,7 +235,7 @@ const IMPORTED_FARM_BASELINES = {
   },
   sarandi: {
     declaredTotal: 269,
-    note: "Inventario bovino importado do relatorio de novembro/2025. Os saldos ovinos e as movimentacoes comerciais do PDF foram levados para os dados mensais.",
+    note: "Inventário bovino importado do relatório de novembro/2025. Os saldos ovinos e as movimentações comerciais do PDF foram levados para os dados mensais.",
     categories: [
       { id: "bois", name: "Bois", quantity: 269 }
     ]
@@ -222,41 +244,41 @@ const IMPORTED_FARM_BASELINES = {
 
 const IMPORTED_MONTHLY_RECORDS = {
   arapey: [
-    { sourceId: "pdf-2025-10-arapey-estoque-bovino", period: "2025-10", category: "estoque", title: "Saldo bovino do relatorio", quantity: 3015, value: 0, notes: "Outubro/2025: saldo bovino consolidado do relatorio mensal." },
-    { sourceId: "pdf-2025-10-arapey-estoque-ovino", period: "2025-10", category: "estoque", title: "Saldo ovino do relatorio", quantity: 3730, value: 0, notes: "Outubro/2025: saldo ovino consolidado do relatorio mensal." },
-    { sourceId: "pdf-2025-10-arapey-operacional-esquila", period: "2025-10", category: "operacional", title: "Esquila de borregos", quantity: 357, value: 0, notes: "Apontamento operacional do relatorio: ESQUILA BORREGOS - 357." },
-    { sourceId: "pdf-2025-11-arapey-estoque-bovino", period: "2025-11", category: "estoque", title: "Saldo bovino do relatorio", quantity: 2974, value: 0, notes: "Novembro/2025: soma das categorias bovinas listadas no PDF. O inventario da fazenda segue com total declarado de 3015 cabeças." },
-    { sourceId: "pdf-2025-11-arapey-estoque-ovino", period: "2025-11", category: "estoque", title: "Saldo ovino do relatorio", quantity: 3730, value: 0, notes: "Novembro/2025: saldo ovino consolidado do relatorio mensal." }
+    { sourceId: "pdf-2025-10-arapey-estoque-bovino", period: "2025-10", category: "estoque", title: "Saldo bovino do relatório", quantity: 3015, value: 0, notes: "Outubro/2025: saldo bovino consolidado do relatório mensal." },
+    { sourceId: "pdf-2025-10-arapey-estoque-ovino", period: "2025-10", category: "estoque", title: "Saldo ovino do relatório", quantity: 3730, value: 0, notes: "Outubro/2025: saldo ovino consolidado do relatório mensal." },
+    { sourceId: "pdf-2025-10-arapey-operacional-esquila", period: "2025-10", category: "operacional", title: "Esquila de borregos", quantity: 357, value: 0, notes: "Apontamento operacional do relatório: ESQUILA BORREGOS - 357." },
+    { sourceId: "pdf-2025-11-arapey-estoque-bovino", period: "2025-11", category: "estoque", title: "Saldo bovino do relatório", quantity: 2974, value: 0, notes: "Novembro/2025: soma das categorias bovinas listadas no PDF. O inventário da fazenda segue com total declarado de 3015 cabeças." },
+    { sourceId: "pdf-2025-11-arapey-estoque-ovino", period: "2025-11", category: "estoque", title: "Saldo ovino do relatório", quantity: 3730, value: 0, notes: "Novembro/2025: saldo ovino consolidado do relatório mensal." }
   ],
   chiquita: [
-    { sourceId: "pdf-2025-10-chiquita-estoque-bovino", period: "2025-10", category: "estoque", title: "Saldo bovino do relatorio", quantity: 3778, value: 0, notes: "Outubro/2025: saldo bovino consolidado do relatorio mensal." },
-    { sourceId: "pdf-2025-10-chiquita-estoque-ovino", period: "2025-10", category: "estoque", title: "Saldo ovino do relatorio", quantity: 2889, value: 0, notes: "Outubro/2025: saldo ovino consolidado do relatorio mensal." },
-    { sourceId: "pdf-2025-10-chiquita-comercial-compras", period: "2025-10", category: "comercial", title: "Compras registradas no relatorio", quantity: 54, value: 48450, notes: "23/10: 28 terneiros (19031) e 26 novilhos (29419)." },
-    { sourceId: "pdf-2025-11-chiquita-estoque-bovino", period: "2025-11", category: "estoque", title: "Saldo bovino do relatorio", quantity: 3667, value: 0, notes: "Novembro/2025: saldo bovino consolidado do relatorio mensal." },
-    { sourceId: "pdf-2025-11-chiquita-estoque-ovino", period: "2025-11", category: "estoque", title: "Saldo ovino do relatorio", quantity: 2498, value: 0, notes: "Novembro/2025: saldo ovino consolidado do relatorio mensal." }
+    { sourceId: "pdf-2025-10-chiquita-estoque-bovino", period: "2025-10", category: "estoque", title: "Saldo bovino do relatório", quantity: 3778, value: 0, notes: "Outubro/2025: saldo bovino consolidado do relatório mensal." },
+    { sourceId: "pdf-2025-10-chiquita-estoque-ovino", period: "2025-10", category: "estoque", title: "Saldo ovino do relatório", quantity: 2889, value: 0, notes: "Outubro/2025: saldo ovino consolidado do relatório mensal." },
+    { sourceId: "pdf-2025-10-chiquita-comercial-compras", period: "2025-10", category: "comercial", title: "Compras registradas no relatório", quantity: 54, value: 48450, notes: "23/10: 28 terneiros (19031) e 26 novilhos (29419)." },
+    { sourceId: "pdf-2025-11-chiquita-estoque-bovino", period: "2025-11", category: "estoque", title: "Saldo bovino do relatório", quantity: 3667, value: 0, notes: "Novembro/2025: saldo bovino consolidado do relatório mensal." },
+    { sourceId: "pdf-2025-11-chiquita-estoque-ovino", period: "2025-11", category: "estoque", title: "Saldo ovino do relatório", quantity: 2498, value: 0, notes: "Novembro/2025: saldo ovino consolidado do relatório mensal." }
   ],
   "passa-da-guarda": [
-    { sourceId: "pdf-2025-10-passa-da-guarda-estoque-bovino", period: "2025-10", category: "estoque", title: "Saldo bovino do relatorio", quantity: 1592, value: 0, notes: "Outubro/2025: saldo bovino consolidado do relatorio mensal." },
-    { sourceId: "pdf-2025-10-passa-da-guarda-estoque-ovino", period: "2025-10", category: "estoque", title: "Saldo ovino do relatorio", quantity: 672, value: 0, notes: "Outubro/2025: saldo ovino consolidado do relatorio mensal." },
-    { sourceId: "pdf-2025-10-passa-da-guarda-comercial-vendas", period: "2025-10", category: "comercial", title: "Vendas registradas no relatorio", quantity: 49, value: 238275.5, notes: "06/10: 22 vacas (97092) e 12 bois (61646). 21/10: 15 bois (79537,50)." },
-    { sourceId: "pdf-2025-10-passa-da-guarda-operacional-esquila", period: "2025-10", category: "operacional", title: "Esquila de ovinos", quantity: 670, value: 0, notes: "Relatorio operacional: 658 ovelhas e borregas + 12 carneiros; 15 pelegos apontados a parte." },
-    { sourceId: "pdf-2025-11-passa-da-guarda-estoque-bovino", period: "2025-11", category: "estoque", title: "Saldo bovino do relatorio", quantity: 1532, value: 0, notes: "Novembro/2025: saldo bovino consolidado do relatorio mensal." },
-    { sourceId: "pdf-2025-11-passa-da-guarda-estoque-ovino", period: "2025-11", category: "estoque", title: "Saldo ovino do relatorio", quantity: 673, value: 0, notes: "Novembro/2025: saldo ovino consolidado do relatorio mensal." },
-    { sourceId: "pdf-2025-11-passa-da-guarda-comercial-vendas", period: "2025-11", category: "comercial", title: "Vendas registradas no relatorio", quantity: 45, value: 196665, notes: "04/11: 10 bois (47670) e 35 vacas (148995)." }
+    { sourceId: "pdf-2025-10-passa-da-guarda-estoque-bovino", period: "2025-10", category: "estoque", title: "Saldo bovino do relatório", quantity: 1592, value: 0, notes: "Outubro/2025: saldo bovino consolidado do relatório mensal." },
+    { sourceId: "pdf-2025-10-passa-da-guarda-estoque-ovino", period: "2025-10", category: "estoque", title: "Saldo ovino do relatório", quantity: 672, value: 0, notes: "Outubro/2025: saldo ovino consolidado do relatório mensal." },
+    { sourceId: "pdf-2025-10-passa-da-guarda-comercial-vendas", period: "2025-10", category: "comercial", title: "Vendas registradas no relatório", quantity: 49, value: 238275.5, notes: "06/10: 22 vacas (97092) e 12 bois (61646). 21/10: 15 bois (79537,50)." },
+    { sourceId: "pdf-2025-10-passa-da-guarda-operacional-esquila", period: "2025-10", category: "operacional", title: "Esquila de ovinos", quantity: 670, value: 0, notes: "Relatório operacional: 658 ovelhas e borregas + 12 carneiros; 15 pelegos apontados à parte." },
+    { sourceId: "pdf-2025-11-passa-da-guarda-estoque-bovino", period: "2025-11", category: "estoque", title: "Saldo bovino do relatório", quantity: 1532, value: 0, notes: "Novembro/2025: saldo bovino consolidado do relatório mensal." },
+    { sourceId: "pdf-2025-11-passa-da-guarda-estoque-ovino", period: "2025-11", category: "estoque", title: "Saldo ovino do relatório", quantity: 673, value: 0, notes: "Novembro/2025: saldo ovino consolidado do relatório mensal." },
+    { sourceId: "pdf-2025-11-passa-da-guarda-comercial-vendas", period: "2025-11", category: "comercial", title: "Vendas registradas no relatório", quantity: 45, value: 196665, notes: "04/11: 10 bois (47670) e 35 vacas (148995)." }
   ],
   colorado: [
-    { sourceId: "pdf-2025-10-colorado-estoque-bovino", period: "2025-10", category: "estoque", title: "Saldo bovino do relatorio", quantity: 478, value: 0, notes: "Outubro/2025: saldo bovino consolidado do relatorio mensal." },
-    { sourceId: "pdf-2025-10-colorado-comercial-compras", period: "2025-10", category: "comercial", title: "Compras registradas no relatorio", quantity: 20, value: 69747, notes: "17/10: compra de 20 bois de 1 ano." },
-    { sourceId: "pdf-2025-11-colorado-estoque-bovino", period: "2025-11", category: "estoque", title: "Saldo bovino do relatorio", quantity: 490, value: 0, notes: "Novembro/2025: saldo bovino consolidado do relatorio mensal." }
+    { sourceId: "pdf-2025-10-colorado-estoque-bovino", period: "2025-10", category: "estoque", title: "Saldo bovino do relatório", quantity: 478, value: 0, notes: "Outubro/2025: saldo bovino consolidado do relatório mensal." },
+    { sourceId: "pdf-2025-10-colorado-comercial-compras", period: "2025-10", category: "comercial", title: "Compras registradas no relatório", quantity: 20, value: 69747, notes: "17/10: compra de 20 bois de 1 ano." },
+    { sourceId: "pdf-2025-11-colorado-estoque-bovino", period: "2025-11", category: "estoque", title: "Saldo bovino do relatório", quantity: 490, value: 0, notes: "Novembro/2025: saldo bovino consolidado do relatório mensal." }
   ],
   sarandi: [
-    { sourceId: "pdf-2025-08-sarandi-comercial-vendas", period: "2025-08", category: "comercial", title: "Vendas registradas no relatorio", quantity: 50, value: 255904, notes: "25/08: venda de 50 bois." },
-    { sourceId: "pdf-2025-10-sarandi-estoque-bovino", period: "2025-10", category: "estoque", title: "Saldo bovino do relatorio", quantity: 370, value: 0, notes: "Outubro/2025: saldo bovino consolidado do relatorio mensal." },
-    { sourceId: "pdf-2025-10-sarandi-estoque-ovino", period: "2025-10", category: "estoque", title: "Saldo ovino do relatorio", quantity: 156, value: 0, notes: "Outubro/2025: saldo ovino consolidado do relatorio mensal." },
-    { sourceId: "pdf-2025-10-sarandi-comercial-compras", period: "2025-10", category: "comercial", title: "Compras registradas no relatorio", quantity: 74, value: 242155.3, notes: "09/10: 23 bois (71112,50). 21/10: 20 bois (73371,90), 21 bois (73371,90) e 10 terneiros (24299)." },
-    { sourceId: "pdf-2025-10-sarandi-comercial-vendas", period: "2025-10", category: "comercial", title: "Vendas registradas no relatorio", quantity: 16, value: 91077, notes: "21/10: venda de 16 bois." },
-    { sourceId: "pdf-2025-11-sarandi-estoque-bovino", period: "2025-11", category: "estoque", title: "Saldo bovino do relatorio", quantity: 269, value: 0, notes: "Novembro/2025: saldo bovino consolidado do relatorio mensal." },
-    { sourceId: "pdf-2025-11-sarandi-estoque-ovino", period: "2025-11", category: "estoque", title: "Saldo ovino do relatorio", quantity: 156, value: 0, notes: "Novembro/2025: saldo ovino consolidado do relatorio mensal." }
+    { sourceId: "pdf-2025-08-sarandi-comercial-vendas", period: "2025-08", category: "comercial", title: "Vendas registradas no relatório", quantity: 50, value: 255904, notes: "25/08: venda de 50 bois." },
+    { sourceId: "pdf-2025-10-sarandi-estoque-bovino", period: "2025-10", category: "estoque", title: "Saldo bovino do relatório", quantity: 370, value: 0, notes: "Outubro/2025: saldo bovino consolidado do relatório mensal." },
+    { sourceId: "pdf-2025-10-sarandi-estoque-ovino", period: "2025-10", category: "estoque", title: "Saldo ovino do relatório", quantity: 156, value: 0, notes: "Outubro/2025: saldo ovino consolidado do relatório mensal." },
+    { sourceId: "pdf-2025-10-sarandi-comercial-compras", period: "2025-10", category: "comercial", title: "Compras registradas no relatório", quantity: 74, value: 242155.3, notes: "09/10: 23 bois (71112,50). 21/10: 20 bois (73371,90), 21 bois (73371,90) e 10 terneiros (24299)." },
+    { sourceId: "pdf-2025-10-sarandi-comercial-vendas", period: "2025-10", category: "comercial", title: "Vendas registradas no relatório", quantity: 16, value: 91077, notes: "21/10: venda de 16 bois." },
+    { sourceId: "pdf-2025-11-sarandi-estoque-bovino", period: "2025-11", category: "estoque", title: "Saldo bovino do relatório", quantity: 269, value: 0, notes: "Novembro/2025: saldo bovino consolidado do relatório mensal." },
+    { sourceId: "pdf-2025-11-sarandi-estoque-ovino", period: "2025-11", category: "estoque", title: "Saldo ovino do relatório", quantity: 156, value: 0, notes: "Novembro/2025: saldo ovino consolidado do relatório mensal." }
   ]
 };
 
@@ -296,7 +318,7 @@ const seedData = {
       id: "arapey",
       name: "Arapey",
       declaredTotal: 3015,
-      note: "Controle inicial carregado com os grupos informados e ajuste de conferencia para manter o total declarado.",
+      note: "Controle inicial carregado com os grupos informados e ajuste de conferência para manter o total declarado.",
       sanitaryProducts: ["Vacina aftosa", "Vermifugo", "Ivermectina"],
       potreiros: [],
       categories: [
@@ -308,7 +330,7 @@ const seedData = {
         { id: "touros", name: "Touros", quantity: 140 },
         { id: "vacas-invernar", name: "Vacas de invernar", quantity: 30 },
         { id: "vacas-entouradas", name: "Vacas entouradas", quantity: 190 },
-        { id: "ajuste-inicial", name: "Ajuste inicial de conferencia", quantity: 20 }
+        { id: "ajuste-inicial", name: "Ajuste inicial de conferência", quantity: 20 }
       ],
       movements: [],
       sanitaryRecords: [],
@@ -332,7 +354,9 @@ const seedData = {
 const runtime = {
   storageEnabled: true,
   appInitialized: false,
-  splashDismissed: false
+  splashDismissed: false,
+  arapeyKmlData: null,
+  arapeyKmlPromise: null
 };
 
 const today = new Date();
@@ -441,6 +465,12 @@ const elements = {
   editStockList: document.getElementById("editStockList"),
   addPotreroButton: document.getElementById("addPotreroButton"),
   potreroStockList: document.getElementById("potreroStockList"),
+  georefButton: document.getElementById("georefButton"),
+  georefDialog: document.getElementById("georefDialog"),
+  closeGeorefDialog: document.getElementById("closeGeorefDialog"),
+  georefStatus: document.getElementById("georefStatus"),
+  georefMap: document.getElementById("georefMap"),
+  georefLegend: document.getElementById("georefLegend"),
   exportPdfButton: document.getElementById("exportPdfButton"),
   monthlyDataButton: document.getElementById("monthlyDataButton"),
   currentUserLabel: document.getElementById("currentUserLabel"),
@@ -495,7 +525,7 @@ function boot() {
       render();
     }
   } catch (error) {
-    console.error("Falha na inicializacao do painel:", error);
+    console.error("Falha na inicialização do painel:", error);
     showStartupError(error);
   }
 }
@@ -525,7 +555,7 @@ function loadData() {
     return parsedData;
   } catch (error) {
     runtime.storageEnabled = false;
-    console.warn("Armazenamento local indisponivel. O painel vai funcionar sem persistencia.", error);
+    console.warn("Armazenamento local indisponível. O painel vai funcionar sem persistência.", error);
     const fallbackData = ensureDataShape(cloneSeedData());
     fallbackData.auth.sessionUserId = "";
     return fallbackData;
@@ -694,17 +724,17 @@ function handleUserEditSave() {
   const nextPassword = elements.editUserPassword.value;
 
   if (!nextLogin) {
-    alert("O login nao pode ficar vazio.");
+    alert("O login não pode ficar vazio.");
     return;
   }
 
   if (state.data.auth.users.some((item) => item.id !== user.id && normalizeText(item.login) === normalizeText(nextLogin))) {
-    alert("Ja existe outro usuario com esse login.");
+    alert("Já existe outro usuário com esse login.");
     return;
   }
 
   if (state.userEditingMode === "reset" && !nextPassword) {
-    alert("Digite uma nova senha para redefinir a senha deste usuario.");
+    alert("Digite uma nova senha para redefinir a senha deste usuário.");
     return;
   }
 
@@ -738,7 +768,7 @@ function handleManageUsersSubmit(event) {
   }
 
   if (state.data.auth.users.some((user) => normalizeText(user.login) === normalizeText(login))) {
-    alert("Ja existe um usuario com esse login.");
+    alert("Já existe um usuário com esse login.");
     return;
   }
 
@@ -1076,6 +1106,7 @@ function bindEvents() {
 
   elements.adjustButton.addEventListener("click", () => openMovementDialog("ajuste"));
   elements.editStockButton.addEventListener("click", openEditStockDialog);
+  elements.georefButton.addEventListener("click", openGeorefDialog);
   elements.addCategoryButton.addEventListener("click", openCategoryDialog);
   elements.monthlyDataButton.addEventListener("click", openMonthlyDataDialog);
   elements.editFarmName.addEventListener("change", handleEditFarmChange);
@@ -1085,6 +1116,7 @@ function bindEvents() {
   elements.closeMovementDialog.addEventListener("click", () => elements.movementDialog.close());
   elements.closeCategoryDialog.addEventListener("click", () => elements.categoryDialog.close());
   elements.closeEditStockDialog.addEventListener("click", () => elements.editStockDialog.close());
+  elements.closeGeorefDialog.addEventListener("click", () => elements.georefDialog.close());
   elements.closeMonthlyDataDialog.addEventListener("click", () => elements.monthlyDataDialog.close());
   elements.exportPdfButton.addEventListener("click", openPdfOptionsDialog);
   elements.closePdfOptionsDialog.addEventListener("click", () => elements.pdfOptionsDialog.close());
@@ -1184,6 +1216,7 @@ function render() {
   renderInsights(farm);
   renderCharts(farm);
   renderActiveView();
+  renderGeorefState(farm);
   renderActionButtonsState();
 }
 
@@ -1238,17 +1271,17 @@ function renderGlobalSummary() {
       detail: isTotalView ? "estoque consolidado do grupo" : `estoque atual de ${selectedFarm?.name || "fazenda"}`
     },
     {
-      title: isTotalView ? "Entradas consolidadas" : "Entradas no periodo",
+      title: isTotalView ? "Entradas consolidadas" : "Entradas no período",
       value: formatInteger(totals.entradas),
       detail: isTotalView ? "compras, nascimentos e ajustes positivos" : "compras, nascimentos e ajustes positivos"
     },
     {
-      title: isTotalView ? "Saidas consolidadas" : "Saidas no periodo",
+      title: isTotalView ? "Saídas consolidadas" : "Saídas no período",
       value: formatInteger(totals.saidas),
       detail: isTotalView ? "vendas, mortes, consumo e ajustes negativos" : "vendas, mortes, consumo e ajustes negativos"
     },
     {
-      title: "Registros sanitarios",
+      title: "Registros sanitários",
       value: formatInteger(totals.sanitario),
       detail: isTotalView ? "manejos sanitários no período filtrado" : `manejos sanitários de ${selectedFarm?.name || "fazenda"}`
     }
@@ -1299,6 +1332,22 @@ function renderActionButtonsState() {
   });
 }
 
+function renderGeorefState(farm) {
+  const isArapeyDashboard = farm.id === "arapey" && state.activeView === "dashboard";
+  elements.georefButton.hidden = !isArapeyDashboard;
+  elements.georefButton.disabled = !isArapeyDashboard;
+  elements.georefButton.title = isArapeyDashboard ? "" : "Disponível apenas na fazenda Arapey.";
+
+  if (!isArapeyDashboard && elements.georefDialog.open) {
+    elements.georefDialog.close();
+    return;
+  }
+
+  if (isArapeyDashboard && elements.georefDialog.open) {
+    void renderGeorefDialog();
+  }
+}
+
 function renderHero(farm) {
   const dominantCategory = getDominantCategory(farm);
   const dominantText = dominantCategory
@@ -1323,12 +1372,12 @@ function renderHeroMetrics(farm) {
     {
       label: "Giro anual",
       value: formatInteger(annual.totalMovements),
-      text: "lancamentos no ano filtrado"
+      text: "lançamentos no ano filtrado"
     },
     {
-      label: "Conferencia",
+      label: "Conferência",
       value: discrepancy === 0 ? "OK" : `${discrepancy > 0 ? "+" : ""}${formatInteger(discrepancy)}`,
-      text: discrepancy === 0 ? "estoque alinhado ao total declarado" : "diferenca entre estoque e total declarado"
+      text: discrepancy === 0 ? "estoque alinhado ao total declarado" : "diferença entre estoque e total declarado"
     }
   ];
 
@@ -1350,9 +1399,9 @@ function renderSummaryCards(farm) {
 
   const cards = [
     { title: "Rebanho atual", value: formatInteger(totalAnimals), detail: "Estoque total da fazenda selecionada" },
-    { title: "Entradas no periodo", value: formatInteger(purchasesAndBirths), detail: "Compras, nascimentos e ajustes positivos" },
-    { title: "Saidas no periodo", value: formatInteger(salesAndLosses), detail: "Vendas, consumo, mortes e ajustes negativos" },
-    { title: "Movimentacoes no ano", value: formatInteger(annualData.totalMovements), detail: `Lancamentos registrados em ${state.filters.year}` }
+    { title: "Entradas no período", value: formatInteger(purchasesAndBirths), detail: "Compras, nascimentos e ajustes positivos" },
+    { title: "Saídas no período", value: formatInteger(salesAndLosses), detail: "Vendas, consumo, mortes e ajustes negativos" },
+    { title: "Movimentações no ano", value: formatInteger(annualData.totalMovements), detail: `Lançamentos registrados em ${state.filters.year}` }
   ];
 
   elements.summaryGrid.innerHTML = cards.map((card) => `
@@ -1398,7 +1447,7 @@ function renderPeriodSummary(farm) {
   const valueText = annual.totalValue > 0 ? formatCurrency(annual.totalValue) : "Sem valor informado";
 
   const cards = [
-    { title: state.filters.month === "all" ? "Saldo anual" : "Saldo do mes", value: `${monthly.netChange > 0 ? "+" : ""}${formatInteger(monthly.netChange)}`, detail: "Variacao liquida entre entradas e saidas" },
+    { title: state.filters.month === "all" ? "Saldo anual" : "Saldo do mês", value: `${monthly.netChange > 0 ? "+" : ""}${formatInteger(monthly.netChange)}`, detail: "Variação líquida entre entradas e saídas" },
     { title: "Compras", value: formatInteger(monthly.byType.compra), detail: "Animais comprados no recorte" },
     { title: "Nascimentos", value: formatInteger(monthly.byType.nascimento), detail: "Animais nascidos no recorte" },
     { title: "Valor movimentado", value: valueText, detail: "Soma dos valores registrados no ano" }
@@ -1424,13 +1473,13 @@ function renderSalesAnalysis(farm) {
       { title: "Vendas registradas", value: formatInteger(summary.count), detail: "lançamentos comerciais no período" },
       { title: "Faturamento", value: formatCurrency(summary.totalValue), detail: "valor calculado das vendas" },
       { title: "Kg vivo", value: formatWeight(summary.liveKg), detail: "peso vivo negociado" },
-      { title: "Kg carcaca", value: formatWeight(summary.carcassKg), detail: "peso de carcaca negociado" }
+      { title: "Kg carcaça", value: formatWeight(summary.carcassKg), detail: "peso de carcaça negociado" }
     ]
     : [
       { title: "Vendas registradas", value: formatInteger(summary.count), detail: "lançamentos comerciais no período" },
       { title: "Faturamento", value: formatCurrency(summary.totalValue), detail: "valor calculado das vendas" },
       { title: "Kg vivo", value: formatWeight(summary.liveKg), detail: "peso vivo negociado" },
-      { title: "Media R$/kg vivo", value: summary.liveKg > 0 ? formatCurrency(summary.totalValue / summary.liveKg) : formatCurrency(0), detail: "preco medio por kg vivo" }
+      { title: "Média R$/kg vivo", value: summary.liveKg > 0 ? formatCurrency(summary.totalValue / summary.liveKg) : formatCurrency(0), detail: "preço médio por kg vivo" }
     ];
 
   elements.salesSummary.innerHTML = cards.map((card) => `
@@ -1454,7 +1503,7 @@ function renderSalesAnalysis(farm) {
     <tr>
       <td data-label="Data">${formatDate(movement.date)}</td>
       <td data-label="Categoria">${escapeHtml(movement.categoryName)}</td>
-      <td data-label="Base">${movement.saleDetails ? escapeHtml(getSaleModeLabel(movement.saleDetails.mode || "vivo")) : "Relatorio mensal"}</td>
+      <td data-label="Base">${movement.saleDetails ? escapeHtml(getSaleModeLabel(movement.saleDetails.mode || "vivo")) : "Relatório mensal"}</td>
       <td data-label="Kg">${movement.saleDetails ? formatWeight(movement.saleDetails.weightKg || 0) : "-"}</td>
       <td data-label="R$/kg">${movement.saleDetails ? formatCurrency(movement.saleDetails.pricePerKg || 0) : "-"}</td>
       <td data-label="Total">${formatCurrency(movement.value || 0)}</td>
@@ -1467,7 +1516,7 @@ function renderMovementsTable(farm) {
   if (!movements.length) {
     elements.movementsTableBody.innerHTML = `
       <tr>
-        <td colspan="5" class="table-empty-cell">Ainda nao ha lancamentos para ${farm.name}. Use os botoes acima para iniciar o controle.</td>
+        <td colspan="5" class="table-empty-cell">Ainda não há lançamentos para ${farm.name}. Use os botões acima para iniciar o controle.</td>
       </tr>
     `;
     return;
@@ -1529,7 +1578,7 @@ function summarizeSalePeriod(farm, year, month) {
 }
 
 function getSaleModeLabel(mode) {
-  return mode === "carcaca" ? "Kg carcaca" : "Kg vivo";
+  return mode === "carcaca" ? "Kg carcaça" : "Kg vivo";
 }
 
 function getOperationalInsights(farm, year = state.filters.year, month = state.filters.month) {
@@ -1574,29 +1623,29 @@ function renderSanitarySummary(farm) {
 
   const cards = [
     {
-      title: "Aplicacoes",
+      title: "Aplicações",
       value: formatInteger(totalApplications),
-      detail: "registros sanitarios no periodo filtrado"
+      detail: "registros sanitários no período filtrado"
     },
     {
       title: "Animais tratados",
       value: formatInteger(treatedAnimals),
-      detail: "somatorio informado nos registros"
+      detail: "somatório informado nos registros"
     },
     {
       title: "Produtos usados",
       value: formatInteger(uniqueProducts),
-      detail: "produtos diferentes no periodo"
+      detail: "produtos diferentes no período"
     },
     {
       title: "Potreiros usados",
       value: formatInteger(uniquePotreiros),
-      detail: "destinos registrados no periodo"
+      detail: "destinos registrados no período"
     },
     {
-      title: "Ultimo manejo",
+      title: "Último manejo",
       value: latestRecord ? formatDate(latestRecord.date) : "-",
-      detail: latestRecord ? latestRecord.product : "sem registro no periodo"
+      detail: latestRecord ? latestRecord.product : "sem registro no período"
     }
   ];
 
@@ -1694,22 +1743,22 @@ function renderMonthlySummary(farm) {
     {
       title: "Registros mensais",
       value: formatInteger(summary.count),
-      detail: "entradas alinhadas ao relatorio mensal filtrado"
+      detail: "entradas alinhadas ao relatório mensal filtrado"
     },
     {
       title: "Quantidade informada",
       value: formatInteger(summary.totalQuantity),
-      detail: "somatorio dos numeros mensais cadastrados"
+      detail: "somatório dos números mensais cadastrados"
     },
     {
-      title: "Valor atribuido",
+      title: "Valor atribuído",
       value: formatCurrency(summary.totalValue),
-      detail: "valores monetarios associados ao periodo"
+      detail: "valores monetários associados ao período"
     },
     {
       title: "Categorias ativas",
       value: formatInteger(summary.activeCategories),
-      detail: "blocos do relatorio mensal em uso"
+      detail: "blocos do relatório mensal em uso"
     }
   ];
 
@@ -1741,14 +1790,14 @@ function renderMonthlyTable(farm) {
 
   elements.monthlyTableBody.innerHTML = records.map((record) => `
     <tr>
-      <td data-label="Competencia">${formatMonthYear(record.period)}</td>
+      <td data-label="Competência">${formatMonthYear(record.period)}</td>
       <td data-label="Fazenda">${escapeHtml(record.farmName || farm.name)}</td>
       <td data-label="Categoria">${escapeHtml(getMonthlyCategoryLabel(record.category))}</td>
       <td data-label="Indicador">${escapeHtml(record.title)}</td>
       <td data-label="Qtd.">${record.quantity ? formatInteger(record.quantity) : "-"}</td>
       <td data-label="Valor">${record.value ? formatCurrency(record.value) : "-"}</td>
       <td data-label="Obs.">${escapeHtml(record.notes || "-")}</td>
-      <td data-label="Acoes">
+      <td data-label="Ações">
         <button type="button" class="table-action-btn" data-edit-monthly-id="${record.id}">Editar</button>
       </td>
     </tr>
@@ -1777,12 +1826,12 @@ function renderPotreroSummaries(farm) {
       </article>
     `).join("") + `
       <article class="potrero-card potrero-card-highlight">
-        <p class="panel-kicker">${balance === 0 ? "Conferencia de lotacao" : balance > 0 ? "Saldo sem potreiro" : "Excedente nos potreiros"}</p>
+        <p class="panel-kicker">${balance === 0 ? "Conferência de lotação" : balance > 0 ? "Saldo sem potreiro" : "Excedente nos potreiros"}</p>
         <strong>${balance === 0 ? "OK" : `${balance > 0 ? "+" : ""}${formatInteger(balance)}`}</strong>
         <p>${balance === 0
           ? farm.id === TOTAL_FARM_ID ? "A soma dos potreiros esta alinhada ao rebanho consolidado." : "A soma dos potreiros esta alinhada ao rebanho atual."
           : balance > 0
-            ? farm.id === TOTAL_FARM_ID ? "Ainda ha animais no consolidado sem distribuicao registrada em potreiro." : "Ainda ha animais no estoque sem distribuicao registrada em potreiro."
+            ? farm.id === TOTAL_FARM_ID ? "Ainda há animais no consolidado sem distribuição registrada em potreiro." : "Ainda há animais no estoque sem distribuição registrada em potreiro."
             : farm.id === TOTAL_FARM_ID ? "A soma dos potreiros esta acima do estoque consolidado informado." : "A soma dos potreiros esta acima do estoque atual informado para a fazenda."}</p>
       </article>
     `
@@ -1790,11 +1839,576 @@ function renderPotreroSummaries(farm) {
       <article class="potrero-card">
         <p class="panel-kicker">Sem cadastro</p>
         <strong>0</strong>
-        <p>Cadastre os potreiros da fazenda para visualizar a lotacao atual.</p>
+        <p>Cadastre os potreiros da fazenda para visualizar a lotação atual.</p>
       </article>
     `;
 
   elements.dashboardPotreroSummary.innerHTML = cards;
+}
+
+async function openGeorefDialog() {
+  const farm = getFarm();
+  if (farm.id !== "arapey") {
+    return;
+  }
+
+  elements.georefStatus.innerHTML = createGeorefLoadingSummary();
+  elements.georefMap.innerHTML = '<div class="georef-map-empty">Carregando o mapa georreferenciado da Arapey...</div>';
+  elements.georefLegend.innerHTML = `
+    <section class="georef-legend-section">
+      <h3>Preparando leitura dos campos</h3>
+      <p>Estou cruzando o arquivo KML com os potreiros cadastrados para mostrar a lotação atual em cada localidade.</p>
+    </section>
+  `;
+
+  elements.georefDialog.showModal();
+  await renderGeorefDialog();
+}
+
+async function renderGeorefDialog() {
+  const farm = getFarm();
+  if (farm.id !== "arapey") {
+    return;
+  }
+
+  try {
+    const kmlData = await loadArapeyKmlData();
+    if (!elements.georefDialog.open || getFarm().id !== "arapey") {
+      return;
+    }
+
+    const model = buildArapeyGeorefModel(farm, kmlData);
+    elements.georefStatus.innerHTML = renderGeorefSummaryCards(model);
+    elements.georefMap.innerHTML = renderGeorefMap(model);
+    elements.georefLegend.innerHTML = renderGeorefLegend(model);
+  } catch (error) {
+    console.error("Falha ao carregar georreferenciamento da Arapey:", error);
+    elements.georefStatus.innerHTML = `
+      <article class="georef-summary-card">
+        <span>Georreferenciamento</span>
+        <strong>Indisponível</strong>
+        <p>Não consegui ler o arquivo <code>Arapey.kml</code> neste ambiente.</p>
+      </article>
+    `;
+    elements.georefMap.innerHTML = `
+      <div class="georef-map-error">
+        Não foi possível carregar o mapa da Arapey agora.<br>
+        Verifique se o arquivo <code>Arapey.kml</code> está disponível junto do sistema.
+      </div>
+    `;
+    elements.georefLegend.innerHTML = `
+      <section class="georef-legend-section">
+        <h3>O que foi tentado</h3>
+        <p>O sistema tentou ler o arquivo local da Arapey para desenhar os potreiros no painel, mas a leitura falhou neste contexto.</p>
+      </section>
+    `;
+  }
+}
+
+function createGeorefLoadingSummary() {
+  return `
+    <article class="georef-summary-card">
+      <span>KML</span>
+      <strong>...</strong>
+      <p>Lendo as geometrias dos campos.</p>
+    </article>
+    <article class="georef-summary-card">
+      <span>Vínculos</span>
+      <strong>...</strong>
+      <p>Conferindo potreiros cadastrados.</p>
+    </article>
+    <article class="georef-summary-card">
+      <span>Lotação</span>
+      <strong>...</strong>
+      <p>Somando as cabeças por localidade.</p>
+    </article>
+    <article class="georef-summary-card">
+      <span>Pendências</span>
+      <strong>...</strong>
+      <p>Separando o que ainda precisa de ajuste manual.</p>
+    </article>
+  `;
+}
+
+async function loadArapeyKmlData() {
+  if (runtime.arapeyKmlData) {
+    return runtime.arapeyKmlData;
+  }
+
+  if (runtime.arapeyKmlPromise) {
+    return runtime.arapeyKmlPromise;
+  }
+
+  runtime.arapeyKmlPromise = fetch("./Arapey.kml", { cache: "no-store" })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      return response.text();
+    })
+    .then((kmlText) => parseArapeyKml(kmlText))
+    .then((parsed) => {
+      runtime.arapeyKmlData = parsed;
+      return parsed;
+    })
+    .finally(() => {
+      runtime.arapeyKmlPromise = null;
+    });
+
+  return runtime.arapeyKmlPromise;
+}
+
+function parseArapeyKml(kmlText) {
+  const xml = new DOMParser().parseFromString(kmlText, "application/xml");
+  const parseError = xml.querySelector("parsererror");
+  if (parseError) {
+    throw new Error("KML invalido.");
+  }
+
+  const featureMap = new Map();
+  const pointMap = new Map();
+
+  [...xml.getElementsByTagNameNS("*", "Placemark")].forEach((placemark) => {
+    const rawName = (placemark.getElementsByTagNameNS("*", "name")[0]?.textContent || "").trim();
+    if (!rawName) {
+      return;
+    }
+
+    const areaMatch = rawName.match(/^(.*?)\s*-\s*([\d.,]+)\s*ha$/i);
+    const baseName = (areaMatch?.[1] || rawName).trim();
+    const key = resolveArapeyGeoKey(baseName);
+    if (!key) {
+      return;
+    }
+
+    const pointNode = placemark.getElementsByTagNameNS("*", "Point")[0];
+    if (pointNode) {
+      const [point] = extractKmlCoordinates(pointNode);
+      if (point) {
+        pointMap.set(key, {
+          point,
+          areaHa: parseKmlNumber(areaMatch?.[2])
+        });
+      }
+    }
+
+    [...placemark.getElementsByTagNameNS("*", "Polygon")].forEach((polygonNode) => {
+      const polygon = extractKmlCoordinates(polygonNode);
+      if (polygon.length < 3) {
+        return;
+      }
+
+      if (!featureMap.has(key)) {
+        featureMap.set(key, {
+          key,
+          polygons: [],
+          sourceNames: new Set()
+        });
+      }
+
+      const feature = featureMap.get(key);
+      feature.polygons.push(polygon);
+      feature.sourceNames.add(rawName);
+    });
+  });
+
+  const features = [...featureMap.values()].map((feature) => {
+    const pointInfo = pointMap.get(feature.key);
+    return {
+      ...feature,
+      sourceNames: [...feature.sourceNames],
+      label: formatArapeyGeoLabel(feature.key),
+      markerPoint: pointInfo?.point || getFeatureCenter(feature.polygons),
+      areaHa: Number.isFinite(pointInfo?.areaHa) ? pointInfo.areaHa : null
+    };
+  });
+
+  return { features };
+}
+
+function buildArapeyGeorefModel(farm, kmlData) {
+  const potreroGroups = new Map();
+
+  getPotreroEntries(farm).forEach((potrero) => {
+    const key = resolveArapeyGeoKey(potrero.name);
+    const quantity = normalizePotreroQuantity(potrero.quantity);
+    const bucketKey = key || `unmatched::${slugify(potrero.name) || potrero.id || "potreiro"}`;
+    const group = potreroGroups.get(bucketKey) || {
+      key,
+      names: [],
+      quantity: 0
+    };
+
+    group.names.push(potrero.name);
+    group.quantity += quantity;
+    potreroGroups.set(bucketKey, group);
+  });
+
+  const visibleFeatures = kmlData.features
+    .filter((feature) => feature.areaHa !== null || ARAPEY_PRIMARY_GEO_KEYS.has(feature.key) || [...potreroGroups.values()].some((group) => group.key === feature.key))
+    .map((feature) => {
+      const group = [...potreroGroups.values()].find((item) => item.key === feature.key) || null;
+      return {
+        ...feature,
+        quantity: group?.quantity || 0,
+        registeredNames: group?.names || [],
+        isLinked: Boolean(group)
+      };
+    })
+    .sort((a, b) => b.quantity - a.quantity || a.label.localeCompare(b.label));
+
+  const unmatchedPotreiros = [...potreroGroups.values()]
+    .filter((group) => !group.key || !visibleFeatures.some((feature) => feature.key === group.key))
+    .sort((a, b) => b.quantity - a.quantity || a.names[0].localeCompare(b.names[0]));
+
+  const totalRegistered = getPotreroEntries(farm).length;
+  const linkedPotreiros = visibleFeatures.reduce((sum, feature) => sum + feature.registeredNames.length, 0);
+  const linkedAnimals = visibleFeatures.reduce((sum, feature) => sum + feature.quantity, 0);
+  const unmatchedAnimals = unmatchedPotreiros.reduce((sum, item) => sum + item.quantity, 0);
+
+  return {
+    farmName: farm.name,
+    totalRegistered,
+    visibleFeatures,
+    unmatchedPotreiros,
+    stats: {
+      mappedAreas: visibleFeatures.length,
+      linkedPotreiros,
+      linkedAnimals,
+      unmatchedPotreiros: unmatchedPotreiros.length,
+      unmatchedAnimals,
+      emptyAreas: visibleFeatures.filter((feature) => !feature.isLinked).length
+    }
+  };
+}
+
+function renderGeorefSummaryCards(model) {
+  return `
+    <article class="georef-summary-card">
+      <span>Campos no mapa</span>
+      <strong>${formatInteger(model.stats.mappedAreas)}</strong>
+      <p>Áreas da Arapey disponíveis para leitura georreferenciada.</p>
+    </article>
+    <article class="georef-summary-card">
+      <span>Potreiros vinculados</span>
+      <strong>${formatInteger(model.stats.linkedPotreiros)}/${formatInteger(model.totalRegistered)}</strong>
+      <p>Potreiros cadastrados que o sistema conseguiu localizar automaticamente no KML.</p>
+    </article>
+    <article class="georef-summary-card">
+      <span>Animais mapeados</span>
+      <strong>${formatInteger(model.stats.linkedAnimals)}</strong>
+      <p>Cabeças atualmente posicionadas nas localidades reconhecidas.</p>
+    </article>
+    <article class="georef-summary-card">
+      <span>Pendencias</span>
+      <strong>${formatInteger(model.stats.unmatchedPotreiros)}</strong>
+      <p>${formatInteger(model.stats.unmatchedAnimals)} animais em potreiros ainda sem correspondência automática no mapa.</p>
+    </article>
+  `;
+}
+
+function renderGeorefLegend(model) {
+  const mappedItems = model.visibleFeatures.length
+    ? model.visibleFeatures.map((feature) => {
+      const namesText = feature.registeredNames.length
+        ? `Cadastro: ${escapeHtml(feature.registeredNames.join(", "))}.`
+        : "Sem lotação cadastrada para esta localidade.";
+      const areaText = Number.isFinite(feature.areaHa)
+        ? `<span class="georef-meta-pill">${formatWeight(feature.areaHa)} ha</span>`
+        : "";
+      const quantityText = feature.quantity > 0 ? `${formatInteger(feature.quantity)} cab.` : "Sem gado";
+
+      return `
+        <article class="georef-legend-item ${feature.isLinked ? "is-linked" : ""}">
+          <div class="georef-legend-head">
+            <strong>${escapeHtml(feature.label)}</strong>
+            <span class="georef-badge">${escapeHtml(quantityText)}</span>
+          </div>
+          <div class="georef-legend-meta">
+            ${areaText}
+            <span class="georef-meta-pill">${feature.isLinked ? "Vinculado" : "Sem vínculo"}</span>
+          </div>
+          <p class="georef-legend-note">${namesText}</p>
+        </article>
+      `;
+    }).join("")
+    : "<p>Nenhuma geometria da Arapey foi localizada no arquivo KML.</p>";
+
+  const unmatchedSection = model.unmatchedPotreiros.length
+    ? `
+      <section class="georef-legend-section">
+        <h3>Potreiros sem correspondência automática</h3>
+        <p>Esses cadastros ainda precisam de ajuste de nome para o mapa reconhecer a localidade correta.</p>
+        ${model.unmatchedPotreiros.map((item) => `
+          <article class="georef-legend-item is-unmatched">
+            <div class="georef-legend-head">
+              <strong>${escapeHtml(item.names.join(", "))}</strong>
+              <span class="georef-badge">${formatInteger(item.quantity)} cab.</span>
+            </div>
+            <p class="georef-legend-note">Revise a grafia do potreiro ou confira se essa localidade existe no arquivo georreferenciado.</p>
+          </article>
+        `).join("")}
+      </section>
+    `
+    : `
+      <section class="georef-legend-section">
+        <h3>Correspondencia automatica</h3>
+        <p>Todos os potreiros cadastrados da Arapey encontraram uma localidade no arquivo <code>Arapey.kml</code>.</p>
+      </section>
+    `;
+
+  return `
+    <section class="georef-legend-section">
+      <h3>Localidades identificadas</h3>
+      <p>O mapa usa as áreas do KML e a lotação atual cadastrada em <strong>${escapeHtml(model.farmName)}</strong>.</p>
+      ${mappedItems}
+    </section>
+    ${unmatchedSection}
+  `;
+}
+
+function renderGeorefMap(model) {
+  if (!model.visibleFeatures.length) {
+    return '<div class="georef-map-empty">Nenhuma area do KML foi localizada para montar o mapa da Arapey.</div>';
+  }
+
+  const bounds = getGeorefBounds(model.visibleFeatures);
+  if (!bounds) {
+    return '<div class="georef-map-empty">Não encontrei coordenadas suficientes para desenhar o mapa georreferenciado.</div>';
+  }
+
+  const padding = 42;
+  const maxWidth = 1000;
+  const maxHeight = 760;
+  const lonSpan = Math.max(bounds.maxLon - bounds.minLon, 0.000001);
+  const latSpan = Math.max(bounds.maxLat - bounds.minLat, 0.000001);
+  const scale = Math.min((maxWidth - (padding * 2)) / lonSpan, (maxHeight - (padding * 2)) / latSpan);
+  const width = Math.max(720, Math.round((lonSpan * scale) + (padding * 2)));
+  const height = Math.max(420, Math.round((latSpan * scale) + (padding * 2)));
+  const maxQuantity = Math.max(...model.visibleFeatures.map((feature) => feature.quantity), 0);
+
+  const projectPoint = (point) => ({
+    x: padding + ((point.lon - bounds.minLon) * scale),
+    y: padding + ((bounds.maxLat - point.lat) * scale)
+  });
+
+  const featuresSvg = model.visibleFeatures.map((feature) => {
+    const fill = getGeorefFeatureFill(feature.quantity, maxQuantity, feature.isLinked);
+    const stroke = feature.isLinked ? "#335c43" : "#8f6132";
+    const tooltip = feature.registeredNames.length
+      ? `${feature.label}: ${formatInteger(feature.quantity)} cab. | ${feature.registeredNames.join(", ")}`
+      : `${feature.label}: sem lotação cadastrada`;
+    const polygons = feature.polygons.map((polygon) => {
+      const points = polygon.map(projectPoint).map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(" ");
+      return `<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="2.4"></polygon>`;
+    }).join("");
+
+    const labelAnchor = projectPoint(feature.markerPoint || getFeatureCenter(feature.polygons));
+    const quantityText = feature.quantity > 0 ? `${formatInteger(feature.quantity)} cab.` : "Sem gado";
+    const labelWidth = Math.max(feature.label.length, quantityText.length) * 8 + 26;
+    const labelX = clamp(labelAnchor.x, (labelWidth / 2) + 8, width - (labelWidth / 2) - 8);
+    const labelY = clamp(labelAnchor.y, 34, height - 46);
+
+    return `
+      <g class="georef-feature ${feature.isLinked ? "is-linked" : "is-unlinked"}">
+        <title>${escapeHtml(tooltip)}</title>
+        ${polygons}
+        <g class="georef-label">
+          <rect x="${(labelX - (labelWidth / 2)).toFixed(1)}" y="${(labelY - 26).toFixed(1)}" width="${labelWidth.toFixed(1)}" height="44" rx="14"></rect>
+          <text x="${labelX.toFixed(1)}" y="${(labelY - 6).toFixed(1)}">
+            <tspan x="${labelX.toFixed(1)}" dy="0">${escapeHtml(feature.label)}</tspan>
+            <tspan x="${labelX.toFixed(1)}" dy="16">${escapeHtml(quantityText)}</tspan>
+          </text>
+        </g>
+      </g>
+    `;
+  }).join("");
+
+  return `
+    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Mapa georreferenciado da fazenda Arapey">
+      <rect x="0" y="0" width="${width}" height="${height}" fill="rgba(255,255,255,0.18)"></rect>
+      ${featuresSvg}
+    </svg>
+  `;
+}
+
+function getGeorefBounds(features) {
+  const points = features.flatMap((feature) => feature.polygons.flatMap((polygon) => polygon));
+  if (!points.length) {
+    return null;
+  }
+
+  return points.reduce((bounds, point) => ({
+    minLon: Math.min(bounds.minLon, point.lon),
+    maxLon: Math.max(bounds.maxLon, point.lon),
+    minLat: Math.min(bounds.minLat, point.lat),
+    maxLat: Math.max(bounds.maxLat, point.lat)
+  }), {
+    minLon: Number.POSITIVE_INFINITY,
+    maxLon: Number.NEGATIVE_INFINITY,
+    minLat: Number.POSITIVE_INFINITY,
+    maxLat: Number.NEGATIVE_INFINITY
+  });
+}
+
+function getGeorefFeatureFill(quantity, maxQuantity, isLinked) {
+  if (!isLinked) {
+    return "rgba(201, 140, 79, 0.16)";
+  }
+
+  if (quantity <= 0 || maxQuantity <= 0) {
+    return "rgba(55, 91, 67, 0.2)";
+  }
+
+  const ratio = quantity / maxQuantity;
+  return `rgba(55, 91, 67, ${(0.28 + (ratio * 0.54)).toFixed(2)})`;
+}
+
+function extractKmlCoordinates(containerNode) {
+  const coordinatesNode = containerNode.getElementsByTagNameNS("*", "coordinates")[0];
+  if (!coordinatesNode) {
+    return [];
+  }
+
+  return coordinatesNode.textContent
+    .trim()
+    .split(/\s+/)
+    .map((chunk) => {
+      const [lon, lat] = chunk.split(",").map(Number);
+      if (!Number.isFinite(lon) || !Number.isFinite(lat)) {
+        return null;
+      }
+
+      return { lon, lat };
+    })
+    .filter(Boolean);
+}
+
+function parseKmlNumber(value) {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = Number(String(value).replace(/\./g, "").replace(",", "."));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function getFeatureCenter(polygons) {
+  const points = polygons.flat();
+  if (!points.length) {
+    return { lon: 0, lat: 0 };
+  }
+
+  const totals = points.reduce((accumulator, point) => ({
+    lon: accumulator.lon + point.lon,
+    lat: accumulator.lat + point.lat
+  }), { lon: 0, lat: 0 });
+
+  return {
+    lon: totals.lon / points.length,
+    lat: totals.lat / points.length
+  };
+}
+
+function resolveArapeyGeoKey(value) {
+  const normalized = normalizeText(value)
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/\s*-\s*[\d.,]+\s*ha$/i, "")
+    .replace(/\bpotreiro\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!normalized || ["aaa", "poligono sem titulo", "dadassadasdasd"].includes(normalized)) {
+    return "";
+  }
+
+  if (/^(campo\s*)?\d{1,2}$/.test(normalized)) {
+    return normalized.match(/\d{1,2}/)?.[0] || "";
+  }
+
+  if (normalized.includes("campo 10 e 1")) {
+    return "campo 10 e 1";
+  }
+
+  if (normalized.includes("chacra") && normalized.includes("10")) {
+    return "chacra 10";
+  }
+
+  if (normalized.includes("las pampa")) {
+    return "las pampas";
+  }
+
+  if (normalized.includes("cerrillada")) {
+    return "cerrillada";
+  }
+
+  if (normalized.includes("pedreira")) {
+    return "pedreira";
+  }
+
+  if (normalized.includes("tapera")) {
+    return "tapera";
+  }
+
+  if (normalized.includes("costa")) {
+    return "costa";
+  }
+
+  if (normalized.includes("molino")) {
+    return "molino";
+  }
+
+  if (normalized.includes("piq rincon")) {
+    return "piq rincon";
+  }
+
+  if (normalized.includes("prad 7")) {
+    return "prad 7";
+  }
+
+  if (normalized.includes("prad 8")) {
+    return "prad 8";
+  }
+
+  if (normalized === "frente") {
+    return "frente";
+  }
+
+  return normalized;
+}
+
+function formatArapeyGeoLabel(key) {
+  const labels = {
+    "2": "Campo 2",
+    "3": "Campo 3",
+    "4": "Campo 4",
+    "5": "Campo 5",
+    "6": "Campo 6",
+    "7": "Campo 7",
+    "8": "Campo 8",
+    "9": "Campo 9",
+    "10": "Campo 10",
+    "11": "Campo 11",
+    "tapera": "Tapera",
+    "pedreira": "Pedreira",
+    "costa": "Costa",
+    "molino": "Molino",
+    "chacra 10": "Chacra 10",
+    "las pampas": "Las Pampas",
+    "cerrillada": "Cerrillada",
+    "piq rincon": "Piq Rincon",
+    "prad 7": "Prad 7",
+    "prad 8": "Prad 8",
+    "frente": "Frente",
+    "campo 10 e 1": "Campo 10 e 1"
+  };
+
+  if (labels[key]) {
+    return labels[key];
+  }
+
+  return key.replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
 function renderInsights(farm) {
@@ -1819,7 +2433,7 @@ function renderCharts(farm) {
 
 function renderInventoryChart(farm) {
   if (typeof window.Chart !== "function") {
-    drawChartFallback("inventoryChart", "Grafico indisponivel no momento.");
+    drawChartFallback("inventoryChart", "Gráfico indisponível no momento.");
     return;
   }
 
@@ -1877,7 +2491,7 @@ function renderInventoryChart(farm) {
 
 function renderMovementChart(farm) {
   if (typeof window.Chart !== "function") {
-    drawChartFallback("movementChart", "Grafico indisponivel no momento.");
+    drawChartFallback("movementChart", "Gráfico indisponível no momento.");
     return;
   }
 
@@ -1967,7 +2581,7 @@ function renderMovementChart(farm) {
 
 function renderRankingChart(farm) {
   if (typeof window.Chart !== "function") {
-    drawChartFallback("rankingChart", "Grafico indisponivel no momento.");
+    drawChartFallback("rankingChart", "Gráfico indisponível no momento.");
     return;
   }
 
@@ -2026,7 +2640,7 @@ function renderRankingChart(farm) {
 
 function renderMonthlyEvolutionChart(farm) {
   if (typeof window.Chart !== "function") {
-    drawChartFallback("monthlyEvolutionChart", "Grafico indisponivel no momento.");
+    drawChartFallback("monthlyEvolutionChart", "Gráfico indisponível no momento.");
     return;
   }
 
@@ -2091,7 +2705,7 @@ function renderMonthlyEvolutionChart(farm) {
 
 function renderMonthlyCategoryChart(farm) {
   if (typeof window.Chart !== "function") {
-    drawChartFallback("monthlyCategoryChart", "Grafico indisponivel no momento.");
+    drawChartFallback("monthlyCategoryChart", "Gráfico indisponível no momento.");
     return;
   }
 
@@ -2159,7 +2773,7 @@ function openMovementDialog(initialType) {
 
 function openCategoryDialog() {
   if (state.data.selectedFarmId === TOTAL_FARM_ID) {
-    alert("Selecione uma fazenda especifica para adicionar uma categoria.");
+    alert("Selecione uma fazenda específica para adicionar uma categoria.");
     return;
   }
 
@@ -2239,7 +2853,7 @@ function openMonthlyDataEditorForFarm(recordId, farmId) {
 
 function openEditStockDialog() {
   if (state.data.selectedFarmId === TOTAL_FARM_ID) {
-    alert("Selecione uma fazenda especifica para editar o estoque.");
+    alert("Selecione uma fazenda específica para editar o estoque.");
     return;
   }
 
@@ -2398,7 +3012,7 @@ function syncMovementTypeOptions(selectedType = elements.movementType.value || "
 function updateMovementFormForType(type) {
   const farm = getFarm();
   const typeMeta = MOVEMENT_TYPES.find((item) => item.value === type);
-  elements.movementDialogTitle.textContent = typeMeta ? `Registrar ${typeMeta.label.toLowerCase()}` : "Registrar movimentacao";
+  elements.movementDialogTitle.textContent = typeMeta ? `Registrar ${typeMeta.label.toLowerCase()}` : "Registrar movimentação";
   elements.adjustDirectionWrap.hidden = type !== "ajuste";
   const isSale = type === "venda";
   const isPremiumFarm = isPremiumSaleFarm(farm);
@@ -2642,7 +3256,7 @@ function handleMonthlyDataSubmit(event) {
   }
 
   if (quantity < 0 || value < 0) {
-    alert("Quantidade e valor atribuido nao podem ser negativos.");
+    alert("Quantidade e valor atribuído não podem ser negativos.");
     return;
   }
 
@@ -2762,7 +3376,7 @@ function handleEditStockSubmit(event) {
   event.preventDefault();
   const farm = state.data.farms[elements.editFarmName.value];
   if (!farm) {
-    alert("Selecione uma fazenda valida para salvar.");
+    alert("Selecione uma fazenda válida para salvar.");
     return;
   }
   const declaredTotal = Number(elements.editDeclaredTotal.value);
@@ -2818,7 +3432,7 @@ function handleEditStockSubmit(event) {
       return;
     }
     if (!Number.isFinite(quantity) || quantity < 0) {
-      alert(`Informe uma quantidade valida para o potreiro ${name}.`);
+      alert(`Informe uma quantidade válida para o potreiro ${name}.`);
       return;
     }
 
@@ -2925,7 +3539,7 @@ function getMovementDelta(type, quantity, adjustDirection) {
 function getDiscrepancyText(farm) {
   const computedTotal = getFarmTotal(farm);
   if (!farm.declaredTotal) {
-    return `A fazenda ${farm.name} ainda nao possui total declarado. O sistema esta usando o estoque atual como referencia operacional.`;
+    return `A fazenda ${farm.name} ainda não possui total declarado. O sistema está usando o estoque atual como referência operacional.`;
   }
 
   const difference = farm.declaredTotal - computedTotal;
@@ -3028,27 +3642,176 @@ async function addPdfHeader(doc, farm, periodLabel, monthly) {
   doc.setFontSize(18);
   doc.text("Estabelecimentos Da Luz", 42, 18);
   doc.setFontSize(15);
-  doc.text(`Relatorio Pecuario - ${farm.name}`, 42, 26);
+  doc.text(`Relatório Pecuário - ${farm.name}`, 42, 26);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10.5);
-  doc.text(`Periodo analisado: ${periodLabel}`, 42, 33);
-  doc.text(`Responsavel tecnico: ${TECHNICAL_MANAGER_NAME}`, 42, 39);
-  doc.text(`Movimentacoes no periodo: ${formatInteger(monthly.totalMovements)}`, 14, 50);
-  doc.text(`Saldo do periodo: ${monthly.netChange > 0 ? "+" : ""}${formatInteger(monthly.netChange)}`, 92, 50);
+  doc.text(`Período analisado: ${periodLabel}`, 42, 33);
+  doc.text(`Responsável técnico: ${TECHNICAL_MANAGER_NAME}`, 42, 39);
+  doc.text(`Movimentações no período: ${formatInteger(monthly.totalMovements)}`, 14, 50);
+  doc.text(`Saldo do período: ${monthly.netChange > 0 ? "+" : ""}${formatInteger(monthly.netChange)}`, 92, 50);
   return 56;
 }
 
-function addPdfFooters(doc) {
+function getPdfPageSize(doc) {
+  return {
+    width: doc.internal.pageSize.getWidth(),
+    height: doc.internal.pageSize.getHeight()
+  };
+}
+
+function drawPdfPastureBackground(doc) {
+  const { width, height } = getPdfPageSize(doc);
+  doc.setFillColor(27, 77, 47);
+  doc.rect(0, 0, width, height, "F");
+
+  doc.setFillColor(38, 96, 57);
+  doc.rect(0, height * 0.44, width, height * 0.56, "F");
+
+  doc.setFillColor(73, 126, 66);
+  doc.ellipse(width * 0.14, height * 0.88, width * 0.26, height * 0.16, "F");
+  doc.ellipse(width * 0.52, height * 0.84, width * 0.34, height * 0.17, "F");
+  doc.ellipse(width * 0.9, height * 0.87, width * 0.28, height * 0.16, "F");
+
+  doc.setFillColor(106, 156, 82);
+  doc.ellipse(width * 0.3, height * 0.96, width * 0.34, height * 0.13, "F");
+  doc.ellipse(width * 0.73, height * 0.97, width * 0.36, height * 0.14, "F");
+
+  doc.setDrawColor(181, 214, 161);
+  doc.setLineWidth(0.8);
+  doc.line(0, height * 0.63, width, height * 0.63);
+}
+
+async function appendPdfCoverPage(doc, farms, periodLabel) {
+  const { width, height } = getPdfPageSize(doc);
+  const scopeLabel = farms.length === 1
+    ? farms[0].name
+    : farms.length === getAllFarms().length
+      ? "Todas as fazendas"
+      : `${formatInteger(farms.length)} fazendas selecionadas`;
+
+  drawPdfPastureBackground(doc);
+
+  doc.setFillColor(247, 241, 229);
+  doc.circle(width / 2, 96, 28, "F");
+
+  try {
+    const imageData = await loadAssetAsDataUrl(PDF_LOGO_PATH);
+    doc.addImage(imageData, "JPEG", (width / 2) - 19, 77, 38, 38);
+  } catch (error) {
+    console.warn("Não foi possível carregar o logo para a capa do PDF.", error);
+  }
+
+  doc.setTextColor(248, 244, 236);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(24);
+  doc.text("Painel Pecuário", width / 2, 142, { align: "center" });
+  doc.setFontSize(12);
+  doc.text("Estabelecimentos Da Luz", width / 2, 151, { align: "center" });
+
+  doc.setDrawColor(225, 232, 214);
+  doc.setLineWidth(0.7);
+  doc.line(58, 162, width - 58, 162);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+  doc.text(scopeLabel, width / 2, 174, { align: "center" });
+  doc.text(`Período analisado: ${periodLabel}`, width / 2, 183, { align: "center" });
+  doc.text(`Responsável técnico: ${TECHNICAL_MANAGER_NAME}`, width / 2, 192, { align: "center" });
+
+  doc.setFontSize(9.5);
+  doc.setTextColor(230, 239, 223);
+  doc.text("Relatório gerencial com consolidado, movimentações, sanitário e dados mensais.", width / 2, height - 26, { align: "center" });
+}
+
+function appendFarmDividerPage(doc, farm, periodLabel, year, month, sectionIndex, sectionCount) {
+  const { width, height } = getPdfPageSize(doc);
+  const monthly = summarizePeriod(farm, year, month);
+  const sanitarySummary = getSanitarySummary(farm, year, month);
+  const monthlySummary = getMonthlySummary(farm, year, month);
+  const registeredPotreiros = getPotreroEntries(farm).length;
+
+  doc.setFillColor(242, 238, 228);
+  doc.rect(0, 0, width, height, "F");
+
+  doc.setFillColor(37, 88, 58);
+  doc.rect(0, 0, width, 58, "F");
+
+  doc.setTextColor(248, 244, 236);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.text(`Fazenda ${sectionIndex} de ${sectionCount}`, 16, 18);
+  doc.setFontSize(24);
+  doc.text(farm.name, 16, 34);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+  doc.text(`Período analisado: ${periodLabel}`, 16, 46);
+
+  doc.setTextColor(45, 35, 25);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.text("Separação de fazenda", 16, 78);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+  doc.text("As próximas páginas detalham o estoque, o comercial, o sanitário e os dados mensais desta unidade.", 16, 89, {
+    maxWidth: width - 32
+  });
+
+  const cards = [
+    { label: "Estoque atual", value: `${formatInteger(getFarmTotal(farm))} animais` },
+    { label: "Movimentações", value: formatInteger(monthly.totalMovements) },
+    { label: "Potreiros cadastrados", value: formatInteger(registeredPotreiros) },
+    { label: "Registros sanitários", value: formatInteger(sanitarySummary.totalApplications) },
+    { label: "Dados mensais", value: formatInteger(monthlySummary.count) },
+    { label: "Valor atribuído", value: formatCurrency(monthlySummary.totalValue) }
+  ];
+
+  const left = 16;
+  const gap = 8;
+  const cardWidth = (width - (left * 2) - gap) / 2;
+  const cardHeight = 34;
+  let y = 108;
+
+  cards.forEach((card, index) => {
+    const column = index % 2;
+    if (index > 0 && column === 0) {
+      y += cardHeight + 8;
+    }
+
+    const x = left + (column * (cardWidth + gap));
+    doc.setFillColor(255, 252, 245);
+    doc.roundedRect(x, y, cardWidth, cardHeight, 4, 4, "F");
+    doc.setDrawColor(219, 209, 191);
+    doc.roundedRect(x, y, cardWidth, cardHeight, 4, 4, "S");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(87, 69, 52);
+    doc.text(card.label, x + 6, y + 12);
+    doc.setFontSize(13);
+    doc.setTextColor(38, 66, 48);
+    doc.text(card.value, x + 6, y + 23);
+  });
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(112, 94, 76);
+  doc.text("Painel Pecuário | separação por fazenda no relatório consolidado", 16, height - 18);
+}
+
+function addPdfFooters(doc, options = {}) {
+  const { coverPage = false } = options;
   const pageCount = doc.getNumberOfPages();
-  for (let page = 1; page <= pageCount; page += 1) {
+  const firstFooterPage = coverPage ? 2 : 1;
+  const visiblePageCount = coverPage ? Math.max(pageCount - 1, 0) : pageCount;
+
+  for (let page = firstFooterPage; page <= pageCount; page += 1) {
     doc.setPage(page);
     doc.setDrawColor(220, 209, 193);
     doc.line(14, 286, 196, 286);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(112, 94, 76);
-    doc.text(`Estabelecimentos Da Luz | Responsavel tecnico: ${TECHNICAL_MANAGER_NAME}`, 14, 291);
-    doc.text(`Pagina ${page} de ${pageCount}`, 196, 291, { align: "right" });
+    doc.text(`Estabelecimentos Da Luz | Responsável técnico: ${TECHNICAL_MANAGER_NAME}`, 14, 291);
+    doc.text(`Página ${coverPage ? page - 1 : page} de ${visiblePageCount}`, 196, 291, { align: "right" });
     doc.setTextColor(45, 35, 25);
   }
 }
@@ -3062,14 +3825,14 @@ function appendExecutivePdfTable(doc, farm, monthly, discrepancy, topY) {
     head: [["Indicador executivo", "Valor"]],
     body: [
       ["Estoque atual", `${formatInteger(getFarmTotal(farm))} animais`],
-      ["Total declarado", farm.declaredTotal ? `${formatInteger(farm.declaredTotal)} animais` : "Nao informado"],
-      ["Conferencia de estoque", discrepancy === 0 ? "Alinhado" : `${discrepancy > 0 ? "+" : ""}${formatInteger(discrepancy)} animais`],
+      ["Total declarado", farm.declaredTotal ? `${formatInteger(farm.declaredTotal)} animais` : "Não informado"],
+      ["Conferência de estoque", discrepancy === 0 ? "Alinhado" : `${discrepancy > 0 ? "+" : ""}${formatInteger(discrepancy)} animais`],
       ["Potreiros cadastrados", formatInteger(registeredPotreiros)],
-      ["Animais distribuidos em potreiros", `${formatInteger(registeredAnimals)} animais`],
-      ["Saldo da distribuicao", potreroBalance === 0 ? "Alinhado" : `${potreroBalance > 0 ? "+" : ""}${formatInteger(potreroBalance)} animais`],
-      ["Movimentacoes no periodo", formatInteger(monthly.totalMovements)],
-      ["Saldo do periodo", `${monthly.netChange > 0 ? "+" : ""}${formatInteger(monthly.netChange)}`],
-      ["Responsavel tecnico", TECHNICAL_MANAGER_NAME]
+      ["Animais distribuídos em potreiros", `${formatInteger(registeredAnimals)} animais`],
+      ["Saldo da distribuição", potreroBalance === 0 ? "Alinhado" : `${potreroBalance > 0 ? "+" : ""}${formatInteger(potreroBalance)} animais`],
+      ["Movimentações no período", formatInteger(monthly.totalMovements)],
+      ["Saldo do período", `${monthly.netChange > 0 ? "+" : ""}${formatInteger(monthly.netChange)}`],
+      ["Responsável técnico", TECHNICAL_MANAGER_NAME]
     ],
     theme: "striped",
     headStyles: { fillColor: [76, 64, 50] }
@@ -3091,13 +3854,13 @@ function appendOperationalPdfTable(doc, monthly, annual, saleSummary) {
     startY: doc.lastAutoTable.finalY + 10,
     head: [["Indicador", "Valor"]],
     body: [
-      ["Compras no periodo", formatInteger(monthly.byType.compra)],
-      ["Vendas no periodo", formatInteger(monthly.byType.venda)],
+      ["Compras no período", formatInteger(monthly.byType.compra)],
+      ["Vendas no período", formatInteger(monthly.byType.venda)],
       ["Faturamento de vendas", formatCurrency(saleSummary.totalValue)],
-      ["Consumo no periodo", formatInteger(monthly.byType.consumo)],
-      ["Nascimentos no periodo", formatInteger(monthly.byType.nascimento)],
-      ["Mortes no periodo", formatInteger(monthly.byType.morte)],
-      ["Movimentacoes no ano", formatInteger(annual.totalMovements)],
+      ["Consumo no período", formatInteger(monthly.byType.consumo)],
+      ["Nascimentos no período", formatInteger(monthly.byType.nascimento)],
+      ["Mortes no período", formatInteger(monthly.byType.morte)],
+      ["Movimentações no ano", formatInteger(annual.totalMovements)],
       ["Valor anual movimentado", annual.totalValue ? formatCurrency(annual.totalValue) : "Sem valor informado"]
     ],
     theme: "striped",
@@ -3113,8 +3876,8 @@ function appendSaleSummaryPdfTable(doc, saleSummary) {
       ["Vendas registradas", formatInteger(saleSummary.count)],
       ["Faturamento total", formatCurrency(saleSummary.totalValue)],
       ["Kg vivo negociado", formatWeight(saleSummary.liveKg)],
-      ["Kg carcaca negociado", formatWeight(saleSummary.carcassKg)],
-      ["Preco medio kg vivo", saleSummary.liveKg > 0 ? formatCurrency(saleSummary.totalValue / saleSummary.liveKg) : formatCurrency(0)]
+      ["Kg carcaça negociado", formatWeight(saleSummary.carcassKg)],
+      ["Preço médio kg vivo", saleSummary.liveKg > 0 ? formatCurrency(saleSummary.totalValue / saleSummary.liveKg) : formatCurrency(0)]
     ],
     theme: "striped",
     headStyles: { fillColor: [201, 140, 79] }
@@ -3129,12 +3892,12 @@ function appendSaleDetailsPdfTable(doc, saleSummary) {
       ? saleSummary.movements.map((movement) => [
         formatDate(movement.date),
         movement.categoryName,
-        movement.saleDetails ? getSaleModeLabel(movement.saleDetails.mode || "vivo") : "Relatorio mensal",
+        movement.saleDetails ? getSaleModeLabel(movement.saleDetails.mode || "vivo") : "Relatório mensal",
         movement.saleDetails ? formatWeight(movement.saleDetails.weightKg || 0) : "-",
         movement.saleDetails ? formatCurrency(movement.saleDetails.pricePerKg || 0) : "-",
         formatCurrency(movement.value || 0)
       ])
-      : [["-", "-", "-", "-", "-", "Sem vendas no periodo"]],
+      : [["-", "-", "-", "-", "-", "Sem vendas no período"]],
     theme: "striped",
     headStyles: { fillColor: [201, 140, 79] }
   });
@@ -3157,9 +3920,9 @@ function appendMonthlySummaryPdfTable(doc, monthlySummary) {
     startY: doc.lastAutoTable.finalY + 10,
     head: [["Indicador mensal", "Valor"]],
     body: [
-      ["Registros no periodo", formatInteger(monthlySummary.count)],
+      ["Registros no período", formatInteger(monthlySummary.count)],
       ["Quantidade informada", formatInteger(monthlySummary.totalQuantity)],
-      ["Valor atribuido", formatCurrency(monthlySummary.totalValue)],
+      ["Valor atribuído", formatCurrency(monthlySummary.totalValue)],
       ["Categorias ativas", formatInteger(monthlySummary.activeCategories)]
     ],
     theme: "striped",
@@ -3170,7 +3933,7 @@ function appendMonthlySummaryPdfTable(doc, monthlySummary) {
 function appendMonthlyDetailsPdfTable(doc, farm, monthlyRecords) {
   doc.autoTable({
     startY: doc.lastAutoTable.finalY + 10,
-    head: [["Competencia", "Categoria", "Indicador", "Qtd.", "Valor", "Observacoes"]],
+    head: [["Competência", "Categoria", "Indicador", "Qtd.", "Valor", "Observações"]],
     body: monthlyRecords.length
       ? monthlyRecords.map((record) => [
         formatMonthYear(record.period),
@@ -3180,7 +3943,7 @@ function appendMonthlyDetailsPdfTable(doc, farm, monthlyRecords) {
         record.value ? formatCurrency(record.value) : "-",
         record.notes || "-"
       ])
-      : [["-", "-", "Sem dados mensais no periodo", "-", "-", "-"]],
+      : [["-", "-", "Sem dados mensais no período", "-", "-", "-"]],
     theme: "striped",
     headStyles: { fillColor: [111, 95, 77] }
   });
@@ -3189,13 +3952,13 @@ function appendMonthlyDetailsPdfTable(doc, farm, monthlyRecords) {
 function appendSanitarySummaryPdfTable(doc, sanitarySummary) {
   doc.autoTable({
     startY: doc.lastAutoTable.finalY + 10,
-    head: [["Indicador sanitario", "Valor"]],
+    head: [["Indicador sanitário", "Valor"]],
     body: [
-      ["Aplicacoes no periodo", formatInteger(sanitarySummary.totalApplications)],
+      ["Aplicações no período", formatInteger(sanitarySummary.totalApplications)],
       ["Animais tratados", formatInteger(sanitarySummary.treatedAnimals)],
       ["Produtos utilizados", formatInteger(sanitarySummary.uniqueProducts)],
       ["Potreiros utilizados", formatInteger(sanitarySummary.uniquePotreiros)],
-      ["Ultimo manejo", sanitarySummary.latestRecord ? `${formatDate(sanitarySummary.latestRecord.date)} - ${sanitarySummary.latestRecord.product}` : "Sem registro"]
+      ["Último manejo", sanitarySummary.latestRecord ? `${formatDate(sanitarySummary.latestRecord.date)} - ${sanitarySummary.latestRecord.product}` : "Sem registro"]
     ],
     theme: "striped",
     headStyles: { fillColor: [55, 91, 67] }
@@ -3205,7 +3968,7 @@ function appendSanitarySummaryPdfTable(doc, sanitarySummary) {
 function appendSanitaryDetailsPdfTable(doc, sanitaryRecords) {
   doc.autoTable({
     startY: doc.lastAutoTable.finalY + 10,
-    head: [["Data", "Categoria", "Qtd.", "Potreiro", "Produto", "Observacoes"]],
+    head: [["Data", "Categoria", "Qtd.", "Potreiro", "Produto", "Observações"]],
     body: sanitaryRecords.length
       ? sanitaryRecords.map((record) => [
         formatDate(record.date),
@@ -3215,7 +3978,7 @@ function appendSanitaryDetailsPdfTable(doc, sanitaryRecords) {
         record.product,
         record.notes || "-"
       ])
-      : [["-", "-", "-", "-", "Sem registros sanitarios no periodo", "-"]],
+      : [["-", "-", "-", "-", "Sem registros sanitários no período", "-"]],
     theme: "striped",
     headStyles: { fillColor: [55, 91, 67] }
   });
@@ -3234,7 +3997,7 @@ function appendInsightsPdfTable(doc, insights) {
 function appendRecentMovementsPdfTable(doc, recentMovements) {
   doc.autoTable({
     startY: doc.lastAutoTable.finalY + 10,
-    head: [["Data", "Tipo", "Categoria", "Qtd.", "Valor", "Observacao"]],
+    head: [["Data", "Tipo", "Categoria", "Qtd.", "Valor", "Observação"]],
     body: recentMovements.length
       ? recentMovements.map((movement) => [
         formatDate(movement.date),
@@ -3244,7 +4007,7 @@ function appendRecentMovementsPdfTable(doc, recentMovements) {
         movement.value ? formatCurrency(movement.value) : "-",
         getMovementNotes(movement)
       ])
-      : [["-", "-", "-", "-", "-", "Sem movimentacoes recentes"]],
+      : [["-", "-", "-", "-", "-", "Sem movimentações recentes"]],
     theme: "striped",
     headStyles: { fillColor: [138, 75, 56] }
   });
@@ -3271,11 +4034,11 @@ function appendConsolidatedPdfIntro(doc, farms, periodLabel, year, month) {
   doc.setFontSize(20);
   doc.text("Estabelecimentos Da Luz", 14, 18);
   doc.setFontSize(16);
-  doc.text("Relatorio consolidado de fazendas", 14, 28);
+  doc.text("Relatório consolidado de fazendas", 14, 28);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10.5);
-  doc.text(`Periodo analisado: ${periodLabel}`, 14, 36);
-  doc.text(`Responsavel tecnico: ${TECHNICAL_MANAGER_NAME}`, 14, 42);
+  doc.text(`Período analisado: ${periodLabel}`, 14, 36);
+  doc.text(`Responsável técnico: ${TECHNICAL_MANAGER_NAME}`, 14, 42);
 
   doc.autoTable({
     startY: 50,
@@ -3285,11 +4048,11 @@ function appendConsolidatedPdfIntro(doc, farms, periodLabel, year, month) {
       ["Estoque consolidado", `${formatInteger(totals.animals)} animais`],
       ["Potreiros cadastrados", formatInteger(totals.potreiros)],
       ["Animais alocados em potreiros", `${formatInteger(totals.allocatedAnimals)} animais`],
-      ["Movimentacoes no periodo", formatInteger(totals.movements)],
-      ["Dados mensais no periodo", formatInteger(totals.monthlyRecords)],
-      ["Valor mensal atribuido", formatCurrency(totals.monthlyValue)],
+      ["Movimentações no período", formatInteger(totals.movements)],
+      ["Dados mensais no período", formatInteger(totals.monthlyRecords)],
+      ["Valor mensal atribuído", formatCurrency(totals.monthlyValue)],
       ["Faturamento de vendas", formatCurrency(totals.salesValue)],
-      ["Registros sanitarios", formatInteger(totals.sanitaryRecords)]
+      ["Registros sanitários", formatInteger(totals.sanitaryRecords)]
     ],
     theme: "striped",
     headStyles: { fillColor: [76, 64, 50] }
@@ -3297,7 +4060,7 @@ function appendConsolidatedPdfIntro(doc, farms, periodLabel, year, month) {
 
   doc.autoTable({
     startY: doc.lastAutoTable.finalY + 10,
-    head: [["Fazenda", "Estoque", "Potreiros", "Alocados", "Mov.", "Dados", "Valor mensal", "Vendas", "Sanitario"]],
+    head: [["Fazenda", "Estoque", "Potreiros", "Alocados", "Mov.", "Dados", "Valor mensal", "Vendas", "Sanitário"]],
     body: farms.map((farm) => {
       const monthly = summarizePeriod(farm, year, month);
       const saleSummary = summarizeSalePeriod(farm, year, month);
@@ -3361,19 +4124,19 @@ function getPdfFileName(farms, year, month) {
 async function exportPdfReport(farmIds = [state.data.selectedFarmId], period = { year: state.filters.year, month: state.filters.month }) {
   const farms = farmIds.map((farmId) => state.data.farms[farmId]).filter(Boolean);
   if (!farms.length) {
-    alert("Nenhuma fazenda valida foi selecionada para o PDF.");
+    alert("Nenhuma fazenda válida foi selecionada para o PDF.");
     return;
   }
 
   if (!window.jspdf || typeof window.jspdf.jsPDF !== "function") {
-    alert("A biblioteca de PDF nao foi carregada. Verifique sua conexao e tente novamente.");
+    alert("A biblioteca de PDF não foi carregada. Verifique sua conexão e tente novamente.");
     return;
   }
 
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
   if (typeof doc.autoTable !== "function") {
-    alert("O modulo de tabela do PDF nao foi carregado. Verifique sua conexao e tente novamente.");
+    alert("O módulo de tabela do PDF não foi carregado. Verifique sua conexão e tente novamente.");
     return;
   }
 
@@ -3381,18 +4144,21 @@ async function exportPdfReport(farmIds = [state.data.selectedFarmId], period = {
   const month = period.month || state.filters.month;
   const periodLabel = month === "all" ? `Ano de ${year}` : `${MONTH_NAMES[Number(month) - 1]} de ${year}`;
 
+  await appendPdfCoverPage(doc, farms, periodLabel);
+
   if (farms.length > 1) {
+    doc.addPage();
     appendConsolidatedPdfIntro(doc, farms, periodLabel, year, month);
   }
 
   for (const [index, farm] of farms.entries()) {
-    if (index > 0 || farms.length > 1) {
-      doc.addPage();
-    }
+    doc.addPage();
+    appendFarmDividerPage(doc, farm, periodLabel, year, month, index + 1, farms.length);
+    doc.addPage();
     await appendFarmPdfSection(doc, farm, periodLabel, year, month);
   }
 
-  addPdfFooters(doc);
+  addPdfFooters(doc, { coverPage: true });
 
   doc.save(getPdfFileName(farms, year, month));
 }
@@ -3421,7 +4187,7 @@ function ensureDataShape(data) {
   }
   data.auth.users = data.auth.users.map((user, index) => ({
     id: user.id || `user-${index + 1}`,
-    login: user.login || `Usuario ${index + 1}`,
+    login: user.login || `Usuário ${index + 1}`,
     password: user.password || ""
   }));
   data.auth.users = data.auth.users.map((user) => {
@@ -3701,12 +4467,12 @@ function showStartupError(error) {
     <section class="panel">
       <div class="panel-header">
         <div>
-          <p class="panel-kicker">Falha na inicializacao</p>
+          <p class="panel-kicker">Falha na inicialização</p>
           <h2>O painel encontrou um erro ao abrir</h2>
         </div>
       </div>
       <div class="note-box">
-        Verifique a conexao com a internet e recarregue a pagina. Detalhe tecnico: ${escapeHtml(message)}
+        Verifique a conexão com a internet e recarregue a página. Detalhe técnico: ${escapeHtml(message)}
       </div>
     </section>
   `;
@@ -3825,6 +4591,10 @@ function slugify(value) {
   return normalizeText(value)
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
+}
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
 }
 
 function capitalize(value) {
