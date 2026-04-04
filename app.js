@@ -270,8 +270,7 @@ const seedData = {
 const runtime = {
   storageEnabled: true,
   appInitialized: false,
-  splashDismissed: false,
-  splashTimer: null
+  splashDismissed: false
 };
 
 const today = new Date();
@@ -511,10 +510,6 @@ function startSplashExperience() {
   }
 
   runtime.splashDismissed = false;
-  clearTimeout(runtime.splashTimer);
-  runtime.splashTimer = window.setTimeout(() => {
-    dismissSplash();
-  }, 5000);
   renderAuthState();
 }
 
@@ -524,8 +519,6 @@ function dismissSplash() {
   }
 
   runtime.splashDismissed = true;
-  clearTimeout(runtime.splashTimer);
-  runtime.splashTimer = null;
   renderAuthState();
 }
 
