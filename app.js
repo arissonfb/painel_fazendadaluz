@@ -55,7 +55,7 @@ const STANDARD_FARM_CATEGORIES = [
 
 const MONTHLY_REPORT_CATEGORIES = [
   { value: "estoque", label: "Controle de estoque animal" },
-  { value: "sanitario", label: "Atividades sanitarias" },
+  { value: "sanitario", label: "Atividades sanitárias" },
   { value: "comercial", label: "Compra e venda" },
   { value: "operacional", label: "Operacional" },
   { value: "outros", label: "Outros" }
@@ -256,7 +256,7 @@ const seedData = {
       ...createStandardFarm("chiquita", "Chiquita")
     },
     "passa-da-guarda": {
-      ...createStandardFarm("passa-da-guarda", "Passa da Guarda")
+      ...createStandardFarm("passa-da-guarda", "Passo da Guarda")
     },
     colorado: {
       ...createStandardFarm("colorado", "Colorado")
@@ -269,7 +269,9 @@ const seedData = {
 
 const runtime = {
   storageEnabled: true,
-  appInitialized: false
+  appInitialized: false,
+  splashDismissed: false,
+  splashTimer: null
 };
 
 const today = new Date();
@@ -293,6 +295,7 @@ const state = {
 };
 
 const elements = {
+  splashShell: document.getElementById("splashShell"),
   authShell: document.getElementById("authShell"),
   pageShell: document.getElementById("pageShell"),
   loginForm: document.getElementById("loginForm"),
@@ -300,8 +303,7 @@ const elements = {
   loginPassword: document.getElementById("loginPassword"),
   loginFeedback: document.getElementById("loginFeedback"),
   farmSwitch: document.getElementById("farmSwitch"),
-  dashboardTab: document.getElementById("dashboardTab"),
-  sanitaryTab: document.getElementById("sanitaryTab"),
+  sanitaryShortcut: document.getElementById("sanitaryShortcut"),
   dashboardView: document.getElementById("dashboardView"),
   sanitaryView: document.getElementById("sanitaryView"),
   heroMetrics: document.getElementById("heroMetrics"),
@@ -317,7 +319,6 @@ const elements = {
   periodSummary: document.getElementById("periodSummary"),
   salesSummary: document.getElementById("salesSummary"),
   salesTableBody: document.getElementById("salesTableBody"),
-  inventoryTableBody: document.getElementById("inventoryTableBody"),
   movementsTableBody: document.getElementById("movementsTableBody"),
   discrepancyNote: document.getElementById("discrepancyNote"),
   insightList: document.getElementById("insightList"),
@@ -325,7 +326,6 @@ const elements = {
   heroFarmNote: document.getElementById("heroFarmNote"),
   yearFilter: document.getElementById("yearFilter"),
   monthFilter: document.getElementById("monthFilter"),
-  inventoryUpdatedLabel: document.getElementById("inventoryUpdatedLabel"),
   movementDialog: document.getElementById("movementDialog"),
   movementDialogTitle: document.getElementById("movementDialogTitle"),
   movementForm: document.getElementById("movementForm"),
@@ -367,6 +367,9 @@ const elements = {
   sanitarySubmitButton: document.getElementById("sanitarySubmitButton"),
   sanitarySummary: document.getElementById("sanitarySummary"),
   sanitaryTableBody: document.getElementById("sanitaryTableBody"),
+  sanitaryFarmSwitch: document.getElementById("sanitaryFarmSwitch"),
+  sanitaryViewNote: document.getElementById("sanitaryViewNote"),
+  sanitaryFormPanel: document.getElementById("sanitaryFormPanel"),
   dashboardPotreroSummary: document.getElementById("dashboardPotreroSummary"),
   editStockDialog: document.getElementById("editStockDialog"),
   editStockForm: document.getElementById("editStockForm"),
@@ -425,6 +428,7 @@ function boot() {
   try {
     bindEvents();
     renderAuthState();
+    startSplashExperience();
     if (isAuthenticated()) {
       initializeAppShell();
       render();
@@ -476,7 +480,7 @@ function saveData() {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
   } catch (error) {
     runtime.storageEnabled = false;
-    console.warn("Nao foi possivel salvar localmente. A sessao segue sem persistencia.", error);
+    console.warn("Não foi possível salvar localmente. A sessão segue sem persistência.", error);
   }
 }
 
@@ -490,10 +494,39 @@ function isAuthenticated() {
 
 function renderAuthState() {
   const currentUser = getCurrentUser();
-  elements.authShell.hidden = Boolean(currentUser);
-  elements.pageShell.hidden = !currentUser;
-  document.body.classList.toggle("login-mode", !currentUser);
-  elements.currentUserLabel.textContent = currentUser ? `Usuario: ${currentUser.login}` : "Usuario";
+  const showSplash = !runtime.splashDismissed && !currentUser;
+  elements.splashShell.hidden = !showSplash;
+  elements.authShell.hidden = showSplash || Boolean(currentUser);
+  elements.pageShell.hidden = showSplash || !currentUser;
+  document.body.classList.toggle("login-mode", !currentUser && !showSplash);
+  document.body.classList.toggle("splash-mode", showSplash);
+  elements.currentUserLabel.textContent = currentUser ? `Usuário: ${currentUser.login}` : "Usuário";
+}
+
+function startSplashExperience() {
+  if (!elements.splashShell || isAuthenticated()) {
+    runtime.splashDismissed = true;
+    renderAuthState();
+    return;
+  }
+
+  runtime.splashDismissed = false;
+  clearTimeout(runtime.splashTimer);
+  runtime.splashTimer = window.setTimeout(() => {
+    dismissSplash();
+  }, 5000);
+  renderAuthState();
+}
+
+function dismissSplash() {
+  if (runtime.splashDismissed) {
+    return;
+  }
+
+  runtime.splashDismissed = true;
+  clearTimeout(runtime.splashTimer);
+  runtime.splashTimer = null;
+  renderAuthState();
 }
 
 function handleLoginSubmit(event) {
@@ -527,6 +560,7 @@ function handleLogout() {
   elements.loginFeedback.hidden = true;
   elements.loginFeedback.textContent = "";
   renderAuthState();
+  startSplashExperience();
 }
 
 function openManageUsersDialog() {
@@ -542,7 +576,7 @@ function renderUserList() {
     <article class="user-row">
       <div>
         <strong>${escapeHtml(user.login)}</strong>
-        <span>${user.id === currentUser?.id ? "Usuario em uso agora" : "Acesso local salvo no navegador"}</span>
+        <span>${user.id === currentUser?.id ? "Usuário em uso agora" : "Acesso local salvo no navegador"}</span>
       </div>
       <div class="user-row-actions">
         <button type="button" class="ghost-btn" data-edit-user-id="${user.id}">Editar</button>
@@ -629,7 +663,7 @@ function handleUserEditSave() {
   renderAuthState();
 
   if (user.id === state.data.auth.sessionUserId) {
-    elements.currentUserLabel.textContent = `Usuario: ${user.login}`;
+    elements.currentUserLabel.textContent = `Usuário: ${user.login}`;
   }
 
   if (nextPassword) {
@@ -929,17 +963,15 @@ function bindEvents() {
   elements.loginForm.addEventListener("submit", handleLoginSubmit);
   elements.manageUsersButton.addEventListener("click", openManageUsersDialog);
   elements.logoutButton.addEventListener("click", handleLogout);
+  elements.splashShell.addEventListener("click", dismissSplash);
   elements.manageUsersForm.addEventListener("submit", handleManageUsersSubmit);
   elements.userList.addEventListener("click", handleUserListInteraction);
   elements.saveUserEditsButton.addEventListener("click", handleUserEditSave);
   elements.cancelUserEditButton.addEventListener("click", closeUserEditor);
   elements.closeManageUsersDialog.addEventListener("click", () => elements.manageUsersDialog.close());
-
-  document.querySelectorAll("[data-view]").forEach((button) => {
-    button.addEventListener("click", () => {
-      state.activeView = button.dataset.view;
-      renderActiveView();
-    });
+  elements.sanitaryShortcut.addEventListener("click", () => {
+    state.activeView = "sanitary";
+    render();
   });
 
   elements.yearFilter.addEventListener("change", (event) => {
@@ -1084,19 +1116,20 @@ function render() {
   renderHeroMetrics(farm);
   renderSummaryCards(farm);
   renderVisualHerdGrid(farm);
-  renderInventoryTable(farm);
   renderPeriodSummary(farm);
   renderSalesAnalysis(farm);
   renderMovementsTable(farm);
   renderSanitarySummary(farm);
   renderSanitaryTable(farm);
+  renderSanitaryFarmSwitch();
+  renderSanitaryComposerState(farm);
   renderMonthlySummary(farm);
   renderMonthlyTable(farm);
   renderPotreroSummaries(farm);
   renderInsights(farm);
   renderCharts(farm);
   renderActiveView();
-  elements.inventoryUpdatedLabel.textContent = `Atualizado em ${formatDate(new Date().toISOString().slice(0, 10))}`;
+  renderActionButtonsState();
 }
 
 function renderFarmSwitch() {
@@ -1106,6 +1139,7 @@ function renderFarmSwitch() {
   totalButton.textContent = "Total";
   totalButton.addEventListener("click", () => {
     state.data.selectedFarmId = TOTAL_FARM_ID;
+    state.activeView = "dashboard";
     saveData();
     render();
   });
@@ -1117,6 +1151,7 @@ function renderFarmSwitch() {
     button.textContent = farm.name;
     button.addEventListener("click", () => {
       state.data.selectedFarmId = farm.id;
+      state.activeView = "dashboard";
       saveData();
       render();
     });
@@ -1160,7 +1195,7 @@ function renderGlobalSummary() {
     {
       title: "Registros sanitarios",
       value: formatInteger(totals.sanitario),
-      detail: isTotalView ? "manejos sanitarios no periodo filtrado" : `manejos sanitarios de ${selectedFarm?.name || "fazenda"}`
+      detail: isTotalView ? "manejos sanitários no período filtrado" : `manejos sanitários de ${selectedFarm?.name || "fazenda"}`
     }
   ];
 
@@ -1181,7 +1216,7 @@ function renderGlobalSummary() {
         <strong>${formatInteger(getFarmTotal(farm))}</strong>
         <p>Compra ${formatInteger(summary.byType.compra)} | Venda ${formatInteger(summary.byType.venda)}</p>
         <p>Nasc. ${formatInteger(summary.byType.nascimento)} | Mortes ${formatInteger(summary.byType.morte)}</p>
-        <span>${formatInteger(sanitaryCount)} registro(s) sanitarios no periodo</span>
+        <span>${formatInteger(sanitaryCount)} registro(s) sanitários no período</span>
       </article>
     `;
   }).join("");
@@ -1191,8 +1226,22 @@ function renderActiveView() {
   const isDashboard = state.activeView === "dashboard";
   elements.dashboardView.hidden = !isDashboard;
   elements.sanitaryView.hidden = isDashboard;
-  elements.dashboardTab.classList.toggle("active", isDashboard);
-  elements.sanitaryTab.classList.toggle("active", !isDashboard);
+  elements.sanitaryShortcut.classList.toggle("active", !isDashboard);
+}
+
+function renderActionButtonsState() {
+  const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
+  const farmOnlyButtons = [
+    ...document.querySelectorAll("[data-type]"),
+    elements.adjustButton,
+    elements.editStockButton,
+    elements.addCategoryButton
+  ];
+
+  farmOnlyButtons.forEach((button) => {
+    button.disabled = isTotalView;
+    button.title = isTotalView ? "Selecione uma fazenda específica para lançar ou editar este registro." : "";
+  });
 }
 
 function renderHero(farm) {
@@ -1288,25 +1337,6 @@ function renderVisualHerdGrid(farm) {
   }).join("");
 }
 
-function renderInventoryTable(farm) {
-  const total = getFarmTotal(farm) || 1;
-  elements.inventoryTableBody.innerHTML = farm.categories.map((category) => {
-    const share = (category.quantity / total) * 100;
-    const status = category.quantity <= 20 ? { label: "Baixo", className: "risk" }
-      : category.quantity <= 80 ? { label: "Atencao", className: "warn" }
-      : { label: "Saudavel", className: "safe" };
-
-    return `
-      <tr>
-        <td data-label="Categoria">${escapeHtml(category.name)}</td>
-        <td data-label="Qtd.">${formatInteger(category.quantity)}</td>
-        <td data-label="Participacao">${share.toFixed(1)}%</td>
-        <td data-label="Status"><span class="status-pill ${status.className}">${status.label}</span></td>
-      </tr>
-    `;
-  }).join("");
-}
-
 function renderPeriodSummary(farm) {
   const monthly = summarizePeriod(farm, state.filters.year, state.filters.month);
   const annual = summarizePeriod(farm, state.filters.year, "all");
@@ -1336,13 +1366,13 @@ function renderSalesAnalysis(farm) {
 
   const cards = isPremiumFarm
     ? [
-      { title: "Vendas registradas", value: formatInteger(summary.count), detail: "lancamentos comerciais no periodo" },
+      { title: "Vendas registradas", value: formatInteger(summary.count), detail: "lançamentos comerciais no período" },
       { title: "Faturamento", value: formatCurrency(summary.totalValue), detail: "valor calculado das vendas" },
       { title: "Kg vivo", value: formatWeight(summary.liveKg), detail: "peso vivo negociado" },
       { title: "Kg carcaca", value: formatWeight(summary.carcassKg), detail: "peso de carcaca negociado" }
     ]
     : [
-      { title: "Vendas registradas", value: formatInteger(summary.count), detail: "lancamentos comerciais no periodo" },
+      { title: "Vendas registradas", value: formatInteger(summary.count), detail: "lançamentos comerciais no período" },
       { title: "Faturamento", value: formatCurrency(summary.totalValue), detail: "valor calculado das vendas" },
       { title: "Kg vivo", value: formatWeight(summary.liveKg), detail: "peso vivo negociado" },
       { title: "Media R$/kg vivo", value: summary.liveKg > 0 ? formatCurrency(summary.totalValue / summary.liveKg) : formatCurrency(0), detail: "preco medio por kg vivo" }
@@ -1359,7 +1389,7 @@ function renderSalesAnalysis(farm) {
   if (!summary.movements.length) {
     elements.salesTableBody.innerHTML = `
       <tr>
-        <td colspan="6" class="table-empty-cell">Nenhuma venda encontrada para o periodo selecionado.</td>
+        <td colspan="6" class="table-empty-cell">Nenhuma venda encontrada para o período selecionado.</td>
       </tr>
     `;
     return;
@@ -1467,8 +1497,8 @@ function getOperationalInsights(farm, year = state.filters.year, month = state.f
     },
     {
       tag: "Recorte ativo",
-      title: monthly.totalMovements ? `${monthly.totalMovements} lancamentos no periodo` : "Sem lancamentos no periodo",
-      text: month === "all" ? `Visao consolidada do ano de ${year}.` : `Leitura mensal de ${MONTH_NAMES[Number(month) - 1]} de ${year}.`
+      title: monthly.totalMovements ? `${monthly.totalMovements} lançamentos no período` : "Sem lançamentos no período",
+      text: month === "all" ? `Visão consolidada do ano de ${year}.` : `Leitura mensal de ${MONTH_NAMES[Number(month) - 1]} de ${year}.`
     }
   ];
 }
@@ -1531,7 +1561,7 @@ function renderSanitaryTable(farm) {
   if (!records.length) {
     elements.sanitaryTableBody.innerHTML = `
       <tr>
-        <td colspan="6" class="table-empty-cell">Nenhum registro sanitario encontrado para o periodo selecionado.</td>
+        <td colspan="7" class="table-empty-cell">Nenhum registro sanitário encontrado para o período selecionado.</td>
       </tr>
     `;
     return;
@@ -1539,11 +1569,12 @@ function renderSanitaryTable(farm) {
 
   elements.sanitaryTableBody.innerHTML = records.map((record) => `
     <tr>
+      <td data-label="Fazenda">${escapeHtml(record.farmName || farm.name)}</td>
       <td data-label="Data">${formatDate(record.date)}</td>
       <td data-label="Manejo">
         <div class="sanitary-main">
           <strong>${escapeHtml(record.categoryName)}</strong>
-          <span>${formatMaybeQuantity(record.quantity)} cabecas</span>
+          <span>${formatMaybeQuantity(record.quantity)} cabeças</span>
         </div>
       </td>
       <td data-label="Destino e produto">
@@ -1556,11 +1587,50 @@ function renderSanitaryTable(farm) {
         <span class="sanitary-origin ${record.sourceId ? "imported" : "manual"}">${record.sourceId ? "Importado" : "Manual"}</span>
       </td>
       <td data-label="Obs.">${escapeHtml(record.notes || "-")}</td>
-      <td data-label="Acoes">
+      <td data-label="Ações">
         <button type="button" class="table-action-btn" data-edit-sanitary-id="${record.id || record.sourceId}">Editar</button>
       </td>
     </tr>
   `).join("");
+}
+
+function renderSanitaryFarmSwitch() {
+  if (!elements.sanitaryFarmSwitch) {
+    return;
+  }
+
+  elements.sanitaryFarmSwitch.innerHTML = "";
+  [
+    { id: TOTAL_FARM_ID, name: "Total" },
+    ...getAllFarms().map((item) => ({ id: item.id, name: item.name }))
+  ].forEach((item) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `farm-btn ${item.id === state.data.selectedFarmId ? "active" : ""}`;
+    button.textContent = item.name;
+    button.addEventListener("click", () => {
+      state.data.selectedFarmId = item.id;
+      state.activeView = "sanitary";
+      saveData();
+      render();
+    });
+    elements.sanitaryFarmSwitch.appendChild(button);
+  });
+}
+
+function renderSanitaryComposerState(farm) {
+  if (!elements.sanitaryViewNote || !elements.sanitaryFormPanel) {
+    return;
+  }
+
+  if (state.data.selectedFarmId === TOTAL_FARM_ID) {
+    elements.sanitaryFormPanel.hidden = true;
+    elements.sanitaryViewNote.textContent = "No consolidado total, os registros sanitários aparecem agrupados. Selecione uma fazenda para lançar ou editar um manejo.";
+    return;
+  }
+
+  elements.sanitaryFormPanel.hidden = false;
+  elements.sanitaryViewNote.textContent = `Manejo sanitário ativo para ${farm.name}. Os dados abaixo consideram apenas a fazenda selecionada.`;
 }
 
 function renderMonthlySummary(farm) {
@@ -2012,7 +2082,7 @@ function renderMonthlyCategoryChart(farm) {
 
 function openMovementDialog(initialType) {
   if (state.data.selectedFarmId === TOTAL_FARM_ID) {
-    alert("Selecione uma fazenda especifica para registrar movimentacoes.");
+    alert("Selecione uma fazenda específica para registrar movimentações.");
     return;
   }
 
@@ -2258,7 +2328,7 @@ function openSanitaryEditor(recordId) {
   elements.sanitaryProduct.value = record.product;
   elements.sanitaryPotrero.value = record.potreiro || "Sem potreiro";
   elements.sanitaryNotes.value = record.notes || "";
-  elements.sanitarySubmitButton.textContent = "Atualizar registro sanitario";
+  elements.sanitarySubmitButton.textContent = "Atualizar registro sanitário";
   updateSanitaryProductMode();
   updateSanitaryPotreroMode();
   elements.sanitaryForm.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -2564,7 +2634,7 @@ function handleMonthlyDataSubmit(event) {
 function handleSanitarySubmit(event) {
   event.preventDefault();
   if (state.data.selectedFarmId === TOTAL_FARM_ID) {
-    alert("Selecione uma fazenda especifica para registrar ou editar o manejo sanitario.");
+    alert("Selecione uma fazenda específica para registrar ou editar o manejo sanitário.");
     return;
   }
 
@@ -2627,7 +2697,7 @@ function handleSanitarySubmit(event) {
   elements.sanitaryNotes.value = "";
   elements.sanitaryProduct.value = farm.sanitaryProducts[0] || "__new__";
   elements.sanitaryPotrero.value = getPotreroEntries(farm)[0]?.name || "__new__";
-  elements.sanitarySubmitButton.textContent = "Salvar registro sanitario";
+  elements.sanitarySubmitButton.textContent = "Salvar registro sanitário";
   updateSanitaryProductMode();
   updateSanitaryPotreroMode();
   render();
@@ -2808,7 +2878,7 @@ function getDiscrepancyText(farm) {
     return `Inventario alinhado ao total declarado de ${formatInteger(farm.declaredTotal)} animais.`;
   }
 
-  return `Atencao: o total declarado para ${farm.name} e ${formatInteger(farm.declaredTotal)} animais, mas o estoque atual mostra ${formatInteger(computedTotal)}. Diferenca de ${formatInteger(difference)} animais.`;
+  return `Atenção: o total declarado para ${farm.name} é ${formatInteger(farm.declaredTotal)} animais, mas o estoque atual mostra ${formatInteger(computedTotal)}. Diferença de ${formatInteger(difference)} animais.`;
 }
 
 function openPdfOptionsDialog() {
@@ -2896,7 +2966,7 @@ async function addPdfHeader(doc, farm, periodLabel, monthly) {
     const imageData = await loadAssetAsDataUrl(PDF_LOGO_PATH);
     doc.addImage(imageData, "JPEG", 14, 10, 22, 22);
   } catch (error) {
-    console.warn("Nao foi possivel carregar o logo para o PDF.", error);
+    console.warn("Não foi possível carregar o logo para o PDF.", error);
   }
 
   doc.setFont("helvetica", "bold");

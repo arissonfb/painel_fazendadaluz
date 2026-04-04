@@ -10,6 +10,17 @@
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body class="login-mode">
+  <section class="splash-shell" id="splashShell" aria-label="Tela de abertura">
+    <div class="splash-landscape">
+      <div class="splash-card">
+        <img src="./assets/logo-da-luz.jpg" alt="Logo Da Luz" class="splash-logo">
+        <span class="splash-kicker">Estabelecimentos Da Luz</span>
+        <strong class="splash-title">Painel pecuario</strong>
+        <p class="splash-text">Clique para continuar ou aguarde 5 segundos.</p>
+      </div>
+    </div>
+  </section>
+
   <section class="auth-shell" id="authShell">
     <div class="auth-card">
       <div class="auth-visual-panel">
@@ -49,58 +60,87 @@
   </section>
 
   <div class="page-shell" id="pageShell" hidden>
-    <header class="hero">
-      <div class="hero-copy">
-        <div class="brand-badge">
-          <img src="./assets/logo-da-luz.jpg" alt="Logo Da Luz" class="brand-logo">
-          <div class="brand-copy">
-            <span>Estabelecimentos</span>
-            <strong>Da Luz</strong>
+    <div class="app-layout">
+      <aside class="sidebar">
+        <div class="sidebar-brand">
+          <div class="brand-badge">
+            <img src="./assets/logo-da-luz.jpg" alt="Logo Da Luz" class="brand-logo">
+            <div class="brand-copy">
+              <span>Estabelecimentos</span>
+              <strong>Da Luz</strong>
+            </div>
           </div>
+          <p class="eyebrow">Navegação</p>
+          <h2>Painel pecuário</h2>
+          <p class="sidebar-text">Acesse o consolidado total, entre em cada fazenda e navegue pelos registros com menos rolagem e mais contexto visual.</p>
         </div>
-        <p class="eyebrow">Gestao de gado</p>
-        <h1>Fazendas Da Luz</h1>
-        <p class="hero-text">
-          Controle o estoque de animais, acompanhe movimentacoes mensais e anuais e gere um PDF executivo para os gestores.
-        </p>
-        <div class="hero-metrics" id="heroMetrics"></div>
-      </div>
 
-      <div class="hero-highlight">
-        <div class="hero-visual">
-          <img src="./assets/herd.svg" alt="Ilustracao de rebanho no campo" class="hero-illustration">
+        <div class="sidebar-section">
+          <span class="sidebar-label">Fazendas</span>
+          <div class="farm-switch sidebar-switch" id="farmSwitch"></div>
         </div>
-        <div class="hero-highlight-copy">
-          <span class="hero-kicker">Manejo fluido</span>
-          <strong id="heroFarmName">Arapey</strong>
-          <p id="heroFarmNote">Controle inicial carregado com base nas quantidades informadas.</p>
-        </div>
-      </div>
-    </header>
 
-    <main>
-      <section class="toolbar">
-        <div class="farm-switch" id="farmSwitch"></div>
-        <div class="toolbar-side">
-          <div class="period-controls">
-            <label>
-              Ano
-              <select id="yearFilter"></select>
-            </label>
-            <label>
-              Mes
-              <select id="monthFilter">
-                <option value="all">Ano inteiro</option>
-              </select>
-            </label>
-          </div>
-          <div class="session-controls">
-            <span class="chip" id="currentUserLabel">Usuario</span>
-            <button type="button" class="ghost-btn" id="manageUsersButton">Usuarios</button>
-            <button type="button" class="ghost-btn" id="logoutButton">Sair</button>
-          </div>
+        <div class="sidebar-section">
+          <span class="sidebar-label">Acesso rápido</span>
+          <button type="button" class="sidebar-shortcut" id="sanitaryShortcut">Sanitário</button>
+          <button type="button" class="sidebar-shortcut" id="manageUsersButton">Usuários</button>
+          <button type="button" class="sidebar-shortcut subtle" id="logoutButton">Sair</button>
         </div>
-      </section>
+      </aside>
+
+      <div class="app-main">
+        <section class="topbar">
+          <div class="topbar-copy">
+            <p class="eyebrow">Gestão pecuária</p>
+            <strong>Painel de leitura por fazenda e consolidado</strong>
+          </div>
+          <div class="topbar-side">
+            <div class="period-controls">
+              <label>
+                Ano
+                <select id="yearFilter"></select>
+              </label>
+              <label>
+                Mês
+                <select id="monthFilter">
+                  <option value="all">Ano inteiro</option>
+                </select>
+              </label>
+            </div>
+            <span class="chip" id="currentUserLabel">Usuário</span>
+          </div>
+        </section>
+
+        <header class="hero">
+          <div class="hero-copy">
+            <div class="brand-badge">
+              <img src="./assets/logo-da-luz.jpg" alt="Logo Da Luz" class="brand-logo">
+              <div class="brand-copy">
+                <span>Estabelecimentos</span>
+                <strong>Da Luz</strong>
+              </div>
+            </div>
+            <p class="eyebrow">Gestão do rebanho</p>
+            <h1>Fazendas Da Luz</h1>
+            <p class="hero-text">
+              Controle o estoque de animais, acompanhe movimentações mensais e anuais e gere um PDF executivo para a gestão.
+            </p>
+            <div class="hero-metrics" id="heroMetrics"></div>
+          </div>
+
+          <div class="hero-highlight">
+            <div class="hero-visual">
+              <img src="./assets/herd.svg" alt="Ilustração de rebanho no campo" class="hero-illustration">
+            </div>
+            <div class="hero-highlight-copy">
+              <span class="hero-kicker">Manejo fluido</span>
+              <strong id="heroFarmName">Arapey</strong>
+              <p id="heroFarmNote">Controle inicial carregado com base nas quantidades informadas.</p>
+            </div>
+          </div>
+        </header>
+
+        <main>
 
       <section class="panel global-panel">
         <div class="panel-header">
@@ -112,11 +152,6 @@
         </div>
         <section class="summary-grid global-summary-grid" id="globalSummaryGrid"></section>
         <section class="global-farm-breakdown" id="globalFarmBreakdown"></section>
-      </section>
-
-      <section class="view-tabs">
-        <button class="view-tab active" id="dashboardTab" data-view="dashboard">Dashboard</button>
-        <button class="view-tab" id="sanitaryTab" data-view="sanitary">Sanitario</button>
       </section>
 
       <div id="dashboardView">
@@ -144,7 +179,7 @@
           <div class="panel-header">
             <div>
               <p class="panel-kicker">Estoque atual</p>
-              <h2>Distribuicao por categoria</h2>
+              <h2>Distribuição por categoria</h2>
             </div>
           </div>
           <canvas id="inventoryChart" aria-label="Grafico do estoque atual"></canvas>
@@ -153,8 +188,8 @@
           <article class="panel chart-panel">
           <div class="panel-header">
             <div>
-              <p class="panel-kicker">Analise anual</p>
-              <h2>Entradas, saidas e saldo</h2>
+              <p class="panel-kicker">Análise anual</p>
+              <h2>Entradas, saídas e saldo</h2>
             </div>
           </div>
           <canvas id="movementChart" aria-label="Grafico de entradas, saidas e saldo"></canvas>
@@ -172,33 +207,10 @@
         </section>
 
         <section class="content-grid lower-grid">
-          <article class="panel inventory-panel">
-          <div class="panel-header">
-            <div>
-              <p class="panel-kicker">Estoque por lote</p>
-              <h2>Controle visual dos animais</h2>
-            </div>
-            <span class="chip" id="inventoryUpdatedLabel">Atualizado localmente</span>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Categoria</th>
-                  <th>Qtd.</th>
-                  <th>Participacao</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody id="inventoryTableBody"></tbody>
-            </table>
-          </div>
-          </article>
-
           <article class="panel analytics-panel">
           <div class="panel-header">
             <div>
-              <p class="panel-kicker">Fechamento do periodo</p>
+              <p class="panel-kicker">Fechamento do período</p>
               <h2>Resumo mensal e anual</h2>
             </div>
           </div>
@@ -211,7 +223,7 @@
           <article class="panel analytics-panel">
           <div class="panel-header">
             <div>
-              <p class="panel-kicker">Analise comercial</p>
+              <p class="panel-kicker">Análise comercial</p>
               <h2>Vendas por kg e faturamento</h2>
             </div>
           </div>
@@ -221,8 +233,8 @@
           <article class="panel timeline-panel">
           <div class="panel-header">
             <div>
-              <p class="panel-kicker">Ultimas vendas</p>
-              <h2>Leitura comercial do periodo</h2>
+              <p class="panel-kicker">Últimas vendas</p>
+              <h2>Leitura comercial do período</h2>
             </div>
           </div>
           <div class="table-wrap">
@@ -247,8 +259,8 @@
           <article class="panel timeline-panel">
           <div class="panel-header">
             <div>
-              <p class="panel-kicker">Movimentacoes recentes</p>
-              <h2>Lancamentos do rebanho</h2>
+              <p class="panel-kicker">Movimentações recentes</p>
+              <h2>Lançamentos do rebanho</h2>
             </div>
           </div>
           <div class="table-wrap">
@@ -270,8 +282,8 @@
           <article class="panel quick-panel">
           <div class="panel-header">
             <div>
-              <p class="panel-kicker">Direcao operacional</p>
-              <h2>Leituras rapidas para decisao</h2>
+              <p class="panel-kicker">Direção operacional</p>
+              <h2>Leituras rápidas para decisão</h2>
             </div>
           </div>
           <div class="insight-list" id="insightList"></div>
@@ -283,7 +295,7 @@
           <div class="panel-header">
             <div>
               <p class="panel-kicker">Leitura mensal</p>
-              <h2>Numeros e valores atribuidos</h2>
+              <h2>Números e valores atribuídos</h2>
             </div>
           </div>
           <div class="analytics-cards" id="monthlySummaryGrid"></div>
@@ -292,8 +304,8 @@
           <article class="panel chart-panel">
           <div class="panel-header">
             <div>
-              <p class="panel-kicker">Evolucao anual</p>
-              <h2>Quantidade e valor por mes</h2>
+              <p class="panel-kicker">Evolução anual</p>
+              <h2>Quantidade e valor por mês</h2>
             </div>
           </div>
           <canvas id="monthlyEvolutionChart" aria-label="Grafico de evolucao mensal por quantidade e valor"></canvas>
@@ -304,8 +316,8 @@
           <article class="panel chart-panel">
           <div class="panel-header">
             <div>
-              <p class="panel-kicker">Categorias do relatorio</p>
-              <h2>Distribuicao dos dados mensais</h2>
+              <p class="panel-kicker">Categorias do relatório</p>
+              <h2>Distribuição dos dados mensais</h2>
             </div>
           </div>
           <canvas id="monthlyCategoryChart" aria-label="Grafico de distribuicao dos dados mensais"></canvas>
@@ -314,7 +326,7 @@
           <article class="panel timeline-panel">
           <div class="panel-header">
             <div>
-              <p class="panel-kicker">Historico mensal</p>
+              <p class="panel-kicker">Histórico mensal</p>
               <h2>Dados consolidados para PDF</h2>
             </div>
           </div>
@@ -322,14 +334,14 @@
             <table class="monthly-table">
               <thead>
                 <tr>
-                  <th>Competencia</th>
+                  <th>Competência</th>
                   <th>Fazenda</th>
                   <th>Categoria</th>
                   <th>Indicador</th>
                   <th>Qtd.</th>
                   <th>Valor</th>
                   <th>Obs.</th>
-                  <th>Acoes</th>
+                  <th>Ações</th>
                 </tr>
               </thead>
               <tbody id="monthlyTableBody"></tbody>
@@ -342,7 +354,7 @@
           <article class="panel">
             <div class="panel-header">
               <div>
-                <p class="panel-kicker">Distribuicao por potreiro</p>
+                <p class="panel-kicker">Distribuição por potreiro</p>
                 <h2>Animais alocados nos potreiros</h2>
               </div>
             </div>
@@ -352,12 +364,23 @@
       </div>
 
       <div id="sanitaryView" hidden>
+        <section class="panel sanitary-toolbar">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">Manejo sanitário</p>
+              <h2>Registros separados por fazenda</h2>
+            </div>
+          </div>
+          <div class="farm-switch sanitary-switch" id="sanitaryFarmSwitch"></div>
+          <p class="note-box sanitary-view-note" id="sanitaryViewNote"></p>
+        </section>
+
         <section class="content-grid sanitary-layout">
-          <article class="panel sanitary-form-panel">
+          <article class="panel sanitary-form-panel" id="sanitaryFormPanel">
             <div class="panel-header">
               <div>
-                <p class="panel-kicker">Manejo sanitario</p>
-                <h2>Novo registro sanitario</h2>
+                <p class="panel-kicker">Manejo sanitário</p>
+                <h2>Novo registro sanitário</h2>
               </div>
             </div>
 
@@ -393,13 +416,13 @@
                   <input type="text" id="newPotreroName" maxlength="80" placeholder="Ex.: Potreiro Norte">
                 </label>
                 <label class="form-span-2">
-                  Observacoes
-                  <input type="text" id="sanitaryNotes" maxlength="160" placeholder="Ex.: lote revisado apos manejo">
+                  Observações
+                  <input type="text" id="sanitaryNotes" maxlength="160" placeholder="Ex.: lote revisado após manejo">
                 </label>
               </div>
 
               <div class="modal-actions sanitary-actions">
-                <button type="submit" class="action-btn purchase" id="sanitarySubmitButton">Salvar registro sanitario</button>
+                <button type="submit" class="action-btn purchase" id="sanitarySubmitButton">Salvar registro sanitário</button>
               </div>
             </form>
           </article>
@@ -407,8 +430,8 @@
           <article class="panel sanitary-summary-panel">
             <div class="panel-header">
               <div>
-                <p class="panel-kicker">Consolidado do periodo</p>
-                <h2>Resumo sanitario</h2>
+                <p class="panel-kicker">Consolidado do período</p>
+                <h2>Resumo sanitário</h2>
               </div>
             </div>
             <div class="analytics-cards" id="sanitarySummary"></div>
@@ -419,20 +442,21 @@
           <article class="panel timeline-panel">
             <div class="panel-header">
               <div>
-                <p class="panel-kicker">Aplicacoes registradas</p>
-                <h2>Historico sanitario</h2>
+                <p class="panel-kicker">Aplicações registradas</p>
+                <h2>Histórico sanitário</h2>
               </div>
             </div>
             <div class="table-wrap">
               <table class="sanitary-table">
                 <thead>
                   <tr>
+                    <th>Fazenda</th>
                     <th>Data</th>
                     <th>Manejo</th>
                     <th>Destino e produto</th>
                     <th>Origem</th>
                     <th>Obs.</th>
-                    <th>Acoes</th>
+                    <th>Ações</th>
                   </tr>
                 </thead>
                 <tbody id="sanitaryTableBody"></tbody>
@@ -441,7 +465,9 @@
           </article>
         </section>
       </div>
-    </main>
+        </main>
+      </div>
+    </div>
   </div>
 
   <dialog id="movementDialog" class="modal">
@@ -472,7 +498,7 @@
           <input type="number" id="movementQuantity" min="1" step="1" required>
         </label>
         <label id="adjustDirectionWrap" hidden>
-          Direcao do ajuste
+          Direção do ajuste
           <select id="adjustDirection">
             <option value="add">Somar ao estoque</option>
             <option value="subtract">Retirar do estoque</option>
@@ -506,7 +532,7 @@
           </label>
         </div>
         <label class="form-span-2" id="movementSaleHint" hidden>
-          Analise da venda
+          Análise da venda
           <span class="field-note">O total sera calculado automaticamente a partir do valor por kg e do peso informado.</span>
         </label>
         <label id="movementValueWrap">
@@ -578,7 +604,7 @@
       <section class="edit-stock-section">
         <div class="panel-header edit-stock-section-header">
           <div>
-            <p class="panel-kicker">Distribuicao por potreiro</p>
+            <p class="panel-kicker">Distribuição por potreiro</p>
             <h3>Cadastro atual de lotacao</h3>
           </div>
           <button type="button" class="ghost-btn" id="addPotreroButton">Novo potreiro</button>
@@ -598,7 +624,7 @@
       <div class="modal-header">
         <div>
           <p class="panel-kicker">Acesso local</p>
-          <h2>Usuarios do sistema</h2>
+          <h2>Usuários do sistema</h2>
         </div>
         <button type="button" class="ghost-btn" id="closeManageUsersDialog">Fechar</button>
       </div>
@@ -638,7 +664,7 @@
           </label>
         </div>
         <div class="modal-actions user-actions">
-          <button type="button" class="action-btn secondary" id="saveUserEditsButton">Salvar alteracoes</button>
+          <button type="button" class="action-btn secondary" id="saveUserEditsButton">Salvar alterações</button>
           <button type="button" class="ghost-btn" id="cancelUserEditButton">Cancelar</button>
         </div>
       </div>
@@ -650,7 +676,7 @@
       <div class="modal-header">
         <div>
           <p class="panel-kicker">Geracao de PDF</p>
-          <h2>Escolher fazendas do relatorio</h2>
+          <h2>Escolher fazendas do relatório</h2>
         </div>
         <button type="button" class="ghost-btn" id="closePdfOptionsDialog">Fechar</button>
       </div>
@@ -674,7 +700,7 @@
           <input type="radio" name="pdfScope" value="custom">
           <div>
             <strong>Por selecao</strong>
-            <span>Permite escolher manualmente quais fazendas entram no relatorio.</span>
+            <span>Permite escolher manualmente quais fazendas entram no relatório.</span>
           </div>
         </label>
       </div>
@@ -685,7 +711,7 @@
           <select id="pdfYearFilter"></select>
         </label>
         <label>
-          Mes do PDF
+          Mês do PDF
           <select id="pdfMonthFilter">
             <option value="all">Ano inteiro</option>
           </select>
@@ -695,7 +721,7 @@
       <div class="user-list pdf-farm-list" id="pdfFarmList" hidden></div>
 
       <div class="modal-actions user-actions">
-        <button type="submit" class="action-btn pdf">Gerar relatorio</button>
+        <button type="submit" class="action-btn pdf">Gerar relatório</button>
       </div>
     </form>
   </dialog>
@@ -718,11 +744,11 @@
           <select id="monthlyDataFarm" required></select>
         </label>
         <label>
-          Competencia
+          Competência
           <input type="month" id="monthlyDataPeriod" required>
         </label>
         <label>
-          Categoria do relatorio
+          Categoria do relatório
           <select id="monthlyDataCategory" required></select>
         </label>
         <label>
@@ -738,8 +764,8 @@
           <input type="number" id="monthlyDataValue" min="0" step="0.01" placeholder="0,00">
         </label>
         <label class="form-span-2">
-          Observacoes
-          <input type="text" id="monthlyDataNotes" maxlength="180" placeholder="Ex.: dado mensal importado do relatorio da fazenda">
+          Observações
+          <input type="text" id="monthlyDataNotes" maxlength="180" placeholder="Ex.: dado mensal importado do relatório da fazenda">
         </label>
       </div>
 
