@@ -916,6 +916,10 @@ input {
   background: linear-gradient(180deg, rgba(255, 252, 247, 0.96), rgba(240, 229, 212, 0.86));
 }
 
+.visual-card-empty {
+  grid-column: 1 / -1;
+}
+
 .visual-card-image {
   aspect-ratio: 16 / 10;
   background: linear-gradient(180deg, rgba(245, 230, 206, 0.8), rgba(233, 216, 191, 0.8));
@@ -959,6 +963,7 @@ input {
 .content-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin-top: 18px;
+  align-items: stretch;
 }
 
 .sales-priority-grid {
@@ -1171,6 +1176,15 @@ input {
   min-width: 0;
 }
 
+.chart-panel,
+.analytics-panel,
+.timeline-panel,
+.quick-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
 .panel-header {
   display: flex;
   justify-content: space-between;
@@ -1194,11 +1208,13 @@ input {
 canvas {
   width: 100% !important;
   height: 320px !important;
+  display: block;
 }
 
 .table-wrap {
   overflow: auto;
   -webkit-overflow-scrolling: touch;
+  width: 100%;
 }
 
 table {
@@ -1256,6 +1272,10 @@ th {
 
 .analytics-card {
   background: linear-gradient(180deg, rgba(255, 252, 247, 0.94), rgba(244, 236, 224, 0.88));
+}
+
+.analytics-card-empty {
+  border-style: dashed;
 }
 
 .analytics-card strong,

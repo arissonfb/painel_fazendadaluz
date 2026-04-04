@@ -1052,6 +1052,14 @@ function getMonthlyEvolution(farm, year = state.filters.year) {
   });
 }
 
+function hasPositiveData(values = []) {
+  return values.some((value) => Number(value || 0) > 0);
+}
+
+function hasMeaningfulMonthlyData(summary) {
+  return Boolean(summary?.count || summary?.totalQuantity || summary?.totalValue);
+}
+
 function getFarmTotal(farm) {
   return farm.categories.reduce((sum, category) => sum + Number(category.quantity || 0), 0);
 }
@@ -1287,16 +1295,16 @@ function render() {
   populateYearFilter();
   populatePdfPeriodFilters();
   renderFarmSwitch();
-  renderGlobalSummary();
+  renderOverviewPanel();
   syncMovementTypeOptions();
   syncCategoryOptions();
   syncSanitaryFormOptions();
   syncMonthlyDataFarmOptions();
   syncMonthlyDataCategoryOptions();
   renderHero(farm);
-  renderHeroMetrics(farm);
-  renderSummaryCards(farm);
-  renderVisualHerdGrid(farm);
+  renderHeadlineMetrics(farm);
+  renderPrimarySummaryCards(farm);
+  renderDashboardVisualHerdGrid(farm);
   renderPeriodSummary(farm);
   renderSalesAnalysis(farm);
   renderMovementsTable(farm);
@@ -1311,6 +1319,183 @@ function render() {
   renderActiveView();
   renderGeorefState(farm);
   renderActionButtonsState();
+}
+
+function renderOverviewPanel() {
+  const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
+  const farms = isTotalView ? getAllFarms() : [state.data.farms[state.data.selectedFarmId]].filter(Boolean);
+  const selectedFarm = farms[0];
+  const totals = farms.reduce((accumulator, farm) => {
+    accumulator.stock += getFarmTotal(farm);
+    accumulator.declared += Number(farm.declaredTotal || 0);
+    accumulator.allocated += getRegisteredPotreroAnimals(farm);
+    accumulator.monthly += getFilteredMonthlyRecords(farm).length;
+    return accumulator;
+  }, { stock: 0, declared: 0, allocated: 0, monthly: 0 });
+  const difference = totals.declared - totals.stock;
+  const allocationBalance = totals.stock - totals.allocated;
+
+  elements.globalPanelKicker.textContent = isTotalView ? "Painel inicial" : "Fazenda selecionada";
+  elements.globalPanelTitle.textContent = isTotalView ? "Consolidado das fazendas" : `Resumo de ${selectedFarm?.name || "fazenda"}`;
+  elements.globalPanelChip.textContent = isTotalView ? "Grupo Da Luz" : selectedFarm?.name || "Fazenda";
+
+  const cards = [
+    {
+      title: isTotalView ? "Estoque consolidado" : "Estoque atual",
+      value: formatInteger(totals.stock),
+      detail: isTotalView ? "rebanho somado das fazendas ativas" : `rebanho atual de ${selectedFarm?.name || "fazenda"}`
+    },
+    {
+      title: "Total declarado",
+      value: formatInteger(totals.declared),
+      detail: difference === 0 ? "estoque alinhado ao total declarado" : `${formatInteger(difference)} animais de diferenca`
+    },
+    {
+      title: "Animais em potreiros",
+      value: formatInteger(totals.allocated),
+      detail: allocationBalance === 0 ? "distribuicao conferida" : `${formatInteger(Math.abs(allocationBalance))} ${allocationBalance > 0 ? "sem alocacao" : "acima do estoque"}`
+    },
+    {
+      title: "Dados mensais",
+      value: formatInteger(totals.monthly),
+      detail: isTotalView ? "registros mensais do recorte filtrado" : `registros mensais de ${selectedFarm?.name || "fazenda"}`
+    }
+  ];
+
+  elements.globalSummaryGrid.innerHTML = cards.map((card) => `
+    <article class="summary-card">
+      <p class="panel-kicker">${card.title}</p>
+      <strong>${card.value}</strong>
+      <p>${card.detail}</p>
+    </article>
+  `).join("");
+
+  elements.globalFarmBreakdown.innerHTML = farms.map((farm) => {
+    const movements = summarizePeriod(farm, state.filters.year, state.filters.month);
+    return `
+      <article class="global-farm-card">
+        <p class="panel-kicker">${escapeHtml(farm.name)}</p>
+        <strong>${formatInteger(getFarmTotal(farm))}</strong>
+        <p>Declarado ${formatInteger(Number(farm.declaredTotal || 0))} | Potreiros ${formatInteger(getRegisteredPotreroAnimals(farm))}</p>
+        <p>Compra ${formatInteger(movements.byType.compra)} | Venda ${formatInteger(movements.byType.venda)}</p>
+        <span>${formatInteger(getFilteredMonthlyRecords(farm).length)} dado(s) mensais no recorte</span>
+      </article>
+    `;
+  }).join("");
+}
+
+function renderHeadlineMetrics(farm) {
+  const totalAnimals = getFarmTotal(farm);
+  const discrepancy = getDiscrepancy(farm);
+  const registeredAnimals = getRegisteredPotreroAnimals(farm);
+  const metrics = [
+    {
+      label: state.data.selectedFarmId === TOTAL_FARM_ID ? "Grupo" : "Rebanho",
+      value: formatInteger(totalAnimals),
+      text: state.data.selectedFarmId === TOTAL_FARM_ID ? "animais consolidados no grupo" : "animais no estoque atual"
+    },
+    {
+      label: "Declarado",
+      value: formatInteger(Number(farm.declaredTotal || 0)),
+      text: discrepancy === 0 ? "total conferido com o estoque" : `${formatInteger(discrepancy)} animais de diferenca`
+    },
+    {
+      label: "Potreiros",
+      value: formatInteger(registeredAnimals),
+      text: registeredAnimals === totalAnimals ? "alocacao completa nos campos" : `${formatInteger(Math.abs(totalAnimals - registeredAnimals))} ainda fora dos potreiros`
+    }
+  ];
+
+  elements.heroMetrics.innerHTML = metrics.map((metric) => `
+    <article class="hero-metric">
+      <span>${metric.label}</span>
+      <strong>${metric.value}</strong>
+      <p>${metric.text}</p>
+    </article>
+  `).join("");
+}
+
+function renderPrimarySummaryCards(farm) {
+  const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
+  const annualData = summarizePeriod(farm, state.filters.year, "all");
+  const filteredData = summarizePeriod(farm, state.filters.year, state.filters.month);
+  const monthlySummary = getMonthlySummary(farm);
+  const cards = [
+    {
+      title: isTotalView ? "Fazendas ativas" : "Movimentacoes no ano",
+      value: isTotalView ? formatInteger(getAllFarms().length) : formatInteger(annualData.totalMovements),
+      detail: isTotalView ? "fazendas somadas no consolidado" : `lancamentos registrados em ${state.filters.year}`
+    },
+    {
+      title: "Entradas no periodo",
+      value: formatInteger(filteredData.byType.compra + filteredData.byType.nascimento + filteredData.adjustPositive),
+      detail: "compras, nascimentos e ajustes positivos"
+    },
+    {
+      title: "Saidas no periodo",
+      value: formatInteger(filteredData.byType.venda + filteredData.byType.consumo + filteredData.byType.morte + filteredData.adjustNegative),
+      detail: "vendas, consumo, mortes e ajustes negativos"
+    },
+    {
+      title: "Dados mensais ativos",
+      value: formatInteger(monthlySummary.activeCategories),
+      detail: monthlySummary.count ? `${formatInteger(monthlySummary.count)} registros mensais no recorte` : "nenhum registro mensal no recorte"
+    }
+  ];
+
+  elements.summaryGrid.innerHTML = cards.map((card) => `
+    <article class="summary-card">
+      <p class="panel-kicker">${card.title}</p>
+      <strong>${card.value}</strong>
+      <p>${card.detail}</p>
+    </article>
+  `).join("");
+}
+
+function renderDashboardVisualHerdGrid(farm) {
+  const total = Math.max(getFarmTotal(farm), 1);
+  const categories = [...farm.categories]
+    .filter((category) => Number(category.quantity || 0) > 0)
+    .sort((a, b) => b.quantity - a.quantity)
+    .slice(0, 4);
+
+  if (!categories.length) {
+    elements.visualHerdGrid.innerHTML = `
+      <article class="visual-card visual-card-empty">
+        <div class="visual-card-copy">
+          <div class="visual-card-topline">
+            <div>
+              <p class="panel-kicker">Sem estoque</p>
+              <strong>Sem categorias com animais</strong>
+            </div>
+          </div>
+          <p>Cadastre o estoque ou ajuste as categorias para que o dashboard principal mostre a distribuicao do rebanho.</p>
+        </div>
+      </article>
+    `;
+    return;
+  }
+
+  elements.visualHerdGrid.innerHTML = categories.map((category) => {
+    const share = ((category.quantity / total) * 100).toFixed(1);
+    return `
+      <article class="visual-card">
+        <div class="visual-card-image">
+          <img src="${getCategoryImage(category.name)}" alt="${escapeHtml(category.name)}">
+        </div>
+        <div class="visual-card-copy">
+          <div class="visual-card-topline">
+            <div>
+              <p class="panel-kicker">${escapeHtml(getCategoryFamily(category.name))}</p>
+              <strong>${escapeHtml(category.name)}</strong>
+            </div>
+            <span class="visual-card-share">${share}%</span>
+          </div>
+          <p>${formatInteger(category.quantity)} animais neste grupo.</p>
+        </div>
+      </article>
+    `;
+  }).join("");
 }
 
 function renderFarmSwitch() {
@@ -1346,12 +1531,16 @@ function renderGlobalSummary() {
   const totals = farms.reduce((accumulator, farm) => {
     const monthly = summarizePeriod(farm, state.filters.year, state.filters.month);
     accumulator.animais += getFarmTotal(farm);
+    accumulator.declaredTotal += Number(farm.declaredTotal || 0);
+    accumulator.allocatedAnimals += getRegisteredPotreroAnimals(farm);
     accumulator.entradas += monthly.byType.compra + monthly.byType.nascimento + monthly.adjustPositive;
     accumulator.saidas += monthly.byType.venda + monthly.byType.consumo + monthly.byType.morte + monthly.adjustNegative;
     accumulator.sanitario += getFilteredSanitaryRecords(farm).length;
+    accumulator.monthlyRecords += getFilteredMonthlyRecords(farm).length;
     return accumulator;
-  }, { animais: 0, entradas: 0, saidas: 0, sanitario: 0 });
+  }, { animais: 0, declaredTotal: 0, allocatedAnimals: 0, entradas: 0, saidas: 0, sanitario: 0, monthlyRecords: 0 });
   const selectedFarm = farms[0];
+  const allocationBalance = totals.animais - totals.allocatedAnimals;
 
   elements.globalPanelKicker.textContent = isTotalView ? "Painel inicial" : "Fazenda selecionada";
   elements.globalPanelTitle.textContent = isTotalView ? "Consolidado das fazendas" : `Resumo de ${selectedFarm?.name || "fazenda"}`;
@@ -1359,14 +1548,16 @@ function renderGlobalSummary() {
 
   const cards = [
     {
-      title: isTotalView ? "Animais em todas as fazendas" : "Animais da fazenda",
+      title: isTotalView ? "Estoque consolidado" : "Estoque atual",
       value: formatInteger(totals.animais),
       detail: isTotalView ? "estoque consolidado do grupo" : `estoque atual de ${selectedFarm?.name || "fazenda"}`
     },
     {
       title: isTotalView ? "Entradas consolidadas" : "Entradas no período",
-      value: formatInteger(totals.entradas),
-      detail: isTotalView ? "compras, nascimentos e ajustes positivos" : "compras, nascimentos e ajustes positivos"
+      value: formatInteger(totals.declaredTotal),
+      detail: totals.declaredTotal === totals.animais
+        ? "estoque alinhado ao total declarado"
+        : `${formatInteger(totals.declaredTotal - totals.animais)} animais de diferenca`
     },
     {
       title: isTotalView ? "Saídas consolidadas" : "Saídas no período",
@@ -1868,6 +2059,16 @@ function renderMonthlySummary(farm) {
       <p>${card.detail}</p>
     </article>
   `).join("");
+
+  if (!hasMeaningfulMonthlyData(summary)) {
+    elements.monthlySummaryGrid.insertAdjacentHTML("beforeend", `
+      <article class="analytics-card analytics-card-empty">
+        <p class="panel-kicker">Sem dados no recorte</p>
+        <strong>0</strong>
+        <p>Nenhum dado mensal encontrado para o filtro atual. Ajuste ano, mes ou cadastre novos dados mensais.</p>
+      </article>
+    `);
+  }
 }
 
 function renderMonthlyTable(farm) {
@@ -2820,6 +3021,15 @@ function renderInventoryChart(farm) {
   const labels = farm.categories.map((category) => category.name);
   const data = farm.categories.map((category) => category.quantity);
 
+  if (!hasPositiveData(data)) {
+    if (state.charts.inventory) {
+      state.charts.inventory.destroy();
+      state.charts.inventory = null;
+    }
+    drawChartFallback("inventoryChart", "Sem estoque para distribuir por categoria.");
+    return;
+  }
+
   if (state.charts.inventory) {
     state.charts.inventory.destroy();
   }
@@ -2885,6 +3095,15 @@ function renderMovementChart(farm) {
       saldo: summary.netChange
     };
   });
+
+  if (!summaryByMonth.some((item) => item.entradas || item.saidas || item.saldo)) {
+    if (state.charts.movement) {
+      state.charts.movement.destroy();
+      state.charts.movement = null;
+    }
+    drawChartFallback("movementChart", "Sem movimentacoes registradas no ano filtrado.");
+    return;
+  }
 
   if (state.charts.movement) {
     state.charts.movement.destroy();
@@ -2969,6 +3188,15 @@ function renderRankingChart(farm) {
     .sort((a, b) => b.quantity - a.quantity)
     .slice(0, 6);
 
+  if (!categories.some((category) => Number(category.quantity || 0) > 0)) {
+    if (state.charts.ranking) {
+      state.charts.ranking.destroy();
+      state.charts.ranking = null;
+    }
+    drawChartFallback("rankingChart", "Sem lotes com animais para montar o ranking.");
+    return;
+  }
+
   if (state.charts.ranking) {
     state.charts.ranking.destroy();
   }
@@ -3025,6 +3253,15 @@ function renderMonthlyEvolutionChart(farm) {
 
   const context = document.getElementById("monthlyEvolutionChart");
   const evolution = getMonthlyEvolution(farm, state.filters.year);
+
+  if (!evolution.some((item) => item.count || item.quantity || item.value)) {
+    if (state.charts.monthlyEvolution) {
+      state.charts.monthlyEvolution.destroy();
+      state.charts.monthlyEvolution = null;
+    }
+    drawChartFallback("monthlyEvolutionChart", "Sem dados mensais no ano filtrado.");
+    return;
+  }
 
   if (state.charts.monthlyEvolution) {
     state.charts.monthlyEvolution.destroy();
@@ -3092,6 +3329,15 @@ function renderMonthlyCategoryChart(farm) {
   const summary = getMonthlySummary(farm);
   const labels = summary.byCategory.map((item) => item.label);
   const values = summary.byCategory.map((item) => item.value > 0 ? item.value : item.quantity > 0 ? item.quantity : item.count);
+
+  if (!hasMeaningfulMonthlyData(summary)) {
+    if (state.charts.monthlyCategory) {
+      state.charts.monthlyCategory.destroy();
+      state.charts.monthlyCategory = null;
+    }
+    drawChartFallback("monthlyCategoryChart", "Sem dados mensais para distribuir por categoria.");
+    return;
+  }
 
   if (state.charts.monthlyCategory) {
     state.charts.monthlyCategory.destroy();
@@ -4708,7 +4954,8 @@ function cloneSeedData() {
   return JSON.parse(JSON.stringify(seedData));
 }
 
-function ensureDataShape(data) {
+function ensureDataShape(data, options = {}) {
+  const preserveSnapshot = Boolean(options.preserveSnapshot);
   if (!data.farms || typeof data.farms !== "object") {
     data.farms = {};
   }
@@ -4735,8 +4982,8 @@ function ensureDataShape(data) {
     if (user.id === "user-da-luz") {
       return {
         ...user,
-        login: "Hugo Balbuena",
-        password: "hugo123"
+        login: user.login || "Hugo Balbuena",
+        password: user.password || "hugo123"
       };
     }
 
@@ -4819,64 +5066,66 @@ function ensureDataShape(data) {
     applyImportedFarmBaseline(farm);
   });
 
-  Object.entries(IMPORTED_SANITARY_RECORDS).forEach(([farmId, records]) => {
-    const farm = data.farms[farmId];
-    if (!farm) {
-      return;
-    }
+  if (!preserveSnapshot) {
+    Object.entries(IMPORTED_SANITARY_RECORDS).forEach(([farmId, records]) => {
+      const farm = data.farms[farmId];
+      if (!farm) {
+        return;
+      }
 
-    records.forEach((record) => {
-      if (!farm.sanitaryRecords.some((item) => item.sourceId === record.sourceId)) {
-        farm.sanitaryRecords.push({
-          ...record,
-          id: record.sourceId || createMovementId(),
-          potreiro: record.potreiro || "Sem potreiro"
-        });
-      }
-      if (!farm.sanitaryProducts.includes(record.product)) {
-        farm.sanitaryProducts.push(record.product);
-      }
-      if (record.potreiro && !getPotreroEntries(farm).some((item) => normalizeText(item.name) === normalizeText(record.potreiro))) {
-        farm.potreiros.push({
-          id: createPotreroId(record.potreiro),
-          name: record.potreiro,
-          quantity: 0
-        });
-      }
+      records.forEach((record) => {
+        if (!farm.sanitaryRecords.some((item) => item.sourceId === record.sourceId)) {
+          farm.sanitaryRecords.push({
+            ...record,
+            id: record.sourceId || createMovementId(),
+            potreiro: record.potreiro || "Sem potreiro"
+          });
+        }
+        if (!farm.sanitaryProducts.includes(record.product)) {
+          farm.sanitaryProducts.push(record.product);
+        }
+        if (record.potreiro && !getPotreroEntries(farm).some((item) => normalizeText(item.name) === normalizeText(record.potreiro))) {
+          farm.potreiros.push({
+            id: createPotreroId(record.potreiro),
+            name: record.potreiro,
+            quantity: 0
+          });
+        }
+      });
     });
-  });
 
-  Object.entries(IMPORTED_MONTHLY_RECORDS).forEach(([farmId, records]) => {
-    const farm = data.farms[farmId];
-    if (!farm) {
-      return;
-    }
-
-    records.forEach((record) => {
-      if (!farm.monthlyRecords.some((item) => item.sourceId === record.sourceId)) {
-        farm.monthlyRecords.push({
-          ...record,
-          id: createMovementId()
-        });
+    Object.entries(IMPORTED_MONTHLY_RECORDS).forEach(([farmId, records]) => {
+      const farm = data.farms[farmId];
+      if (!farm) {
+        return;
       }
+
+      records.forEach((record) => {
+        if (!farm.monthlyRecords.some((item) => item.sourceId === record.sourceId)) {
+          farm.monthlyRecords.push({
+            ...record,
+            id: createMovementId()
+          });
+        }
+      });
     });
-  });
 
-  Object.entries(IMPORTED_COMMERCIAL_MOVEMENTS).forEach(([farmId, movements]) => {
-    const farm = data.farms[farmId];
-    if (!farm) {
-      return;
-    }
-
-    movements.forEach((movement) => {
-      if (!farm.movements.some((item) => item.sourceId === movement.sourceId)) {
-        farm.movements.push({
-          ...movement,
-          id: movement.sourceId || createMovementId()
-        });
+    Object.entries(IMPORTED_COMMERCIAL_MOVEMENTS).forEach(([farmId, movements]) => {
+      const farm = data.farms[farmId];
+      if (!farm) {
+        return;
       }
+
+      movements.forEach((movement) => {
+        if (!farm.movements.some((item) => item.sourceId === movement.sourceId)) {
+          farm.movements.push({
+            ...movement,
+            id: movement.sourceId || createMovementId()
+          });
+        }
+      });
     });
-  });
+  }
 
   return data;
 }
@@ -4993,12 +5242,17 @@ function drawChartFallback(canvasId, message) {
     return;
   }
 
+  const width = Math.max(canvas.clientWidth || 0, 320);
+  const height = Math.max(canvas.clientHeight || 0, 320);
+  canvas.width = width;
+  canvas.height = height;
   context.clearRect(0, 0, canvas.width, canvas.height);
   context.fillStyle = "#f5ede1";
   context.fillRect(0, 0, canvas.width, canvas.height);
   context.fillStyle = "#776552";
   context.font = "16px Manrope";
   context.textAlign = "center";
+  context.textBaseline = "middle";
   context.fillText(message, canvas.width / 2, canvas.height / 2);
 }
 
@@ -5389,22 +5643,26 @@ async function handleRestoreFile(event) {
   if (!confirmed) return;
 
   try {
-    const text = await readFileAsDataUrl(file).catch(() => null) || await file.text();
-    const raw = typeof text === "string" && text.startsWith("data:") ? atob(text.split(",")[1]) : text;
-    const payload = JSON.parse(raw);
+    const text = await file.text();
+    const payload = JSON.parse(text);
 
     if (!payload.dados || !payload.dados.farms || !payload.dados.auth) {
       alert("Arquivo inválido. Este não parece ser um backup do Painel Pecuário.");
       return;
     }
 
-    const restored = ensureDataShape(payload.dados);
+    const restored = ensureDataShape(payload.dados, { preserveSnapshot: true });
+    const currentSessionUserId = state.data.auth.sessionUserId;
     restored.selectedFarmId = TOTAL_FARM_ID;
-    restored.auth.sessionUserId = state.data.auth.sessionUserId;
+    restored.auth.sessionUserId = restored.auth.users.some((user) => user.id === currentSessionUserId)
+      ? currentSessionUserId
+      : "";
 
-    Object.assign(state.data, restored);
+    state.data = restored;
     saveData();
     markBackupDone();
+    renderAuthState();
+    initializeAppShell();
     render();
     alert(`Backup restaurado com sucesso!\nData do backup: ${payload.dataBackup ? new Date(payload.dataBackup).toLocaleString("pt-BR") : "desconhecida"}`);
   } catch (error) {
