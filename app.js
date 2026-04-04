@@ -198,6 +198,31 @@ const IMPORTED_MONTHLY_RECORDS = {
   ]
 };
 
+const IMPORTED_COMMERCIAL_MOVEMENTS = {
+  chiquita: [
+    { sourceId: "pdf-mov-2025-10-23-chiquita-compra-terneiros", type: "compra", date: "2025-10-23", categoryId: "pdf-terneiros", categoryName: "Terneiros", quantity: 28, delta: 28, value: 19031, saleDetails: null, notes: "Importado do PDF mensal: compra de 28 terneiros." },
+    { sourceId: "pdf-mov-2025-10-23-chiquita-compra-novilhos", type: "compra", date: "2025-10-23", categoryId: "pdf-novilhos", categoryName: "Novilhos", quantity: 26, delta: 26, value: 29419, saleDetails: null, notes: "Importado do PDF mensal: compra de 26 novilhos." }
+  ],
+  "passa-da-guarda": [
+    { sourceId: "pdf-mov-2025-10-06-passa-da-guarda-venda-vacas", type: "venda", date: "2025-10-06", categoryId: "pdf-vacas", categoryName: "Vacas", quantity: 22, delta: -22, value: 97092, saleDetails: null, notes: "Importado do PDF mensal: venda de 22 vacas." },
+    { sourceId: "pdf-mov-2025-10-06-passa-da-guarda-venda-bois", type: "venda", date: "2025-10-06", categoryId: "pdf-bois", categoryName: "Bois", quantity: 12, delta: -12, value: 61646, saleDetails: null, notes: "Importado do PDF mensal: venda de 12 bois." },
+    { sourceId: "pdf-mov-2025-10-21-passa-da-guarda-venda-bois", type: "venda", date: "2025-10-21", categoryId: "pdf-bois", categoryName: "Bois", quantity: 15, delta: -15, value: 79537.5, saleDetails: null, notes: "Importado do PDF mensal: venda de 15 bois." },
+    { sourceId: "pdf-mov-2025-11-04-passa-da-guarda-venda-bois", type: "venda", date: "2025-11-04", categoryId: "pdf-bois", categoryName: "Bois", quantity: 10, delta: -10, value: 47670, saleDetails: null, notes: "Importado do PDF mensal: venda de 10 bois." },
+    { sourceId: "pdf-mov-2025-11-04-passa-da-guarda-venda-vacas", type: "venda", date: "2025-11-04", categoryId: "pdf-vacas", categoryName: "Vacas", quantity: 35, delta: -35, value: 148995, saleDetails: null, notes: "Importado do PDF mensal: venda de 35 vacas." }
+  ],
+  colorado: [
+    { sourceId: "pdf-mov-2025-10-17-colorado-compra-boi-1-ano", type: "compra", date: "2025-10-17", categoryId: "pdf-boi-1-ano", categoryName: "Boi 1 ano", quantity: 20, delta: 20, value: 69747, saleDetails: null, notes: "Importado do PDF mensal: compra de 20 bois de 1 ano." }
+  ],
+  sarandi: [
+    { sourceId: "pdf-mov-2025-08-25-sarandi-venda-bois", type: "venda", date: "2025-08-25", categoryId: "pdf-bois", categoryName: "Bois", quantity: 50, delta: -50, value: 255904, saleDetails: null, notes: "Importado do PDF mensal: venda de 50 bois." },
+    { sourceId: "pdf-mov-2025-10-09-sarandi-compra-bois", type: "compra", date: "2025-10-09", categoryId: "pdf-bois", categoryName: "Bois", quantity: 23, delta: 23, value: 71112.5, saleDetails: null, notes: "Importado do PDF mensal: compra de 23 bois." },
+    { sourceId: "pdf-mov-2025-10-21-sarandi-compra-bois-lote-20", type: "compra", date: "2025-10-21", categoryId: "pdf-bois", categoryName: "Bois", quantity: 20, delta: 20, value: 73371.9, saleDetails: null, notes: "Importado do PDF mensal: compra de 20 bois." },
+    { sourceId: "pdf-mov-2025-10-21-sarandi-compra-bois-lote-21", type: "compra", date: "2025-10-21", categoryId: "pdf-bois", categoryName: "Bois", quantity: 21, delta: 21, value: 73371.9, saleDetails: null, notes: "Importado do PDF mensal: compra de 21 bois." },
+    { sourceId: "pdf-mov-2025-10-21-sarandi-compra-terneiros", type: "compra", date: "2025-10-21", categoryId: "pdf-terneiros", categoryName: "Terneiros", quantity: 10, delta: 10, value: 24299, saleDetails: null, notes: "Importado do PDF mensal: compra de 10 terneiros." },
+    { sourceId: "pdf-mov-2025-10-21-sarandi-venda-bois", type: "venda", date: "2025-10-21", categoryId: "pdf-bois", categoryName: "Bois", quantity: 16, delta: -16, value: 91077, saleDetails: null, notes: "Importado do PDF mensal: venda de 16 bois." }
+  ]
+};
+
 const seedData = {
   selectedFarmId: "arapey",
   auth: {
@@ -416,7 +441,7 @@ function initializeAppShell() {
     runtime.appInitialized = true;
   }
 
-  state.filters.year = String(getPreferredYearForFarm(getFarm()));
+  syncFilterYearForFarm(getFarm(), true);
   populateYearFilter();
   populatePdfPeriodFilters();
 }
@@ -853,13 +878,28 @@ function getDiscrepancy(farm) {
 }
 
 function getPreferredYearForFarm(farm) {
-  const years = [
+  const years = [...getAvailableYearsForFarm(farm)];
+
+  return years.length ? Math.max(...years) : today.getFullYear();
+}
+
+function getAvailableYearsForFarm(farm) {
+  return new Set([
     ...farm.movements.map((movement) => new Date(movement.date).getFullYear()),
     ...farm.sanitaryRecords.map((record) => new Date(record.date).getFullYear()),
     ...farm.monthlyRecords.map((record) => Number(String(record.period || "").slice(0, 4)))
-  ].filter((year) => Number.isFinite(year));
+  ].filter((year) => Number.isFinite(year)));
+}
 
-  return years.length ? Math.max(...years) : today.getFullYear();
+function syncFilterYearForFarm(farm, force = false) {
+  if (!farm) {
+    return;
+  }
+
+  const years = getAvailableYearsForFarm(farm);
+  if (force || !years.has(Number(state.filters.year))) {
+    state.filters.year = String(getPreferredYearForFarm(farm));
+  }
 }
 
 function isPremiumSaleFarm(farm) {
@@ -1030,6 +1070,9 @@ function render() {
   }
 
   const farm = getFarm();
+  syncFilterYearForFarm(farm);
+  populateYearFilter();
+  populatePdfPeriodFilters();
   renderFarmSwitch();
   renderGlobalSummary();
   syncMovementTypeOptions();
@@ -1058,6 +1101,16 @@ function render() {
 
 function renderFarmSwitch() {
   elements.farmSwitch.innerHTML = "";
+  const totalButton = document.createElement("button");
+  totalButton.className = `farm-btn ${TOTAL_FARM_ID === state.data.selectedFarmId ? "active" : ""}`;
+  totalButton.textContent = "Total";
+  totalButton.addEventListener("click", () => {
+    state.data.selectedFarmId = TOTAL_FARM_ID;
+    saveData();
+    render();
+  });
+  elements.farmSwitch.appendChild(totalButton);
+
   Object.values(state.data.farms).forEach((farm) => {
     const button = document.createElement("button");
     button.className = `farm-btn ${farm.id === state.data.selectedFarmId ? "active" : ""}`;
@@ -1069,16 +1122,6 @@ function renderFarmSwitch() {
     });
     elements.farmSwitch.appendChild(button);
   });
-
-  const totalButton = document.createElement("button");
-  totalButton.className = `farm-btn ${TOTAL_FARM_ID === state.data.selectedFarmId ? "active" : ""}`;
-  totalButton.textContent = "Total";
-  totalButton.addEventListener("click", () => {
-    state.data.selectedFarmId = TOTAL_FARM_ID;
-    saveData();
-    render();
-  });
-  elements.farmSwitch.appendChild(totalButton);
 }
 
 function renderGlobalSummary() {
@@ -1326,9 +1369,9 @@ function renderSalesAnalysis(farm) {
     <tr>
       <td data-label="Data">${formatDate(movement.date)}</td>
       <td data-label="Categoria">${escapeHtml(movement.categoryName)}</td>
-      <td data-label="Base">${escapeHtml(getSaleModeLabel(movement.saleDetails?.mode || "vivo"))}</td>
-      <td data-label="Kg">${formatWeight(movement.saleDetails?.weightKg || 0)}</td>
-      <td data-label="R$/kg">${formatCurrency(movement.saleDetails?.pricePerKg || 0)}</td>
+      <td data-label="Base">${movement.saleDetails ? escapeHtml(getSaleModeLabel(movement.saleDetails.mode || "vivo")) : "Relatorio mensal"}</td>
+      <td data-label="Kg">${movement.saleDetails ? formatWeight(movement.saleDetails.weightKg || 0) : "-"}</td>
+      <td data-label="R$/kg">${movement.saleDetails ? formatCurrency(movement.saleDetails.pricePerKg || 0) : "-"}</td>
       <td data-label="Total">${formatCurrency(movement.value || 0)}</td>
     </tr>
   `).join("");
@@ -2961,9 +3004,9 @@ function appendSaleDetailsPdfTable(doc, saleSummary) {
       ? saleSummary.movements.map((movement) => [
         formatDate(movement.date),
         movement.categoryName,
-        getSaleModeLabel(movement.saleDetails?.mode || "vivo"),
-        formatWeight(movement.saleDetails?.weightKg || 0),
-        formatCurrency(movement.saleDetails?.pricePerKg || 0),
+        movement.saleDetails ? getSaleModeLabel(movement.saleDetails.mode || "vivo") : "Relatorio mensal",
+        movement.saleDetails ? formatWeight(movement.saleDetails.weightKg || 0) : "-",
+        movement.saleDetails ? formatCurrency(movement.saleDetails.pricePerKg || 0) : "-",
         formatCurrency(movement.value || 0)
       ])
       : [["-", "-", "-", "-", "-", "Sem vendas no periodo"]],
@@ -3309,6 +3352,22 @@ function ensureDataShape(data) {
       id: record.id || record.sourceId || createMovementId(),
       potreiro: record.potreiro || "Sem potreiro"
     }));
+    farm.movements = farm.movements.map((movement) => ({
+      ...movement,
+      id: movement.id || movement.sourceId || createMovementId(),
+      sourceId: movement.sourceId || "",
+      quantity: Number(movement.quantity || 0),
+      delta: Number(movement.delta || 0),
+      value: Number(movement.value || 0),
+      notes: movement.notes || "",
+      saleDetails: movement.saleDetails
+        ? {
+          mode: movement.saleDetails.mode || "vivo",
+          pricePerKg: Number(movement.saleDetails.pricePerKg || 0),
+          weightKg: Number(movement.saleDetails.weightKg || 0)
+        }
+        : null
+    }));
     farm.monthlyRecords = farm.monthlyRecords.map((record) => ({
       id: record.id || createMovementId(),
       sourceId: record.sourceId || "",
@@ -3361,6 +3420,22 @@ function ensureDataShape(data) {
         farm.monthlyRecords.push({
           ...record,
           id: createMovementId()
+        });
+      }
+    });
+  });
+
+  Object.entries(IMPORTED_COMMERCIAL_MOVEMENTS).forEach(([farmId, movements]) => {
+    const farm = data.farms[farmId];
+    if (!farm) {
+      return;
+    }
+
+    movements.forEach((movement) => {
+      if (!farm.movements.some((item) => item.sourceId === movement.sourceId)) {
+        farm.movements.push({
+          ...movement,
+          id: movement.sourceId || createMovementId()
         });
       }
     });
