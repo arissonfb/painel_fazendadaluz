@@ -10,7 +10,45 @@
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-  <div class="page-shell">
+  <section class="auth-shell" id="authShell">
+    <div class="auth-card">
+      <div class="auth-visual-panel">
+        <div class="brand-badge">
+          <img src="./assets/logo-da-luz.jpg" alt="Logo Da Luz" class="brand-logo">
+          <div class="brand-copy">
+            <span>Estabelecimentos</span>
+            <strong>Da Luz</strong>
+          </div>
+        </div>
+        <div class="auth-angus-frame">
+          <img src="./assets/angus-login.svg" alt="Rosto 3D de Angus em destaque" class="auth-angus-image">
+        </div>
+      </div>
+
+      <div class="auth-copy-panel">
+        <p class="eyebrow">Acesso ao painel</p>
+        <h1>Entrar no sistema</h1>
+        <p class="hero-text auth-text">
+          Use seu login e senha para acessar o painel das fazendas. O acesso inicial ja vem configurado para a equipe Da Luz.
+        </p>
+
+        <form id="loginForm" class="auth-form">
+          <label>
+            Login
+            <input type="text" id="loginUsername" autocomplete="username" required placeholder="Ex.: Da Luz">
+          </label>
+          <label>
+            Senha
+            <input type="password" id="loginPassword" autocomplete="current-password" required placeholder="Digite sua senha">
+          </label>
+          <p class="auth-feedback" id="loginFeedback" hidden></p>
+          <button type="submit" class="action-btn purchase auth-submit">Entrar</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <div class="page-shell" id="pageShell" hidden>
     <header class="hero">
       <div class="hero-copy">
         <div class="brand-badge">
@@ -43,17 +81,24 @@
     <main>
       <section class="toolbar">
         <div class="farm-switch" id="farmSwitch"></div>
-        <div class="period-controls">
-          <label>
-            Ano
-            <select id="yearFilter"></select>
-          </label>
-          <label>
-            Mes
-            <select id="monthFilter">
-              <option value="all">Ano inteiro</option>
-            </select>
-          </label>
+        <div class="toolbar-side">
+          <div class="period-controls">
+            <label>
+              Ano
+              <select id="yearFilter"></select>
+            </label>
+            <label>
+              Mes
+              <select id="monthFilter">
+                <option value="all">Ano inteiro</option>
+              </select>
+            </label>
+          </div>
+          <div class="session-controls">
+            <span class="chip" id="currentUserLabel">Usuario</span>
+            <button type="button" class="ghost-btn" id="manageUsersButton">Usuarios</button>
+            <button type="button" class="ghost-btn" id="logoutButton">Sair</button>
+          </div>
         </div>
       </section>
 
@@ -471,6 +516,77 @@
 
       <div class="modal-actions">
         <button type="submit" class="action-btn secondary">Salvar edicao</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="manageUsersDialog" class="modal">
+    <form method="dialog" id="manageUsersForm" class="modal-card">
+      <div class="modal-header">
+        <div>
+          <p class="panel-kicker">Acesso local</p>
+          <h2>Usuarios do sistema</h2>
+        </div>
+        <button type="button" class="ghost-btn" id="closeManageUsersDialog">Fechar</button>
+      </div>
+
+      <div class="form-grid">
+        <label>
+          Novo login
+          <input type="text" id="newUserLogin" maxlength="40" required placeholder="Ex.: gestor-arapey">
+        </label>
+        <label>
+          Nova senha
+          <input type="password" id="newUserPassword" maxlength="60" required placeholder="Digite a senha">
+        </label>
+      </div>
+
+      <div class="modal-actions user-actions">
+        <button type="submit" class="action-btn secondary">Adicionar usuario</button>
+      </div>
+
+      <div class="user-list" id="userList"></div>
+    </form>
+  </dialog>
+
+  <dialog id="pdfOptionsDialog" class="modal">
+    <form method="dialog" id="pdfOptionsForm" class="modal-card">
+      <div class="modal-header">
+        <div>
+          <p class="panel-kicker">Geracao de PDF</p>
+          <h2>Escolher fazendas do relatorio</h2>
+        </div>
+        <button type="button" class="ghost-btn" id="closePdfOptionsDialog">Fechar</button>
+      </div>
+
+      <div class="pdf-scope-group">
+        <label class="scope-option">
+          <input type="radio" name="pdfScope" value="current" checked>
+          <div>
+            <strong>Fazenda atual</strong>
+            <span>Gera o PDF apenas da fazenda selecionada no painel.</span>
+          </div>
+        </label>
+        <label class="scope-option">
+          <input type="radio" name="pdfScope" value="all">
+          <div>
+            <strong>Todas as fazendas</strong>
+            <span>Gera um unico PDF com todas as fazendas em sequencia.</span>
+          </div>
+        </label>
+        <label class="scope-option">
+          <input type="radio" name="pdfScope" value="custom">
+          <div>
+            <strong>Por selecao</strong>
+            <span>Permite escolher manualmente quais fazendas entram no relatorio.</span>
+          </div>
+        </label>
+      </div>
+
+      <div class="user-list pdf-farm-list" id="pdfFarmList" hidden></div>
+
+      <div class="modal-actions user-actions">
+        <button type="submit" class="action-btn pdf">Gerar relatorio</button>
       </div>
     </form>
   </dialog>

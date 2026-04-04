@@ -58,6 +58,9 @@ const DEFAULT_POTREIROS = ["Potreiro 1", "Potreiro 2"];
 const PREMIUM_SALE_FARMS = new Set(["arapey", "chiquita"]);
 const PDF_LOGO_PATH = "./assets/logo-da-luz.jpg";
 const TECHNICAL_MANAGER_NAME = "Hugo Fabricio Fernandes Balbuena";
+const DEFAULT_USERS = [
+  { id: "user-da-luz", login: "Da Luz", password: "hugobalbuena" }
+];
 
 const IMPORTED_SANITARY_RECORDS = {
   arapey: [
@@ -91,6 +94,10 @@ const IMPORTED_SANITARY_RECORDS = {
 
 const seedData = {
   selectedFarmId: "arapey",
+  auth: {
+    sessionUserId: "",
+    users: DEFAULT_USERS.map((user) => ({ ...user }))
+  },
   farms: {
     arapey: {
       id: "arapey",
@@ -129,7 +136,8 @@ const seedData = {
 };
 
 const runtime = {
-  storageEnabled: true
+  storageEnabled: true,
+  appInitialized: false
 };
 
 const today = new Date();
@@ -148,6 +156,12 @@ const state = {
 };
 
 const elements = {
+  authShell: document.getElementById("authShell"),
+  pageShell: document.getElementById("pageShell"),
+  loginForm: document.getElementById("loginForm"),
+  loginUsername: document.getElementById("loginUsername"),
+  loginPassword: document.getElementById("loginPassword"),
+  loginFeedback: document.getElementById("loginFeedback"),
   farmSwitch: document.getElementById("farmSwitch"),
   dashboardTab: document.getElementById("dashboardTab"),
   sanitaryTab: document.getElementById("sanitaryTab"),
@@ -220,25 +234,49 @@ const elements = {
   editDeclaredTotal: document.getElementById("editDeclaredTotal"),
   editStockList: document.getElementById("editStockList"),
   exportPdfButton: document.getElementById("exportPdfButton"),
+  currentUserLabel: document.getElementById("currentUserLabel"),
+  manageUsersButton: document.getElementById("manageUsersButton"),
+  logoutButton: document.getElementById("logoutButton"),
   adjustButton: document.getElementById("adjustButton"),
   addCategoryButton: document.getElementById("addCategoryButton"),
   closeMovementDialog: document.getElementById("closeMovementDialog"),
-  closeCategoryDialog: document.getElementById("closeCategoryDialog")
+  closeCategoryDialog: document.getElementById("closeCategoryDialog"),
+  manageUsersDialog: document.getElementById("manageUsersDialog"),
+  manageUsersForm: document.getElementById("manageUsersForm"),
+  closeManageUsersDialog: document.getElementById("closeManageUsersDialog"),
+  newUserLogin: document.getElementById("newUserLogin"),
+  newUserPassword: document.getElementById("newUserPassword"),
+  userList: document.getElementById("userList"),
+  pdfOptionsDialog: document.getElementById("pdfOptionsDialog"),
+  pdfOptionsForm: document.getElementById("pdfOptionsForm"),
+  closePdfOptionsDialog: document.getElementById("closePdfOptionsDialog"),
+  pdfFarmList: document.getElementById("pdfFarmList")
 };
 
 boot();
 
 function boot() {
   try {
-    state.filters.year = String(getPreferredYearForFarm(getFarm()));
-    populateMonthFilter();
-    populateYearFilter();
     bindEvents();
-    render();
+    renderAuthState();
+    if (isAuthenticated()) {
+      initializeAppShell();
+      render();
+    }
   } catch (error) {
     console.error("Falha na inicializacao do painel:", error);
     showStartupError(error);
   }
+}
+
+function initializeAppShell() {
+  if (!runtime.appInitialized) {
+    populateMonthFilter();
+    runtime.appInitialized = true;
+  }
+
+  state.filters.year = String(getPreferredYearForFarm(getFarm()));
+  populateYearFilter();
 }
 
 function loadData() {
@@ -267,6 +305,100 @@ function saveData() {
     runtime.storageEnabled = false;
     console.warn("Nao foi possivel salvar localmente. A sessao segue sem persistencia.", error);
   }
+}
+
+function getCurrentUser() {
+  return state.data.auth.users.find((user) => user.id === state.data.auth.sessionUserId) || null;
+}
+
+function isAuthenticated() {
+  return Boolean(getCurrentUser());
+}
+
+function renderAuthState() {
+  const currentUser = getCurrentUser();
+  elements.authShell.hidden = Boolean(currentUser);
+  elements.pageShell.hidden = !currentUser;
+  elements.currentUserLabel.textContent = currentUser ? `Usuario: ${currentUser.login}` : "Usuario";
+}
+
+function handleLoginSubmit(event) {
+  event.preventDefault();
+  const login = elements.loginUsername.value.trim();
+  const password = elements.loginPassword.value;
+  const user = state.data.auth.users.find((item) => normalizeText(item.login) === normalizeText(login) && item.password === password);
+
+  if (!user) {
+    elements.loginFeedback.hidden = false;
+    elements.loginFeedback.textContent = "Login ou senha incorretos. Tente novamente.";
+    return;
+  }
+
+  elements.loginFeedback.hidden = true;
+  elements.loginFeedback.textContent = "";
+  elements.loginForm.reset();
+  state.data.auth.sessionUserId = user.id;
+  saveData();
+  renderAuthState();
+  initializeAppShell();
+  render();
+}
+
+function handleLogout() {
+  state.data.auth.sessionUserId = "";
+  saveData();
+  if (elements.manageUsersDialog.open) {
+    elements.manageUsersDialog.close();
+  }
+  elements.loginFeedback.hidden = true;
+  elements.loginFeedback.textContent = "";
+  renderAuthState();
+}
+
+function openManageUsersDialog() {
+  renderUserList();
+  elements.newUserLogin.value = "";
+  elements.newUserPassword.value = "";
+  elements.manageUsersDialog.showModal();
+}
+
+function renderUserList() {
+  const currentUser = getCurrentUser();
+  elements.userList.innerHTML = state.data.auth.users.map((user) => `
+    <article class="user-row">
+      <div>
+        <strong>${escapeHtml(user.login)}</strong>
+        <span>${user.id === currentUser?.id ? "Usuario em uso agora" : "Acesso local salvo no navegador"}</span>
+      </div>
+      <span class="chip">${user.id === "user-da-luz" ? "Principal" : "Adicional"}</span>
+    </article>
+  `).join("");
+}
+
+function handleManageUsersSubmit(event) {
+  event.preventDefault();
+  const login = elements.newUserLogin.value.trim();
+  const password = elements.newUserPassword.value;
+
+  if (!login || !password) {
+    return;
+  }
+
+  if (state.data.auth.users.some((user) => normalizeText(user.login) === normalizeText(login))) {
+    alert("Ja existe um usuario com esse login.");
+    return;
+  }
+
+  state.data.auth.users.push({
+    id: slugify(`${login}-${Date.now()}`),
+    login,
+    password
+  });
+
+  saveData();
+  elements.newUserLogin.value = "";
+  elements.newUserPassword.value = "";
+  renderUserList();
 }
 
 function getFarm() {
@@ -320,6 +452,12 @@ function createStandardFarm(id, name) {
 }
 
 function bindEvents() {
+  elements.loginForm.addEventListener("submit", handleLoginSubmit);
+  elements.manageUsersButton.addEventListener("click", openManageUsersDialog);
+  elements.logoutButton.addEventListener("click", handleLogout);
+  elements.manageUsersForm.addEventListener("submit", handleManageUsersSubmit);
+  elements.closeManageUsersDialog.addEventListener("click", () => elements.manageUsersDialog.close());
+
   document.querySelectorAll("[data-view]").forEach((button) => {
     button.addEventListener("click", () => {
       state.activeView = button.dataset.view;
@@ -378,7 +516,12 @@ function bindEvents() {
   elements.closeMovementDialog.addEventListener("click", () => elements.movementDialog.close());
   elements.closeCategoryDialog.addEventListener("click", () => elements.categoryDialog.close());
   elements.closeEditStockDialog.addEventListener("click", () => elements.editStockDialog.close());
-  elements.exportPdfButton.addEventListener("click", exportPdfReport);
+  elements.exportPdfButton.addEventListener("click", openPdfOptionsDialog);
+  elements.closePdfOptionsDialog.addEventListener("click", () => elements.pdfOptionsDialog.close());
+  elements.pdfOptionsForm.addEventListener("submit", handlePdfOptionsSubmit);
+  elements.pdfOptionsForm.querySelectorAll('input[name="pdfScope"]').forEach((input) => {
+    input.addEventListener("change", updatePdfScopeMode);
+  });
 
   elements.movementForm.addEventListener("submit", handleMovementSubmit);
   elements.categoryForm.addEventListener("submit", handleCategorySubmit);
@@ -387,6 +530,7 @@ function bindEvents() {
 }
 
 function populateMonthFilter() {
+  elements.monthFilter.innerHTML = '<option value="all">Ano inteiro</option>';
   MONTH_NAMES.forEach((name, index) => {
     const option = document.createElement("option");
     option.value = String(index + 1).padStart(2, "0");
@@ -419,6 +563,10 @@ function populateYearFilter() {
 }
 
 function render() {
+  if (!isAuthenticated()) {
+    return;
+  }
+
   const farm = getFarm();
   renderFarmSwitch();
   renderGlobalSummary();
@@ -1622,6 +1770,73 @@ function getDiscrepancyText(farm) {
   return `Atencao: o total declarado para ${farm.name} e ${formatInteger(farm.declaredTotal)} animais, mas o estoque atual mostra ${formatInteger(computedTotal)}. Diferenca de ${formatInteger(difference)} animais.`;
 }
 
+function openPdfOptionsDialog() {
+  elements.pdfOptionsForm.reset();
+  renderPdfFarmOptions([state.data.selectedFarmId]);
+  const currentScope = elements.pdfOptionsForm.querySelector('input[name="pdfScope"][value="current"]');
+  if (currentScope) {
+    currentScope.checked = true;
+  }
+  updatePdfScopeMode();
+  elements.pdfOptionsDialog.showModal();
+}
+
+function renderPdfFarmOptions(selectedIds = []) {
+  const selected = new Set(selectedIds);
+  elements.pdfFarmList.innerHTML = getAllFarms().map((farm) => `
+    <label class="user-row pdf-farm-row">
+      <input type="checkbox" name="pdfFarmIds" value="${farm.id}" ${selected.has(farm.id) ? "checked" : ""}>
+      <div>
+        <strong>${escapeHtml(farm.name)}</strong>
+        <span>${formatInteger(getFarmTotal(farm))} animais em estoque atualmente</span>
+      </div>
+      <span class="chip">${formatInteger(farm.movements.length)} mov.</span>
+    </label>
+  `).join("");
+}
+
+function getPdfScopeSelection() {
+  return elements.pdfOptionsForm.querySelector('input[name="pdfScope"]:checked')?.value || "current";
+}
+
+function updatePdfScopeMode() {
+  const scope = getPdfScopeSelection();
+  elements.pdfFarmList.hidden = scope !== "custom";
+
+  if (scope === "custom" && !elements.pdfFarmList.querySelector('input[name="pdfFarmIds"]:checked')) {
+    const currentFarmInput = elements.pdfFarmList.querySelector(`input[name="pdfFarmIds"][value="${state.data.selectedFarmId}"]`);
+    if (currentFarmInput) {
+      currentFarmInput.checked = true;
+    }
+  }
+}
+
+function getSelectedPdfFarmIds() {
+  const scope = getPdfScopeSelection();
+  if (scope === "all") {
+    return getAllFarms().map((farm) => farm.id);
+  }
+
+  if (scope === "custom") {
+    return [...elements.pdfFarmList.querySelectorAll('input[name="pdfFarmIds"]:checked')].map((input) => input.value);
+  }
+
+  return [state.data.selectedFarmId];
+}
+
+function handlePdfOptionsSubmit(event) {
+  event.preventDefault();
+  const farmIds = getSelectedPdfFarmIds();
+
+  if (!farmIds.length) {
+    alert("Selecione pelo menos uma fazenda para gerar o PDF.");
+    return;
+  }
+
+  elements.pdfOptionsDialog.close();
+  exportPdfReport(farmIds);
+}
+
 async function addPdfHeader(doc, farm, periodLabel, monthly) {
   try {
     const imageData = await loadAssetAsDataUrl(PDF_LOGO_PATH);
@@ -1659,32 +1874,7 @@ function addPdfFooters(doc) {
   }
 }
 
-async function exportPdfReport() {
-  const farm = getFarm();
-  const monthly = summarizePeriod(farm, state.filters.year, state.filters.month);
-  const annual = summarizePeriod(farm, state.filters.year, "all");
-  const saleSummary = summarizeSalePeriod(farm, state.filters.year, state.filters.month);
-  const sanitarySummary = getSanitarySummary(farm);
-  const sanitaryRecords = [...getFilteredSanitaryRecords(farm)].sort((a, b) => new Date(a.date) - new Date(b.date));
-  const potreroTotals = getPotreroTotals(farm);
-  const recentMovements = [...farm.movements].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 12);
-  const insights = getOperationalInsights(farm);
-  const discrepancy = getDiscrepancy(farm);
-  if (!window.jspdf || typeof window.jspdf.jsPDF !== "function") {
-    alert("A biblioteca de PDF nao foi carregada. Verifique sua conexao e tente novamente.");
-    return;
-  }
-
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  if (typeof doc.autoTable !== "function") {
-    alert("O modulo de tabela do PDF nao foi carregado. Verifique sua conexao e tente novamente.");
-    return;
-  }
-
-  const periodLabel = state.filters.month === "all" ? `Ano de ${state.filters.year}` : `${MONTH_NAMES[Number(state.filters.month) - 1]} de ${state.filters.year}`;
-  const topY = await addPdfHeader(doc, farm, periodLabel, monthly);
-
+function appendExecutivePdfTable(doc, farm, monthly, discrepancy, topY) {
   doc.autoTable({
     startY: topY + 4,
     head: [["Indicador executivo", "Valor"]],
@@ -1699,7 +1889,9 @@ async function exportPdfReport() {
     theme: "striped",
     headStyles: { fillColor: [76, 64, 50] }
   });
+}
 
+function appendInventoryPdfTable(doc, farm) {
   doc.autoTable({
     startY: doc.lastAutoTable.finalY + 10,
     head: [["Categoria", "Quantidade"]],
@@ -1707,7 +1899,9 @@ async function exportPdfReport() {
     theme: "grid",
     headStyles: { fillColor: [51, 92, 67] }
   });
+}
 
+function appendOperationalPdfTable(doc, monthly, annual, saleSummary) {
   doc.autoTable({
     startY: doc.lastAutoTable.finalY + 10,
     head: [["Indicador", "Valor"]],
@@ -1724,7 +1918,9 @@ async function exportPdfReport() {
     theme: "striped",
     headStyles: { fillColor: [138, 75, 56] }
   });
+}
 
+function appendSaleSummaryPdfTable(doc, saleSummary) {
   doc.autoTable({
     startY: doc.lastAutoTable.finalY + 10,
     head: [["Indicador comercial", "Valor"]],
@@ -1738,7 +1934,9 @@ async function exportPdfReport() {
     theme: "striped",
     headStyles: { fillColor: [201, 140, 79] }
   });
+}
 
+function appendSaleDetailsPdfTable(doc, saleSummary) {
   doc.autoTable({
     startY: doc.lastAutoTable.finalY + 10,
     head: [["Data", "Categoria", "Base", "Kg", "R$/kg", "Total"]],
@@ -1755,7 +1953,9 @@ async function exportPdfReport() {
     theme: "striped",
     headStyles: { fillColor: [201, 140, 79] }
   });
+}
 
+function appendPotreroPdfTable(doc, potreroTotals) {
   doc.autoTable({
     startY: doc.lastAutoTable.finalY + 10,
     head: [["Potreiro", "Animais no periodo"]],
@@ -1765,7 +1965,9 @@ async function exportPdfReport() {
     theme: "striped",
     headStyles: { fillColor: [55, 91, 67] }
   });
+}
 
+function appendSanitarySummaryPdfTable(doc, sanitarySummary) {
   doc.autoTable({
     startY: doc.lastAutoTable.finalY + 10,
     head: [["Indicador sanitario", "Valor"]],
@@ -1779,7 +1981,9 @@ async function exportPdfReport() {
     theme: "striped",
     headStyles: { fillColor: [55, 91, 67] }
   });
+}
 
+function appendSanitaryDetailsPdfTable(doc, sanitaryRecords) {
   doc.autoTable({
     startY: doc.lastAutoTable.finalY + 10,
     head: [["Data", "Categoria", "Qtd.", "Potreiro", "Produto", "Observacoes"]],
@@ -1796,7 +2000,9 @@ async function exportPdfReport() {
     theme: "striped",
     headStyles: { fillColor: [55, 91, 67] }
   });
+}
 
+function appendInsightsPdfTable(doc, insights) {
   doc.autoTable({
     startY: doc.lastAutoTable.finalY + 10,
     head: [["Insight gerencial", "Leitura"]],
@@ -1804,7 +2010,9 @@ async function exportPdfReport() {
     theme: "striped",
     headStyles: { fillColor: [76, 64, 50] }
   });
+}
 
+function appendRecentMovementsPdfTable(doc, recentMovements) {
   doc.autoTable({
     startY: doc.lastAutoTable.finalY + 10,
     head: [["Data", "Tipo", "Categoria", "Qtd.", "Valor", "Observacao"]],
@@ -1821,10 +2029,131 @@ async function exportPdfReport() {
     theme: "striped",
     headStyles: { fillColor: [138, 75, 56] }
   });
+}
+
+function appendConsolidatedPdfIntro(doc, farms, periodLabel) {
+  const totals = farms.reduce((summary, farm) => {
+    const monthly = summarizePeriod(farm, state.filters.year, state.filters.month);
+    const saleSummary = summarizeSalePeriod(farm, state.filters.year, state.filters.month);
+    const sanitarySummary = getSanitarySummary(farm);
+    summary.animals += getFarmTotal(farm);
+    summary.movements += monthly.totalMovements;
+    summary.salesValue += saleSummary.totalValue;
+    summary.sanitaryRecords += sanitarySummary.totalApplications;
+    return summary;
+  }, { animals: 0, movements: 0, salesValue: 0, sanitaryRecords: 0 });
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(20);
+  doc.text("Estabelecimentos Da Luz", 14, 18);
+  doc.setFontSize(16);
+  doc.text("Relatorio consolidado de fazendas", 14, 28);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10.5);
+  doc.text(`Periodo analisado: ${periodLabel}`, 14, 36);
+  doc.text(`Responsavel tecnico: ${TECHNICAL_MANAGER_NAME}`, 14, 42);
+
+  doc.autoTable({
+    startY: 50,
+    head: [["Indicador consolidado", "Valor"]],
+    body: [
+      ["Fazendas selecionadas", formatInteger(farms.length)],
+      ["Estoque consolidado", `${formatInteger(totals.animals)} animais`],
+      ["Movimentacoes no periodo", formatInteger(totals.movements)],
+      ["Faturamento de vendas", formatCurrency(totals.salesValue)],
+      ["Registros sanitarios", formatInteger(totals.sanitaryRecords)]
+    ],
+    theme: "striped",
+    headStyles: { fillColor: [76, 64, 50] }
+  });
+
+  doc.autoTable({
+    startY: doc.lastAutoTable.finalY + 10,
+    head: [["Fazenda", "Estoque", "Mov.", "Vendas", "Sanitario"]],
+    body: farms.map((farm) => {
+      const monthly = summarizePeriod(farm, state.filters.year, state.filters.month);
+      const saleSummary = summarizeSalePeriod(farm, state.filters.year, state.filters.month);
+      const sanitarySummary = getSanitarySummary(farm);
+      return [
+        farm.name,
+        formatInteger(getFarmTotal(farm)),
+        formatInteger(monthly.totalMovements),
+        formatCurrency(saleSummary.totalValue),
+        formatInteger(sanitarySummary.totalApplications)
+      ];
+    }),
+    theme: "striped",
+    headStyles: { fillColor: [51, 92, 67] }
+  });
+}
+
+async function appendFarmPdfSection(doc, farm, periodLabel) {
+  const monthly = summarizePeriod(farm, state.filters.year, state.filters.month);
+  const annual = summarizePeriod(farm, state.filters.year, "all");
+  const saleSummary = summarizeSalePeriod(farm, state.filters.year, state.filters.month);
+  const sanitarySummary = getSanitarySummary(farm);
+  const sanitaryRecords = [...getFilteredSanitaryRecords(farm)].sort((a, b) => new Date(a.date) - new Date(b.date));
+  const potreroTotals = getPotreroTotals(farm);
+  const recentMovements = [...farm.movements].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 12);
+  const insights = getOperationalInsights(farm);
+  const discrepancy = getDiscrepancy(farm);
+  const topY = await addPdfHeader(doc, farm, periodLabel, monthly);
+
+  appendExecutivePdfTable(doc, farm, monthly, discrepancy, topY);
+  appendInventoryPdfTable(doc, farm);
+  appendOperationalPdfTable(doc, monthly, annual, saleSummary);
+  appendSaleSummaryPdfTable(doc, saleSummary);
+  appendSaleDetailsPdfTable(doc, saleSummary);
+  appendPotreroPdfTable(doc, potreroTotals);
+  appendSanitarySummaryPdfTable(doc, sanitarySummary);
+  appendSanitaryDetailsPdfTable(doc, sanitaryRecords);
+  appendInsightsPdfTable(doc, insights);
+  appendRecentMovementsPdfTable(doc, recentMovements);
+}
+
+function getPdfFileName(farms) {
+  if (farms.length === 1) {
+    return `relatorio-${slugify(farms[0].name)}-${state.filters.year}.pdf`;
+  }
+
+  return `relatorio-fazendas-da-luz-${state.filters.year}.pdf`;
+}
+
+async function exportPdfReport(farmIds = [state.data.selectedFarmId]) {
+  const farms = farmIds.map((farmId) => state.data.farms[farmId]).filter(Boolean);
+  if (!farms.length) {
+    alert("Nenhuma fazenda valida foi selecionada para o PDF.");
+    return;
+  }
+
+  if (!window.jspdf || typeof window.jspdf.jsPDF !== "function") {
+    alert("A biblioteca de PDF nao foi carregada. Verifique sua conexao e tente novamente.");
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  if (typeof doc.autoTable !== "function") {
+    alert("O modulo de tabela do PDF nao foi carregado. Verifique sua conexao e tente novamente.");
+    return;
+  }
+
+  const periodLabel = state.filters.month === "all" ? `Ano de ${state.filters.year}` : `${MONTH_NAMES[Number(state.filters.month) - 1]} de ${state.filters.year}`;
+
+  if (farms.length > 1) {
+    appendConsolidatedPdfIntro(doc, farms, periodLabel);
+  }
+
+  for (const [index, farm] of farms.entries()) {
+    if (index > 0 || farms.length > 1) {
+      doc.addPage();
+    }
+    await appendFarmPdfSection(doc, farm, periodLabel);
+  }
 
   addPdfFooters(doc);
 
-  doc.save(`relatorio-${farm.name.toLowerCase()}-${state.filters.year}.pdf`);
+  doc.save(getPdfFileName(farms));
 }
 
 function cloneSeedData() {
@@ -1836,6 +2165,28 @@ function cloneSeedData() {
 }
 
 function ensureDataShape(data) {
+  if (!data.farms || typeof data.farms !== "object") {
+    data.farms = {};
+  }
+
+  if (!data.auth || typeof data.auth !== "object") {
+    data.auth = cloneDeep(seedData.auth);
+  }
+  if (!Array.isArray(data.auth.users) || !data.auth.users.length) {
+    data.auth.users = cloneDeep(seedData.auth.users);
+  }
+  if (typeof data.auth.sessionUserId !== "string") {
+    data.auth.sessionUserId = "";
+  }
+  data.auth.users = data.auth.users.map((user, index) => ({
+    id: user.id || `user-${index + 1}`,
+    login: user.login || `Usuario ${index + 1}`,
+    password: user.password || ""
+  }));
+  if (!data.auth.users.some((user) => user.id === data.auth.sessionUserId)) {
+    data.auth.sessionUserId = "";
+  }
+
   Object.entries(seedData.farms).forEach(([farmId, farmTemplate]) => {
     if (!data.farms[farmId]) {
       data.farms[farmId] = cloneDeep(farmTemplate);

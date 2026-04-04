@@ -58,6 +58,109 @@ body::before {
   padding: 24px 0 56px;
 }
 
+.auth-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.auth-card {
+  width: min(1080px, 100%);
+  padding: 32px;
+  display: grid;
+  grid-template-columns: minmax(320px, 0.95fr) minmax(320px, 1.05fr);
+  gap: 28px;
+  align-items: center;
+  border-radius: var(--radius-xl);
+  background:
+    linear-gradient(140deg, rgba(255, 251, 244, 0.98), rgba(246, 233, 211, 0.94)),
+    var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.auth-card h1 {
+  margin: 0;
+  font-family: "Yrsa", serif;
+  font-size: clamp(2.2rem, 4vw, 3.3rem);
+}
+
+.auth-visual-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.auth-angus-frame {
+  position: relative;
+  overflow: hidden;
+  min-height: 420px;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at top left, rgba(255, 249, 236, 0.9), transparent 34%),
+    radial-gradient(circle at bottom right, rgba(201, 140, 79, 0.22), transparent 26%),
+    linear-gradient(180deg, rgba(53, 82, 61, 0.98), rgba(27, 45, 34, 0.98));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.auth-angus-frame::after {
+  content: "";
+  position: absolute;
+  inset: auto -60px -80px auto;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: rgba(201, 140, 79, 0.16);
+}
+
+.auth-angus-image {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 420px;
+  object-fit: contain;
+  padding: 24px;
+  filter: drop-shadow(0 28px 32px rgba(15, 10, 8, 0.24));
+}
+
+.auth-copy-panel {
+  display: grid;
+  align-content: center;
+}
+
+.auth-text {
+  max-width: none;
+}
+
+.auth-form {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.auth-form label {
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.auth-feedback {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(140, 75, 56, 0.12);
+  color: var(--red);
+  font-weight: 700;
+}
+
+.auth-submit {
+  justify-self: start;
+}
+
 .hero,
 .toolbar,
 .actions-panel,
@@ -230,6 +333,14 @@ body::before {
   gap: 18px;
   align-items: center;
   margin-top: 24px;
+}
+
+.toolbar-side,
+.session-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
 }
 
 .view-tabs {
@@ -801,6 +912,91 @@ th {
   color: var(--green);
 }
 
+.user-actions {
+  justify-content: flex-start;
+}
+
+.user-list {
+  margin-top: 18px;
+  display: grid;
+  gap: 12px;
+}
+
+.user-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 252, 247, 0.82);
+  border: 1px solid rgba(75, 56, 34, 0.1);
+}
+
+.user-row strong {
+  display: block;
+  font-size: 1rem;
+}
+
+.user-row span {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.pdf-scope-group {
+  display: grid;
+  gap: 12px;
+}
+
+.scope-option,
+.pdf-farm-row {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.scope-option {
+  padding: 16px 18px;
+  border-radius: 20px;
+  background: rgba(255, 252, 247, 0.82);
+  border: 1px solid rgba(75, 56, 34, 0.1);
+}
+
+.scope-option input,
+.pdf-farm-row input {
+  margin-top: 4px;
+  accent-color: var(--green);
+}
+
+.scope-option strong,
+.pdf-farm-row strong {
+  display: block;
+  font-size: 1rem;
+}
+
+.scope-option span,
+.pdf-farm-row span {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.pdf-farm-list {
+  max-height: 280px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.pdf-farm-row {
+  align-items: center;
+  cursor: pointer;
+}
+
+.pdf-farm-row .chip {
+  margin-left: auto;
+  color: var(--green);
+  font-size: 0.82rem;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -890,6 +1086,10 @@ th {
 }
 
 @media (max-width: 1200px) {
+  .auth-card {
+    grid-template-columns: 1fr;
+  }
+
   .hero {
     grid-template-columns: 1fr;
   }
@@ -915,6 +1115,12 @@ th {
     align-items: stretch;
   }
 
+  .toolbar-side,
+  .session-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
   .summary-grid,
   .visual-herd-grid,
   .content-grid,
@@ -931,6 +1137,15 @@ th {
 
   .hero {
     padding: 24px;
+  }
+
+  .auth-card {
+    padding: 24px;
+  }
+
+  .auth-angus-frame,
+  .auth-angus-image {
+    min-height: 300px;
   }
 
   .hero h1 {
