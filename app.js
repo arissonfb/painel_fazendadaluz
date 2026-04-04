@@ -99,6 +99,68 @@ const IMPORTED_SANITARY_RECORDS = {
     { sourceId: "img-sanitario-2025-10-30-molino-rincon-bois-pre-gordo", date: "2025-10-30", quantity: 66, categoryId: "bois-pre-gordo", categoryName: "Bois pre gordo", potreiro: "Molino (Rincon)", product: "Maximo + Moxidectina", notes: "3 estao no 4." },
     { sourceId: "img-sanitario-2025-10-30-laspampas-terneiros-0-1", date: "2025-10-30", quantity: 74, categoryId: "terneiros-0-1", categoryName: "Terneiros 0-1", potreiro: "Las Pampas", product: "Furius + Flok 1%", notes: "Morreu 1." },
     { sourceId: "img-sanitario-2025-10-29-cerrillada-terneiros-0-1", date: "2025-10-29", quantity: 396, categoryId: "terneiros-0-1", categoryName: "Terneiros 0-1", potreiro: "Cerrillada", product: "Furius + Iver + Nitroxinil", notes: "" }
+  ],
+  chiquita: [
+    { sourceId: "img-sanitario-2025-11-28-chiquita-campo2-bois-gordo", date: "2025-11-28", quantity: 147, categoryId: "bois-gordo", categoryName: "Bois gordo", potreiro: "Campo 2", product: "Insemax", notes: "Moxidectina nos abaixo de 450 kg." },
+    { sourceId: "img-sanitario-2025-11-22-chiquita-costa-touros-adultos", date: "2025-11-22", quantity: 83, categoryId: "touros-adultos", categoryName: "Touros adultos", potreiro: "Costa", product: "Insemax + Abamectina 1%", notes: "" },
+    { sourceId: "img-sanitario-2025-11-15-chiquita-charula-tourinhos-1-2", date: "2025-11-15", quantity: 49, categoryId: "tourinhos-1-2", categoryName: "Tourinhos 1-2", potreiro: "Charula", product: "Insemax + Bioperosol", notes: "23 terneiros." },
+    { sourceId: "img-sanitario-2025-11-12-chiquita-pradera-grande-primiparas", date: "2025-11-12", quantity: 34, categoryId: "primiparas", categoryName: "Primiparas", potreiro: "Pradera + Grande", product: "Insemax + Abamectina 1%", notes: "23 terneiros." },
+    { sourceId: "img-sanitario-2025-11-12-chiquita-o-posto-primiparas", date: "2025-11-12", quantity: 129, categoryId: "primiparas", categoryName: "Primiparas", potreiro: "O Posto", product: "Insemax + Abamectina 1%", notes: "198 terneiros e 6 touros." },
+    { sourceId: "img-sanitario-2025-11-11-chiquita-curso-vacas-paridas", date: "2025-11-11", quantity: 202, categoryId: "vacas-paridas", categoryName: "Vacas paridas", potreiro: "Curso", product: "Insemax + Abamectina 1%", notes: "148 terneiros e 5 touros." },
+    { sourceId: "img-sanitario-2025-11-10-chiquita-alamo-vacas-paridas", date: "2025-11-10", quantity: 147, categoryId: "vacas-paridas", categoryName: "Vacas paridas", potreiro: "Alamo", product: "Insemax + Abamectina 1%", notes: "148 terneiros e 5 touros." },
+    { sourceId: "img-sanitario-2025-11-08-chiquita-a-posto-vacas-paridas", date: "2025-11-08", quantity: 164, categoryId: "vacas-paridas", categoryName: "Vacas paridas", potreiro: "A Posto", product: "Insemax + Abamectina 1%", notes: "162 terneiros." },
+    { sourceId: "img-sanitario-2025-11-04-chiquita-a-posto-vacas-parindo", date: "2025-11-04", quantity: 89, categoryId: "vacas-parindo", categoryName: "Vacas parindo", potreiro: "A Posto", product: "Insemax + Bioperosol", notes: "87 terneiros e 3 touros." },
+    { sourceId: "img-sanitario-2025-10-31-chiquita-campo5-vacas-paridas", date: "2025-10-31", quantity: 145, categoryId: "vacas-paridas", categoryName: "Vacas paridas", potreiro: "Campo 5", product: "Insemax + Abamectina 1%", notes: "144 terneiros." },
+    { sourceId: "img-sanitario-2025-10-30-chiquita-campo20-vaca-vq-prenha", date: "2025-10-30", quantity: 66, categoryId: "vaca-vq-prenha", categoryName: "Vaca e vaq prenha", potreiro: "20 Bido", product: "Insemax + Abamectina 1%", notes: "" },
+    { sourceId: "img-sanitario-2025-10-30-chiquita-piquete-bido-vacas-solteiras", date: "2025-10-30", quantity: 183, categoryId: "vacas-solteiras", categoryName: "Vacas solteiras", potreiro: "Piquete Bido", product: "Insemax + Abamectina 1%", notes: "3 no cerrito / 16 total." },
+    { sourceId: "img-sanitario-2025-10-28-chiquita-o-bido-tourinhos-2-ano", date: "2025-10-28", quantity: 618, categoryId: "tourinhos-2-ano", categoryName: "Tourinhos 2 ano", potreiro: "O Bido", product: "Insemax + Bioperosol", notes: "Tem 5 no cerrito / total sao 603." },
+    { sourceId: "img-sanitario-2025-10-27-chiquita-quinto-bido-terneiros-0-1", date: "2025-10-27", quantity: 648, categoryId: "terneiros-0-1", categoryName: "Terneiros 0-1", potreiro: "4/5 Bido", product: "Insemax + Bioperosol", notes: "Tem mais 5 na pradeira / total 653." }
+  ],
+  "passa-da-guarda": [
+    { sourceId: "img-sanitario-2025-11-25-passo-da-guarda-todos-vacas-terneiros", date: "2025-11-25", quantity: 12, categoryId: "vacas-terneiros", categoryName: "Vacas e terneiros", potreiro: "Todos", product: "FC 30", notes: "" },
+    { sourceId: "img-sanitario-2025-11-25-passo-da-guarda-pastagem-mimosa-tourinhos", date: "2025-11-25", quantity: 44, categoryId: "tourinhos", categoryName: "Tourinhos", potreiro: "Pastagem Mimosa", product: "Falta fazer", notes: "" },
+    { sourceId: "img-sanitario-2025-11-30-passo-da-guarda-pradeira-pg-bois-grande", date: "2025-11-30", quantity: 30, categoryId: "bois-grande", categoryName: "Bois grande", potreiro: "Pradeira PG", product: "Falta fazer", notes: "" },
+    { sourceId: "img-sanitario-2025-12-04-passo-da-guarda-espilho-bois-pequeno", date: "2025-12-04", quantity: 37, categoryId: "bois-pequeno", categoryName: "Bois pequeno", potreiro: "Espilho", product: "Falta fazer", notes: "" },
+    { sourceId: "img-sanitario-2025-12-04-passo-da-guarda-cerro-vaca-parindo", date: "2025-12-04", quantity: 100, categoryId: "vaca-parindo", categoryName: "Vaca parindo", potreiro: "Cerro", product: "Falta fazer", notes: "" },
+    { sourceId: "img-sanitario-2025-11-11-passo-da-guarda-delmar-terneiros", date: "2025-11-11", quantity: 136, categoryId: "terneiros", categoryName: "Terneiros", potreiro: "Delmar", product: "FC 30 + Dueto", notes: "" },
+    { sourceId: "img-sanitario-2025-11-11-passo-da-guarda-frente-terneiros", date: "2025-11-11", quantity: 404, categoryId: "terneiros", categoryName: "Terneiros", potreiro: "Frente", product: "FC 30 + Dueto", notes: "" },
+    { sourceId: "img-sanitario-2025-11-11-passo-da-guarda-boqueirao-vacas-velhas", date: "2025-11-11", quantity: 75, categoryId: "vacas-velhas", categoryName: "Vacas velhas", potreiro: "Boqueirao", product: "FC 30", notes: "" },
+    { sourceId: "img-sanitario-2025-11-11-passo-da-guarda-invernadinha-primiparas", date: "2025-11-11", quantity: 110, categoryId: "primiparas", categoryName: "Primiparas", potreiro: "Invernadinha", product: "FC 30", notes: "4 touros." },
+    { sourceId: "img-sanitario-2025-11-09-passo-da-guarda-cemiterio-vaca-parida", date: "2025-11-09", quantity: 90, categoryId: "vaca-parida", categoryName: "Vaca parida", potreiro: "Cemiterio", product: "FC 30", notes: "3 touros." },
+    { sourceId: "img-sanitario-2025-11-11-passo-da-guarda-antena-vaca-parida", date: "2025-11-11", quantity: 224, categoryId: "vaca-parida", categoryName: "Vaca parida", potreiro: "Antena", product: "FC 30", notes: "5 touros." },
+    { sourceId: "img-sanitario-2025-11-11-passo-da-guarda-umbu-vaca-parida", date: "2025-11-11", quantity: 193, categoryId: "vaca-parida", categoryName: "Vaca parida", potreiro: "Umbu", product: "FC 30", notes: "7 touros." },
+    { sourceId: "img-sanitario-2025-10-06-passo-da-guarda-delmar-terneiros-0-1", date: "2025-10-06", quantity: 136, categoryId: "terneiros-0-1", categoryName: "Terneiros 0-1", potreiro: "Delmar", product: "Levamisol", notes: "" },
+    { sourceId: "img-sanitario-2025-10-02-passo-da-guarda-frente-terneiros-0-1", date: "2025-10-02", quantity: 407, categoryId: "terneiros-0-1", categoryName: "Terneiros 0-1", potreiro: "Frente", product: "Levamisol", notes: "" },
+    { sourceId: "img-sanitario-2025-10-05-passo-da-guarda-boqueirao-vacas-vazias", date: "2025-10-05", quantity: 82, categoryId: "vacas-vazias", categoryName: "Vacas vazias / invernar", potreiro: "Boqueirao", product: "Insemax + Flok 1%", notes: "34 invernar 48 entouradas." }
+  ],
+  colorado: [
+    { sourceId: "img-sanitario-2025-08-28-colorado-campo-bois", date: "2025-08-28", quantity: 80, categoryId: "bois", categoryName: "Bois", potreiro: "Campo", product: "Insemax + Evol", notes: "LA 66 LF/14." },
+    { sourceId: "img-sanitario-2025-08-28-colorado-estrada-touro", date: "2025-08-28", quantity: 70, categoryId: "touro", categoryName: "Touro", potreiro: "Estrada", product: "Insemax + Evol", notes: "LA 43 LF/17." },
+    { sourceId: "img-sanitario-2025-08-28-colorado-cemiterio-bois", date: "2025-08-28", quantity: 61, categoryId: "bois", categoryName: "Bois", potreiro: "Cemiterio", product: "Insemax + Evol", notes: "" },
+    { sourceId: "img-sanitario-2025-08-28-colorado-meio-bois", date: "2025-08-28", quantity: 101, categoryId: "bois", categoryName: "Bois", potreiro: "Meio", product: "Insemax + Evol", notes: "" },
+    { sourceId: "img-sanitario-2025-08-29-colorado-novo-bois", date: "2025-08-29", quantity: 127, categoryId: "bois", categoryName: "Bois", potreiro: "Novo", product: "Insemax + Evol", notes: "" },
+    { sourceId: "img-sanitario-2025-08-29-colorado-campo-touros-vacas", date: "2025-08-29", quantity: 145, categoryId: "vacas", categoryName: "Vacas", potreiro: "Campo Touros", product: "Insemax + Flok 1%", notes: "" },
+    { sourceId: "img-sanitario-2025-08-29-colorado-eucaliptos-vacas", date: "2025-08-29", quantity: 58, categoryId: "vacas", categoryName: "Vacas", potreiro: "Eucaliptos", product: "Insemax + Flok 1%", notes: "" },
+    { sourceId: "img-sanitario-2025-11-15-colorado-estrada-bois", date: "2025-11-15", quantity: 78, categoryId: "bois", categoryName: "Bois", potreiro: "Estrada", product: "FC 30 + Agendabenazole", notes: "" },
+    { sourceId: "img-sanitario-2025-11-15-colorado-cemiterio-vacas", date: "2025-11-15", quantity: 92, categoryId: "vacas-entouradas", categoryName: "Vacas entouradas", potreiro: "Cemiterio", product: "FC 30", notes: "" },
+    { sourceId: "img-sanitario-2025-11-15-colorado-meio-bois", date: "2025-11-15", quantity: 117, categoryId: "bois", categoryName: "Bois", potreiro: "Meio", product: "FC 30 + Agendabenazole", notes: "" },
+    { sourceId: "img-sanitario-2025-11-15-colorado-novo-bois", date: "2025-11-15", quantity: 115, categoryId: "bois", categoryName: "Bois", potreiro: "Novo", product: "FC 30 + Agendabenazole", notes: "" },
+    { sourceId: "img-sanitario-2025-11-15-colorado-campo-touros-vacas", date: "2025-11-15", quantity: 16, categoryId: "vacas-velhas", categoryName: "Vacas velhas", potreiro: "Campo Touros", product: "FC 30", notes: "" },
+    { sourceId: "img-sanitario-2025-11-15-colorado-eucaliptos-bois", date: "2025-11-15", quantity: 65, categoryId: "bois", categoryName: "Bois", potreiro: "Eucaliptos", product: "FC 30 + Agendabenazole", notes: "" }
+  ],
+  sarandi: [
+    { sourceId: "img-sanitario-2025-11-28-sarandi-campo1e2", date: "2025-11-28", quantity: 96, categoryId: "rebanho", categoryName: "Rebanho", potreiro: "Campo 1 e 2", product: "Insemax + Bioperosol", notes: "" },
+    { sourceId: "img-sanitario-2025-11-28-sarandi-campo4e3", date: "2025-11-28", quantity: 168, categoryId: "rebanho", categoryName: "Rebanho", potreiro: "Campo 4 e 3", product: "Insemax + Bioperosol", notes: "" },
+    { sourceId: "img-sanitario-2025-11-21-sarandi-pradeira-bois-gordo", date: "2025-11-21", quantity: 60, categoryId: "bois-gordo", categoryName: "Bois gordo", potreiro: "Pradeira", product: "Nitroxinil + Maximo", notes: "" },
+    { sourceId: "img-sanitario-2025-10-21-sarandi-campo3-boi-comprado-10", date: "2025-10-21", quantity: 10, categoryId: "boi-comprado", categoryName: "Boi comprado", potreiro: "Campo 3", product: "Evol", notes: "" },
+    { sourceId: "img-sanitario-2025-10-21-sarandi-campo3-boi-comprado-21", date: "2025-10-21", quantity: 21, categoryId: "boi-comprado", categoryName: "Boi comprado", potreiro: "Campo 3", product: "Nitroxinil", notes: "" },
+    { sourceId: "img-sanitario-2025-10-24-sarandi-pradeira-boi-comprado-70", date: "2025-10-24", quantity: 70, categoryId: "boi-comprado", categoryName: "Boi comprado", potreiro: "Pradeira", product: "Moxidectina + Insemax", notes: "" },
+    { sourceId: "img-sanitario-2025-09-24-sarandi-campo2-bois", date: "2025-09-24", quantity: 50, categoryId: "bois", categoryName: "Bois", potreiro: "Campo 2", product: "Moxidectina", notes: "" },
+    { sourceId: "img-sanitario-2025-08-24-sarandi-campo4-bois", date: "2025-08-24", quantity: 98, categoryId: "bois", categoryName: "Bois", potreiro: "Campo 4", product: "Moxidectina", notes: "" },
+    { sourceId: "img-sanitario-2025-08-24-sarandi-campo4-bois-355", date: "2025-08-24", quantity: 355, categoryId: "bois", categoryName: "Bois", potreiro: "Campo 4", product: "Moxidectina", notes: "35 terneiro + 52 boi; total 87." },
+    { sourceId: "img-sanitario-2025-08-16-sarandi-campo3-boi-grande", date: "2025-08-16", quantity: 103, categoryId: "boi-grande", categoryName: "Boi grande", potreiro: "Campo 3", product: "Insemax + Evol", notes: "" },
+    { sourceId: "img-sanitario-2025-08-16-sarandi-campo3-boi-pequeno", date: "2025-08-16", quantity: 150, categoryId: "boi-pequeno", categoryName: "Boi pequeno", potreiro: "Campo 3", product: "Insemax + Evol", notes: "" },
+    { sourceId: "img-sanitario-2025-08-16-sarandi-campo3-boi-pequeno-40", date: "2025-08-16", quantity: 40, categoryId: "boi-pequeno", categoryName: "Boi pequeno", potreiro: "Campo 3", product: "Insemax + Evol", notes: "" }
   ]
 };
 
