@@ -2,7 +2,6 @@ services:
   - type: web
     name: fazenda-daluz
     env: static
-    plan: free
-    buildCommand: echo "Static site ready"
+    buildCommand: echo "ready"
     staticPublishPath: .
     autoDeploy: true
