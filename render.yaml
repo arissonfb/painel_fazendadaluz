@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: painel-fazendadaluz
+    name: fazenda-daluz
     runtime: static
     plan: free
     buildCommand: echo "Static site ready"
