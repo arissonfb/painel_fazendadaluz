@@ -127,6 +127,7 @@
             <button class="action-btn neutral" data-type="consumo">Registrar consumo</button>
             <button class="action-btn birth" data-type="nascimento">Registrar nascimento</button>
             <button class="action-btn death" data-type="morte">Registrar morte</button>
+            <button class="action-btn secondary" id="monthlyDataButton">Registrar dado mensal</button>
             <button class="action-btn secondary" id="adjustButton">Ajuste manual</button>
             <button class="action-btn secondary" id="editStockButton">Editar estoque</button>
             <button class="action-btn secondary" id="addCategoryButton">Nova categoria</button>
@@ -274,6 +275,66 @@
             </div>
           </div>
           <div class="insight-list" id="insightList"></div>
+          </article>
+        </section>
+
+        <section class="content-grid lower-grid">
+          <article class="panel analytics-panel">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">Leitura mensal</p>
+              <h2>Numeros e valores atribuidos</h2>
+            </div>
+          </div>
+          <div class="analytics-cards" id="monthlySummaryGrid"></div>
+          </article>
+
+          <article class="panel chart-panel">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">Evolucao anual</p>
+              <h2>Quantidade e valor por mes</h2>
+            </div>
+          </div>
+          <canvas id="monthlyEvolutionChart" aria-label="Grafico de evolucao mensal por quantidade e valor"></canvas>
+          </article>
+        </section>
+
+        <section class="content-grid lower-grid">
+          <article class="panel chart-panel">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">Categorias do relatorio</p>
+              <h2>Distribuicao dos dados mensais</h2>
+            </div>
+          </div>
+          <canvas id="monthlyCategoryChart" aria-label="Grafico de distribuicao dos dados mensais"></canvas>
+          </article>
+
+          <article class="panel timeline-panel">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">Historico mensal</p>
+              <h2>Dados consolidados para PDF</h2>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="monthly-table">
+              <thead>
+                <tr>
+                  <th>Competencia</th>
+                  <th>Fazenda</th>
+                  <th>Categoria</th>
+                  <th>Indicador</th>
+                  <th>Qtd.</th>
+                  <th>Valor</th>
+                  <th>Obs.</th>
+                  <th>Acoes</th>
+                </tr>
+              </thead>
+              <tbody id="monthlyTableBody"></tbody>
+            </table>
+          </div>
           </article>
         </section>
 
@@ -618,10 +679,72 @@
         </label>
       </div>
 
+      <div class="form-grid pdf-period-grid">
+        <label>
+          Ano do PDF
+          <select id="pdfYearFilter"></select>
+        </label>
+        <label>
+          Mes do PDF
+          <select id="pdfMonthFilter">
+            <option value="all">Ano inteiro</option>
+          </select>
+        </label>
+      </div>
+
       <div class="user-list pdf-farm-list" id="pdfFarmList" hidden></div>
 
       <div class="modal-actions user-actions">
         <button type="submit" class="action-btn pdf">Gerar relatorio</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="monthlyDataDialog" class="modal">
+    <form method="dialog" id="monthlyDataForm" class="modal-card">
+      <div class="modal-header">
+        <div>
+          <p class="panel-kicker">Dados mensais</p>
+          <h2 id="monthlyDataDialogTitle">Registrar dado mensal</h2>
+        </div>
+        <button type="button" class="ghost-btn" id="closeMonthlyDataDialog">Fechar</button>
+      </div>
+
+      <input type="hidden" id="monthlyDataEditingId">
+
+      <div class="form-grid">
+        <label>
+          Fazenda
+          <select id="monthlyDataFarm" required></select>
+        </label>
+        <label>
+          Competencia
+          <input type="month" id="monthlyDataPeriod" required>
+        </label>
+        <label>
+          Categoria do relatorio
+          <select id="monthlyDataCategory" required></select>
+        </label>
+        <label>
+          Indicador
+          <input type="text" id="monthlyDataTitle" maxlength="90" required placeholder="Ex.: Esquila borregos">
+        </label>
+        <label>
+          Quantidade
+          <input type="number" id="monthlyDataQuantity" min="0" step="1" placeholder="0">
+        </label>
+        <label>
+          Valor atribuido
+          <input type="number" id="monthlyDataValue" min="0" step="0.01" placeholder="0,00">
+        </label>
+        <label class="form-span-2">
+          Observacoes
+          <input type="text" id="monthlyDataNotes" maxlength="180" placeholder="Ex.: dado mensal importado do relatorio da fazenda">
+        </label>
+      </div>
+
+      <div class="modal-actions">
+        <button type="submit" class="action-btn secondary" id="monthlyDataSubmitButton">Salvar dado mensal</button>
       </div>
     </form>
   </dialog>

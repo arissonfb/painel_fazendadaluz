@@ -729,6 +729,10 @@ input {
   text-align: left;
 }
 
+.monthly-table td {
+  vertical-align: top;
+}
+
 .potrero-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1036,6 +1040,10 @@ th {
   max-height: 280px;
   overflow: auto;
   padding-right: 4px;
+}
+
+.pdf-period-grid {
+  margin-top: 18px;
 }
 
 .pdf-farm-row {

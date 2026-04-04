@@ -53,6 +53,14 @@ const STANDARD_FARM_CATEGORIES = [
   { id: "vacas-entouradas", name: "Vacas entouradas" }
 ];
 
+const MONTHLY_REPORT_CATEGORIES = [
+  { value: "estoque", label: "Controle de estoque animal" },
+  { value: "sanitario", label: "Atividades sanitarias" },
+  { value: "comercial", label: "Compra e venda" },
+  { value: "operacional", label: "Operacional" },
+  { value: "outros", label: "Outros" }
+];
+
 const DEFAULT_SANITARY_PRODUCTS = ["Vacina aftosa", "Vermifugo", "Ivermectina"];
 const DEFAULT_POTREIROS = [];
 const LEGACY_POTREIRO_PLACEHOLDERS = ["Potreiro 1", "Potreiro 2", "Potreiro Norte"];
@@ -120,7 +128,8 @@ const seedData = {
         { id: "ajuste-inicial", name: "Ajuste inicial de conferencia", quantity: 20 }
       ],
       movements: [],
-      sanitaryRecords: []
+      sanitaryRecords: [],
+      monthlyRecords: []
     },
     chiquita: {
       ...createStandardFarm("chiquita", "Chiquita")
@@ -153,10 +162,13 @@ const state = {
   charts: {
     inventory: null,
     movement: null,
-    ranking: null
+    ranking: null,
+    monthlyEvolution: null,
+    monthlyCategory: null
   },
   userEditingId: null,
-  userEditingMode: null
+  userEditingMode: null,
+  monthlyEditingId: null
 };
 
 const elements = {
@@ -178,6 +190,8 @@ const elements = {
   globalPanelKicker: document.getElementById("globalPanelKicker"),
   globalPanelTitle: document.getElementById("globalPanelTitle"),
   globalPanelChip: document.getElementById("globalPanelChip"),
+  monthlySummaryGrid: document.getElementById("monthlySummaryGrid"),
+  monthlyTableBody: document.getElementById("monthlyTableBody"),
   summaryGrid: document.getElementById("summaryGrid"),
   periodSummary: document.getElementById("periodSummary"),
   salesSummary: document.getElementById("salesSummary"),
@@ -243,6 +257,7 @@ const elements = {
   addPotreroButton: document.getElementById("addPotreroButton"),
   potreroStockList: document.getElementById("potreroStockList"),
   exportPdfButton: document.getElementById("exportPdfButton"),
+  monthlyDataButton: document.getElementById("monthlyDataButton"),
   currentUserLabel: document.getElementById("currentUserLabel"),
   manageUsersButton: document.getElementById("manageUsersButton"),
   logoutButton: document.getElementById("logoutButton"),
@@ -265,7 +280,22 @@ const elements = {
   pdfOptionsDialog: document.getElementById("pdfOptionsDialog"),
   pdfOptionsForm: document.getElementById("pdfOptionsForm"),
   closePdfOptionsDialog: document.getElementById("closePdfOptionsDialog"),
-  pdfFarmList: document.getElementById("pdfFarmList")
+  pdfFarmList: document.getElementById("pdfFarmList"),
+  pdfYearFilter: document.getElementById("pdfYearFilter"),
+  pdfMonthFilter: document.getElementById("pdfMonthFilter"),
+  monthlyDataDialog: document.getElementById("monthlyDataDialog"),
+  monthlyDataForm: document.getElementById("monthlyDataForm"),
+  closeMonthlyDataDialog: document.getElementById("closeMonthlyDataDialog"),
+  monthlyDataDialogTitle: document.getElementById("monthlyDataDialogTitle"),
+  monthlyDataEditingId: document.getElementById("monthlyDataEditingId"),
+  monthlyDataFarm: document.getElementById("monthlyDataFarm"),
+  monthlyDataPeriod: document.getElementById("monthlyDataPeriod"),
+  monthlyDataCategory: document.getElementById("monthlyDataCategory"),
+  monthlyDataTitle: document.getElementById("monthlyDataTitle"),
+  monthlyDataQuantity: document.getElementById("monthlyDataQuantity"),
+  monthlyDataValue: document.getElementById("monthlyDataValue"),
+  monthlyDataNotes: document.getElementById("monthlyDataNotes"),
+  monthlyDataSubmitButton: document.getElementById("monthlyDataSubmitButton")
 };
 
 boot();
@@ -292,6 +322,7 @@ function initializeAppShell() {
 
   state.filters.year = String(getPreferredYearForFarm(getFarm()));
   populateYearFilter();
+  populatePdfPeriodFilters();
 }
 
 function loadData() {
@@ -529,6 +560,7 @@ function getAggregateFarm() {
   let declaredTotal = 0;
   const movements = [];
   const sanitaryRecords = [];
+  const monthlyRecords = [];
 
   farms.forEach((farm) => {
     declaredTotal += Number(farm.declaredTotal || 0);
@@ -549,6 +581,9 @@ function getAggregateFarm() {
     });
     farm.sanitaryRecords.forEach((record) => {
       sanitaryRecords.push({ ...record, farmId: farm.id, farmName: farm.name });
+    });
+    farm.monthlyRecords.forEach((record) => {
+      monthlyRecords.push({ ...record, farmId: farm.id, farmName: farm.name });
     });
     farm.sanitaryProducts.forEach((product) => sanitaryProducts.add(product));
     getPotreroEntries(farm).forEach((potrero) => {
@@ -577,7 +612,8 @@ function getAggregateFarm() {
     potreiros: [...potreroMap.values()].sort((a, b) => b.quantity - a.quantity || a.name.localeCompare(b.name)),
     categories: [...categoryMap.values()],
     movements,
-    sanitaryRecords
+    sanitaryRecords,
+    monthlyRecords
   };
 }
 
@@ -653,6 +689,61 @@ function getPotreroBalance(farm) {
   return getFarmTotal(farm) - getRegisteredPotreroAnimals(farm);
 }
 
+function getMonthlyRecords(farm) {
+  return Array.isArray(farm?.monthlyRecords) ? farm.monthlyRecords : [];
+}
+
+function getMonthlyCategoryLabel(value) {
+  return MONTHLY_REPORT_CATEGORIES.find((category) => category.value === value)?.label || "Outros";
+}
+
+function getFilteredMonthlyRecords(farm, year = state.filters.year, month = state.filters.month) {
+  return getMonthlyRecords(farm).filter((record) => {
+    const period = String(record.period || "");
+    const recordYear = period.slice(0, 4);
+    const recordMonth = period.slice(5, 7);
+    const matchesYear = recordYear === String(year);
+    const matchesMonth = month === "all" || recordMonth === month;
+    return matchesYear && matchesMonth;
+  });
+}
+
+function getMonthlySummary(farm, year = state.filters.year, month = state.filters.month) {
+  const records = getFilteredMonthlyRecords(farm, year, month);
+  const byCategory = new Map();
+
+  records.forEach((record) => {
+    const key = record.category || "outros";
+    const existing = byCategory.get(key) || { category: key, label: getMonthlyCategoryLabel(key), count: 0, quantity: 0, value: 0 };
+    existing.count += 1;
+    existing.quantity += Number(record.quantity || 0);
+    existing.value += Number(record.value || 0);
+    byCategory.set(key, existing);
+  });
+
+  return {
+    records,
+    count: records.length,
+    totalQuantity: records.reduce((sum, record) => sum + Number(record.quantity || 0), 0),
+    totalValue: records.reduce((sum, record) => sum + Number(record.value || 0), 0),
+    activeCategories: byCategory.size,
+    byCategory: [...byCategory.values()].sort((a, b) => b.value - a.value || b.quantity - a.quantity || b.count - a.count)
+  };
+}
+
+function getMonthlyEvolution(farm, year = state.filters.year) {
+  return Array.from({ length: 12 }, (_, index) => {
+    const month = String(index + 1).padStart(2, "0");
+    const summary = getMonthlySummary(farm, year, month);
+    return {
+      label: MONTH_NAMES[index].slice(0, 3),
+      quantity: summary.totalQuantity,
+      value: summary.totalValue,
+      count: summary.count
+    };
+  });
+}
+
 function getFarmTotal(farm) {
   return farm.categories.reduce((sum, category) => sum + Number(category.quantity || 0), 0);
 }
@@ -668,7 +759,8 @@ function getDiscrepancy(farm) {
 function getPreferredYearForFarm(farm) {
   const years = [
     ...farm.movements.map((movement) => new Date(movement.date).getFullYear()),
-    ...farm.sanitaryRecords.map((record) => new Date(record.date).getFullYear())
+    ...farm.sanitaryRecords.map((record) => new Date(record.date).getFullYear()),
+    ...farm.monthlyRecords.map((record) => Number(String(record.period || "").slice(0, 4)))
   ].filter((year) => Number.isFinite(year));
 
   return years.length ? Math.max(...years) : today.getFullYear();
@@ -691,7 +783,8 @@ function createStandardFarm(id, name) {
       quantity: 0
     })),
     movements: [],
-    sanitaryRecords: []
+    sanitaryRecords: [],
+    monthlyRecords: []
   };
 }
 
@@ -760,12 +853,15 @@ function bindEvents() {
   elements.adjustButton.addEventListener("click", () => openMovementDialog("ajuste"));
   elements.editStockButton.addEventListener("click", openEditStockDialog);
   elements.addCategoryButton.addEventListener("click", openCategoryDialog);
+  elements.monthlyDataButton.addEventListener("click", openMonthlyDataDialog);
   elements.editFarmName.addEventListener("change", handleEditFarmChange);
   elements.addPotreroButton.addEventListener("click", handleAddPotreroRow);
   elements.potreroStockList.addEventListener("click", handlePotreroListInteraction);
+  elements.monthlyTableBody.addEventListener("click", handleMonthlyTableInteraction);
   elements.closeMovementDialog.addEventListener("click", () => elements.movementDialog.close());
   elements.closeCategoryDialog.addEventListener("click", () => elements.categoryDialog.close());
   elements.closeEditStockDialog.addEventListener("click", () => elements.editStockDialog.close());
+  elements.closeMonthlyDataDialog.addEventListener("click", () => elements.monthlyDataDialog.close());
   elements.exportPdfButton.addEventListener("click", openPdfOptionsDialog);
   elements.closePdfOptionsDialog.addEventListener("click", () => elements.pdfOptionsDialog.close());
   elements.pdfOptionsForm.addEventListener("submit", handlePdfOptionsSubmit);
@@ -777,6 +873,7 @@ function bindEvents() {
   elements.categoryForm.addEventListener("submit", handleCategorySubmit);
   elements.sanitaryForm.addEventListener("submit", handleSanitarySubmit);
   elements.editStockForm.addEventListener("submit", handleEditStockSubmit);
+  elements.monthlyDataForm.addEventListener("submit", handleMonthlyDataSubmit);
 }
 
 function populateMonthFilter() {
@@ -798,6 +895,12 @@ function populateYearFilter() {
     farm.sanitaryRecords.forEach((record) => {
       years.add(new Date(record.date).getFullYear());
     });
+    farm.monthlyRecords.forEach((record) => {
+      const year = Number(String(record.period || "").slice(0, 4));
+      if (Number.isFinite(year)) {
+        years.add(year);
+      }
+    });
   });
 
   elements.yearFilter.innerHTML = "";
@@ -812,6 +915,18 @@ function populateYearFilter() {
   });
 }
 
+function populatePdfPeriodFilters() {
+  elements.pdfYearFilter.innerHTML = elements.yearFilter.innerHTML;
+  [...elements.pdfYearFilter.options].forEach((option) => {
+    option.selected = option.value === String(state.filters.year);
+  });
+
+  elements.pdfMonthFilter.innerHTML = elements.monthFilter.innerHTML;
+  [...elements.pdfMonthFilter.options].forEach((option) => {
+    option.selected = option.value === state.filters.month;
+  });
+}
+
 function render() {
   if (!isAuthenticated()) {
     return;
@@ -823,6 +938,8 @@ function render() {
   syncMovementTypeOptions();
   syncCategoryOptions();
   syncSanitaryFormOptions();
+  syncMonthlyDataFarmOptions();
+  syncMonthlyDataCategoryOptions();
   renderHero(farm);
   renderHeroMetrics(farm);
   renderSummaryCards(farm);
@@ -833,6 +950,8 @@ function render() {
   renderMovementsTable(farm);
   renderSanitarySummary(farm);
   renderSanitaryTable(farm);
+  renderMonthlySummary(farm);
+  renderMonthlyTable(farm);
   renderPotreroSummaries(farm);
   renderInsights(farm);
   renderCharts(farm);
@@ -1157,8 +1276,8 @@ function getFilteredSaleMovements(farm, year, month) {
     .sort((a, b) => new Date(b.date) - new Date(a.date));
 }
 
-function getSanitarySummary(farm) {
-  const records = getFilteredSanitaryRecords(farm);
+function getSanitarySummary(farm, year = state.filters.year, month = state.filters.month) {
+  const records = getFilteredSanitaryRecords(farm, year, month);
   return {
     totalApplications: records.length,
     treatedAnimals: records.reduce((sum, record) => sum + Number(record.quantity || 0), 0),
@@ -1188,11 +1307,11 @@ function getSaleModeLabel(mode) {
   return mode === "carcaca" ? "Kg carcaca" : "Kg vivo";
 }
 
-function getOperationalInsights(farm) {
+function getOperationalInsights(farm, year = state.filters.year, month = state.filters.month) {
   const total = getFarmTotal(farm);
   const biggestCategory = [...farm.categories].sort((a, b) => b.quantity - a.quantity)[0];
-  const annual = summarizePeriod(farm, state.filters.year, "all");
-  const monthly = summarizePeriod(farm, state.filters.year, state.filters.month);
+  const annual = summarizePeriod(farm, year, "all");
+  const monthly = summarizePeriod(farm, year, month);
   const mortalityRate = total > 0 ? ((annual.byType.morte / total) * 100).toFixed(2) : "0.00";
 
   return [
@@ -1204,12 +1323,12 @@ function getOperationalInsights(farm) {
     {
       tag: "Saude do manejo",
       title: `${mortalityRate}% de mortalidade`,
-      text: `Taxa calculada a partir das mortes registradas em ${state.filters.year}.`
+      text: `Taxa calculada a partir das mortes registradas em ${year}.`
     },
     {
       tag: "Recorte ativo",
       title: monthly.totalMovements ? `${monthly.totalMovements} lancamentos no periodo` : "Sem lancamentos no periodo",
-      text: state.filters.month === "all" ? `Visao consolidada do ano de ${state.filters.year}.` : `Leitura mensal de ${MONTH_NAMES[Number(state.filters.month) - 1]} de ${state.filters.year}.`
+      text: month === "all" ? `Visao consolidada do ano de ${year}.` : `Leitura mensal de ${MONTH_NAMES[Number(month) - 1]} de ${year}.`
     }
   ];
 }
@@ -1304,6 +1423,82 @@ function renderSanitaryTable(farm) {
   `).join("");
 }
 
+function renderMonthlySummary(farm) {
+  const summary = getMonthlySummary(farm);
+  const cards = [
+    {
+      title: "Registros mensais",
+      value: formatInteger(summary.count),
+      detail: "entradas alinhadas ao relatorio mensal filtrado"
+    },
+    {
+      title: "Quantidade informada",
+      value: formatInteger(summary.totalQuantity),
+      detail: "somatorio dos numeros mensais cadastrados"
+    },
+    {
+      title: "Valor atribuido",
+      value: formatCurrency(summary.totalValue),
+      detail: "valores monetarios associados ao periodo"
+    },
+    {
+      title: "Categorias ativas",
+      value: formatInteger(summary.activeCategories),
+      detail: "blocos do relatorio mensal em uso"
+    }
+  ];
+
+  elements.monthlySummaryGrid.innerHTML = cards.map((card) => `
+    <article class="analytics-card">
+      <p class="panel-kicker">${card.title}</p>
+      <strong>${card.value}</strong>
+      <p>${card.detail}</p>
+    </article>
+  `).join("");
+}
+
+function renderMonthlyTable(farm) {
+  const records = [...getFilteredMonthlyRecords(farm)].sort((a, b) => {
+    if (a.period === b.period) {
+      return a.title.localeCompare(b.title);
+    }
+    return a.period < b.period ? 1 : -1;
+  });
+
+  if (!records.length) {
+    elements.monthlyTableBody.innerHTML = `
+      <tr>
+        <td colspan="8" class="table-empty-cell">Nenhum dado mensal encontrado para o recorte selecionado.</td>
+      </tr>
+    `;
+    return;
+  }
+
+  elements.monthlyTableBody.innerHTML = records.map((record) => `
+    <tr>
+      <td data-label="Competencia">${formatMonthYear(record.period)}</td>
+      <td data-label="Fazenda">${escapeHtml(record.farmName || farm.name)}</td>
+      <td data-label="Categoria">${escapeHtml(getMonthlyCategoryLabel(record.category))}</td>
+      <td data-label="Indicador">${escapeHtml(record.title)}</td>
+      <td data-label="Qtd.">${record.quantity ? formatInteger(record.quantity) : "-"}</td>
+      <td data-label="Valor">${record.value ? formatCurrency(record.value) : "-"}</td>
+      <td data-label="Obs.">${escapeHtml(record.notes || "-")}</td>
+      <td data-label="Acoes">
+        <button type="button" class="table-action-btn" data-edit-monthly-id="${record.id}">Editar</button>
+      </td>
+    </tr>
+  `).join("");
+}
+
+function handleMonthlyTableInteraction(event) {
+  const trigger = event.target.closest("[data-edit-monthly-id]");
+  if (!trigger) {
+    return;
+  }
+
+  openMonthlyDataEditor(trigger.dataset.editMonthlyId);
+}
+
 function renderPotreroSummaries(farm) {
   const totals = getPotreroTotals(farm);
   const balance = getPotreroBalance(farm);
@@ -1353,6 +1548,8 @@ function renderCharts(farm) {
   renderInventoryChart(farm);
   renderMovementChart(farm);
   renderRankingChart(farm);
+  renderMonthlyEvolutionChart(farm);
+  renderMonthlyCategoryChart(farm);
 }
 
 function renderInventoryChart(farm) {
@@ -1562,6 +1759,117 @@ function renderRankingChart(farm) {
   });
 }
 
+function renderMonthlyEvolutionChart(farm) {
+  if (typeof window.Chart !== "function") {
+    drawChartFallback("monthlyEvolutionChart", "Grafico indisponivel no momento.");
+    return;
+  }
+
+  const context = document.getElementById("monthlyEvolutionChart");
+  const evolution = getMonthlyEvolution(farm, state.filters.year);
+
+  if (state.charts.monthlyEvolution) {
+    state.charts.monthlyEvolution.destroy();
+  }
+
+  state.charts.monthlyEvolution = new Chart(context, {
+    type: "bar",
+    data: {
+      labels: evolution.map((item) => item.label),
+      datasets: [
+        {
+          type: "bar",
+          label: "Quantidade",
+          data: evolution.map((item) => item.quantity),
+          backgroundColor: "rgba(51, 92, 67, 0.72)",
+          borderRadius: 10,
+          yAxisID: "y"
+        },
+        {
+          type: "line",
+          label: "Valor (R$)",
+          data: evolution.map((item) => item.value),
+          borderColor: "#d39b5c",
+          backgroundColor: "rgba(211, 155, 92, 0.2)",
+          fill: true,
+          tension: 0.34,
+          pointRadius: 4,
+          yAxisID: "y1"
+        }
+      ]
+    },
+    options: {
+      maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: { position: "bottom" }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: { color: "rgba(76, 55, 34, 0.08)" }
+        },
+        y1: {
+          beginAtZero: true,
+          position: "right",
+          grid: { drawOnChartArea: false },
+          ticks: {
+            callback(value) {
+              return formatCurrency(value).replace(",00", "");
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+function renderMonthlyCategoryChart(farm) {
+  if (typeof window.Chart !== "function") {
+    drawChartFallback("monthlyCategoryChart", "Grafico indisponivel no momento.");
+    return;
+  }
+
+  const context = document.getElementById("monthlyCategoryChart");
+  const summary = getMonthlySummary(farm);
+  const labels = summary.byCategory.map((item) => item.label);
+  const values = summary.byCategory.map((item) => item.value > 0 ? item.value : item.quantity > 0 ? item.quantity : item.count);
+
+  if (state.charts.monthlyCategory) {
+    state.charts.monthlyCategory.destroy();
+  }
+
+  state.charts.monthlyCategory = new Chart(context, {
+    type: "doughnut",
+    data: {
+      labels: labels.length ? labels : ["Sem dados"],
+      datasets: [{
+        data: values.length ? values : [1],
+        backgroundColor: (labels.length ? labels : ["Sem dados"]).map((_, index) => COLORS[index % COLORS.length]),
+        borderWidth: 0
+      }]
+    },
+    options: {
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: "bottom",
+          labels: {
+            usePointStyle: true,
+            boxWidth: 10,
+            padding: 16
+          }
+        }
+      },
+      cutout: "58%"
+    },
+    plugins: [centerTextPlugin(() => ({
+      title: summary.count ? formatInteger(summary.count) : "0",
+      subtitle: summary.count ? "dados mensais" : "Sem dados"
+    }))]
+  });
+}
+
 function openMovementDialog(initialType) {
   if (state.data.selectedFarmId === TOTAL_FARM_ID) {
     alert("Selecione uma fazenda especifica para registrar movimentacoes.");
@@ -1593,6 +1901,75 @@ function openCategoryDialog() {
   elements.categoryName.value = "";
   elements.categoryInitialQuantity.value = "0";
   elements.categoryDialog.showModal();
+}
+
+function syncMonthlyDataFarmOptions(selectedFarmId = elements.monthlyDataFarm.value || (state.data.selectedFarmId === TOTAL_FARM_ID ? getAllFarms()[0]?.id : state.data.selectedFarmId)) {
+  elements.monthlyDataFarm.innerHTML = getAllFarms().map((farm) => `
+    <option value="${farm.id}" ${farm.id === selectedFarmId ? "selected" : ""}>${escapeHtml(farm.name)}</option>
+  `).join("");
+  if (selectedFarmId) {
+    elements.monthlyDataFarm.value = selectedFarmId;
+  }
+}
+
+function syncMonthlyDataCategoryOptions(selectedCategory = elements.monthlyDataCategory.value || MONTHLY_REPORT_CATEGORIES[0].value) {
+  elements.monthlyDataCategory.innerHTML = MONTHLY_REPORT_CATEGORIES.map((category) => `
+    <option value="${category.value}" ${category.value === selectedCategory ? "selected" : ""}>${escapeHtml(category.label)}</option>
+  `).join("");
+  elements.monthlyDataCategory.value = selectedCategory;
+}
+
+function resetMonthlyDataForm(defaultFarmId = state.data.selectedFarmId === TOTAL_FARM_ID ? getAllFarms()[0]?.id : state.data.selectedFarmId) {
+  state.monthlyEditingId = null;
+  elements.monthlyDataDialogTitle.textContent = "Registrar dado mensal";
+  elements.monthlyDataSubmitButton.textContent = "Salvar dado mensal";
+  elements.monthlyDataEditingId.value = "";
+  syncMonthlyDataFarmOptions(defaultFarmId);
+  syncMonthlyDataCategoryOptions();
+  elements.monthlyDataPeriod.value = `${state.filters.year}-${state.filters.month === "all" ? String(today.getMonth() + 1).padStart(2, "0") : state.filters.month}`;
+  elements.monthlyDataTitle.value = "";
+  elements.monthlyDataQuantity.value = "";
+  elements.monthlyDataValue.value = "";
+  elements.monthlyDataNotes.value = "";
+}
+
+function openMonthlyDataDialog() {
+  resetMonthlyDataForm();
+  elements.monthlyDataDialog.showModal();
+}
+
+function openMonthlyDataEditor(recordId) {
+  if (state.data.selectedFarmId === TOTAL_FARM_ID) {
+    const aggregateFarm = getAggregateFarm();
+    const aggregateRecord = getMonthlyRecords(aggregateFarm).find((record) => record.id === recordId);
+    if (aggregateRecord?.farmId) {
+      openMonthlyDataEditorForFarm(recordId, aggregateRecord.farmId);
+    }
+    return;
+  }
+
+  openMonthlyDataEditorForFarm(recordId, state.data.selectedFarmId);
+}
+
+function openMonthlyDataEditorForFarm(recordId, farmId) {
+  const farm = state.data.farms[farmId];
+  const record = getMonthlyRecords(farm).find((item) => item.id === recordId);
+  if (!farm || !record) {
+    return;
+  }
+
+  state.monthlyEditingId = record.id;
+  elements.monthlyDataDialogTitle.textContent = "Editar dado mensal";
+  elements.monthlyDataSubmitButton.textContent = "Atualizar dado mensal";
+  elements.monthlyDataEditingId.value = record.id;
+  syncMonthlyDataFarmOptions(farm.id);
+  syncMonthlyDataCategoryOptions(record.category);
+  elements.monthlyDataPeriod.value = record.period;
+  elements.monthlyDataTitle.value = record.title;
+  elements.monthlyDataQuantity.value = record.quantity ? String(record.quantity) : "";
+  elements.monthlyDataValue.value = record.value ? String(record.value) : "";
+  elements.monthlyDataNotes.value = record.notes || "";
+  elements.monthlyDataDialog.showModal();
 }
 
 function openEditStockDialog() {
@@ -1984,6 +2361,66 @@ function handleCategorySubmit(event) {
   render();
 }
 
+function handleMonthlyDataSubmit(event) {
+  event.preventDefault();
+  const farm = state.data.farms[elements.monthlyDataFarm.value];
+  const period = elements.monthlyDataPeriod.value;
+  const category = elements.monthlyDataCategory.value;
+  const title = elements.monthlyDataTitle.value.trim();
+  const quantity = Number(elements.monthlyDataQuantity.value || 0);
+  const value = Number(elements.monthlyDataValue.value || 0);
+  const notes = elements.monthlyDataNotes.value.trim();
+  const editingId = elements.monthlyDataEditingId.value;
+
+  if (!farm || !period || !category || !title) {
+    return;
+  }
+
+  if (quantity < 0 || value < 0) {
+    alert("Quantidade e valor atribuido nao podem ser negativos.");
+    return;
+  }
+
+  const payload = {
+    period,
+    category,
+    title,
+    quantity: Number.isFinite(quantity) ? Math.round(quantity) : 0,
+    value: Number.isFinite(value) ? Number(value.toFixed(2)) : 0,
+    notes
+  };
+
+  if (editingId) {
+    const ownerFarm = getAllFarms().find((item) => getMonthlyRecords(item).some((record) => record.id === editingId));
+    const existing = ownerFarm ? getMonthlyRecords(ownerFarm).find((record) => record.id === editingId) : null;
+    if (existing && ownerFarm?.id === farm.id) {
+      Object.assign(existing, payload);
+    } else if (existing) {
+      ownerFarm.monthlyRecords = ownerFarm.monthlyRecords.filter((record) => record.id !== editingId);
+      farm.monthlyRecords.push({
+        id: editingId,
+        ...payload
+      });
+    } else {
+      farm.monthlyRecords.push({
+        id: editingId,
+        ...payload
+      });
+    }
+  } else {
+    farm.monthlyRecords.push({
+      id: createMovementId(),
+      ...payload
+    });
+  }
+
+  state.data.selectedFarmId = farm.id;
+  saveData();
+  populateYearFilter();
+  elements.monthlyDataDialog.close();
+  render();
+}
+
 function handleSanitarySubmit(event) {
   event.preventDefault();
   if (state.data.selectedFarmId === TOTAL_FARM_ID) {
@@ -2183,13 +2620,13 @@ function summarizePeriod(farm, year, month) {
   return summary;
 }
 
-function getFilteredSanitaryRecords(farm) {
+function getFilteredSanitaryRecords(farm, year = state.filters.year, month = state.filters.month) {
   return farm.sanitaryRecords.filter((record) => {
     const recordDate = new Date(record.date);
     const recordYear = String(recordDate.getFullYear());
     const recordMonth = String(recordDate.getMonth() + 1).padStart(2, "0");
-    const matchesYear = recordYear === String(state.filters.year);
-    const matchesMonth = state.filters.month === "all" || recordMonth === state.filters.month;
+    const matchesYear = recordYear === String(year);
+    const matchesMonth = month === "all" || recordMonth === month;
     return matchesYear && matchesMonth;
   });
 }
@@ -2236,6 +2673,7 @@ function getDiscrepancyText(farm) {
 
 function openPdfOptionsDialog() {
   elements.pdfOptionsForm.reset();
+  populatePdfPeriodFilters();
   renderPdfFarmOptions(state.data.selectedFarmId === TOTAL_FARM_ID ? getAllFarms().map((farm) => farm.id) : [state.data.selectedFarmId]);
   const currentScope = elements.pdfOptionsForm.querySelector('input[name="pdfScope"][value="current"]');
   if (currentScope) {
@@ -2292,9 +2730,17 @@ function getSelectedPdfFarmIds() {
   return [state.data.selectedFarmId];
 }
 
+function getPdfPeriodSelection() {
+  return {
+    year: elements.pdfYearFilter.value || state.filters.year,
+    month: elements.pdfMonthFilter.value || state.filters.month
+  };
+}
+
 function handlePdfOptionsSubmit(event) {
   event.preventDefault();
   const farmIds = getSelectedPdfFarmIds();
+  const period = getPdfPeriodSelection();
 
   if (!farmIds.length) {
     alert("Selecione pelo menos uma fazenda para gerar o PDF.");
@@ -2302,7 +2748,7 @@ function handlePdfOptionsSubmit(event) {
   }
 
   elements.pdfOptionsDialog.close();
-  exportPdfReport(farmIds);
+  exportPdfReport(farmIds, period);
 }
 
 async function addPdfHeader(doc, farm, periodLabel, monthly) {
@@ -2441,6 +2887,40 @@ function appendPotreroPdfTable(doc, potreroTotals) {
   });
 }
 
+function appendMonthlySummaryPdfTable(doc, monthlySummary) {
+  doc.autoTable({
+    startY: doc.lastAutoTable.finalY + 10,
+    head: [["Indicador mensal", "Valor"]],
+    body: [
+      ["Registros no periodo", formatInteger(monthlySummary.count)],
+      ["Quantidade informada", formatInteger(monthlySummary.totalQuantity)],
+      ["Valor atribuido", formatCurrency(monthlySummary.totalValue)],
+      ["Categorias ativas", formatInteger(monthlySummary.activeCategories)]
+    ],
+    theme: "striped",
+    headStyles: { fillColor: [111, 95, 77] }
+  });
+}
+
+function appendMonthlyDetailsPdfTable(doc, farm, monthlyRecords) {
+  doc.autoTable({
+    startY: doc.lastAutoTable.finalY + 10,
+    head: [["Competencia", "Categoria", "Indicador", "Qtd.", "Valor", "Observacoes"]],
+    body: monthlyRecords.length
+      ? monthlyRecords.map((record) => [
+        formatMonthYear(record.period),
+        getMonthlyCategoryLabel(record.category),
+        record.farmName && farm.id === TOTAL_FARM_ID ? `${record.farmName} | ${record.title}` : record.title,
+        record.quantity ? formatInteger(record.quantity) : "-",
+        record.value ? formatCurrency(record.value) : "-",
+        record.notes || "-"
+      ])
+      : [["-", "-", "Sem dados mensais no periodo", "-", "-", "-"]],
+    theme: "striped",
+    headStyles: { fillColor: [111, 95, 77] }
+  });
+}
+
 function appendSanitarySummaryPdfTable(doc, sanitarySummary) {
   doc.autoTable({
     startY: doc.lastAutoTable.finalY + 10,
@@ -2505,19 +2985,22 @@ function appendRecentMovementsPdfTable(doc, recentMovements) {
   });
 }
 
-function appendConsolidatedPdfIntro(doc, farms, periodLabel) {
+function appendConsolidatedPdfIntro(doc, farms, periodLabel, year, month) {
   const totals = farms.reduce((summary, farm) => {
-    const monthly = summarizePeriod(farm, state.filters.year, state.filters.month);
-    const saleSummary = summarizeSalePeriod(farm, state.filters.year, state.filters.month);
-    const sanitarySummary = getSanitarySummary(farm);
+    const monthly = summarizePeriod(farm, year, month);
+    const saleSummary = summarizeSalePeriod(farm, year, month);
+    const sanitarySummary = getSanitarySummary(farm, year, month);
+    const monthlySummary = getMonthlySummary(farm, year, month);
     summary.animals += getFarmTotal(farm);
     summary.allocatedAnimals += getRegisteredPotreroAnimals(farm);
     summary.potreiros += getPotreroEntries(farm).length;
     summary.movements += monthly.totalMovements;
     summary.salesValue += saleSummary.totalValue;
     summary.sanitaryRecords += sanitarySummary.totalApplications;
+    summary.monthlyRecords += monthlySummary.count;
+    summary.monthlyValue += monthlySummary.totalValue;
     return summary;
-  }, { animals: 0, allocatedAnimals: 0, potreiros: 0, movements: 0, salesValue: 0, sanitaryRecords: 0 });
+  }, { animals: 0, allocatedAnimals: 0, potreiros: 0, movements: 0, salesValue: 0, sanitaryRecords: 0, monthlyRecords: 0, monthlyValue: 0 });
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(20);
@@ -2538,6 +3021,8 @@ function appendConsolidatedPdfIntro(doc, farms, periodLabel) {
       ["Potreiros cadastrados", formatInteger(totals.potreiros)],
       ["Animais alocados em potreiros", `${formatInteger(totals.allocatedAnimals)} animais`],
       ["Movimentacoes no periodo", formatInteger(totals.movements)],
+      ["Dados mensais no periodo", formatInteger(totals.monthlyRecords)],
+      ["Valor mensal atribuido", formatCurrency(totals.monthlyValue)],
       ["Faturamento de vendas", formatCurrency(totals.salesValue)],
       ["Registros sanitarios", formatInteger(totals.sanitaryRecords)]
     ],
@@ -2547,35 +3032,41 @@ function appendConsolidatedPdfIntro(doc, farms, periodLabel) {
 
   doc.autoTable({
     startY: doc.lastAutoTable.finalY + 10,
-    head: [["Fazenda", "Estoque", "Potreiros", "Alocados", "Mov.", "Vendas", "Sanitario"]],
+    head: [["Fazenda", "Estoque", "Potreiros", "Alocados", "Mov.", "Dados", "Valor mensal", "Vendas", "Sanitario"]],
     body: farms.map((farm) => {
-      const monthly = summarizePeriod(farm, state.filters.year, state.filters.month);
-      const saleSummary = summarizeSalePeriod(farm, state.filters.year, state.filters.month);
-      const sanitarySummary = getSanitarySummary(farm);
+      const monthly = summarizePeriod(farm, year, month);
+      const saleSummary = summarizeSalePeriod(farm, year, month);
+      const sanitarySummary = getSanitarySummary(farm, year, month);
+      const monthlySummary = getMonthlySummary(farm, year, month);
       return [
         farm.name,
         formatInteger(getFarmTotal(farm)),
         formatInteger(getPotreroEntries(farm).length),
         formatInteger(getRegisteredPotreroAnimals(farm)),
         formatInteger(monthly.totalMovements),
+        formatInteger(monthlySummary.count),
+        formatCurrency(monthlySummary.totalValue),
         formatCurrency(saleSummary.totalValue),
         formatInteger(sanitarySummary.totalApplications)
       ];
     }),
     theme: "striped",
-    headStyles: { fillColor: [51, 92, 67] }
+    headStyles: { fillColor: [51, 92, 67] },
+    styles: { fontSize: 8.5, cellPadding: 2 }
   });
 }
 
-async function appendFarmPdfSection(doc, farm, periodLabel) {
-  const monthly = summarizePeriod(farm, state.filters.year, state.filters.month);
-  const annual = summarizePeriod(farm, state.filters.year, "all");
-  const saleSummary = summarizeSalePeriod(farm, state.filters.year, state.filters.month);
-  const sanitarySummary = getSanitarySummary(farm);
-  const sanitaryRecords = [...getFilteredSanitaryRecords(farm)].sort((a, b) => new Date(a.date) - new Date(b.date));
+async function appendFarmPdfSection(doc, farm, periodLabel, year, month) {
+  const monthly = summarizePeriod(farm, year, month);
+  const annual = summarizePeriod(farm, year, "all");
+  const saleSummary = summarizeSalePeriod(farm, year, month);
+  const sanitarySummary = getSanitarySummary(farm, year, month);
+  const sanitaryRecords = [...getFilteredSanitaryRecords(farm, year, month)].sort((a, b) => new Date(a.date) - new Date(b.date));
+  const monthlySummary = getMonthlySummary(farm, year, month);
+  const monthlyRecords = [...monthlySummary.records].sort((a, b) => a.period < b.period ? 1 : -1);
   const potreroTotals = getPotreroTotals(farm);
   const recentMovements = [...farm.movements].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 12);
-  const insights = getOperationalInsights(farm);
+  const insights = getOperationalInsights(farm, year, month);
   const discrepancy = getDiscrepancy(farm);
   const topY = await addPdfHeader(doc, farm, periodLabel, monthly);
 
@@ -2585,21 +3076,24 @@ async function appendFarmPdfSection(doc, farm, periodLabel) {
   appendSaleSummaryPdfTable(doc, saleSummary);
   appendSaleDetailsPdfTable(doc, saleSummary);
   appendPotreroPdfTable(doc, potreroTotals);
+  appendMonthlySummaryPdfTable(doc, monthlySummary);
+  appendMonthlyDetailsPdfTable(doc, farm, monthlyRecords);
   appendSanitarySummaryPdfTable(doc, sanitarySummary);
   appendSanitaryDetailsPdfTable(doc, sanitaryRecords);
   appendInsightsPdfTable(doc, insights);
   appendRecentMovementsPdfTable(doc, recentMovements);
 }
 
-function getPdfFileName(farms) {
+function getPdfFileName(farms, year, month) {
+  const periodSuffix = month === "all" ? year : `${year}-${month}`;
   if (farms.length === 1) {
-    return `relatorio-${slugify(farms[0].name)}-${state.filters.year}.pdf`;
+    return `relatorio-${slugify(farms[0].name)}-${periodSuffix}.pdf`;
   }
 
-  return `relatorio-fazendas-da-luz-${state.filters.year}.pdf`;
+  return `relatorio-fazendas-da-luz-${periodSuffix}.pdf`;
 }
 
-async function exportPdfReport(farmIds = [state.data.selectedFarmId]) {
+async function exportPdfReport(farmIds = [state.data.selectedFarmId], period = { year: state.filters.year, month: state.filters.month }) {
   const farms = farmIds.map((farmId) => state.data.farms[farmId]).filter(Boolean);
   if (!farms.length) {
     alert("Nenhuma fazenda valida foi selecionada para o PDF.");
@@ -2618,22 +3112,24 @@ async function exportPdfReport(farmIds = [state.data.selectedFarmId]) {
     return;
   }
 
-  const periodLabel = state.filters.month === "all" ? `Ano de ${state.filters.year}` : `${MONTH_NAMES[Number(state.filters.month) - 1]} de ${state.filters.year}`;
+  const year = String(period.year || state.filters.year);
+  const month = period.month || state.filters.month;
+  const periodLabel = month === "all" ? `Ano de ${year}` : `${MONTH_NAMES[Number(month) - 1]} de ${year}`;
 
   if (farms.length > 1) {
-    appendConsolidatedPdfIntro(doc, farms, periodLabel);
+    appendConsolidatedPdfIntro(doc, farms, periodLabel, year, month);
   }
 
   for (const [index, farm] of farms.entries()) {
     if (index > 0 || farms.length > 1) {
       doc.addPage();
     }
-    await appendFarmPdfSection(doc, farm, periodLabel);
+    await appendFarmPdfSection(doc, farm, periodLabel, year, month);
   }
 
   addPdfFooters(doc);
 
-  doc.save(getPdfFileName(farms));
+  doc.save(getPdfFileName(farms, year, month));
 }
 
 function cloneSeedData() {
@@ -2694,6 +3190,9 @@ function ensureDataShape(data) {
     if (!Array.isArray(farm.sanitaryRecords)) {
       farm.sanitaryRecords = [];
     }
+    if (!Array.isArray(farm.monthlyRecords)) {
+      farm.monthlyRecords = [];
+    }
     if (!Array.isArray(farm.sanitaryProducts) || !farm.sanitaryProducts.length) {
       farm.sanitaryProducts = [...DEFAULT_SANITARY_PRODUCTS];
     }
@@ -2711,6 +3210,15 @@ function ensureDataShape(data) {
       ...record,
       id: record.id || record.sourceId || createMovementId(),
       potreiro: record.potreiro || "Sem potreiro"
+    }));
+    farm.monthlyRecords = farm.monthlyRecords.map((record) => ({
+      id: record.id || createMovementId(),
+      period: record.period || `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`,
+      category: record.category || "outros",
+      title: record.title || "Indicador mensal",
+      quantity: Number(record.quantity || 0),
+      value: Number(record.value || 0),
+      notes: record.notes || ""
     }));
     pruneLegacyPotreiros(farm);
   });
@@ -2894,6 +3402,16 @@ function formatWeight(value) {
 
 function formatDate(dateString) {
   return new Intl.DateTimeFormat("pt-BR").format(new Date(`${dateString}T00:00:00`));
+}
+
+function formatMonthYear(period) {
+  const [year, month] = String(period || "").split("-");
+  const monthIndex = Number(month) - 1;
+  if (!year || !Number.isInteger(monthIndex) || monthIndex < 0 || monthIndex > 11) {
+    return period || "-";
+  }
+
+  return `${MONTH_NAMES[monthIndex]}/${year}`;
 }
 
 function getCategoryImage(categoryName) {
