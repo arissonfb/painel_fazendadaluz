@@ -5517,6 +5517,28 @@ async function loadImageFromDataUrl(dataUrl) {
   });
 }
 
+async function normalizePhotoDataUrlForPdf(dataUrl) {
+  if (!dataUrl) {
+    return null;
+  }
+
+  const image = await loadImageFromDataUrl(dataUrl);
+  const canvas = document.createElement("canvas");
+  canvas.width = image.width;
+  canvas.height = image.height;
+
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("Falha ao preparar a imagem para o PDF.");
+  }
+
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+  return canvas.toDataURL("image/jpeg", 0.9);
+}
+
 async function uploadToCloudinary(blob, fileName) {
   const formData = new FormData();
   formData.append("file", blob, fileName);
@@ -5539,7 +5561,7 @@ async function uploadToCloudinary(blob, fileName) {
 
 async function fetchPhotoForPdf(photo) {
   if (photo.dataUrl) {
-    return photo.dataUrl;
+    return await normalizePhotoDataUrlForPdf(photo.dataUrl);
   }
   if (!photo.url) {
     return null;
@@ -5547,7 +5569,8 @@ async function fetchPhotoForPdf(photo) {
   try {
     const response = await fetch(photo.url);
     const blob = await response.blob();
-    return await readFileAsDataUrl(blob);
+    const originalDataUrl = await readFileAsDataUrl(blob);
+    return await normalizePhotoDataUrlForPdf(originalDataUrl);
   } catch (error) {
     console.warn("Não foi possível carregar a foto do servidor para o PDF.", error);
     return null;
