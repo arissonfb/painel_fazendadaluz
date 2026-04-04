@@ -411,7 +411,6 @@ const elements = {
   globalPanelTitle: document.getElementById("globalPanelTitle"),
   globalPanelChip: document.getElementById("globalPanelChip"),
   monthlySummaryGrid: document.getElementById("monthlySummaryGrid"),
-  monthlyTableBody: document.getElementById("monthlyTableBody"),
   monthlyProtocolList: document.getElementById("monthlyProtocolList"),
   monthlyProtocolCount: document.getElementById("monthlyProtocolCount"),
   summaryGrid: document.getElementById("summaryGrid"),
@@ -1293,7 +1292,9 @@ function bindEvents() {
   elements.editFarmName.addEventListener("change", handleEditFarmChange);
   elements.addPotreroButton.addEventListener("click", handleAddPotreroRow);
   elements.potreroStockList.addEventListener("click", handlePotreroListInteraction);
-  elements.monthlyTableBody.addEventListener("click", handleMonthlyTableInteraction);
+  if (elements.monthlyProtocolList) {
+    elements.monthlyProtocolList.addEventListener("click", handleMonthlyTableInteraction);
+  }
   elements.closeMovementDialog.addEventListener("click", () => elements.movementDialog.close());
   elements.closeCategoryDialog.addEventListener("click", () => elements.categoryDialog.close());
   elements.closeEditStockDialog.addEventListener("click", () => elements.editStockDialog.close());
