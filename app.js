@@ -364,6 +364,7 @@ const runtime = {
   appInitialized: false,
   splashDismissed: false,
   movementPhotoDrafts: [],
+  pdfContextFarmId: TOTAL_FARM_ID,
   arapeyKmlData: null,
   arapeyKmlPromise: null,
   georefDraft: null
@@ -4424,8 +4425,9 @@ function getDiscrepancyText(farm) {
 
 function openPdfOptionsDialog() {
   elements.pdfOptionsForm.reset();
+  runtime.pdfContextFarmId = state.data.selectedFarmId;
   populatePdfPeriodFilters();
-  renderPdfFarmOptions(state.data.selectedFarmId === TOTAL_FARM_ID ? getAllFarms().map((farm) => farm.id) : [state.data.selectedFarmId]);
+  renderPdfFarmOptions(runtime.pdfContextFarmId === TOTAL_FARM_ID ? getAllFarms().map((farm) => farm.id) : [runtime.pdfContextFarmId]);
   const currentScope = elements.pdfOptionsForm.querySelector('input[name="pdfScope"][value="current"]');
   if (currentScope) {
     currentScope.checked = true;
@@ -4457,7 +4459,8 @@ function updatePdfScopeMode() {
   elements.pdfFarmList.hidden = scope !== "custom";
 
   if (scope === "custom" && !elements.pdfFarmList.querySelector('input[name="pdfFarmIds"]:checked')) {
-    const currentFarmInput = elements.pdfFarmList.querySelector(`input[name="pdfFarmIds"][value="${state.data.selectedFarmId}"]`);
+    const currentFarmId = runtime.pdfContextFarmId !== TOTAL_FARM_ID ? runtime.pdfContextFarmId : state.data.selectedFarmId;
+    const currentFarmInput = elements.pdfFarmList.querySelector(`input[name="pdfFarmIds"][value="${currentFarmId}"]`);
     if (currentFarmInput) {
       currentFarmInput.checked = true;
     }
@@ -4474,11 +4477,12 @@ function getSelectedPdfFarmIds() {
     return [...elements.pdfFarmList.querySelectorAll('input[name="pdfFarmIds"]:checked')].map((input) => input.value);
   }
 
-  if (state.data.selectedFarmId === TOTAL_FARM_ID) {
+  const currentFarmId = runtime.pdfContextFarmId || state.data.selectedFarmId;
+  if (currentFarmId === TOTAL_FARM_ID) {
     return getAllFarms().map((farm) => farm.id);
   }
 
-  return [state.data.selectedFarmId];
+  return [currentFarmId];
 }
 
 function getPdfPeriodSelection() {
@@ -5610,16 +5614,17 @@ async function createMovementPhotoAttachment(file) {
 }
 
 function movementMatchesPeriod(movement, year, month) {
-  const movementDate = new Date(movement.date);
-  const movementYear = String(movementDate.getFullYear());
-  const movementMonth = String(movementDate.getMonth() + 1).padStart(2, "0");
+  const [movementYear = "", movementMonth = ""] = String(movement.date || "").split("-");
+  if (!movementYear || !movementMonth) {
+    return false;
+  }
   return movementYear === String(year) && (month === "all" || movementMonth === month);
 }
 
 function getMovementPhotoEntries(farm, year, month) {
   return farm.movements
     .filter((movement) => movementMatchesPeriod(movement, year, month) && movementTypeSupportsPhotos(movement.type) && getMovementPhotoCount(movement) > 0)
-    .sort((a, b) => new Date(a.date) - new Date(b.date))
+    .sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")))
     .flatMap((movement) => normalizeMovementPhotos(movement.photos).map((photo, index) => ({
       movement,
       photo,
