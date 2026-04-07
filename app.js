@@ -1,4 +1,5 @@
 const STORAGE_KEY = "painelPecuario.v2";
+const API_URL = "https://painel-pecuario-api.onrender.com";
 const MOVEMENT_TYPES = [
   { value: "compra", label: "Compra", direction: 1 },
   { value: "venda", label: "Venda", direction: -1 },
@@ -368,7 +369,10 @@ const runtime = {
   pdfContextFarmId: TOTAL_FARM_ID,
   arapeyKmlData: null,
   arapeyKmlPromise: null,
-  georefDraft: null
+  georefDraft: null,
+  cloudToken: null,
+  cloudSyncing: false,
+  cloudEnabled: true
 };
 
 const today = new Date();
@@ -602,6 +606,7 @@ function boot() {
     if (isAuthenticated()) {
       initializeAppShell();
       render();
+      cloudPull();
     }
   } catch (error) {
     console.error("Falha na inicialização do painel:", error);
@@ -645,17 +650,88 @@ function loadData() {
 }
 
 function saveData() {
-  if (!runtime.storageEnabled) {
-    return;
+  if (runtime.storageEnabled) {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
+    } catch (error) {
+      runtime.storageEnabled = false;
+      console.warn("Não foi possível salvar localmente. A sessão segue sem persistência.", error);
+    }
   }
+  cloudPush();
+}
 
+// ─── Cloud Sync ───────────────────────────────────────────────────────────────
+
+async function cloudGetToken() {
+  if (runtime.cloudToken) return runtime.cloudToken;
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
-  } catch (error) {
-    runtime.storageEnabled = false;
-    console.warn("Não foi possível salvar localmente. A sessão segue sem persistência.", error);
+    const res = await fetch(`${API_URL}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "admin", password: "daluz2026" })
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    runtime.cloudToken = data.token || null;
+    return runtime.cloudToken;
+  } catch {
+    return null;
   }
 }
+
+async function cloudPush() {
+  if (!runtime.cloudEnabled || runtime.cloudSyncing) return;
+  runtime.cloudSyncing = true;
+  try {
+    const token = await cloudGetToken();
+    if (!token) return;
+    const pushPayload = JSON.parse(JSON.stringify(state.data));
+    pushPayload.auth = { ...pushPayload.auth, sessionUserId: "" };
+    const res = await fetch(`${API_URL}/api/data`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+      body: JSON.stringify({ payload: pushPayload })
+    });
+    if (res.status === 401) runtime.cloudToken = null;
+  } catch {
+    // sync silenciosa — não bloqueia a UI
+  } finally {
+    runtime.cloudSyncing = false;
+  }
+}
+
+async function cloudPull() {
+  if (!runtime.cloudEnabled) return;
+  try {
+    const token = await cloudGetToken();
+    if (!token) return;
+    const res = await fetch(`${API_URL}/api/data`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    if (!res.ok) return;
+    const { payload } = await res.json();
+    if (!payload) return;
+    const currentSessionUserId = state.data.auth.sessionUserId;
+    const currentFarmId = state.data.selectedFarmId;
+    const merged = ensureDataShape(payload, { preserveSnapshot: true });
+    merged.selectedFarmId = currentFarmId || TOTAL_FARM_ID;
+    merged.auth.sessionUserId = currentSessionUserId;
+    const localJson = JSON.stringify(state.data.farms);
+    const cloudJson = JSON.stringify(merged.farms);
+    if (localJson !== cloudJson) {
+      state.data = merged;
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
+      if (isAuthenticated()) {
+        render();
+      }
+    }
+  } catch {
+    // sync silenciosa
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 function getCurrentUser() {
   return state.data.auth.users.find((user) => user.id === state.data.auth.sessionUserId) || null;
@@ -718,6 +794,7 @@ function handleLoginSubmit(event) {
   initializeAppShell();
   render();
   checkBackupWarning();
+  cloudPull();
 }
 
 function handleLogout() {
