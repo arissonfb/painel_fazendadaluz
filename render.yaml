@@ -1,7 +1,0 @@
-services:
-  - type: web
-    name: fazenda-daluz
-    env: static
-    buildCommand: echo "ready"
-    staticPublishPath: .
-    autoDeploy: true
