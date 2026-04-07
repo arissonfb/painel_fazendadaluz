@@ -6,7 +6,8 @@ const MOVEMENT_TYPES = [
   { value: "consumo", label: "Consumo", direction: -1 },
   { value: "nascimento", label: "Nascimento", direction: 1 },
   { value: "morte", label: "Morte", direction: -1 },
-  { value: "ajuste", label: "Ajuste manual", direction: 0 }
+  { value: "ajuste", label: "Ajuste manual", direction: 0 },
+  { value: "transferencia", label: "Transferência entre potreiros", direction: 0 }
 ];
 
 const MONTH_NAMES = [
@@ -67,6 +68,7 @@ const DEFAULT_POTREIROS = [];
 const LEGACY_POTREIRO_PLACEHOLDERS = ["Potreiro 1", "Potreiro 2", "Potreiro Norte"];
 const PREMIUM_SALE_FARMS = new Set(["arapey", "chiquita"]);
 const TOTAL_FARM_ID = "total";
+const UNALLOCATED_POTREIRO_KEY = "__unallocated__";
 const ARAPEY_PRIMARY_GEO_KEYS = new Set([
   "2",
   "3",
@@ -493,6 +495,11 @@ const elements = {
   movementDate: document.getElementById("movementDate"),
   movementCategory: document.getElementById("movementCategory"),
   movementQuantity: document.getElementById("movementQuantity"),
+  movementPotreiroWrap: document.getElementById("movementPotreiroWrap"),
+  movementPotreiroLabel: document.getElementById("movementPotreiroLabel"),
+  movementPotreiro: document.getElementById("movementPotreiro"),
+  movementPotreirowDestWrap: document.getElementById("movementPotreirowDestWrap"),
+  movementPotreiroDest: document.getElementById("movementPotreiroDest"),
   adjustDirectionWrap: document.getElementById("adjustDirectionWrap"),
   adjustDirection: document.getElementById("adjustDirection"),
   movementSaleModeWrap: document.getElementById("movementSaleModeWrap"),
@@ -1381,7 +1388,11 @@ function bindEvents() {
 
   elements.movementFarm.addEventListener("change", () => {
     syncMovementCategoryOptionsForFarm(getMovementDialogFarm());
+    syncMovementPotreirosOptions();
     updateSaleFieldVisibility();
+  });
+  elements.movementCategory.addEventListener("change", () => {
+    syncMovementPotreirosOptions();
   });
 
   elements.movementType.addEventListener("change", () => {
@@ -1741,19 +1752,26 @@ function renderPrimarySummaryCards(farm) {
       detail: "vendas, consumo, mortes e ajustes negativos"
     },
     {
-      title: "Dados mensais ativos",
-      value: formatInteger(monthlySummary.activeCategories),
-      detail: monthlySummary.count ? `${formatInteger(monthlySummary.count)} registros mensais no recorte` : "nenhum registro mensal no recorte"
+      title: "Saldo líquido do período",
+      value: filteredData.saldo,
+      detail: filteredData.saldo > 0 ? "rebanho cresceu no período filtrado" : filteredData.saldo < 0 ? "rebanho reduziu no período filtrado" : "rebanho estável no período filtrado",
+      trend: filteredData.saldo > 0 ? "up" : filteredData.saldo < 0 ? "down" : "flat"
     }
   ];
 
-  elements.summaryGrid.innerHTML = cards.map((card) => `
-    <article class="summary-card">
-      <p class="panel-kicker">${card.title}</p>
-      <strong>${card.value}</strong>
-      <p>${card.detail}</p>
-    </article>
-  `).join("");
+  elements.summaryGrid.innerHTML = cards.map((card) => {
+    const trendBadge = card.trend
+      ? `<span class="trend-badge trend-${card.trend}">${card.trend === "up" ? "▲" : card.trend === "down" ? "▼" : "—"} ${formatInteger(Math.abs(card.value))}</span>`
+      : "";
+    const displayValue = card.trend ? formatInteger(Math.abs(card.value)) : card.value;
+    return `
+      <article class="summary-card${card.trend ? ` summary-card-${card.trend}` : ""}">
+        <p class="panel-kicker">${card.title}</p>
+        <strong>${displayValue}${trendBadge}</strong>
+        <p>${card.detail}</p>
+      </article>
+    `;
+  }).join("");
 }
 
 function renderDashboardVisualHerdGrid(farm) {
@@ -3461,77 +3479,45 @@ function renderInsights(farm) {
 }
 
 function renderCharts(farm) {
-  renderInventoryChart(farm);
+  renderInventoryRankedList(farm);
   renderMovementChart(farm);
   renderRankingChart(farm);
   renderMonthlyEvolutionChart(farm);
 }
 
-function renderInventoryChart(farm) {
-  if (typeof window.Chart !== "function") {
-    drawChartFallback("inventoryChart", "Gráfico indisponível no momento.");
-    return;
-  }
-
-  const context = document.getElementById("inventoryChart");
-  const labels = farm.categories.map((category) => category.name);
-  const data = farm.categories.map((category) => category.quantity);
-
-  if (!hasPositiveData(data)) {
-    if (state.charts.inventory) {
-      state.charts.inventory.destroy();
-      state.charts.inventory = null;
-    }
-    drawChartFallback("inventoryChart", "Sem estoque para distribuir por categoria.");
-    return;
-  }
-
+function renderInventoryRankedList(farm) {
   if (state.charts.inventory) {
     state.charts.inventory.destroy();
+    state.charts.inventory = null;
   }
 
-  state.charts.inventory = new Chart(context, {
-    type: "doughnut",
-    data: {
-      labels,
-      datasets: [{
-        data,
-        backgroundColor: labels.map((_, index) => createRadialColor(context, COLORS[index % COLORS.length], index)),
-        borderWidth: 0,
-        hoverOffset: 12
-      }]
-    },
-    options: {
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: "bottom",
-          labels: {
-            usePointStyle: true,
-            boxWidth: 10,
-            padding: 16
-          }
-        },
-        tooltip: {
-          callbacks: {
-            label(chartContext) {
-              const total = chartContext.dataset.data.reduce((sum, value) => sum + value, 0) || 1;
-              const share = ((chartContext.raw / total) * 100).toFixed(1);
-              return `${chartContext.label}: ${formatInteger(chartContext.raw)} (${share}%)`;
-            }
-          }
-        }
-      },
-      cutout: "58%"
-    },
-    plugins: [centerTextPlugin(() => {
-      const dominantCategory = getDominantCategory(farm);
-      return {
-        title: dominantCategory ? formatInteger(dominantCategory.quantity) : "0",
-        subtitle: dominantCategory ? dominantCategory.name : "Sem dados"
-      };
-    })]
-  });
+  const container = document.getElementById("inventoryChart");
+  if (!container) return;
+
+  const categories = [...farm.categories]
+    .filter((cat) => Number(cat.quantity || 0) > 0)
+    .sort((a, b) => b.quantity - a.quantity);
+
+  const total = categories.reduce((sum, cat) => sum + Number(cat.quantity || 0), 0) || 1;
+
+  if (!categories.length) {
+    container.innerHTML = `<p class="chart-fallback-msg">Sem estoque para distribuir por categoria.</p>`;
+    return;
+  }
+
+  container.innerHTML = categories.map((cat, index) => {
+    const pct = ((cat.quantity / total) * 100).toFixed(1);
+    const color = COLORS[index % COLORS.length];
+    return `
+      <div class="inv-ranked-row">
+        <div class="inv-ranked-bar" style="width:${pct}%"></div>
+        <span class="inv-ranked-dot" style="background:${color}"></span>
+        <span class="inv-ranked-name">${escapeHtml(cat.name)}</span>
+        <strong class="inv-ranked-qty">${formatInteger(cat.quantity)}</strong>
+        <span class="inv-ranked-pct">${pct}%</span>
+      </div>
+    `;
+  }).join("");
 }
 
 function renderMovementChart(farm) {
@@ -3995,6 +3981,7 @@ function openMovementDialog(initialType) {
   syncMovementFarmOptions();
   syncMovementTypeOptions(initialType);
   syncMovementCategoryOptionsForFarm(getMovementDialogFarm());
+  syncMovementPotreirosOptions();
   elements.movementDate.value = new Date().toISOString().slice(0, 10);
   elements.movementQuantity.value = "";
   elements.adjustDirection.value = "add";
@@ -4364,6 +4351,20 @@ function updateMovementFormForType(type) {
   const typeMeta = MOVEMENT_TYPES.find((item) => item.value === type);
   elements.movementDialogTitle.textContent = typeMeta ? `Registrar ${typeMeta.label.toLowerCase()}` : "Registrar movimentação";
   elements.adjustDirectionWrap.hidden = type !== "ajuste";
+  const isTransfer = type === "transferencia";
+  const isExit = typeMeta?.direction === -1;
+  if (elements.movementPotreiroWrap) {
+    elements.movementPotreiroWrap.hidden = false;
+    if (elements.movementPotreiroLabel) {
+      elements.movementPotreiroLabel.textContent = (isExit || isTransfer) ? "Potreiro de origem" : "Potreiro de destino";
+    }
+  }
+  if (elements.movementPotreirowDestWrap) {
+    elements.movementPotreirowDestWrap.hidden = !isTransfer;
+  }
+  // hide quantity/value for transfer (keep notes)
+  if (elements.movementValueWrap) elements.movementValueWrap.hidden = isTransfer;
+  syncMovementPotreirosOptions();
   const isSale = type === "venda";
   const isPremiumFarm = isPremiumSaleFarm(farm);
 
@@ -4429,10 +4430,74 @@ function syncMovementCategoryOptionsForFarm(farm) {
   elements.movementCategory.innerHTML = farm.categories.map((category) => `
     <option value="${category.id}">${escapeHtml(category.name)}</option>
   `).join("");
+  syncMovementPotreirosOptions();
 }
 
 function syncCategoryOptions() {
   syncMovementCategoryOptionsForFarm(getMovementDialogFarm());
+}
+
+function syncMovementPotreirosOptions() {
+  if (!elements.movementPotreiro) return;
+  const farm = getMovementDialogFarm();
+  const type = elements.movementType?.value;
+  if (!farm || !type) return;
+
+  const typeMeta = MOVEMENT_TYPES.find((t) => t.value === type);
+  const isExit = typeMeta?.direction === -1;
+  const isTransfer = type === "transferencia";
+  const potreiros = getPotreroEntries(farm);
+  const categoryId = elements.movementCategory?.value;
+  const category = farm.categories.find((c) => c.id === categoryId);
+  const alloc = category?.allocation || {};
+
+  const unallocatedQty = Number(alloc[UNALLOCATED_POTREIRO_KEY] || 0);
+  const unallocatedLabel = isExit || isTransfer
+    ? `Sem potreiro (${formatInteger(unallocatedQty)} animais)`
+    : "Sem potreiro (padrão)";
+
+  const potreroOptions = [
+    `<option value="${UNALLOCATED_POTREIRO_KEY}">${unallocatedLabel}</option>`,
+    ...potreiros.map((p) => {
+      const qty = Number(alloc[p.id] || 0);
+      const label = (isExit || isTransfer)
+        ? `${escapeHtml(p.name)} (${formatInteger(qty)} animais)`
+        : escapeHtml(p.name);
+      return `<option value="${escapeHtml(p.id)}">${label}</option>`;
+    })
+  ].join("");
+
+  elements.movementPotreiro.innerHTML = potreroOptions;
+
+  if (elements.movementPotreiroDest) {
+    elements.movementPotreiroDest.innerHTML = [
+      `<option value="${UNALLOCATED_POTREIRO_KEY}">Sem potreiro</option>`,
+      ...potreiros.map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`)
+    ].join("");
+  }
+}
+
+function ensureCategoryAllocation(category) {
+  if (!category.allocation || typeof category.allocation !== "object") {
+    category.allocation = { [UNALLOCATED_POTREIRO_KEY]: Number(category.quantity || 0) };
+  }
+}
+
+function updatePotreroQuantitiesFromAllocation(farm) {
+  const totals = {};
+  farm.categories.forEach((cat) => {
+    const alloc = cat.allocation || {};
+    Object.entries(alloc).forEach(([potreirosId, qty]) => {
+      if (potreirosId !== UNALLOCATED_POTREIRO_KEY) {
+        totals[potreirosId] = (totals[potreirosId] || 0) + Number(qty || 0);
+      }
+    });
+  });
+  farm.potreiros.forEach((p) => {
+    if (totals[p.id] !== undefined) {
+      p.quantity = totals[p.id];
+    }
+  });
 }
 
 function syncSanitaryFormOptions() {
@@ -4531,6 +4596,48 @@ async function handleMovementSubmit(event) {
   let value = Number(elements.movementValue.value || 0);
   let saleDetails = null;
 
+  // Handle transfer between potreiros (no stock change, only reallocation)
+  if (type === "transferencia") {
+    if (!category || !date || !quantity || quantity < 1) return;
+    const originId = elements.movementPotreiro?.value || UNALLOCATED_POTREIRO_KEY;
+    const destId = elements.movementPotreiroDest?.value || UNALLOCATED_POTREIRO_KEY;
+    if (originId === destId) {
+      alert("Selecione potreiros de origem e destino diferentes para a transferência.");
+      return;
+    }
+    ensureCategoryAllocation(category);
+    const originQty = Number(category.allocation[originId] || 0);
+    if (originQty < quantity) {
+      const originName = originId === UNALLOCATED_POTREIRO_KEY ? "Sem potreiro" : (farm.potreiros.find((p) => p.id === originId)?.name || originId);
+      alert(`Apenas ${formatInteger(originQty)} animais estão alocados em "${originName}" para essa categoria.`);
+      return;
+    }
+    category.allocation[originId] = originQty - quantity;
+    category.allocation[destId] = (Number(category.allocation[destId] || 0)) + quantity;
+    updatePotreroQuantitiesFromAllocation(farm);
+    farm.movements.push({
+      id: createMovementId(),
+      type: "transferencia",
+      date,
+      categoryId,
+      categoryName: category.name,
+      quantity,
+      delta: 0,
+      value: 0,
+      saleDetails: null,
+      notes,
+      potreiro: originId,
+      potreiroDest: destId,
+      photos: []
+    });
+    saveData();
+    populateYearFilter();
+    resetMovementPhotoDrafts();
+    elements.movementDialog.close();
+    render();
+    return;
+  }
+
   if (!category || !date || !quantity || quantity < 1) {
     return;
   }
@@ -4563,7 +4670,19 @@ async function handleMovementSubmit(event) {
     return;
   }
 
+  const selectedPotreiro = (!elements.movementPotreiroWrap?.hidden && elements.movementPotreiro?.value)
+    ? elements.movementPotreiro.value
+    : UNALLOCATED_POTREIRO_KEY;
+
+  ensureCategoryAllocation(category);
   category.quantity += delta;
+  if (delta > 0) {
+    category.allocation[selectedPotreiro] = (Number(category.allocation[selectedPotreiro] || 0)) + quantity;
+  } else if (delta < 0) {
+    category.allocation[selectedPotreiro] = Math.max(0, (Number(category.allocation[selectedPotreiro] || 0)) - quantity);
+  }
+  updatePotreroQuantitiesFromAllocation(farm);
+
   farm.movements.push({
     id: createMovementId(),
     type,
@@ -4575,6 +4694,7 @@ async function handleMovementSubmit(event) {
     value,
     saleDetails,
     notes,
+    potreiro: selectedPotreiro,
     photos: movementTypeSupportsPhotos(type) ? runtime.movementPhotoDrafts.map((photo) => ({ ...photo })) : []
   });
 
@@ -4829,11 +4949,12 @@ function summarizePeriod(farm, year, month) {
   const summary = {
     totalMovements: 0,
     netChange: 0,
+    saldo: 0,
     totalValue: 0,
     adjustPositive: 0,
     adjustNegative: 0,
     saleValue: 0,
-    byType: { compra: 0, venda: 0, consumo: 0, nascimento: 0, morte: 0, ajuste: 0 }
+    byType: { compra: 0, venda: 0, consumo: 0, nascimento: 0, morte: 0, ajuste: 0, transferencia: 0 }
   };
 
   farm.movements.forEach((movement) => {
@@ -4861,7 +4982,14 @@ function summarizePeriod(farm, year, month) {
         summary.adjustNegative += Math.abs(movement.delta);
       }
     }
+    if (movement.type === "transferencia") {
+      summary.byType.transferencia += movement.quantity;
+      summary.totalMovements -= 1; // don't count transfers as stock movements
+    }
   });
+
+  summary.saldo = summary.byType.compra + summary.byType.nascimento + summary.adjustPositive
+    - summary.byType.venda - summary.byType.consumo - summary.byType.morte - summary.adjustNegative;
 
   return summary;
 }
@@ -5671,6 +5799,11 @@ function ensureDataShape(data, options = {}) {
     STANDARD_FARM_CATEGORIES.forEach((template) => {
       if (!farm.categories.some((category) => category.id === template.id)) {
         farm.categories.push({ ...template, quantity: 0 });
+      }
+    });
+    farm.categories.forEach((category) => {
+      if (!category.allocation || typeof category.allocation !== "object") {
+        category.allocation = { [UNALLOCATED_POTREIRO_KEY]: Number(category.quantity || 0) };
       }
     });
     farm.sanitaryRecords = farm.sanitaryRecords.map((record) => ({

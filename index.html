@@ -194,7 +194,7 @@
               <h2>Distribuição por categoria</h2>
             </div>
           </div>
-          <canvas id="inventoryChart" aria-label="Gráfico do estoque atual"></canvas>
+          <div id="inventoryChart" class="inventory-ranked-list" aria-label="Distribuição do estoque por categoria"></div>
           </article>
 
           <article class="panel chart-panel">
@@ -490,6 +490,14 @@
         <label>
           Quantidade
           <input type="number" id="movementQuantity" min="1" step="1" required>
+        </label>
+        <label id="movementPotreiroWrap">
+          <span id="movementPotreiroLabel">Potreiro de destino</span>
+          <select id="movementPotreiro"></select>
+        </label>
+        <label id="movementPotreirowDestWrap" hidden>
+          Potreiro de destino
+          <select id="movementPotreiroDest"></select>
         </label>
         <label id="adjustDirectionWrap" hidden>
           Direção do ajuste
