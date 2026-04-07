@@ -8,8 +8,10 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || "painel-pecuario-secret-2026";
 
+const isExternal = (process.env.DATABASE_URL || "").includes(".render.com");
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  ssl: isExternal ? { rejectUnauthorized: false } : false,
   connectionTimeoutMillis: 15000,
   max: 10,
 });
