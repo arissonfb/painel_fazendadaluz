@@ -287,7 +287,56 @@ const IMPORTED_MONTHLY_RECORDS = {
     { sourceId: "pdf-2025-10-sarandi-comercial-compras", period: "2025-10", category: "comercial", title: "Compras registradas no relatório", quantity: 74, value: 242155.3, notes: "09/10: 23 bois (71112,50). 21/10: 20 bois (73371,90), 21 bois (73371,90) e 10 terneiros (24299)." },
     { sourceId: "pdf-2025-10-sarandi-comercial-vendas", period: "2025-10", category: "comercial", title: "Vendas registradas no relatório", quantity: 16, value: 91077, notes: "21/10: venda de 16 bois." },
     { sourceId: "pdf-2025-11-sarandi-estoque-bovino", period: "2025-11", category: "estoque", title: "Saldo bovino do relatório", quantity: 269, value: 0, notes: "Novembro/2025: saldo bovino consolidado do relatório mensal." },
-    { sourceId: "pdf-2025-11-sarandi-estoque-ovino", period: "2025-11", category: "estoque", title: "Saldo ovino do relatório", quantity: 156, value: 0, notes: "Novembro/2025: saldo ovino consolidado do relatório mensal." }
+    { sourceId: "pdf-2025-11-sarandi-estoque-ovino", period: "2025-11", category: "estoque", title: "Saldo ovino do relatório", quantity: 156, value: 0, notes: "Novembro/2025: saldo ovino consolidado do relatório mensal." },
+    { sourceId: "pdf-2025-12-sarandi-estoque-bovino", period: "2025-12", category: "estoque", title: "Saldo bovino do relatório", quantity: 348, value: 0, notes: "Dezembro/2025: bois (348). Compra 80 cabeças no mês." },
+    { sourceId: "pdf-2025-12-sarandi-comercial-compras", period: "2025-12", category: "comercial", title: "Compras registradas no relatório", quantity: 80, value: 0, notes: "Dez/2025: compra de 80 bois." },
+    { sourceId: "pdf-2026-01-sarandi-estoque-bovino", period: "2026-01", category: "estoque", title: "Saldo bovino do relatório", quantity: 229, value: 0, notes: "Janeiro/2026: bois (229). Venda 119 cabeças." },
+    { sourceId: "pdf-2026-01-sarandi-comercial-vendas", period: "2026-01", category: "comercial", title: "Vendas registradas no relatório", quantity: 119, value: 0, notes: "Jan/2026: venda de 119 bois." },
+    { sourceId: "pdf-2026-02-sarandi-estoque-bovino", period: "2026-02", category: "estoque", title: "Saldo bovino do relatório", quantity: 298, value: 0, notes: "Fevereiro/2026: bois (298). Venda 61, compra 130." },
+    { sourceId: "pdf-2026-02-sarandi-comercial-vendas", period: "2026-02", category: "comercial", title: "Vendas registradas no relatório", quantity: 61, value: 0, notes: "Fev/2026: venda de 61 bois." },
+    { sourceId: "pdf-2026-02-sarandi-comercial-compras", period: "2026-02", category: "comercial", title: "Compras registradas no relatório", quantity: 130, value: 0, notes: "Fev/2026: compra de 130 bois." },
+    { sourceId: "pdf-2026-03-sarandi-estoque-bovino", period: "2026-03", category: "estoque", title: "Saldo bovino do relatório", quantity: 310, value: 0, notes: "Março/2026: bois (310). Compra 12 cabeças." },
+    { sourceId: "pdf-2026-03-sarandi-comercial-compras", period: "2026-03", category: "comercial", title: "Compras registradas no relatório", quantity: 12, value: 0, notes: "Mar/2026: compra de 12 bois." }
+  ]
+};
+
+// Registros mensais estendidos dez/25 a mar/26 (todos inseridos no array de cada fazenda acima por spread)
+const EXTENDED_MONTHLY_RECORDS = {
+  arapey: [
+    { sourceId: "pdf-2025-12-arapey-estoque-bovino", period: "2025-12", category: "estoque", title: "Saldo bovino do relatório", quantity: 3968, value: 0, notes: "Dezembro/2025: saldo bovino consolidado. Compra 857 terneiros 0-1 e 25 touros novos." },
+    { sourceId: "pdf-2025-12-arapey-comercial-compras", period: "2025-12", category: "comercial", title: "Compras registradas", quantity: 882, value: 0, notes: "Dez/2025: 857 terneiros 0-1 + 25 touros." },
+    { sourceId: "pdf-2026-01-arapey-estoque-bovino", period: "2026-01", category: "estoque", title: "Saldo bovino do relatório", quantity: 3960, value: 0, notes: "Janeiro/2026: saldo 3960. Venda 100 bois." },
+    { sourceId: "pdf-2026-01-arapey-comercial-vendas", period: "2026-01", category: "comercial", title: "Vendas registradas", quantity: 100, value: 0, notes: "Jan/2026: venda de 100 bois." },
+    { sourceId: "pdf-2026-02-arapey-estoque-bovino", period: "2026-02", category: "estoque", title: "Saldo bovino do relatório", quantity: 3852, value: 0, notes: "Fevereiro/2026: saldo 3852. Venda 58 bois. Mortes: 2 vacas prenhas, 2 terneiros machos, 1 touro." },
+    { sourceId: "pdf-2026-02-arapey-comercial-vendas", period: "2026-02", category: "comercial", title: "Vendas registradas", quantity: 58, value: 0, notes: "Fev/2026: venda de 58 bois." },
+    { sourceId: "pdf-2026-03-arapey-estoque-bovino", period: "2026-03", category: "estoque", title: "Saldo bovino do relatório", quantity: 3789, value: 0, notes: "Março/2026: saldo 3789. Sem vendas. Sem compras." }
+  ],
+  chiquita: [
+    { sourceId: "pdf-2025-12-chiquita-estoque-bovino", period: "2025-12", category: "estoque", title: "Saldo bovino do relatório", quantity: 3562, value: 0, notes: "Dezembro/2025: saldo 3562. Vendas: 130 novilhos, 26 bois Fernando. Compra: 52 terneiros Fernando." },
+    { sourceId: "pdf-2025-12-chiquita-comercial-vendas", period: "2025-12", category: "comercial", title: "Vendas registradas", quantity: 156, value: 0, notes: "Dez/2025: 130 novilhos + 26 bois Fernando." },
+    { sourceId: "pdf-2025-12-chiquita-comercial-compras", period: "2025-12", category: "comercial", title: "Compras registradas", quantity: 52, value: 0, notes: "Dez/2025: 52 terneiros Fernando." },
+    { sourceId: "pdf-2026-01-chiquita-estoque-bovino", period: "2026-01", category: "estoque", title: "Saldo bovino do relatório", quantity: 3403, value: 0, notes: "Janeiro/2026: saldo 3403. Vendas: 126 novilhos 1-2, 30 bois Fernando, 86 terneiros Fernando." },
+    { sourceId: "pdf-2026-01-chiquita-comercial-vendas", period: "2026-01", category: "comercial", title: "Vendas registradas", quantity: 242, value: 0, notes: "Jan/2026: 126 novilhos + 30 bois Fernando + 86 terneiros Fernando." },
+    { sourceId: "pdf-2026-02-chiquita-estoque-bovino", period: "2026-02", category: "estoque", title: "Saldo bovino do relatório", quantity: 3743, value: 0, notes: "Fevereiro/2026: saldo 3743. Mortes: 5 terneiros machos, 5 terneiras, 3 novilhos. Compras: 78 bois Fernando, 119 terneiros Fernando." },
+    { sourceId: "pdf-2026-02-chiquita-comercial-compras", period: "2026-02", category: "comercial", title: "Compras registradas", quantity: 197, value: 0, notes: "Fev/2026: 78 bois Fernando + 119 terneiros Fernando." },
+    { sourceId: "pdf-2026-03-chiquita-estoque-bovino", period: "2026-03", category: "estoque", title: "Saldo bovino do relatório", quantity: 3743, value: 0, notes: "Março/2026: saldo 3743. Sem movimentações." }
+  ],
+  "passa-da-guarda": [
+    { sourceId: "pdf-2025-12-passa-da-guarda-estoque-bovino", period: "2025-12", category: "estoque", title: "Saldo bovino do relatório", quantity: 1524, value: 0, notes: "Dezembro/2025: saldo 1524. Vendas: 38 vacas invernar, 15 bois. Compra 45 bois." },
+    { sourceId: "pdf-2025-12-passa-da-guarda-comercial-vendas", period: "2025-12", category: "comercial", title: "Vendas registradas", quantity: 53, value: 0, notes: "Dez/2025: 38 vacas invernar + 15 bois." },
+    { sourceId: "pdf-2025-12-passa-da-guarda-comercial-compras", period: "2025-12", category: "comercial", title: "Compras registradas", quantity: 45, value: 0, notes: "Dez/2025: 45 bois." },
+    { sourceId: "pdf-2026-01-passa-da-guarda-estoque-bovino", period: "2026-01", category: "estoque", title: "Saldo bovino do relatório", quantity: 1499, value: 0, notes: "Janeiro/2026: saldo 1499. Vendas: 10 vacas prenhas, 5 vacas invernar, 10 bois." },
+    { sourceId: "pdf-2026-01-passa-da-guarda-comercial-vendas", period: "2026-01", category: "comercial", title: "Vendas registradas", quantity: 25, value: 0, notes: "Jan/2026: 10 vacas prenhas + 5 vacas invernar + 10 bois." },
+    { sourceId: "pdf-2026-02-passa-da-guarda-estoque-bovino", period: "2026-02", category: "estoque", title: "Saldo bovino do relatório", quantity: 1499, value: 0, notes: "Fevereiro/2026: saldo 1499. Sem movimentações." },
+    { sourceId: "pdf-2026-03-passa-da-guarda-estoque-bovino", period: "2026-03", category: "estoque", title: "Saldo bovino do relatório", quantity: 1498, value: 0, notes: "Março/2026: saldo 1498. Morte: 1 vaquillona 1-2." }
+  ],
+  colorado: [
+    { sourceId: "pdf-2025-12-colorado-estoque-bovino", period: "2025-12", category: "estoque", title: "Saldo bovino do relatório", quantity: 467, value: 0, notes: "Dezembro/2025: saldo 467. Vendas: 125 bois. Compras: 25 bois, 78 vaquillonas. Morte: 1 vaca solteira." },
+    { sourceId: "pdf-2025-12-colorado-comercial-vendas", period: "2025-12", category: "comercial", title: "Vendas registradas", quantity: 125, value: 0, notes: "Dez/2025: 125 bois." },
+    { sourceId: "pdf-2025-12-colorado-comercial-compras", period: "2025-12", category: "comercial", title: "Compras registradas", quantity: 103, value: 0, notes: "Dez/2025: 25 bois + 78 vaquillonas." },
+    { sourceId: "pdf-2026-01-colorado-estoque-bovino", period: "2026-01", category: "estoque", title: "Saldo bovino do relatório", quantity: 467, value: 0, notes: "Janeiro/2026: saldo 467. Sem movimentações." },
+    { sourceId: "pdf-2026-02-colorado-estoque-bovino", period: "2026-02", category: "estoque", title: "Saldo bovino do relatório", quantity: 467, value: 0, notes: "Fevereiro/2026: saldo 467. Sem movimentações. Vacas solteiras aumentaram (185)." },
+    { sourceId: "pdf-2026-03-colorado-estoque-bovino", period: "2026-03", category: "estoque", title: "Saldo bovino do relatório", quantity: 467, value: 0, notes: "Março/2026: saldo 467. Sem movimentações." }
   ]
 };
 
@@ -411,12 +460,15 @@ const elements = {
   visualHerdGrid: document.getElementById("visualHerdGrid"),
   globalSummaryGrid: document.getElementById("globalSummaryGrid"),
   globalFarmBreakdown: document.getElementById("globalFarmBreakdown"),
+  globalCategoryBreakdown: document.getElementById("globalCategoryBreakdown"),
   globalPanelKicker: document.getElementById("globalPanelKicker"),
   globalPanelTitle: document.getElementById("globalPanelTitle"),
   globalPanelChip: document.getElementById("globalPanelChip"),
   monthlySummaryGrid: document.getElementById("monthlySummaryGrid"),
   monthlyProtocolList: document.getElementById("monthlyProtocolList"),
   monthlyProtocolCount: document.getElementById("monthlyProtocolCount"),
+  monthlyProtocolSection: document.getElementById("monthlyProtocolSection"),
+  monthlySummarySection: document.getElementById("monthlySummarySection"),
   summaryGrid: document.getElementById("summaryGrid"),
   periodSummary: document.getElementById("periodSummary"),
   salesSummarySection: document.getElementById("salesSummary")?.closest("section") || null,
@@ -425,6 +477,7 @@ const elements = {
   salesTableBody: document.getElementById("salesTableBody"),
   monthlyCategoryPanel: document.getElementById("monthlyCategoryChart")?.closest("article") || null,
   movementsTableBody: document.getElementById("movementsTableBody"),
+  movementsTableHead: document.getElementById("movementsTableHead"),
   discrepancyNote: document.getElementById("discrepancyNote"),
   insightList: document.getElementById("insightList"),
   heroFarmName: document.getElementById("heroFarmName"),
@@ -434,6 +487,8 @@ const elements = {
   movementDialog: document.getElementById("movementDialog"),
   movementDialogTitle: document.getElementById("movementDialogTitle"),
   movementForm: document.getElementById("movementForm"),
+  movementFarm: document.getElementById("movementFarm"),
+  movementFarmWrap: document.getElementById("movementFarmWrap"),
   movementType: document.getElementById("movementType"),
   movementDate: document.getElementById("movementDate"),
   movementCategory: document.getElementById("movementCategory"),
@@ -1324,6 +1379,11 @@ function bindEvents() {
     render();
   });
 
+  elements.movementFarm.addEventListener("change", () => {
+    syncMovementCategoryOptionsForFarm(getMovementDialogFarm());
+    updateSaleFieldVisibility();
+  });
+
   elements.movementType.addEventListener("change", () => {
     updateMovementFormForType(elements.movementType.value);
   });
@@ -1533,16 +1593,99 @@ function renderOverviewPanel() {
 
   elements.globalFarmBreakdown.innerHTML = farms.map((farm) => {
     const movements = summarizePeriod(farm, state.filters.year, state.filters.month);
+    const potreiros = getPotreroTotals(farm);
+    const allocated = getRegisteredPotreroAnimals(farm);
+    const total = getFarmTotal(farm);
+    const balance = total - allocated;
+    const potreirosHtml = potreiros.length
+      ? potreiros.map((p) => `<span class="farm-card-potreiro"><strong>${formatInteger(p.quantity)}</strong> ${escapeHtml(p.name)}</span>`).join("")
+      : `<span class="farm-card-potreiro muted">Sem potreiros cadastrados</span>`;
+    const saldoClass = balance === 0 ? "ok" : balance > 0 ? "warn" : "err";
     return `
       <article class="global-farm-card">
-        <p class="panel-kicker">${escapeHtml(farm.name)}</p>
-        <strong>${formatInteger(getFarmTotal(farm))}</strong>
-        <p>Declarado ${formatInteger(Number(farm.declaredTotal || 0))} | Potreiros ${formatInteger(getRegisteredPotreroAnimals(farm))}</p>
-        <p>Compra ${formatInteger(movements.byType.compra)} | Venda ${formatInteger(movements.byType.venda)}</p>
-        <span>${formatInteger(getFilteredMonthlyRecords(farm).length)} dado(s) mensais no recorte</span>
+        <div class="farm-card-header">
+          <div>
+            <p class="panel-kicker">${escapeHtml(farm.name)}</p>
+            <strong class="farm-card-total">${formatInteger(total)}</strong>
+          </div>
+          <div class="farm-card-chips">
+            <span class="chip chip-entry">+${formatInteger(movements.byType.compra + movements.byType.nascimento)} ent.</span>
+            <span class="chip chip-exit">-${formatInteger(movements.byType.venda + movements.byType.morte + movements.byType.consumo)} saí.</span>
+          </div>
+        </div>
+        <div class="farm-card-flow">
+          <div class="farm-card-flow-item"><span>Compras</span><strong>${formatInteger(movements.byType.compra)}</strong></div>
+          <div class="farm-card-flow-item"><span>Nascimentos</span><strong>${formatInteger(movements.byType.nascimento)}</strong></div>
+          <div class="farm-card-flow-item"><span>Vendas</span><strong>${formatInteger(movements.byType.venda)}</strong></div>
+          <div class="farm-card-flow-item"><span>Mortes</span><strong>${formatInteger(movements.byType.morte)}</strong></div>
+        </div>
+        <div class="farm-card-potreiros">
+          <p class="farm-card-potreiros-label">Campos / Potreiros <span class="badge badge-${saldoClass}">${balance === 0 ? "completo" : balance > 0 ? `+${formatInteger(balance)} sem campo` : `${formatInteger(Math.abs(balance))} excedente`}</span></p>
+          <div class="farm-card-potreiros-grid">${potreirosHtml}</div>
+        </div>
       </article>
     `;
   }).join("");
+
+  renderConsolidatedCategories(farms, isTotalView);
+}
+
+function renderConsolidatedCategories(farms, isTotalView) {
+  if (!elements.globalCategoryBreakdown) return;
+  elements.globalCategoryBreakdown.hidden = !isTotalView;
+  if (!isTotalView) return;
+
+  const categoryMap = new Map();
+  farms.forEach((farm) => {
+    farm.categories.forEach((cat) => {
+      const key = cat.name.trim().toLowerCase();
+      const existing = categoryMap.get(key);
+      if (existing) {
+        existing.quantity += Number(cat.quantity || 0);
+        existing.farms.add(farm.name);
+      } else {
+        categoryMap.set(key, { name: cat.name, quantity: Number(cat.quantity || 0), farms: new Set([farm.name]) });
+      }
+    });
+  });
+
+  const sorted = [...categoryMap.values()].filter((c) => c.quantity > 0).sort((a, b) => b.quantity - a.quantity);
+  const grandTotal = sorted.reduce((s, c) => s + c.quantity, 0);
+
+  if (!sorted.length) {
+    elements.globalCategoryBreakdown.innerHTML = `<p class="field-note" style="padding:12px 0">Nenhuma categoria com animais no estoque.</p>`;
+    return;
+  }
+
+  elements.globalCategoryBreakdown.innerHTML = `
+    <div class="consolidated-categories-header">
+      <p class="panel-kicker">Estoque por categoria</p>
+      <h3>Consolidado do rebanho — todas as fazendas</h3>
+      <span class="chip">${formatInteger(grandTotal)} animais</span>
+    </div>
+    <div class="consolidated-categories-table">
+      <div class="cat-table-head">
+        <span>Categoria</span>
+        <span>Fazendas</span>
+        <span>Animais</span>
+        <span>% do rebanho</span>
+      </div>
+      ${sorted.map((cat) => {
+        const pct = grandTotal > 0 ? (cat.quantity / grandTotal * 100) : 0;
+        return `
+          <div class="cat-table-row">
+            <span class="cat-name">${escapeHtml(cat.name)}</span>
+            <span class="cat-farms">${[...cat.farms].map(escapeHtml).join(", ")}</span>
+            <strong class="cat-qty">${formatInteger(cat.quantity)}</strong>
+            <span class="cat-pct">
+              <span class="cat-pct-bar" style="width:${Math.min(pct, 100).toFixed(1)}%"></span>
+              <span class="cat-pct-label">${pct.toFixed(1)}%</span>
+            </span>
+          </div>
+        `;
+      }).join("")}
+    </div>
+  `;
 }
 
 function renderHeadlineMetrics(farm) {
@@ -1799,15 +1942,15 @@ function renderMobileFarmDrawer() {
 
 function renderActionButtonsState() {
   const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
-  const farmOnlyButtons = [
-    ...document.querySelectorAll("[data-type]"),
-    elements.adjustButton,
-    elements.addCategoryButton
-  ];
-
+  // movement buttons now work from total view (farm selector shown in dialog)
+  document.querySelectorAll("[data-type]").forEach((button) => {
+    button.disabled = false;
+    button.title = "";
+  });
+  const farmOnlyButtons = [elements.adjustButton, elements.addCategoryButton];
   farmOnlyButtons.forEach((button) => {
     button.disabled = isTotalView;
-    button.title = isTotalView ? "Selecione uma fazenda específica para lançar ou editar este registro." : "";
+    button.title = isTotalView ? "Selecione uma fazenda específica para usar esta função." : "";
   });
   elements.editStockButton.disabled = false;
   elements.editStockButton.title = isTotalView
@@ -1997,26 +2140,53 @@ function renderSalesAnalysis(farm) {
   `).join("");
 }
 
+const MOVEMENT_TYPE_STYLES = {
+  compra: "badge-ok",
+  nascimento: "badge-ok",
+  venda: "badge-exit",
+  morte: "badge-err",
+  consumo: "badge-warn",
+  ajuste: "badge-neutral"
+};
+
 function renderMovementsTable(farm) {
-  const movements = [...farm.movements].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
+  const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
+  if (elements.movementsTableHead) {
+    elements.movementsTableHead.innerHTML = `<tr>${isTotalView ? "<th>Fazenda</th>" : ""}<th>Data</th><th>Tipo</th><th>Categoria</th><th>Qtd.</th><th>Obs.</th></tr>`;
+  }
+  let movements;
+  if (isTotalView) {
+    const allFarms = getAllFarms();
+    movements = allFarms.flatMap((f) => f.movements.map((m) => ({ ...m, _farmName: f.name })));
+  } else {
+    movements = farm.movements.map((m) => ({ ...m, _farmName: farm.name }));
+  }
+  movements = movements.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 15);
+
   if (!movements.length) {
     elements.movementsTableBody.innerHTML = `
       <tr>
-        <td colspan="5" class="table-empty-cell">Ainda não há lançamentos para ${farm.name}. Use os botões acima para iniciar o controle.</td>
+        <td colspan="${isTotalView ? 6 : 5}" class="table-empty-cell">Ainda não há lançamentos. Use os botões acima para iniciar o controle.</td>
       </tr>
     `;
     return;
   }
 
-  elements.movementsTableBody.innerHTML = movements.map((movement) => `
-    <tr>
-      <td data-label="Data">${formatDate(movement.date)}</td>
-      <td data-label="Tipo">${capitalize(movement.type)}</td>
-      <td data-label="Categoria">${escapeHtml(movement.categoryName)}</td>
-      <td data-label="Qtd.">${formatInteger(movement.quantity)}</td>
-      <td data-label="Obs.">${escapeHtml(getMovementNotes(movement))}${getMovementPhotoFlagMarkup(movement)}</td>
-    </tr>
-  `).join("");
+  elements.movementsTableBody.innerHTML = movements.map((movement) => {
+    const badgeClass = MOVEMENT_TYPE_STYLES[movement.type] || "badge-neutral";
+    const deltaSign = movement.delta > 0 ? "+" : "";
+    const farmCell = isTotalView ? `<td data-label="Fazenda"><span class="sanitary-origin manual">${escapeHtml(movement._farmName)}</span></td>` : "";
+    return `
+      <tr>
+        ${farmCell}
+        <td data-label="Data">${formatDate(movement.date)}</td>
+        <td data-label="Tipo"><span class="badge ${badgeClass}">${capitalize(movement.type)}</span></td>
+        <td data-label="Categoria">${escapeHtml(movement.categoryName)}</td>
+        <td data-label="Qtd.">${deltaSign}${formatInteger(movement.quantity)}</td>
+        <td data-label="Obs.">${escapeHtml(getMovementNotes(movement))}${getMovementPhotoFlagMarkup(movement)}</td>
+      </tr>
+    `;
+  }).join("");
 }
 
 function getFilteredSaleMovements(farm, year, month) {
@@ -2272,6 +2442,11 @@ function renderSanitaryComposerState(farm) {
 }
 
 function renderMonthlySummary(farm) {
+  const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
+  if (elements.monthlySummarySection) {
+    elements.monthlySummarySection.hidden = isTotalView;
+  }
+  if (isTotalView) return;
   const summary = getMonthlySummary(farm);
   const cards = [
     {
@@ -2317,6 +2492,11 @@ function renderMonthlySummary(farm) {
 
 function renderMonthlyProtocol(farm) {
   if (!elements.monthlyProtocolList) return;
+  const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
+  if (elements.monthlyProtocolSection) {
+    elements.monthlyProtocolSection.hidden = isTotalView;
+  }
+  if (isTotalView) return;
 
   const records = [...getFilteredMonthlyRecords(farm)].sort((a, b) => {
     if (a.period !== b.period) return a.period < b.period ? 1 : -1;
@@ -3798,14 +3978,23 @@ function renderMonthlyCategoryModernChart(farm) {
   });
 }
 
-function openMovementDialog(initialType) {
-  if (state.data.selectedFarmId === TOTAL_FARM_ID) {
-    alert("Selecione uma fazenda específica para registrar movimentações.");
-    return;
-  }
+function syncMovementFarmOptions() {
+  const farms = getAllFarms();
+  const currentId = state.data.selectedFarmId !== TOTAL_FARM_ID ? state.data.selectedFarmId : (farms[0]?.id || "");
+  elements.movementFarm.innerHTML = farms.map((farm) => `
+    <option value="${escapeHtml(farm.id)}" ${farm.id === currentId ? "selected" : ""}>${escapeHtml(farm.name)}</option>
+  `).join("");
+}
 
+function getMovementDialogFarm() {
+  const farmId = elements.movementFarm?.value;
+  return (farmId && state.data.farms[farmId]) ? state.data.farms[farmId] : getFarm();
+}
+
+function openMovementDialog(initialType) {
+  syncMovementFarmOptions();
   syncMovementTypeOptions(initialType);
-  syncCategoryOptions();
+  syncMovementCategoryOptionsForFarm(getMovementDialogFarm());
   elements.movementDate.value = new Date().toISOString().slice(0, 10);
   elements.movementQuantity.value = "";
   elements.adjustDirection.value = "add";
@@ -4196,7 +4385,7 @@ function updateMovementFormForType(type) {
 }
 
 function updateSaleFieldVisibility() {
-  const farm = getFarm();
+  const farm = getMovementDialogFarm();
   const isSale = elements.movementType.value === "venda";
   const isPremiumFarm = isPremiumSaleFarm(farm);
   const saleMode = isPremiumFarm ? elements.movementSaleMode.value : "vivo";
@@ -4227,7 +4416,7 @@ function updateSaleComputedValue() {
     return;
   }
 
-  const farm = getFarm();
+  const farm = getMovementDialogFarm();
   const saleMode = isPremiumSaleFarm(farm) ? elements.movementSaleMode.value : "vivo";
   const pricePerKg = Number(saleMode === "carcaca" ? elements.movementCarcassPrice.value : elements.movementLivePrice.value);
   const weightKg = Number(saleMode === "carcaca" ? elements.movementCarcassKg.value : elements.movementLiveKg.value);
@@ -4235,11 +4424,15 @@ function updateSaleComputedValue() {
   elements.movementValue.value = total > 0 ? total.toFixed(2) : "";
 }
 
-function syncCategoryOptions() {
-  const farm = getFarm();
+function syncMovementCategoryOptionsForFarm(farm) {
+  if (!farm) return;
   elements.movementCategory.innerHTML = farm.categories.map((category) => `
     <option value="${category.id}">${escapeHtml(category.name)}</option>
   `).join("");
+}
+
+function syncCategoryOptions() {
+  syncMovementCategoryOptionsForFarm(getMovementDialogFarm());
 }
 
 function syncSanitaryFormOptions() {
@@ -4323,7 +4516,11 @@ function updateSanitaryPotreroMode() {
 
 async function handleMovementSubmit(event) {
   event.preventDefault();
-  const farm = getFarm();
+  const farm = getMovementDialogFarm();
+  if (!farm || farm.id === TOTAL_FARM_ID) {
+    alert("Selecione uma fazenda específica para registrar movimentações.");
+    return;
+  }
   const type = elements.movementType.value;
   const quantity = Number(elements.movementQuantity.value);
   const adjustDirection = elements.adjustDirection.value;
@@ -5540,7 +5737,13 @@ function ensureDataShape(data, options = {}) {
       });
     });
 
-    Object.entries(IMPORTED_MONTHLY_RECORDS).forEach(([farmId, records]) => {
+    const allMonthlyRecords = { ...IMPORTED_MONTHLY_RECORDS };
+    Object.entries(EXTENDED_MONTHLY_RECORDS).forEach(([farmId, records]) => {
+      if (!allMonthlyRecords[farmId]) allMonthlyRecords[farmId] = [];
+      allMonthlyRecords[farmId] = [...allMonthlyRecords[farmId], ...records];
+    });
+
+    Object.entries(allMonthlyRecords).forEach(([farmId, records]) => {
       const farm = data.farms[farmId];
       if (!farm) {
         return;
