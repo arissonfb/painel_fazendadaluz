@@ -10,8 +10,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "painel-pecuario-secret-2026";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
-  connectionTimeoutMillis: 10000,
+  connectionTimeoutMillis: 15000,
   max: 10,
 });
 
