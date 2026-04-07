@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel Pecuário | Fazendas Da Luz</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Yrsa:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body class="login-mode">
+  <section class="splash-shell" id="splashShell" aria-label="Tela de abertura">
+    <div class="splash-landscape">
+      <div class="splash-card">
+        <img src="./assets/logo-da-luz.jpg" alt="Logo Da Luz" class="splash-logo">
+        <span class="splash-kicker">Estabelecimentos Da Luz</span>
+        <strong class="splash-title">Painel Pecuário</strong>
+        <p class="splash-text">Clique ou toque na tela para continuar.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="auth-shell" id="authShell">
+    <div class="auth-card">
+      <div class="auth-visual-panel">
+        <div class="brand-badge">
+          <img src="./assets/logo-da-luz.jpg" alt="Logo Da Luz" class="brand-logo">
+          <div class="brand-copy">
+            <span>Estabelecimentos</span>
+            <strong>Da Luz</strong>
+          </div>
+        </div>
+        <div class="auth-angus-frame">
+          <img src="./assets/angus-login.svg" alt="Rosto 3D de Angus em destaque" class="auth-angus-image">
+        </div>
+      </div>
+
+      <div class="auth-copy-panel">
+        <p class="eyebrow">Acesso ao painel</p>
+        <h1>Entrar no sistema</h1>
+        <p class="hero-text auth-text">
+          Use seu login e senha para acessar o painel das fazendas. O acesso inicial já vem configurado para a equipe Da Luz.
+        </p>
+
+        <form id="loginForm" class="auth-form">
+          <label>
+            Login
+            <input type="text" id="loginUsername" autocomplete="username" required>
+          </label>
+          <label>
+            Senha
+            <input type="password" id="loginPassword" autocomplete="current-password" required>
+          </label>
+          <p class="auth-feedback" id="loginFeedback" hidden></p>
+          <button type="submit" class="action-btn purchase auth-submit">Entrar</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <div class="page-shell" id="pageShell" hidden>
+    <div class="app-layout">
+      <aside class="sidebar">
+        <div class="sidebar-brand">
+          <div class="brand-badge">
+            <img src="./assets/logo-da-luz.jpg" alt="Logo Da Luz" class="brand-logo">
+            <div class="brand-copy">
+              <span>Estabelecimentos</span>
+              <strong>Da Luz</strong>
+            </div>
+          </div>
+          <p class="eyebrow">Navegação</p>
+          <h2>Painel pecuário</h2>
+          <p class="sidebar-text">Acesse o consolidado total, entre em cada fazenda e navegue pelos registros com menos rolagem e mais contexto visual.</p>
+        </div>
+
+        <div class="sidebar-section">
+          <span class="sidebar-label">Fazendas</span>
+          <div class="farm-switch sidebar-switch" id="farmSwitch"></div>
+        </div>
+
+        <div class="sidebar-section">
+          <span class="sidebar-label">Acesso rápido</span>
+          <button type="button" class="sidebar-shortcut" id="sanitaryShortcut">Sanitário</button>
+          <button type="button" class="sidebar-shortcut" id="potreirosShortcut">Potreiros</button>
+          <button type="button" class="sidebar-shortcut" id="manageUsersButton">Usuários</button>
+          <button type="button" class="sidebar-shortcut backup-btn" id="backupButton">Backup dos dados</button>
+          <button type="button" class="sidebar-shortcut subtle" id="restoreButton">Restaurar backup</button>
+          <input type="file" id="restoreFileInput" accept=".json" hidden>
+          <button type="button" class="sidebar-shortcut subtle" id="logoutButton">Sair</button>
+        </div>
+
+        <div class="sidebar-credit">
+          <span class="sidebar-label">Contato</span>
+          <p>Desenvolvido por: &Aacute;risson Fernandes Balbuena</p>
+          <a href="https://wa.me/5551997111561" target="_blank" rel="noopener noreferrer">Whatsapp 51 997111561</a>
+        </div>
+      </aside>
+
+      <div class="app-main">
+        <section class="topbar">
+          <div class="topbar-copy">
+            <p class="eyebrow">Gestão pecuária</p>
+            <strong>Painel de leitura por fazenda e consolidado</strong>
+          </div>
+          <div class="topbar-side">
+            <div class="period-controls">
+              <label>
+                Ano
+                <select id="yearFilter"></select>
+              </label>
+              <label>
+                Mês
+                <select id="monthFilter">
+                  <option value="all">Ano inteiro</option>
+                </select>
+              </label>
+            </div>
+            <span class="chip" id="currentUserLabel">Usuário</span>
+          </div>
+        </section>
+
+        <header class="hero">
+          <div class="hero-copy">
+            <div class="brand-badge">
+              <img src="./assets/logo-da-luz.jpg" alt="Logo Da Luz" class="brand-logo">
+              <div class="brand-copy">
+                <span>Estabelecimentos</span>
+                <strong>Da Luz</strong>
+              </div>
+            </div>
+            <p class="eyebrow">Gestão do rebanho</p>
+            <h1>Fazendas Da Luz</h1>
+            <p class="hero-text">
+              Controle o estoque de animais, acompanhe movimentações mensais e anuais e gere um PDF executivo para a gestão.
+            </p>
+            <div class="hero-metrics" id="heroMetrics"></div>
+          </div>
+
+          <div class="hero-highlight">
+            <div class="hero-visual">
+              <img src="./assets/herd.svg" alt="Ilustração de rebanho no campo" class="hero-illustration">
+            </div>
+            <div class="hero-highlight-copy">
+              <span class="hero-kicker">Manejo fluido</span>
+              <strong id="heroFarmName">Arapey</strong>
+              <p id="heroFarmNote">Controle inicial carregado com base nas quantidades informadas.</p>
+            </div>
+          </div>
+        </header>
+
+        <main>
+
+      <section class="panel global-panel">
+        <div class="panel-header">
+          <div>
+            <p class="panel-kicker" id="globalPanelKicker">Painel inicial</p>
+            <h2 id="globalPanelTitle">Consolidado das fazendas</h2>
+          </div>
+          <span class="chip" id="globalPanelChip">Grupo Da Luz</span>
+        </div>
+        <section class="summary-grid global-summary-grid" id="globalSummaryGrid"></section>
+        <section class="global-farm-breakdown" id="globalFarmBreakdown"></section>
+      </section>
+
+      <div id="dashboardView">
+        <section class="actions-panel">
+          <div class="action-buttons">
+            <button class="action-btn purchase" data-type="compra">Registrar compra</button>
+            <button class="action-btn sale" data-type="venda">Registrar venda</button>
+            <button class="action-btn neutral" data-type="consumo">Registrar consumo</button>
+            <button class="action-btn birth" data-type="nascimento">Registrar nascimento</button>
+            <button class="action-btn death" data-type="morte">Registrar morte</button>
+            <button class="action-btn secondary" id="monthlyDataButton">Registrar dado mensal</button>
+            <button class="action-btn secondary" id="adjustButton">Ajuste manual</button>
+            <button class="action-btn secondary" id="editStockButton">Editar estoque</button>
+            <button class="action-btn secondary" id="georefButton" hidden>Georreferenciamento</button>
+            <button class="action-btn secondary" id="addCategoryButton">Nova categoria</button>
+            <button class="action-btn pdf" id="exportPdfButton">Gerar PDF</button>
+          </div>
+        </section>
+
+        <section class="summary-grid" id="summaryGrid"></section>
+
+        <section class="visual-herd-grid" id="visualHerdGrid"></section>
+
+        <section class="content-grid content-grid-strong">
+          <article class="panel chart-panel">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">Estoque atual</p>
+              <h2>Distribuição por categoria</h2>
+            </div>
+          </div>
+          <canvas id="inventoryChart" aria-label="Gráfico do estoque atual"></canvas>
+          </article>
+
+          <article class="panel chart-panel">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">Análise anual</p>
+              <h2>Entradas, saídas e saldo</h2>
+            </div>
+          </div>
+          <canvas id="movementChart" aria-label="Gráfico de entradas, saídas e saldo"></canvas>
+          </article>
+
+          <article class="panel chart-panel">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">Ranking produtivo</p>
+              <h2>Maiores lotes do rebanho</h2>
+            </div>
+          </div>
+          <canvas id="rankingChart" aria-label="Gráfico de ranking por categoria"></canvas>
+          </article>
+        </section>
+
+        <section class="content-grid lower-grid">
+          <article class="panel analytics-panel">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">Análise comercial</p>
+              <h2>Vendas por kg e faturamento</h2>
+            </div>
+          </div>
+          <div class="analytics-cards" id="salesSummary"></div>
+          </article>
+        </section>
+
+        <section class="content-grid lower-grid sales-priority-grid">
+          <article class="panel timeline-panel">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">Últimas vendas</p>
+              <h2>Leitura comercial do período</h2>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="sales-table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Categoria</th>
+                  <th>Base</th>
+                  <th>Kg</th>
+                  <th>R$/kg</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody id="salesTableBody"></tbody>
+            </table>
+          </div>
+          </article>
+
+          <article class="panel analytics-panel">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">Fechamento do período</p>
+              <h2>Resumo mensal e anual</h2>
+            </div>
+          </div>
+          <div class="analytics-cards" id="periodSummary"></div>
+          <div class="note-box" id="discrepancyNote"></div>
+          </article>
+        </section>
+
+        <section class="content-grid lower-grid">
+          <article class="panel timeline-panel">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">Movimentações recentes</p>
+              <h2>Lançamentos do rebanho</h2>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Tipo</th>
+                  <th>Categoria</th>
+                  <th>Qtd.</th>
+                  <th>Obs.</th>
+                </tr>
+              </thead>
+              <tbody id="movementsTableBody"></tbody>
+            </table>
+          </div>
+          </article>
+
+          <article class="panel quick-panel">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">Direção operacional</p>
+              <h2>Leituras rápidas para decisão</h2>
+            </div>
+          </div>
+          <div class="insight-list" id="insightList"></div>
+          </article>
+        </section>
+
+        <section class="content-grid lower-grid">
+          <article class="panel analytics-panel">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">Leitura mensal</p>
+              <h2>Números e valores atribuídos</h2>
+            </div>
+          </div>
+          <div class="analytics-cards" id="monthlySummaryGrid"></div>
+          </article>
+
+          <article class="panel chart-panel">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">Evolução anual</p>
+              <h2>Quantidade e valor por mês</h2>
+            </div>
+          </div>
+          <canvas id="monthlyEvolutionChart" aria-label="Gráfico de evolução mensal por quantidade e valor"></canvas>
+          </article>
+        </section>
+
+        <section class="content-grid lower-grid monthly-protocol-section">
+          <article class="panel monthly-protocol-panel">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">Histórico mensal</p>
+              <h2>Protocolos registrados</h2>
+            </div>
+            <span class="chip" id="monthlyProtocolCount">0 registros</span>
+          </div>
+          <div id="monthlyProtocolList"></div>
+          </article>
+        </section>
+
+      </div>
+
+      <div id="sanitaryView" hidden>
+        <section class="panel sanitary-toolbar">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">Manejo sanitário</p>
+              <h2>Registros separados por fazenda</h2>
+            </div>
+          </div>
+          <div class="farm-switch sanitary-switch" id="sanitaryFarmSwitch"></div>
+          <p class="note-box sanitary-view-note" id="sanitaryViewNote"></p>
+        </section>
+
+        <section class="content-grid sanitary-layout">
+          <article class="panel sanitary-form-panel" id="sanitaryFormPanel">
+            <div class="panel-header">
+              <div>
+                <p class="panel-kicker">Manejo sanitário</p>
+                <h2>Novo registro sanitário</h2>
+              </div>
+            </div>
+
+            <form id="sanitaryForm" class="sanitary-form">
+              <input type="hidden" id="sanitaryEditingId">
+              <div class="form-grid">
+                <label>
+                  Data
+                  <input type="date" id="sanitaryDate" required>
+                </label>
+                <label>
+                  Quantidade de animais
+                  <input type="number" id="sanitaryQuantity" min="1" step="1" required>
+                </label>
+                <label>
+                  Categoria
+                  <select id="sanitaryCategory" required></select>
+                </label>
+                <label>
+                  Produto utilizado
+                  <select id="sanitaryProduct" required></select>
+                </label>
+                <label>
+                  Potreiro de destino
+                  <select id="sanitaryPotrero" required></select>
+                </label>
+                <label id="newProductWrap" hidden>
+                  Descreva o produto
+                  <input type="text" id="newProductName" maxlength="80" placeholder="Ex.: Vacina aftosa, Ivermectina 1%, Carrapaticida">
+                </label>
+                <label id="newPotreroWrap" hidden>
+                  Novo potreiro
+                  <input type="text" id="newPotreroName" maxlength="80" placeholder="Ex.: Potreiro Norte">
+                </label>
+                <label class="form-span-2">
+                  Observações
+                  <input type="text" id="sanitaryNotes" maxlength="160" placeholder="Ex.: lote revisado após manejo">
+                </label>
+              </div>
+
+              <div class="modal-actions sanitary-actions">
+                <button type="submit" class="action-btn purchase" id="sanitarySubmitButton">Salvar registro sanitário</button>
+              </div>
+            </form>
+          </article>
+
+          <article class="panel sanitary-summary-panel">
+            <div class="panel-header">
+              <div>
+                <p class="panel-kicker">Consolidado do período</p>
+                <h2>Resumo sanitário</h2>
+              </div>
+            </div>
+            <div class="analytics-cards" id="sanitarySummary"></div>
+          </article>
+        </section>
+
+        <section class="content-grid lower-grid">
+          <article class="panel timeline-panel">
+            <div class="panel-header">
+              <div>
+                <p class="panel-kicker">Aplicações registradas</p>
+                <h2>Histórico sanitário</h2>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="sanitary-table">
+                <thead>
+                  <tr>
+                    <th>Fazenda</th>
+                    <th>Data</th>
+                    <th>Manejo</th>
+                    <th>Destino e produto</th>
+                    <th>Origem</th>
+                    <th>Obs.</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="sanitaryTableBody"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+      </div>
+
+      <div id="potreirosView" hidden>
+        <section class="panel global-panel">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">Lotação dos campos</p>
+              <h2>Distribuição por potreiros</h2>
+            </div>
+            <span class="chip">Todas as fazendas</span>
+          </div>
+          <p class="field-note" style="margin-bottom:18px">Clique em uma fazenda para ver os potreiros e a quantidade de animais em cada campo.</p>
+          <div id="potreirosAccordion"></div>
+        </section>
+      </div>
+        </main>
+      </div>
+    </div>
+  </div>
+
+  <dialog id="movementDialog" class="modal">
+    <form method="dialog" id="movementForm" class="modal-card">
+      <div class="modal-header">
+        <div>
+          <p class="panel-kicker">Novo lançamento</p>
+          <h2 id="movementDialogTitle">Registrar movimentação</h2>
+        </div>
+        <button type="button" class="ghost-btn" id="closeMovementDialog">Fechar</button>
+      </div>
+
+      <div class="form-grid">
+        <label>
+          Tipo
+          <select id="movementType" required></select>
+        </label>
+        <label>
+          Data
+          <input type="date" id="movementDate" required>
+        </label>
+        <label>
+          Categoria
+          <select id="movementCategory" required></select>
+        </label>
+        <label>
+          Quantidade
+          <input type="number" id="movementQuantity" min="1" step="1" required>
+        </label>
+        <label id="adjustDirectionWrap" hidden>
+          Direção do ajuste
+          <select id="adjustDirection">
+            <option value="add">Somar ao estoque</option>
+            <option value="subtract">Retirar do estoque</option>
+          </select>
+        </label>
+        <label id="movementSaleModeWrap" hidden>
+          Base da venda
+          <select id="movementSaleMode">
+            <option value="vivo">Kg vivo</option>
+            <option value="carcaca">Kg carcaça</option>
+          </select>
+        </label>
+        <div class="sale-input-group form-span-2" id="movementLiveFields" hidden>
+          <label>
+            Valor kg vivo
+            <input type="number" id="movementLivePrice" min="0" step="0.01" placeholder="0,00">
+          </label>
+          <label>
+            Kg vivo
+            <input type="number" id="movementLiveKg" min="0" step="0.01" placeholder="0,00">
+          </label>
+        </div>
+        <div class="sale-input-group form-span-2" id="movementCarcassFields" hidden>
+          <label>
+            Valor kg carcaça
+            <input type="number" id="movementCarcassPrice" min="0" step="0.01" placeholder="0,00">
+          </label>
+          <label>
+            Kg carcaça
+            <input type="number" id="movementCarcassKg" min="0" step="0.01" placeholder="0,00">
+          </label>
+        </div>
+        <label class="form-span-2" id="movementSaleHint" hidden>
+          Análise da venda
+          <span class="field-note">O total será calculado automaticamente a partir do valor por kg e do peso informado.</span>
+        </label>
+        <label id="movementValueWrap">
+          <span id="movementValueLabel">Valor total (opcional)</span>
+          <input type="number" id="movementValue" min="0" step="0.01" placeholder="0,00">
+        </label>
+        <label>
+          Observação
+          <input type="text" id="movementNotes" maxlength="120" placeholder="Ex.: lote comprado em leilão">
+        </label>
+        <label class="form-span-2" id="movementPhotoWrap" hidden>
+          Fotos do registro
+          <input type="file" id="movementPhotos" accept="image/*" multiple>
+          <span class="field-note">Disponível para compra, venda e gado morto. Até 6 fotos por lançamento, com impressão automática no PDF.</span>
+        </label>
+        <div class="movement-photo-panel form-span-2" id="movementPhotoPanel" hidden>
+          <div class="movement-photo-header">
+            <div>
+              <p class="panel-kicker">Anexos fotográficos</p>
+              <strong id="movementPhotoCounter">Nenhuma foto anexada.</strong>
+            </div>
+          </div>
+          <div class="movement-photo-grid" id="movementPhotoPreview"></div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="submit" class="action-btn purchase">Salvar lançamento</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="categoryDialog" class="modal">
+    <form method="dialog" id="categoryForm" class="modal-card">
+      <div class="modal-header">
+        <div>
+          <p class="panel-kicker">Estrutura flexível</p>
+          <h2>Adicionar nova categoria</h2>
+        </div>
+        <button type="button" class="ghost-btn" id="closeCategoryDialog">Fechar</button>
+      </div>
+
+      <div class="form-grid">
+        <label>
+          Nome da categoria
+          <input type="text" id="categoryName" maxlength="60" required placeholder="Ex.: Vacas em terminação">
+        </label>
+        <label>
+          Estoque inicial
+          <input type="number" id="categoryInitialQuantity" min="0" step="1" required value="0">
+        </label>
+      </div>
+
+      <div class="modal-actions">
+        <button type="submit" class="action-btn secondary">Adicionar categoria</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="editStockDialog" class="modal">
+    <form method="dialog" id="editStockForm" class="modal-card modal-card-wide">
+      <div class="modal-header">
+        <div>
+          <p class="panel-kicker">Edição direta</p>
+          <h2>Editar estoque, potreiros e total declarado</h2>
+        </div>
+        <button type="button" class="ghost-btn" id="closeEditStockDialog">Fechar</button>
+      </div>
+
+      <div class="form-grid">
+        <label>
+          Fazenda vinculada
+          <select id="editFarmName" required></select>
+        </label>
+        <label>
+          Total declarado da fazenda
+          <input type="number" id="editDeclaredTotal" min="0" step="1" required>
+        </label>
+      </div>
+
+      <div class="edit-stock-list" id="editStockList"></div>
+
+      <section class="edit-stock-section">
+        <div class="panel-header edit-stock-section-header">
+          <div>
+            <p class="panel-kicker">Distribuição por potreiro</p>
+            <h3>Cadastro atual de lotação</h3>
+          </div>
+          <button type="button" class="ghost-btn" id="addPotreroButton">Novo potreiro</button>
+        </div>
+        <p class="field-note">Registre cada campo ou potreiro com a fazenda vinculada acima. Os campos importados hoje ficam vinculados à Arapey.</p>
+        <div class="potrero-stock-list" id="potreroStockList"></div>
+      </section>
+
+      <div class="modal-actions">
+        <button type="submit" class="action-btn secondary">Salvar edição</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="manageUsersDialog" class="modal">
+    <form method="dialog" id="manageUsersForm" class="modal-card">
+      <div class="modal-header">
+        <div>
+          <p class="panel-kicker">Acesso local</p>
+          <h2>Usuários do sistema</h2>
+        </div>
+        <button type="button" class="ghost-btn" id="closeManageUsersDialog">Fechar</button>
+      </div>
+
+      <div class="form-grid">
+        <label>
+          Novo login
+          <input type="text" id="newUserLogin" maxlength="40" required placeholder="Ex.: gestor-arapey">
+        </label>
+        <label>
+          Nova senha
+          <input type="password" id="newUserPassword" maxlength="60" required placeholder="Digite a senha">
+        </label>
+      </div>
+
+      <div class="modal-actions user-actions">
+        <button type="submit" class="action-btn secondary">Adicionar usuário</button>
+      </div>
+
+      <div class="user-list" id="userList"></div>
+
+      <div class="user-editor-panel" id="userEditorPanel" hidden>
+        <div class="panel-header">
+          <div>
+            <p class="panel-kicker">Editar usuário</p>
+            <h3 id="userEditorTitle">Atualizar credenciais</h3>
+          </div>
+        </div>
+        <div class="form-grid">
+          <label>
+            Login
+            <input type="text" id="editUserLogin" maxlength="40" required>
+          </label>
+          <label>
+            Senha
+            <input type="password" id="editUserPassword" maxlength="60" placeholder="Nova senha (opcional)">
+          </label>
+        </div>
+        <div class="modal-actions user-actions">
+          <button type="button" class="action-btn secondary" id="saveUserEditsButton">Salvar alterações</button>
+          <button type="button" class="ghost-btn" id="cancelUserEditButton">Cancelar</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="pdfOptionsDialog" class="modal">
+    <form method="dialog" id="pdfOptionsForm" class="modal-card">
+      <div class="modal-header">
+        <div>
+          <p class="panel-kicker">Geração de PDF</p>
+          <h2>Escolher fazendas do relatório</h2>
+        </div>
+        <button type="button" class="ghost-btn" id="closePdfOptionsDialog">Fechar</button>
+      </div>
+
+      <div class="pdf-scope-group">
+        <label class="scope-option">
+          <input type="radio" name="pdfScope" value="current" checked>
+          <div>
+            <strong>Fazenda atual</strong>
+            <span>Gera o PDF apenas da fazenda selecionada no painel.</span>
+          </div>
+        </label>
+        <label class="scope-option">
+          <input type="radio" name="pdfScope" value="all">
+          <div>
+            <strong>Todas as fazendas</strong>
+            <span>Gera um único PDF com todas as fazendas em sequência.</span>
+          </div>
+        </label>
+        <label class="scope-option">
+          <input type="radio" name="pdfScope" value="custom">
+          <div>
+            <strong>Por seleção</strong>
+            <span>Permite escolher manualmente quais fazendas entram no relatório.</span>
+          </div>
+        </label>
+      </div>
+
+      <div class="form-grid pdf-period-grid">
+        <label>
+          Ano do PDF
+          <select id="pdfYearFilter"></select>
+        </label>
+        <label>
+          Mês do PDF
+          <select id="pdfMonthFilter">
+            <option value="all">Ano inteiro</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="user-list pdf-farm-list" id="pdfFarmList" hidden></div>
+
+      <div class="modal-actions user-actions">
+        <button type="submit" class="action-btn pdf">Gerar relatório</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="monthlyDataDialog" class="modal">
+    <form method="dialog" id="monthlyDataForm" class="modal-card">
+      <div class="modal-header">
+        <div>
+          <p class="panel-kicker">Dados mensais</p>
+          <h2 id="monthlyDataDialogTitle">Registrar dado mensal</h2>
+        </div>
+        <button type="button" class="ghost-btn" id="closeMonthlyDataDialog">Fechar</button>
+      </div>
+
+      <input type="hidden" id="monthlyDataEditingId">
+
+      <div class="form-grid">
+        <label>
+          Fazenda
+          <select id="monthlyDataFarm" required></select>
+        </label>
+        <label>
+          Competência
+          <input type="month" id="monthlyDataPeriod" required>
+        </label>
+        <label>
+          Categoria do relatório
+          <select id="monthlyDataCategory" required></select>
+        </label>
+        <label>
+          Indicador
+          <input type="text" id="monthlyDataTitle" maxlength="90" required placeholder="Ex.: Esquila borregos">
+        </label>
+        <label>
+          Quantidade
+          <input type="number" id="monthlyDataQuantity" min="0" step="1" placeholder="0">
+        </label>
+        <label>
+          Valor atribuído
+          <input type="number" id="monthlyDataValue" min="0" step="0.01" placeholder="0,00">
+        </label>
+        <label class="form-span-2">
+          Observações
+          <input type="text" id="monthlyDataNotes" maxlength="180" placeholder="Ex.: dado mensal importado do relatório da fazenda">
+        </label>
+      </div>
+
+      <div class="modal-actions">
+        <button type="submit" class="action-btn secondary" id="monthlyDataSubmitButton">Salvar dado mensal</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="georefDialog" class="modal">
+    <div class="modal-card modal-card-wide georef-dialog-card">
+      <div class="modal-header">
+        <div>
+          <p class="panel-kicker">Arapey</p>
+          <h2>Georreferenciamento dos potreiros</h2>
+        </div>
+        <div class="georef-header-actions">
+          <button type="button" class="action-btn secondary" id="georefSaveButton">Salvar</button>
+          <button type="button" class="ghost-btn" id="closeGeorefDialog">Fechar</button>
+        </div>
+      </div>
+
+      <section class="georef-summary" id="georefStatus"></section>
+
+      <section class="georef-layout">
+        <article class="georef-map-shell">
+          <div class="panel-header georef-map-header">
+            <div>
+              <p class="panel-kicker">Mapa dos campos</p>
+              <h3>Lotação atual por localidade</h3>
+            </div>
+            <span class="chip">A partir do arquivo KML</span>
+          </div>
+          <div class="georef-map" id="georefMap"></div>
+        </article>
+
+        <aside class="georef-legend" id="georefLegend"></aside>
+      </section>
+    </div>
+  </dialog>
+
+  <dialog id="backupWarningDialog" class="modal">
+    <div class="modal-card backup-warning-card">
+      <div class="backup-warning-icon">!</div>
+      <h2 id="backupWarningTitle">Atenção: backup desatualizado</h2>
+      <p id="backupWarningMessage" class="backup-warning-msg"></p>
+      <div class="modal-actions backup-warning-actions">
+        <button type="button" class="action-btn" id="backupWarningDoNow">Fazer backup agora</button>
+        <button type="button" class="ghost-btn" id="backupWarningDismiss">Agora não</button>
+      </div>
+    </div>
+  </dialog>
+
+  <nav class="mobile-bottom-nav" id="mobileBottomNav" hidden>
+    <button type="button" class="mobile-nav-btn active" id="mobileNavDashboard">
+      <span class="mobile-nav-icon">🏠</span>
+      <span>Painel</span>
+    </button>
+    <button type="button" class="mobile-nav-btn" id="mobileNavSanitary">
+      <span class="mobile-nav-icon">💉</span>
+      <span>Sanitário</span>
+    </button>
+    <button type="button" class="mobile-nav-btn" id="mobileNavPotreiros">
+      <span class="mobile-nav-icon">🌿</span>
+      <span>Potreiros</span>
+    </button>
+    <button type="button" class="mobile-nav-btn" id="mobileNavFarms">
+      <span class="mobile-nav-icon">🐄</span>
+      <span>Fazendas</span>
+    </button>
+  </nav>
+
+  <div class="mobile-farm-drawer" id="mobileFarmDrawer" hidden>
+    <div class="mobile-farm-drawer-inner">
+      <div class="mobile-farm-drawer-header">
+        <strong>Selecionar fazenda</strong>
+        <button type="button" class="ghost-btn" id="closeMobileFarmDrawer">Fechar</button>
+      </div>
+      <div id="mobileFarmSwitchList"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
