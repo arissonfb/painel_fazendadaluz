@@ -3152,6 +3152,106 @@ th {
   color: var(--muted);
 }
 
+/* ─── Financial Panel ────────────────────────────────────────────────────── */
+.financial-panel {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.fin-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+
+.fin-panel-header h3 {
+  margin: 4px 0 0;
+  font-size: 1.1rem;
+  font-family: "Yrsa", serif;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.fin-table {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fin-table-head,
+.fin-farm-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1.4fr 1fr 1.4fr 1.4fr;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  align-items: center;
+}
+
+.fin-table-head {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  padding-bottom: 4px;
+}
+
+.fin-farm-row {
+  background: var(--surface);
+}
+
+.fin-farm-row:hover {
+  background: rgba(55,91,67,0.05);
+}
+
+.fin-total-row {
+  background: rgba(55,91,67,0.08) !important;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+}
+
+.fin-farm-name {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--text);
+}
+
+.fin-cell {
+  font-size: 0.84rem;
+  color: var(--muted);
+  text-align: right;
+}
+
+.fin-vendas { color: var(--green); font-weight: 700; }
+.fin-compras { color: var(--accent, #c07840); font-weight: 700; }
+
+.fin-saldo { font-size: 0.9rem; font-weight: 800; }
+.fin-positive { color: var(--green); }
+.fin-negative { color: var(--red); }
+
+.fin-note {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-top: 10px;
+  font-style: italic;
+}
+
+.chip-success { background: var(--green-soft); color: var(--green-deep); }
+.chip-alert { background: var(--red-soft); color: var(--red); }
+
+@media (max-width: 700px) {
+  .fin-table-head { display: none; }
+  .fin-farm-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+  }
+  .fin-farm-name { grid-column: 1 / -1; }
+}
+
 /* ─── Movement Table Action Buttons ─────────────────────────────────────── */
 .movement-actions-cell {
   white-space: nowrap;
