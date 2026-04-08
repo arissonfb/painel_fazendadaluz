@@ -1610,12 +1610,6 @@ function renderOverviewPanel() {
             <span class="chip chip-exit">-${formatInteger(movements.byType.venda + movements.byType.morte + movements.byType.consumo)} saí.</span>
           </div>
         </div>
-        <div class="farm-card-flow">
-          <div class="farm-card-flow-item"><span>Nascimentos</span><strong>${formatInteger(movements.byType.nascimento)}</strong></div>
-          <div class="farm-card-flow-item"><span>Mortes</span><strong>${formatInteger(movements.byType.morte)}</strong></div>
-          <div class="farm-card-flow-item"><span>Abate</span><strong>${formatInteger(movements.byType.consumo)}</strong></div>
-          <div class="farm-card-flow-item"><span>Compras</span><strong>${formatInteger(movements.byType.compra)}</strong></div>
-        </div>
       </article>
     `;
   }).join("");
