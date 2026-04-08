@@ -3445,7 +3445,6 @@ function renderInsights(farm) {
 function renderCharts(farm) {
   renderInventoryRankedList(farm);
   renderMovementChart(farm);
-  renderRankingChart(farm);
   renderMonthlyEvolutionChart(farm);
 }
 
