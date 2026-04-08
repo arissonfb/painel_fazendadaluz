@@ -1560,12 +1560,10 @@ function renderOverviewPanel() {
   const totals = farms.reduce((accumulator, farm) => {
     accumulator.stock += getFarmTotal(farm);
     accumulator.declared += Number(farm.declaredTotal || 0);
-    accumulator.allocated += getRegisteredPotreroAnimals(farm);
     accumulator.monthly += getFilteredMonthlyRecords(farm).length;
     return accumulator;
-  }, { stock: 0, declared: 0, allocated: 0, monthly: 0 });
+  }, { stock: 0, declared: 0, monthly: 0 });
   const difference = totals.declared - totals.stock;
-  const allocationBalance = totals.stock - totals.allocated;
 
   elements.globalPanelKicker.textContent = isTotalView ? "Painel inicial" : "Fazenda selecionada";
   elements.globalPanelTitle.textContent = isTotalView ? "Consolidado das fazendas" : `Resumo de ${selectedFarm?.name || "fazenda"}`;
@@ -1581,11 +1579,6 @@ function renderOverviewPanel() {
       title: "Total declarado",
       value: formatInteger(totals.declared),
       detail: difference === 0 ? "estoque alinhado ao total declarado" : `${formatInteger(difference)} animais de diferenca`
-    },
-    {
-      title: "Animais em potreiros",
-      value: formatInteger(totals.allocated),
-      detail: allocationBalance === 0 ? "distribuicao conferida" : `${formatInteger(Math.abs(allocationBalance))} ${allocationBalance > 0 ? "sem alocacao" : "acima do estoque"}`
     },
     {
       title: "Dados mensais",
@@ -1604,14 +1597,7 @@ function renderOverviewPanel() {
 
   elements.globalFarmBreakdown.innerHTML = farms.map((farm) => {
     const movements = summarizePeriod(farm, state.filters.year, state.filters.month);
-    const potreiros = getPotreroTotals(farm);
-    const allocated = getRegisteredPotreroAnimals(farm);
     const total = getFarmTotal(farm);
-    const balance = total - allocated;
-    const potreirosHtml = potreiros.length
-      ? potreiros.map((p) => `<span class="farm-card-potreiro"><strong>${formatInteger(p.quantity)}</strong> ${escapeHtml(p.name)}</span>`).join("")
-      : `<span class="farm-card-potreiro muted">Sem potreiros cadastrados</span>`;
-    const saldoClass = balance === 0 ? "ok" : balance > 0 ? "warn" : "err";
     return `
       <article class="global-farm-card">
         <div class="farm-card-header">
@@ -1625,14 +1611,10 @@ function renderOverviewPanel() {
           </div>
         </div>
         <div class="farm-card-flow">
-          <div class="farm-card-flow-item"><span>Compras</span><strong>${formatInteger(movements.byType.compra)}</strong></div>
           <div class="farm-card-flow-item"><span>Nascimentos</span><strong>${formatInteger(movements.byType.nascimento)}</strong></div>
-          <div class="farm-card-flow-item"><span>Vendas</span><strong>${formatInteger(movements.byType.venda)}</strong></div>
           <div class="farm-card-flow-item"><span>Mortes</span><strong>${formatInteger(movements.byType.morte)}</strong></div>
-        </div>
-        <div class="farm-card-potreiros">
-          <p class="farm-card-potreiros-label">Campos / Potreiros <span class="badge badge-${saldoClass}">${balance === 0 ? "completo" : balance > 0 ? `+${formatInteger(balance)} sem campo` : `${formatInteger(Math.abs(balance))} excedente`}</span></p>
-          <div class="farm-card-potreiros-grid">${potreirosHtml}</div>
+          <div class="farm-card-flow-item"><span>Abate</span><strong>${formatInteger(movements.byType.consumo)}</strong></div>
+          <div class="farm-card-flow-item"><span>Compras</span><strong>${formatInteger(movements.byType.compra)}</strong></div>
         </div>
       </article>
     `;
@@ -1775,49 +1757,37 @@ function renderPrimarySummaryCards(farm) {
 }
 
 function renderDashboardVisualHerdGrid(farm) {
-  const total = Math.max(getFarmTotal(farm), 1);
-  const categories = [...farm.categories]
-    .filter((category) => Number(category.quantity || 0) > 0)
-    .sort((a, b) => b.quantity - a.quantity)
-    .slice(0, 4);
+  if (!elements.visualHerdGrid) return;
 
-  if (!categories.length) {
-    elements.visualHerdGrid.innerHTML = `
-      <article class="visual-card visual-card-empty">
-        <div class="visual-card-copy">
-          <div class="visual-card-topline">
-            <div>
-              <p class="panel-kicker">Sem estoque</p>
-              <strong>Sem categorias com animais</strong>
-            </div>
-          </div>
-          <p>Cadastre o estoque ou ajuste as categorias para que o dashboard principal mostre a distribuicao do rebanho.</p>
-        </div>
-      </article>
-    `;
-    return;
-  }
+  const monthly = summarizePeriod(farm, state.filters.year, state.filters.month);
+  const periodLabel = state.filters.month === "all"
+    ? `Ano ${state.filters.year}`
+    : `${MONTH_NAMES[Number(state.filters.month) - 1]}/${state.filters.year}`;
 
-  elements.visualHerdGrid.innerHTML = categories.map((category) => {
-    const share = ((category.quantity / total) * 100).toFixed(1);
-    return `
-      <article class="visual-card">
-        <div class="visual-card-image">
-          <img src="${getCategoryImage(category.name)}" alt="${escapeHtml(category.name)}">
-        </div>
-        <div class="visual-card-copy">
-          <div class="visual-card-topline">
-            <div>
-              <p class="panel-kicker">${escapeHtml(getCategoryFamily(category.name))}</p>
-              <strong>${escapeHtml(category.name)}</strong>
-            </div>
-            <span class="visual-card-share">${share}%</span>
+  const stats = [
+    { label: "Nascimentos", value: monthly.byType.nascimento, img: "./assets/calf.svg", detail: "nascidos no período" },
+    { label: "Mortes", value: monthly.byType.morte, img: "./assets/cow.svg", detail: "mortes registradas" },
+    { label: "Abate / Consumo", value: monthly.byType.consumo, img: "./assets/bull.svg", detail: "abates e consumo interno" },
+    { label: "Compras", value: monthly.byType.compra, img: "./assets/herd.svg", detail: "animais comprados" }
+  ];
+
+  elements.visualHerdGrid.innerHTML = stats.map((stat) => `
+    <article class="visual-card">
+      <div class="visual-card-image">
+        <img src="${stat.img}" alt="${escapeHtml(stat.label)}">
+      </div>
+      <div class="visual-card-copy">
+        <div class="visual-card-topline">
+          <div>
+            <p class="panel-kicker">${periodLabel}</p>
+            <strong>${escapeHtml(stat.label)}</strong>
           </div>
-          <p>${formatInteger(category.quantity)} animais neste grupo.</p>
+          <span class="visual-card-share visual-card-count">${formatInteger(stat.value)}</span>
         </div>
-      </article>
-    `;
-  }).join("");
+        <p>${stat.value === 0 ? "Nenhum registro no período." : `${formatInteger(stat.value)} ${stat.detail}.`}</p>
+      </div>
+    </article>
+  `).join("");
 }
 
 function renderFarmSwitch() {
