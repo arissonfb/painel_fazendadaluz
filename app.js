@@ -615,7 +615,8 @@ const elements = {
   georefMap: document.getElementById("georefMap"),
   georefLegend: document.getElementById("georefLegend"),
   exportPdfButton: document.getElementById("exportPdfButton"),
-  monthlyDataButton: document.getElementById("monthlyDataButton"),
+  registerGoldBtn: document.getElementById("registerGoldBtn"),
+  registerMenu: document.getElementById("registerMenu"),
   currentUserLabel: document.getElementById("currentUserLabel"),
   manageUsersButton: document.getElementById("manageUsersButton"),
   backupButton: document.getElementById("backupButton"),
@@ -627,8 +628,6 @@ const elements = {
   backupWarningDoNow: document.getElementById("backupWarningDoNow"),
   backupWarningDismiss: document.getElementById("backupWarningDismiss"),
   logoutButton: document.getElementById("logoutButton"),
-  adjustButton: document.getElementById("adjustButton"),
-  addCategoryButton: document.getElementById("addCategoryButton"),
   closeMovementDialog: document.getElementById("closeMovementDialog"),
   closeCategoryDialog: document.getElementById("closeCategoryDialog"),
   manageUsersDialog: document.getElementById("manageUsersDialog"),
@@ -1481,15 +1480,40 @@ function bindEvents() {
     openSanitaryEditor(trigger.dataset.editSanitaryId);
   });
 
-  document.querySelectorAll("[data-type]").forEach((button) => {
-    button.addEventListener("click", () => openMovementDialog(button.dataset.type));
+  // Gold register button — toggle menu
+  elements.registerGoldBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const isOpen = !elements.registerMenu.hidden;
+    elements.registerMenu.hidden = isOpen;
+    elements.registerGoldBtn.setAttribute("aria-expanded", String(!isOpen));
   });
 
-  elements.adjustButton.addEventListener("click", () => openMovementDialog("ajuste"));
+  // Register menu items
+  document.getElementById("registerMenu").querySelectorAll("[data-mov]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      elements.registerMenu.hidden = true;
+      elements.registerGoldBtn.setAttribute("aria-expanded", "false");
+      const action = btn.dataset.mov;
+      if (action === "dado-mensal") {
+        openMonthlyDataDialog();
+      } else if (action === "categoria") {
+        openCategoryDialog();
+      } else {
+        openMovementDialog(action);
+      }
+    });
+  });
+
+  // Close menu when clicking outside
+  document.addEventListener("click", (e) => {
+    if (!document.getElementById("registerLauncher").contains(e.target)) {
+      elements.registerMenu.hidden = true;
+      elements.registerGoldBtn.setAttribute("aria-expanded", "false");
+    }
+  });
+
   elements.editStockButton.addEventListener("click", openEditStockDialog);
   elements.georefButton.addEventListener("click", openGeorefDialog);
-  elements.addCategoryButton.addEventListener("click", openCategoryDialog);
-  elements.monthlyDataButton.addEventListener("click", openMonthlyDataDialog);
   elements.editFarmName.addEventListener("change", handleEditFarmChange);
   elements.addPotreroButton.addEventListener("click", handleAddPotreroRow);
   elements.potreroStockList.addEventListener("click", handlePotreroListInteraction);
@@ -2064,16 +2088,6 @@ function renderMobileFarmDrawer() {
 
 function renderActionButtonsState() {
   const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
-  // movement buttons now work from total view (farm selector shown in dialog)
-  document.querySelectorAll("[data-type]").forEach((button) => {
-    button.disabled = false;
-    button.title = "";
-  });
-  const farmOnlyButtons = [elements.adjustButton, elements.addCategoryButton];
-  farmOnlyButtons.forEach((button) => {
-    button.disabled = isTotalView;
-    button.title = isTotalView ? "Selecione uma fazenda específica para usar esta função." : "";
-  });
   elements.editStockButton.disabled = false;
   elements.editStockButton.title = isTotalView
     ? "Na aba total, o editor abre em modo global para escolher a fazenda dentro do modal."

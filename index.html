@@ -154,18 +154,66 @@
 
       <div id="dashboardView">
         <section class="actions-panel">
-          <div class="action-buttons">
-            <button class="action-btn purchase" data-type="compra">Registrar compra</button>
-            <button class="action-btn sale" data-type="venda">Registrar venda</button>
-            <button class="action-btn neutral" data-type="consumo">Registrar consumo</button>
-            <button class="action-btn birth" data-type="nascimento">Registrar nascimento</button>
-            <button class="action-btn death" data-type="morte">Registrar morte</button>
-            <button class="action-btn secondary" id="monthlyDataButton">Registrar dado mensal</button>
-            <button class="action-btn secondary" id="adjustButton">Ajuste manual</button>
-            <button class="action-btn secondary" id="editStockButton">Editar estoque</button>
-            <button class="action-btn secondary" id="georefButton" hidden>Georreferenciamento</button>
-            <button class="action-btn secondary" id="addCategoryButton">Nova categoria</button>
-            <button class="action-btn pdf" id="exportPdfButton">Gerar PDF</button>
+          <div class="register-launcher" id="registerLauncher">
+            <button type="button" class="register-gold-btn" id="registerGoldBtn" aria-expanded="false" aria-haspopup="true">
+              <span class="register-gold-plus">+</span>
+              Registrar Manejo
+            </button>
+            <div class="register-menu" id="registerMenu" hidden role="menu">
+              <div class="register-menu-group">
+                <span class="register-menu-label">Entradas</span>
+                <button type="button" class="register-menu-item rmi-compra" data-mov="compra" role="menuitem">
+                  <span class="rmi-icon">🛒</span>
+                  <div class="rmi-text"><strong>Compra</strong><span>Entrada por aquisição</span></div>
+                </button>
+                <button type="button" class="register-menu-item rmi-nascimento" data-mov="nascimento" role="menuitem">
+                  <span class="rmi-icon">🐣</span>
+                  <div class="rmi-text"><strong>Nascimento</strong><span>Cria nascida no campo</span></div>
+                </button>
+              </div>
+              <div class="register-menu-group">
+                <span class="register-menu-label">Saídas</span>
+                <button type="button" class="register-menu-item rmi-venda" data-mov="venda" role="menuitem">
+                  <span class="rmi-icon">💰</span>
+                  <div class="rmi-text"><strong>Venda</strong><span>Saída por venda comercial</span></div>
+                </button>
+                <button type="button" class="register-menu-item rmi-consumo" data-mov="consumo" role="menuitem">
+                  <span class="rmi-icon">🔪</span>
+                  <div class="rmi-text"><strong>Abate / Consumo</strong><span>Saída por abate ou consumo</span></div>
+                </button>
+                <button type="button" class="register-menu-item rmi-morte" data-mov="morte" role="menuitem">
+                  <span class="rmi-icon">📋</span>
+                  <div class="rmi-text"><strong>Morte</strong><span>Baixa por óbito</span></div>
+                </button>
+              </div>
+              <div class="register-menu-group">
+                <span class="register-menu-label">Movimentação</span>
+                <button type="button" class="register-menu-item rmi-transferencia" data-mov="transferencia" role="menuitem">
+                  <span class="rmi-icon">🔄</span>
+                  <div class="rmi-text"><strong>Transferência de potreiro</strong><span>Mover animais entre campos</span></div>
+                </button>
+              </div>
+              <div class="register-menu-group">
+                <span class="register-menu-label">Gestão</span>
+                <button type="button" class="register-menu-item rmi-dado-mensal" data-mov="dado-mensal" role="menuitem">
+                  <span class="rmi-icon">📊</span>
+                  <div class="rmi-text"><strong>Dado mensal</strong><span>Registrar indicador</span></div>
+                </button>
+                <button type="button" class="register-menu-item rmi-ajuste" data-mov="ajuste" role="menuitem">
+                  <span class="rmi-icon">⚖️</span>
+                  <div class="rmi-text"><strong>Ajuste manual</strong><span>Correção de estoque</span></div>
+                </button>
+                <button type="button" class="register-menu-item rmi-categoria" data-mov="categoria" role="menuitem">
+                  <span class="rmi-icon">🏷️</span>
+                  <div class="rmi-text"><strong>Nova categoria</strong><span>Adicionar tipo de animal</span></div>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="actions-secondary">
+            <button type="button" class="action-btn secondary" id="editStockButton">Editar estoque</button>
+            <button type="button" class="action-btn secondary" id="georefButton" hidden>Georreferenciamento</button>
+            <button type="button" class="action-btn pdf" id="exportPdfButton">Gerar PDF</button>
           </div>
         </section>
 

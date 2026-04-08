@@ -682,8 +682,7 @@ body::before {
 }
 
 .farm-switch,
-.period-controls,
-.action-buttons {
+.period-controls {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
@@ -734,10 +733,152 @@ input {
 
 .actions-panel {
   margin-top: 18px;
-  padding: 18px;
+  padding: 18px 20px;
   border-radius: var(--radius-lg);
   background: rgba(255, 252, 247, 0.78);
   border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+/* ── Gold register launcher ─────────────────────────── */
+.register-launcher {
+  position: relative;
+}
+
+.register-gold-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #d4a032 0%, #c98c4f 60%, #b87730 100%);
+  color: #fff8ee;
+  border: 0;
+  border-radius: 999px;
+  padding: 13px 26px;
+  font: inherit;
+  font-weight: 800;
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow: 0 4px 18px rgba(180, 120, 40, 0.36);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+  letter-spacing: 0.01em;
+}
+
+.register-gold-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(180, 120, 40, 0.48);
+}
+
+.register-gold-btn[aria-expanded="true"] {
+  box-shadow: 0 2px 10px rgba(180, 120, 40, 0.28);
+  transform: translateY(0);
+}
+
+.register-gold-plus {
+  font-size: 1.3rem;
+  font-weight: 400;
+  line-height: 1;
+  opacity: 0.85;
+}
+
+.register-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  z-index: 200;
+  background: rgba(255, 252, 248, 0.98);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: 0 16px 56px rgba(54, 39, 24, 0.18);
+  min-width: 280px;
+  overflow: hidden;
+  animation: menuSlideIn 140ms ease;
+}
+
+@keyframes menuSlideIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.register-menu-group {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.register-menu-group:last-child {
+  border-bottom: 0;
+}
+
+.register-menu-label {
+  display: block;
+  padding: 6px 16px 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.register-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 16px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  transition: background 120ms ease;
+  font: inherit;
+}
+
+.register-menu-item:hover {
+  background: rgba(201, 140, 79, 0.1);
+}
+
+.rmi-icon {
+  font-size: 1.2rem;
+  width: 28px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.rmi-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.rmi-text strong {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.rmi-text span {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* Color accents per type */
+.rmi-compra:hover    { background: rgba(55, 91, 67, 0.09); }
+.rmi-nascimento:hover{ background: rgba(77, 124, 92, 0.09); }
+.rmi-venda:hover     { background: rgba(140, 75, 56, 0.09); }
+.rmi-consumo:hover   { background: rgba(111, 95, 77, 0.09); }
+.rmi-morte:hover     { background: rgba(140, 75, 56, 0.09); }
+.rmi-transferencia:hover { background: rgba(79, 115, 168, 0.09); }
+.rmi-dado-mensal:hover   { background: rgba(111, 95, 77, 0.09); }
+.rmi-ajuste:hover    { background: rgba(201, 140, 79, 0.12); }
+.rmi-categoria:hover { background: rgba(55, 91, 67, 0.09); }
+
+.actions-secondary {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-left: auto;
 }
 
 .action-btn,
@@ -2117,7 +2258,6 @@ th {
   .farm-switch::-webkit-scrollbar,
   .view-tabs::-webkit-scrollbar,
   .period-controls::-webkit-scrollbar,
-  .action-buttons::-webkit-scrollbar,
   .table-wrap::-webkit-scrollbar,
   .edit-stock-list::-webkit-scrollbar,
   .pdf-farm-list::-webkit-scrollbar {
@@ -2128,7 +2268,6 @@ th {
   .farm-switch::-webkit-scrollbar-thumb,
   .view-tabs::-webkit-scrollbar-thumb,
   .period-controls::-webkit-scrollbar-thumb,
-  .action-buttons::-webkit-scrollbar-thumb,
   .table-wrap::-webkit-scrollbar-thumb,
   .edit-stock-list::-webkit-scrollbar-thumb,
   .pdf-farm-list::-webkit-scrollbar-thumb {
@@ -2183,15 +2322,23 @@ th {
     backdrop-filter: blur(10px);
   }
 
-  .action-buttons {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+  .actions-panel {
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  .action-buttons .pdf,
-  .action-buttons .secondary:last-child {
-    grid-column: 1 / -1;
+  .actions-secondary {
+    margin-left: 0;
+    justify-content: stretch;
+  }
+
+  .actions-secondary .action-btn {
+    flex: 1;
+  }
+
+  .register-menu {
+    min-width: 260px;
+    max-width: calc(100vw - 40px);
   }
 
   .summary-grid,
@@ -2744,14 +2891,6 @@ th {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  /* Action buttons 2 col */
-  .action-buttons {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .action-buttons .pdf {
-    grid-column: 1 / -1;
-  }
 }
 
 /* ─── Global Farm Cards — Premium Upgrade ─────────────────────────────────── */
