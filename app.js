@@ -423,7 +423,8 @@ const runtime = {
   georefDraft: null,
   cloudToken: null,
   cloudSyncing: false,
-  cloudEnabled: true
+  cloudEnabled: true,
+  editingMovement: null  // { farmId, movementId } when editing an existing movement
 };
 
 const today = new Date();
@@ -1443,7 +1444,7 @@ function bindEvents() {
   if (elements.monthlyProtocolList) {
     elements.monthlyProtocolList.addEventListener("click", handleMonthlyTableInteraction);
   }
-  elements.closeMovementDialog.addEventListener("click", () => elements.movementDialog.close());
+  elements.closeMovementDialog.addEventListener("click", () => { runtime.editingMovement = null; elements.movementDialog.close(); });
   elements.closeCategoryDialog.addEventListener("click", () => elements.categoryDialog.close());
   elements.closeEditStockDialog.addEventListener("click", () => elements.editStockDialog.close());
   elements.georefSaveButton.addEventListener("click", handleGeorefSave);
@@ -2134,21 +2135,21 @@ const MOVEMENT_TYPE_STYLES = {
 function renderMovementsTable(farm) {
   const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
   if (elements.movementsTableHead) {
-    elements.movementsTableHead.innerHTML = `<tr>${isTotalView ? "<th>Fazenda</th>" : ""}<th>Data</th><th>Tipo</th><th>Categoria</th><th>Qtd.</th><th>Obs.</th></tr>`;
+    elements.movementsTableHead.innerHTML = `<tr>${isTotalView ? "<th>Fazenda</th>" : ""}<th>Data</th><th>Tipo</th><th>Categoria</th><th>Qtd.</th><th>Obs.</th><th></th></tr>`;
   }
   let movements;
   if (isTotalView) {
     const allFarms = getAllFarms();
-    movements = allFarms.flatMap((f) => f.movements.map((m) => ({ ...m, _farmName: f.name })));
+    movements = allFarms.flatMap((f) => f.movements.map((m) => ({ ...m, _farmId: f.id, _farmName: f.name })));
   } else {
-    movements = farm.movements.map((m) => ({ ...m, _farmName: farm.name }));
+    movements = farm.movements.map((m) => ({ ...m, _farmId: farm.id, _farmName: farm.name }));
   }
-  movements = movements.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 15);
+  movements = movements.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 50);
 
   if (!movements.length) {
     elements.movementsTableBody.innerHTML = `
       <tr>
-        <td colspan="${isTotalView ? 6 : 5}" class="table-empty-cell">Ainda não há lançamentos. Use os botões acima para iniciar o controle.</td>
+        <td colspan="${isTotalView ? 7 : 6}" class="table-empty-cell">Ainda não há lançamentos. Use os botões acima para iniciar o controle.</td>
       </tr>
     `;
     return;
@@ -2166,9 +2167,107 @@ function renderMovementsTable(farm) {
         <td data-label="Categoria">${escapeHtml(movement.categoryName)}</td>
         <td data-label="Qtd.">${deltaSign}${formatInteger(movement.quantity)}</td>
         <td data-label="Obs.">${escapeHtml(getMovementNotes(movement))}${getMovementPhotoFlagMarkup(movement)}</td>
+        <td class="movement-actions-cell">
+          <button class="movement-action-btn edit-btn" title="Editar" data-farm-id="${escapeHtml(movement._farmId)}" data-movement-id="${escapeHtml(movement.id)}">✏️</button>
+          <button class="movement-action-btn delete-btn" title="Excluir" data-farm-id="${escapeHtml(movement._farmId)}" data-movement-id="${escapeHtml(movement.id)}">🗑️</button>
+        </td>
       </tr>
     `;
   }).join("");
+
+  elements.movementsTableBody.querySelectorAll(".edit-btn").forEach((btn) => {
+    btn.addEventListener("click", () => openEditMovementDialog(btn.dataset.farmId, btn.dataset.movementId));
+  });
+  elements.movementsTableBody.querySelectorAll(".delete-btn").forEach((btn) => {
+    btn.addEventListener("click", () => deleteMovement(btn.dataset.farmId, btn.dataset.movementId));
+  });
+}
+
+function revertMovementEffect(farm, movement) {
+  const category = farm.categories.find((c) => c.id === movement.categoryId);
+  if (!category) return;
+
+  if (movement.type === "transferencia") {
+    // Reverse allocation only
+    ensureCategoryAllocation(category);
+    const originId = movement.potreiro || UNALLOCATED_POTREIRO_KEY;
+    const destId = movement.potreiroDest || UNALLOCATED_POTREIRO_KEY;
+    category.allocation[originId] = (Number(category.allocation[originId] || 0)) + movement.quantity;
+    category.allocation[destId] = Math.max(0, (Number(category.allocation[destId] || 0)) - movement.quantity);
+  } else if (movement.delta !== 0) {
+    // Reverse stock delta
+    category.quantity -= movement.delta;
+    ensureCategoryAllocation(category);
+    const potreirosId = movement.potreiro || UNALLOCATED_POTREIRO_KEY;
+    if (movement.delta > 0) {
+      category.allocation[potreirosId] = Math.max(0, (Number(category.allocation[potreirosId] || 0)) - movement.quantity);
+    } else {
+      category.allocation[potreirosId] = (Number(category.allocation[potreirosId] || 0)) + movement.quantity;
+    }
+  }
+  updatePotreroQuantitiesFromAllocation(farm);
+}
+
+function deleteMovement(farmId, movementId) {
+  const farm = state.data.farms[farmId];
+  if (!farm) return;
+  const movement = farm.movements.find((m) => m.id === movementId);
+  if (!movement) return;
+
+  const label = `${capitalize(movement.type)} de ${formatInteger(movement.quantity)} ${movement.categoryName} em ${formatDate(movement.date)}`;
+  if (!confirm(`Excluir este lançamento?\n\n${label}\n\nO estoque da categoria será revertido.`)) return;
+
+  revertMovementEffect(farm, movement);
+  farm.movements = farm.movements.filter((m) => m.id !== movementId);
+  saveData();
+  render();
+}
+
+function openEditMovementDialog(farmId, movementId) {
+  const farm = state.data.farms[farmId];
+  if (!farm) return;
+  const movement = farm.movements.find((m) => m.id === movementId);
+  if (!movement) return;
+
+  runtime.editingMovement = { farmId, movementId };
+
+  syncMovementFarmOptions();
+  // Set farm
+  if (elements.movementFarm) elements.movementFarm.value = farmId;
+  syncMovementTypeOptions(movement.type);
+  syncMovementCategoryOptionsForFarm(farm);
+  if (elements.movementCategory) elements.movementCategory.value = movement.categoryId;
+  syncMovementPotreirosOptions();
+
+  elements.movementDate.value = movement.date;
+  elements.movementQuantity.value = movement.quantity;
+  elements.adjustDirection.value = movement.delta >= 0 ? "add" : "sub";
+  elements.movementNotes.value = movement.notes || "";
+  elements.movementValue.value = movement.value || "";
+
+  if (movement.type === "venda" && movement.saleDetails) {
+    const d = movement.saleDetails;
+    if (elements.movementSaleMode) elements.movementSaleMode.value = d.mode || "vivo";
+    if (d.mode === "carcaca") {
+      if (elements.movementCarcassPrice) elements.movementCarcassPrice.value = d.pricePerKg || "";
+      if (elements.movementCarcassKg) elements.movementCarcassKg.value = d.weightKg || "";
+    } else {
+      if (elements.movementLivePrice) elements.movementLivePrice.value = d.pricePerKg || "";
+      if (elements.movementLiveKg) elements.movementLiveKg.value = d.weightKg || "";
+    }
+  }
+
+  if (movement.potreiro && elements.movementPotreiro) {
+    elements.movementPotreiro.value = movement.potreiro;
+  }
+  if (movement.potreiroDest && elements.movementPotreiroDest) {
+    elements.movementPotreiroDest.value = movement.potreiroDest;
+  }
+
+  resetMovementPhotoDrafts();
+  updateMovementFormForType(movement.type);
+  elements.movementDialogTitle.textContent = `Editar ${capitalize(movement.type)}`;
+  elements.movementDialog.showModal();
 }
 
 function getFilteredSaleMovements(farm, year, month) {
@@ -3961,6 +4060,7 @@ function getMovementDialogFarm() {
 }
 
 function openMovementDialog(initialType) {
+  runtime.editingMovement = null;
   syncMovementFarmOptions();
   syncMovementTypeOptions(initialType);
   syncMovementCategoryOptionsForFarm(getMovementDialogFarm());
@@ -4568,6 +4668,20 @@ async function handleMovementSubmit(event) {
   if (!farm || farm.id === TOTAL_FARM_ID) {
     alert("Selecione uma fazenda específica para registrar movimentações.");
     return;
+  }
+
+  // If editing, revert old movement first then remove it
+  const editing = runtime.editingMovement;
+  if (editing) {
+    const editFarm = state.data.farms[editing.farmId];
+    if (editFarm) {
+      const oldMovement = editFarm.movements.find((m) => m.id === editing.movementId);
+      if (oldMovement) {
+        revertMovementEffect(editFarm, oldMovement);
+        editFarm.movements = editFarm.movements.filter((m) => m.id !== editing.movementId);
+      }
+    }
+    runtime.editingMovement = null;
   }
   const type = elements.movementType.value;
   const quantity = Number(elements.movementQuantity.value);

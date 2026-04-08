@@ -3152,6 +3152,34 @@ th {
   color: var(--muted);
 }
 
+/* ─── Movement Table Action Buttons ─────────────────────────────────────── */
+.movement-actions-cell {
+  white-space: nowrap;
+  text-align: right;
+  padding: 4px 8px !important;
+}
+
+.movement-action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  opacity: 0.5;
+  transition: opacity 0.15s, background 0.15s;
+  line-height: 1;
+}
+
+.movement-action-btn:hover {
+  opacity: 1;
+  background: rgba(55, 91, 67, 0.1);
+}
+
+.movement-action-btn.delete-btn:hover {
+  background: rgba(180, 60, 60, 0.1);
+}
+
 /* ─── Movement Dialog Potreiro Fields ────────────────────────────────────── */
 #movementPotreiroWrap,
 #movementPotreirowDestWrap {
