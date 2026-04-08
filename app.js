@@ -342,44 +342,47 @@ const EXTENDED_MONTHLY_RECORDS = {
   ]
 };
 
+// Versão 2: todos os valores convertidos para R$ (USD × cotação aproximada por mês)
+const COMMERCIAL_MOVEMENTS_VERSION = 2;
+
 const IMPORTED_COMMERCIAL_MOVEMENTS = {
   arapey: [
-    // Vendas frigorífico (valores em US$)
-    { sourceId: "pdf-mov-2025-09-24-arapey-venda-novillo-marfrig", type: "venda", date: "2025-09-24", categoryId: "pdf-novillo", categoryName: "Novillo", quantity: 11, delta: -11, value: 14795.26, saleDetails: { mode: "carcaca", pricePerKg: 5.47, weightKg: 2740.4 }, notes: "MARFRIG | Carcaça 2740kg | US$5,47/kg | US$1345/animal" },
-    { sourceId: "pdf-mov-2025-09-24-arapey-venda-vacas-marfrig", type: "venda", date: "2025-09-24", categoryId: "pdf-vacas", categoryName: "Vacas", quantity: 58, delta: -58, value: 69048.84, saleDetails: { mode: "carcaca", pricePerKg: 5.12, weightKg: 13486.1 }, notes: "MARFRIG | Carcaça 13486kg | US$5,12/kg | US$1190/animal" },
-    { sourceId: "pdf-mov-2025-09-24-arapey-venda-touro-marfrig", type: "venda", date: "2025-09-24", categoryId: "pdf-touros", categoryName: "Touros", quantity: 2, delta: -2, value: 2313, saleDetails: { mode: "carcaca", pricePerKg: 3.5, weightKg: 661 }, notes: "MARFRIG | Carcaça 661kg | US$3,50/kg | US$1157/animal" },
-    { sourceId: "pdf-mov-2025-11-04-arapey-venda-novillo-marfrig", type: "venda", date: "2025-11-04", categoryId: "pdf-novillo", categoryName: "Novillo", quantity: 88, delta: -88, value: 115465, saleDetails: { mode: "carcaca", pricePerKg: 5.29, weightKg: 21826 }, notes: "MARFRIG | Carcaça 21826kg | US$5,29/kg | US$1312/animal" },
-    { sourceId: "pdf-mov-2025-11-04-arapey-venda-vacas-marfrig", type: "venda", date: "2025-11-04", categoryId: "pdf-vacas", categoryName: "Vacas", quantity: 23, delta: -23, value: 27733, saleDetails: { mode: "carcaca", pricePerKg: 4.93, weightKg: 5624 }, notes: "MARFRIG | Carcaça 5624kg | US$4,93/kg | US$1206/animal" },
-    { sourceId: "pdf-mov-2025-11-04-arapey-venda-borregos-titinho", type: "venda", date: "2025-11-04", categoryId: "pdf-borregos", categoryName: "Borregos", quantity: 320, delta: -320, value: 30157, saleDetails: { mode: "carcaca", pricePerKg: 5.73, weightKg: 5263 }, notes: "TITINHO | Carcaça 5263kg (16,4kg/cab) | US$94/animal" },
-    { sourceId: "pdf-mov-2025-11-20-arapey-venda-vacas-marfrig", type: "venda", date: "2025-11-20", categoryId: "pdf-vacas", categoryName: "Vacas", quantity: 38, delta: -38, value: 35891, saleDetails: { mode: "carcaca", pricePerKg: 4.8, weightKg: 7475 }, notes: "MARFRIG | Carcaça 7475kg | US$4,80/kg | US$944,50/animal" },
-    { sourceId: "pdf-mov-2025-12-15-arapey-venda-cordeiros-titinho", type: "venda", date: "2025-12-15", categoryId: "pdf-cordeiros", categoryName: "Cordeiros", quantity: 369, delta: -369, value: 26291.25, saleDetails: { mode: "carcaca", pricePerKg: 5.7, weightKg: 4615.3 }, notes: "TITINHO | Carcaça 4615kg (12,5kg/cab) | US$71/animal" },
-    { sourceId: "pdf-mov-2026-01-17-arapey-venda-novillo-feedlot", type: "venda", date: "2026-01-17", categoryId: "pdf-novillo", categoryName: "Novillo", quantity: 100, delta: -100, value: 130989, saleDetails: { mode: "vivo", pricePerKg: 2.85, weightKg: 45961 }, notes: "FEEDLOT | Peso médio 459,61kg | US$2,85/kg | US$1310/animal" },
-    { sourceId: "pdf-mov-2026-02-23-arapey-venda-novillo-feedlot", type: "venda", date: "2026-02-23", categoryId: "pdf-novillo", categoryName: "Novillo", quantity: 58, delta: -58, value: 88795.1, saleDetails: { mode: "vivo", pricePerKg: 3.35, weightKg: 26506 }, notes: "FEEDLOT | Peso médio 457kg | US$3,35/kg | US$1530,95/animal" },
-    { sourceId: "pdf-mov-2026-03-13-arapey-venda-novillo-agrooriental", type: "venda", date: "2026-03-13", categoryId: "pdf-novillo", categoryName: "Novillo", quantity: 70, delta: -70, value: 92299.2, saleDetails: { mode: "carcaca", pricePerKg: 3.28, weightKg: 28140 }, notes: "AGROORIENTAL | Carcaça 28140kg (402kg/cab) | US$1318,56/animal" },
-    { sourceId: "pdf-mov-2026-03-14-arapey-venda-vacas-agrooriental", type: "venda", date: "2026-03-14", categoryId: "pdf-vacas", categoryName: "Vacas", quantity: 51, delta: -51, value: 57412.74, saleDetails: { mode: "carcaca", pricePerKg: 2.38, weightKg: 24123 }, notes: "AGROORIENTAL | Carcaça 24123kg (473kg/cab) | US$1125,74/animal" },
+    // Vendas — USD convertido para R$ (set/out-25 ×5,55 | nov/25 ×5,75 | dez/25 ×6,00 | jan/26 ×6,10 | fev/26 ×5,90 | mar-abr/26 ×5,85)
+    { sourceId: "pdf-mov-2025-09-24-arapey-venda-novillo-marfrig", type: "venda", date: "2025-09-24", categoryId: "pdf-novillo", categoryName: "Novillo", quantity: 11, delta: -11, value: 82113, saleDetails: { mode: "carcaca", pricePerKg: 30.36, weightKg: 2740.4 }, notes: "MARFRIG | Carcaça 2740kg | US$5,47/kg (×5,55) = R$30,36/kg | R$7465/animal" },
+    { sourceId: "pdf-mov-2025-09-24-arapey-venda-vacas-marfrig", type: "venda", date: "2025-09-24", categoryId: "pdf-vacas", categoryName: "Vacas", quantity: 58, delta: -58, value: 383221, saleDetails: { mode: "carcaca", pricePerKg: 28.42, weightKg: 13486.1 }, notes: "MARFRIG | Carcaça 13486kg | US$5,12/kg (×5,55) = R$28,42/kg | R$6607/animal" },
+    { sourceId: "pdf-mov-2025-09-24-arapey-venda-touro-marfrig", type: "venda", date: "2025-09-24", categoryId: "pdf-touros", categoryName: "Touros", quantity: 2, delta: -2, value: 12837, saleDetails: { mode: "carcaca", pricePerKg: 19.43, weightKg: 661 }, notes: "MARFRIG | Carcaça 661kg | US$3,50/kg (×5,55) = R$19,43/kg | R$6419/animal" },
+    { sourceId: "pdf-mov-2025-11-04-arapey-venda-novillo-marfrig", type: "venda", date: "2025-11-04", categoryId: "pdf-novillo", categoryName: "Novillo", quantity: 88, delta: -88, value: 663924, saleDetails: { mode: "carcaca", pricePerKg: 30.42, weightKg: 21826 }, notes: "MARFRIG | Carcaça 21826kg | US$5,29/kg (×5,75) = R$30,42/kg | R$7544/animal" },
+    { sourceId: "pdf-mov-2025-11-04-arapey-venda-vacas-marfrig", type: "venda", date: "2025-11-04", categoryId: "pdf-vacas", categoryName: "Vacas", quantity: 23, delta: -23, value: 159465, saleDetails: { mode: "carcaca", pricePerKg: 28.35, weightKg: 5624 }, notes: "MARFRIG | Carcaça 5624kg | US$4,93/kg (×5,75) = R$28,35/kg | R$6933/animal" },
+    { sourceId: "pdf-mov-2025-11-04-arapey-venda-borregos-titinho", type: "venda", date: "2025-11-04", categoryId: "pdf-borregos", categoryName: "Borregos", quantity: 320, delta: -320, value: 173403, saleDetails: { mode: "carcaca", pricePerKg: 32.95, weightKg: 5263 }, notes: "TITINHO | Carcaça 5263kg (16,4kg/cab) | US$5,73/kg (×5,75) = R$32,95/kg | R$542/animal" },
+    { sourceId: "pdf-mov-2025-11-20-arapey-venda-vacas-marfrig", type: "venda", date: "2025-11-20", categoryId: "pdf-vacas", categoryName: "Vacas", quantity: 38, delta: -38, value: 206373, saleDetails: { mode: "carcaca", pricePerKg: 27.60, weightKg: 7475 }, notes: "MARFRIG | Carcaça 7475kg | US$4,80/kg (×5,75) = R$27,60/kg | R$5431/animal" },
+    { sourceId: "pdf-mov-2025-12-15-arapey-venda-cordeiros-titinho", type: "venda", date: "2025-12-15", categoryId: "pdf-cordeiros", categoryName: "Cordeiros", quantity: 369, delta: -369, value: 157748, saleDetails: { mode: "carcaca", pricePerKg: 34.20, weightKg: 4615.3 }, notes: "TITINHO | Carcaça 4615kg (12,5kg/cab) | US$5,70/kg (×6,00) = R$34,20/kg | R$427/animal" },
+    { sourceId: "pdf-mov-2026-01-17-arapey-venda-novillo-feedlot", type: "venda", date: "2026-01-17", categoryId: "pdf-novillo", categoryName: "Novillo", quantity: 100, delta: -100, value: 799033, saleDetails: { mode: "vivo", pricePerKg: 17.39, weightKg: 45961 }, notes: "FEEDLOT | Peso médio 459,61kg | US$2,85/kg (×6,10) = R$17,39/kg | R$7990/animal" },
+    { sourceId: "pdf-mov-2026-02-23-arapey-venda-novillo-feedlot", type: "venda", date: "2026-02-23", categoryId: "pdf-novillo", categoryName: "Novillo", quantity: 58, delta: -58, value: 523890, saleDetails: { mode: "vivo", pricePerKg: 19.77, weightKg: 26506 }, notes: "FEEDLOT | Peso médio 457kg | US$3,35/kg (×5,90) = R$19,77/kg | R$9032/animal" },
+    { sourceId: "pdf-mov-2026-03-13-arapey-venda-novillo-agrooriental", type: "venda", date: "2026-03-13", categoryId: "pdf-novillo", categoryName: "Novillo", quantity: 70, delta: -70, value: 540000, saleDetails: { mode: "carcaca", pricePerKg: 19.19, weightKg: 28140 }, notes: "AGROORIENTAL | Carcaça 28140kg (402kg/cab) | US$3,28/kg (×5,85) = R$19,19/kg | R$7714/animal" },
+    { sourceId: "pdf-mov-2026-03-14-arapey-venda-vacas-agrooriental", type: "venda", date: "2026-03-14", categoryId: "pdf-vacas", categoryName: "Vacas", quantity: 51, delta: -51, value: 335865, saleDetails: { mode: "carcaca", pricePerKg: 13.92, weightKg: 24123 }, notes: "AGROORIENTAL | Carcaça 24123kg (473kg/cab) | US$2,38/kg (×5,85) = R$13,92/kg | R$6585/animal" },
     // Compras
     { sourceId: "pdf-mov-2025-11-13-arapey-compra-touros", type: "compra", date: "2025-11-13", categoryId: "pdf-touros", categoryName: "Touros", quantity: 4, delta: 4, value: 0, saleDetails: null, notes: "Compra de 4 touros (valor não informado no PDF)" }
   ],
   chiquita: [
-    // Vendas frigorífico (valores em US$)
-    { sourceId: "pdf-mov-2025-09-01-chiquita-venda-boi-marfrig", type: "venda", date: "2025-09-01", categoryId: "pdf-bois", categoryName: "Bois", quantity: 80, delta: -80, value: 103735.8, saleDetails: { mode: "carcaca", pricePerKg: 5.25, weightKg: 16948.3 }, notes: "MARFRIG | Carcaça 16948kg | US$5,25/kg | US$1297/animal" },
-    { sourceId: "pdf-mov-2025-09-01-chiquita-venda-vaca-marfrig", type: "venda", date: "2025-09-01", categoryId: "pdf-vacas", categoryName: "Vacas", quantity: 30, delta: -30, value: 33049, saleDetails: { mode: "carcaca", pricePerKg: 4.94, weightKg: 5571.5 }, notes: "MARFRIG | Carcaça 5571kg | US$4,94/kg | US$1102/animal" },
-    { sourceId: "pdf-mov-2025-09-01-chiquita-venda-touro-marfrig", type: "venda", date: "2025-09-01", categoryId: "pdf-touros", categoryName: "Touros", quantity: 1, delta: -1, value: 1288.6, saleDetails: { mode: "carcaca", pricePerKg: 3.4, weightKg: 379 }, notes: "MARFRIG | Carcaça 379kg | US$3,40/kg | US$1289/animal" },
-    { sourceId: "pdf-mov-2025-10-13-chiquita-venda-boi-marfrig", type: "venda", date: "2025-10-13", categoryId: "pdf-bois", categoryName: "Bois", quantity: 67, delta: -67, value: 91559, saleDetails: { mode: "carcaca", pricePerKg: 5.5, weightKg: 31691 }, notes: "MARFRIG | Carcaça 31691kg | US$5,50/kg | US$1367/animal" },
-    { sourceId: "pdf-mov-2025-10-13-chiquita-venda-vaca-marfrig", type: "venda", date: "2025-10-13", categoryId: "pdf-vacas", categoryName: "Vacas", quantity: 57, delta: -57, value: 66471, saleDetails: { mode: "carcaca", pricePerKg: 5.16, weightKg: 25935 }, notes: "MARFRIG | Carcaça 25935kg | US$5,16/kg | US$1166/animal" },
-    { sourceId: "pdf-mov-2025-11-21-chiquita-venda-vacas-marfrig", type: "venda", date: "2025-11-21", categoryId: "pdf-vacas", categoryName: "Vacas", quantity: 39, delta: -39, value: 39928.59, saleDetails: { mode: "carcaca", pricePerKg: 4.7, weightKg: 8456 }, notes: "MARFRIG | Carcaça 8456kg | US$4,70/kg | US$1024/animal" },
-    { sourceId: "pdf-mov-2025-11-21-chiquita-venda-boi-marfrig", type: "venda", date: "2025-11-21", categoryId: "pdf-bois", categoryName: "Bois", quantity: 70, delta: -70, value: 84023, saleDetails: { mode: "carcaca", pricePerKg: 5.2, weightKg: 16158.5 }, notes: "MARFRIG | Carcaça 16158kg | US$5,20/kg | US$1200/animal" },
-    { sourceId: "pdf-mov-2025-12-02-chiquita-venda-cordeiro-artigas", type: "venda", date: "2025-12-02", categoryId: "pdf-cordeiros", categoryName: "Cordeiros", quantity: 203, delta: -203, value: 15600.22, saleDetails: { mode: "carcaca", pricePerKg: 5.78, weightKg: 2699 }, notes: "ARTIGAS | Carcaça 2699kg (13,3kg/cab) | US$76,85/animal" },
-    { sourceId: "pdf-mov-2025-12-04-chiquita-venda-borrego-durazno", type: "venda", date: "2025-12-04", categoryId: "pdf-borregos", categoryName: "Borregos", quantity: 150, delta: -150, value: 16853.25, saleDetails: { mode: "carcaca", pricePerKg: 5.75, weightKg: 6135 }, notes: "DURAZNO | Carcaça 40,9t (19,5kg/cab) | US$112/animal" },
-    { sourceId: "pdf-mov-2026-01-27-chiquita-venda-novillos-agrooriental", type: "venda", date: "2026-01-27", categoryId: "pdf-novillos", categoryName: "Novillos", quantity: 156, delta: -156, value: 207760, saleDetails: { mode: "vivo", pricePerKg: 2.96, weightKg: 70188 }, notes: "AGROORIENTAL | Peso médio 449,93kg | US$2,96/kg | US$1332/animal" },
-    { sourceId: "pdf-mov-2026-03-30-chiquita-venda-novillos", type: "venda", date: "2026-03-30", categoryId: "pdf-novillos", categoryName: "Novillos", quantity: 46, delta: -46, value: 72595, saleDetails: { mode: "vivo", pricePerKg: 3.35, weightKg: 21666 }, notes: "Peso médio 471kg | US$3,35/kg | US$1578/animal" },
-    // Compras (já existentes out/25 mantidas, adicionando demais)
+    // Vendas — USD convertido para R$ (mesmas taxas acima)
+    { sourceId: "pdf-mov-2025-09-01-chiquita-venda-boi-marfrig", type: "venda", date: "2025-09-01", categoryId: "pdf-bois", categoryName: "Bois", quantity: 80, delta: -80, value: 575734, saleDetails: { mode: "carcaca", pricePerKg: 29.14, weightKg: 16948.3 }, notes: "MARFRIG | Carcaça 16948kg | US$5,25/kg (×5,55) = R$29,14/kg | R$7197/animal" },
+    { sourceId: "pdf-mov-2025-09-01-chiquita-venda-vaca-marfrig", type: "venda", date: "2025-09-01", categoryId: "pdf-vacas", categoryName: "Vacas", quantity: 30, delta: -30, value: 183422, saleDetails: { mode: "carcaca", pricePerKg: 27.42, weightKg: 5571.5 }, notes: "MARFRIG | Carcaça 5571kg | US$4,94/kg (×5,55) = R$27,42/kg | R$6114/animal" },
+    { sourceId: "pdf-mov-2025-09-01-chiquita-venda-touro-marfrig", type: "venda", date: "2025-09-01", categoryId: "pdf-touros", categoryName: "Touros", quantity: 1, delta: -1, value: 7152, saleDetails: { mode: "carcaca", pricePerKg: 18.87, weightKg: 379 }, notes: "MARFRIG | Carcaça 379kg | US$3,40/kg (×5,55) = R$18,87/kg | R$7152/animal" },
+    { sourceId: "pdf-mov-2025-10-13-chiquita-venda-boi-marfrig", type: "venda", date: "2025-10-13", categoryId: "pdf-bois", categoryName: "Bois", quantity: 67, delta: -67, value: 526464, saleDetails: { mode: "carcaca", pricePerKg: 31.63, weightKg: 31691 }, notes: "MARFRIG | Carcaça 31691kg | US$5,50/kg (×5,75) = R$31,63/kg | R$7857/animal" },
+    { sourceId: "pdf-mov-2025-10-13-chiquita-venda-vaca-marfrig", type: "venda", date: "2025-10-13", categoryId: "pdf-vacas", categoryName: "Vacas", quantity: 57, delta: -57, value: 382208, saleDetails: { mode: "carcaca", pricePerKg: 29.67, weightKg: 25935 }, notes: "MARFRIG | Carcaça 25935kg | US$5,16/kg (×5,75) = R$29,67/kg | R$6705/animal" },
+    { sourceId: "pdf-mov-2025-11-21-chiquita-venda-vacas-marfrig", type: "venda", date: "2025-11-21", categoryId: "pdf-vacas", categoryName: "Vacas", quantity: 39, delta: -39, value: 229589, saleDetails: { mode: "carcaca", pricePerKg: 27.03, weightKg: 8456 }, notes: "MARFRIG | Carcaça 8456kg | US$4,70/kg (×5,75) = R$27,03/kg | R$5887/animal" },
+    { sourceId: "pdf-mov-2025-11-21-chiquita-venda-boi-marfrig", type: "venda", date: "2025-11-21", categoryId: "pdf-bois", categoryName: "Bois", quantity: 70, delta: -70, value: 483132, saleDetails: { mode: "carcaca", pricePerKg: 29.90, weightKg: 16158.5 }, notes: "MARFRIG | Carcaça 16158kg | US$5,20/kg (×5,75) = R$29,90/kg | R$6902/animal" },
+    { sourceId: "pdf-mov-2025-12-02-chiquita-venda-cordeiro-artigas", type: "venda", date: "2025-12-02", categoryId: "pdf-cordeiros", categoryName: "Cordeiros", quantity: 203, delta: -203, value: 93601, saleDetails: { mode: "carcaca", pricePerKg: 34.68, weightKg: 2699 }, notes: "ARTIGAS | Carcaça 2699kg (13,3kg/cab) | US$5,78/kg (×6,00) = R$34,68/kg | R$461/animal" },
+    { sourceId: "pdf-mov-2025-12-04-chiquita-venda-borrego-durazno", type: "venda", date: "2025-12-04", categoryId: "pdf-borregos", categoryName: "Borregos", quantity: 150, delta: -150, value: 101120, saleDetails: { mode: "carcaca", pricePerKg: 34.50, weightKg: 6135 }, notes: "DURAZNO | Carcaça 6135kg (19,5kg/cab) | US$5,75/kg (×6,00) = R$34,50/kg | R$674/animal" },
+    { sourceId: "pdf-mov-2026-01-27-chiquita-venda-novillos-agrooriental", type: "venda", date: "2026-01-27", categoryId: "pdf-novillos", categoryName: "Novillos", quantity: 156, delta: -156, value: 1267336, saleDetails: { mode: "vivo", pricePerKg: 18.06, weightKg: 70188 }, notes: "AGROORIENTAL | Peso médio 449,93kg | US$2,96/kg (×6,10) = R$18,06/kg | R$8124/animal" },
+    { sourceId: "pdf-mov-2026-03-30-chiquita-venda-novillos", type: "venda", date: "2026-03-30", categoryId: "pdf-novillos", categoryName: "Novillos", quantity: 46, delta: -46, value: 424681, saleDetails: { mode: "vivo", pricePerKg: 19.60, weightKg: 21666 }, notes: "Peso médio 471kg | US$3,35/kg (×5,85) = R$19,60/kg | R$9232/animal" },
+    // Compras (valores já em R$)
     { sourceId: "pdf-mov-2025-10-23-chiquita-compra-terneiros", type: "compra", date: "2025-10-23", categoryId: "pdf-terneiros", categoryName: "Terneiros", quantity: 28, delta: 28, value: 19031, saleDetails: null, notes: "Ganadeira | P.médio 185kg | R$3,65/kg | R$680/animal" },
     { sourceId: "pdf-mov-2025-10-23-chiquita-compra-novilhos", type: "compra", date: "2025-10-23", categoryId: "pdf-novilhos", categoryName: "Novilhos", quantity: 26, delta: 26, value: 29419, saleDetails: null, notes: "Ganadeira | P.médio 365kg | R$3,10/kg | R$1132/animal" },
     { sourceId: "pdf-mov-2025-10-13-chiquita-compra-touros", type: "compra", date: "2025-10-13", categoryId: "pdf-touros", categoryName: "Touros", quantity: 6, delta: 6, value: 0, saleDetails: null, notes: "Compra de 6 touros (valor não informado)" },
-    { sourceId: "pdf-mov-2026-01-02-chiquita-compra-novillos", type: "compra", date: "2026-01-02", categoryId: "pdf-novillos", categoryName: "Novillos", quantity: 52, delta: 52, value: 53704.2, saleDetails: null, notes: "Ganadeira | P.médio 243kg | R$679,80/animal" },
+    { sourceId: "pdf-mov-2026-01-02-chiquita-compra-novillos", type: "compra", date: "2026-01-02", categoryId: "pdf-novillos", categoryName: "Novillos", quantity: 52, delta: 52, value: 53704, saleDetails: null, notes: "Ganadeira | P.médio 243kg | R$679,80/animal" },
     { sourceId: "pdf-mov-2026-02-18-chiquita-compra-terneiros", type: "compra", date: "2026-02-18", categoryId: "pdf-terneiros", categoryName: "Terneiros", quantity: 79, delta: 79, value: 0, saleDetails: null, notes: "Ganadeira | P.médio 165kg | 13035kg total | R$4,12/kg" },
-    { sourceId: "pdf-mov-2026-02-25-chiquita-compra-terneiros", type: "compra", date: "2026-02-25", categoryId: "pdf-terneiros", categoryName: "Terneiros", quantity: 119, delta: 119, value: 92279.74, saleDetails: null, notes: "Ganadeira | P.médio 203kg | 24157kg total | R$3,82/kg | R$775,46/animal" }
+    { sourceId: "pdf-mov-2026-02-25-chiquita-compra-terneiros", type: "compra", date: "2026-02-25", categoryId: "pdf-terneiros", categoryName: "Terneiros", quantity: 119, delta: 119, value: 92280, saleDetails: null, notes: "Ganadeira | P.médio 203kg | 24157kg total | R$3,82/kg | R$775,46/animal" }
   ],
   "passa-da-guarda": [
     // Vendas já existentes
@@ -1808,7 +1811,7 @@ function renderFinancialPanel(farms, isTotalView) {
         </div>
       ` : ""}
     </div>
-    <p class="fin-note">* Valores em moeda conforme registrado (R$ para PG/Colorado/Sarandi, US$ para Arapey/Chiquita)</p>
+    <p class="fin-note">* Todos os valores em R$ (reais)</p>
   `;
 }
 
@@ -2448,6 +2451,31 @@ function summarizeSalePeriod(farm, year, month) {
     summary.movements.push(movement);
     return summary;
   }, { count: 0, totalValue: 0, liveKg: 0, carcassKg: 0, movements: [] });
+}
+
+function getFilteredPurchaseMovements(farm, year, month) {
+  return farm.movements
+    .filter((movement) => {
+      if (movement.type !== "compra") return false;
+      const movementDate = new Date(movement.date);
+      const movementYear = String(movementDate.getFullYear());
+      const movementMonth = String(movementDate.getMonth() + 1).padStart(2, "0");
+      const matchesYear = movementYear === String(year);
+      const matchesMonth = month === "all" || movementMonth === month;
+      return matchesYear && matchesMonth;
+    })
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
+}
+
+function summarizePurchasePeriod(farm, year, month) {
+  const movements = getFilteredPurchaseMovements(farm, year, month);
+  return movements.reduce((summary, movement) => {
+    summary.count += 1;
+    summary.totalAnimals += Number(movement.quantity || 0);
+    summary.totalValue += Number(movement.value || 0);
+    summary.movements.push(movement);
+    return summary;
+  }, { count: 0, totalAnimals: 0, totalValue: 0, movements: [] });
 }
 
 function getSaleModeLabel(mode) {
@@ -5551,13 +5579,17 @@ function appendExecutivePdfTable(doc, farm, monthly, discrepancy, topY) {
   const registeredPotreiros = getPotreroEntries(farm).length;
   const registeredAnimals = getRegisteredPotreroAnimals(farm);
   const potreroBalance = getPotreroBalance(farm);
+  const total = getFarmTotal(farm);
+  const annualForMortality = summarizePeriod(farm, String(new Date().getFullYear()), "all");
+  const mortalityRate = total > 0 ? ((annualForMortality.byType.morte / total) * 100).toFixed(2) : "0.00";
   doc.autoTable({
     startY: topY + 4,
     head: [["Indicador executivo", "Valor"]],
     body: [
-      ["Estoque atual", `${formatInteger(getFarmTotal(farm))} animais`],
+      ["Estoque atual", `${formatInteger(total)} animais`],
       ["Total declarado", farm.declaredTotal ? `${formatInteger(farm.declaredTotal)} animais` : "Não informado"],
       ["Conferência de estoque", discrepancy === 0 ? "Alinhado" : `${discrepancy > 0 ? "+" : ""}${formatInteger(discrepancy)} animais`],
+      ["Taxa de mortalidade (ano)", `${mortalityRate}%`],
       ["Potreiros cadastrados", formatInteger(registeredPotreiros)],
       ["Animais distribuídos em potreiros", `${formatInteger(registeredAnimals)} animais`],
       ["Saldo da distribuição", potreroBalance === 0 ? "Alinhado" : `${potreroBalance > 0 ? "+" : ""}${formatInteger(potreroBalance)} animais`],
@@ -5632,6 +5664,60 @@ function appendSaleDetailsPdfTable(doc, saleSummary) {
       : [["-", "-", "-", "-", "-", "Sem vendas no período", "-"]],
     theme: "striped",
     headStyles: { fillColor: [201, 140, 79] }
+  });
+}
+
+function appendPurchaseSummaryPdfTable(doc, purchaseSummary) {
+  doc.autoTable({
+    startY: doc.lastAutoTable.finalY + 10,
+    head: [["Indicador de compras", "Valor"]],
+    body: [
+      ["Compras registradas", formatInteger(purchaseSummary.count)],
+      ["Animais adquiridos", formatInteger(purchaseSummary.totalAnimals)],
+      ["Custo total de aquisição", formatCurrency(purchaseSummary.totalValue)],
+      ["Custo médio por animal", purchaseSummary.totalAnimals > 0 ? formatCurrency(purchaseSummary.totalValue / purchaseSummary.totalAnimals) : formatCurrency(0)]
+    ],
+    theme: "striped",
+    headStyles: { fillColor: [79, 115, 168] }
+  });
+}
+
+function appendPurchaseDetailsPdfTable(doc, purchaseSummary) {
+  doc.autoTable({
+    startY: doc.lastAutoTable.finalY + 10,
+    head: [["Data", "Categoria", "Qtd.", "Custo total", "Custo/cab.", "Observações"]],
+    body: purchaseSummary.movements.length
+      ? purchaseSummary.movements.map((movement) => {
+        const qty = Number(movement.quantity || 0);
+        const val = Number(movement.value || 0);
+        return [
+          formatDate(movement.date),
+          movement.categoryName || "-",
+          formatInteger(qty),
+          formatCurrency(val),
+          qty > 0 ? formatCurrency(val / qty) : "-",
+          movement.notes || "-"
+        ];
+      })
+      : [["-", "-", "-", "-", "-", "Sem compras no período"]],
+    theme: "striped",
+    headStyles: { fillColor: [79, 115, 168] }
+  });
+}
+
+function appendFinancialBalancePdfTable(doc, saleSummary, purchaseSummary) {
+  const saldo = saleSummary.totalValue - purchaseSummary.totalValue;
+  doc.autoTable({
+    startY: doc.lastAutoTable.finalY + 10,
+    head: [["Resultado financeiro do período", "Valor"]],
+    body: [
+      ["Receita de vendas", formatCurrency(saleSummary.totalValue)],
+      ["Custo de compras", formatCurrency(purchaseSummary.totalValue)],
+      ["Resultado líquido", `${saldo >= 0 ? "+" : ""}${formatCurrency(saldo)}`]
+    ],
+    theme: "striped",
+    headStyles: { fillColor: [55, 91, 67] },
+    bodyStyles: (row) => row.index === 2 ? { fontStyle: "bold" } : {}
   });
 }
 
@@ -5874,6 +5960,7 @@ async function appendFarmPdfSection(doc, farm, periodLabel, year, month) {
   const monthly = summarizePeriod(farm, year, month);
   const annual = summarizePeriod(farm, year, "all");
   const saleSummary = summarizeSalePeriod(farm, year, month);
+  const purchaseSummary = summarizePurchasePeriod(farm, year, month);
   const sanitarySummary = getSanitarySummary(farm, year, month);
   const sanitaryRecords = [...getFilteredSanitaryRecords(farm, year, month)].sort((a, b) => new Date(a.date) - new Date(b.date));
   const monthlySummary = getMonthlySummary(farm, year, month);
@@ -5887,8 +5974,11 @@ async function appendFarmPdfSection(doc, farm, periodLabel, year, month) {
   appendExecutivePdfTable(doc, farm, monthly, discrepancy, topY);
   appendInventoryPdfTable(doc, farm);
   appendOperationalPdfTable(doc, monthly, annual, saleSummary);
+  appendFinancialBalancePdfTable(doc, saleSummary, purchaseSummary);
   appendSaleSummaryPdfTable(doc, saleSummary);
   appendSaleDetailsPdfTable(doc, saleSummary);
+  appendPurchaseSummaryPdfTable(doc, purchaseSummary);
+  appendPurchaseDetailsPdfTable(doc, purchaseSummary);
   appendPotreroPdfTable(doc, potreroTotals);
   appendMonthlySummaryPdfTable(doc, monthlySummary);
   appendMonthlyDetailsPdfTable(doc, farm, monthlyRecords);
@@ -6125,6 +6215,7 @@ function ensureDataShape(data, options = {}) {
       });
     });
 
+    const needsMovementUpdate = (data.commercialMovementsVersion || 0) < COMMERCIAL_MOVEMENTS_VERSION;
     Object.entries(IMPORTED_COMMERCIAL_MOVEMENTS).forEach(([farmId, movements]) => {
       const farm = data.farms[farmId];
       if (!farm) {
@@ -6132,14 +6223,24 @@ function ensureDataShape(data, options = {}) {
       }
 
       movements.forEach((movement) => {
-        if (!farm.movements.some((item) => item.sourceId === movement.sourceId)) {
+        const existingIdx = farm.movements.findIndex((item) => item.sourceId === movement.sourceId);
+        if (existingIdx === -1) {
           farm.movements.push({
             ...movement,
             id: movement.sourceId || createMovementId()
           });
+        } else if (needsMovementUpdate) {
+          // Update existing movement with corrected values (e.g. USD→BRL conversion)
+          farm.movements[existingIdx] = {
+            ...farm.movements[existingIdx],
+            value: movement.value,
+            notes: movement.notes,
+            saleDetails: movement.saleDetails || farm.movements[existingIdx].saleDetails
+          };
         }
       });
     });
+    data.commercialMovementsVersion = COMMERCIAL_MOVEMENTS_VERSION;
   }
 
   return data;
