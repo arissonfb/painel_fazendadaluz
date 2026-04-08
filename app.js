@@ -3505,7 +3505,12 @@ function renderInventoryRankedList(farm) {
     return;
   }
 
-  container.innerHTML = categories.map((cat, index) => {
+  const TOP_N = 8;
+  const topCats = categories.slice(0, TOP_N);
+  const restCats = categories.slice(TOP_N);
+  const restQty = restCats.reduce((s, c) => s + Number(c.quantity || 0), 0);
+
+  const rows = topCats.map((cat, index) => {
     const pct = ((cat.quantity / total) * 100).toFixed(1);
     const color = COLORS[index % COLORS.length];
     return `
@@ -3517,7 +3522,22 @@ function renderInventoryRankedList(farm) {
         <span class="inv-ranked-pct">${pct}%</span>
       </div>
     `;
-  }).join("");
+  });
+
+  if (restCats.length > 0) {
+    const restPct = ((restQty / total) * 100).toFixed(1);
+    rows.push(`
+      <div class="inv-ranked-row inv-ranked-others">
+        <div class="inv-ranked-bar" style="width:${restPct}%"></div>
+        <span class="inv-ranked-dot" style="background:var(--muted);opacity:0.5"></span>
+        <span class="inv-ranked-name">Outras (${restCats.length} categorias)</span>
+        <strong class="inv-ranked-qty">${formatInteger(restQty)}</strong>
+        <span class="inv-ranked-pct">${restPct}%</span>
+      </div>
+    `);
+  }
+
+  container.innerHTML = rows.join("");
 }
 
 function renderMovementChart(farm) {
