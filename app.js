@@ -128,6 +128,8 @@ const DEFAULT_SANITARY_PRODUCTS = ["Vacina aftosa", "Vermífugo", "Ivermectina"]
 const DEFAULT_POTREIROS = [];
 const LEGACY_POTREIRO_PLACEHOLDERS = ["Potreiro 1", "Potreiro 2", "Potreiro Norte"];
 const PREMIUM_SALE_FARMS = new Set(["arapey", "chiquita"]);
+// Farms that operate in USD (Uruguay-based); all others use BRL
+const FARM_CURRENCY_MAP = { arapey: "USD", chiquita: "USD" };
 const TOTAL_FARM_ID = "total";
 const UNALLOCATED_POTREIRO_KEY = "__unallocated__";
 const ARAPEY_PRIMARY_GEO_KEYS = new Set([
@@ -883,6 +885,16 @@ const elements = {
   movementCarcassPrice: document.getElementById("movementCarcassPrice"),
   movementCarcassKg: document.getElementById("movementCarcassKg"),
   movementSaleHint: document.getElementById("movementSaleHint"),
+  movSaleExtraWrap: document.getElementById("movSaleExtraWrap"),
+  movSaleBuyer: document.getElementById("movSaleBuyer"),
+  movSaleYieldPct: document.getElementById("movSaleYieldPct"),
+  movPurchaseSection: document.getElementById("movPurchaseSection"),
+  movPurchaseSource: document.getElementById("movPurchaseSource"),
+  movPurchaseAvgWeight: document.getElementById("movPurchaseAvgWeight"),
+  movPurchaseTotalWeight: document.getElementById("movPurchaseTotalWeight"),
+  movPurchasePricePerKg: document.getElementById("movPurchasePricePerKg"),
+  movPurchaseValuePerHead: document.getElementById("movPurchaseValuePerHead"),
+  movCommercialDashboard: document.getElementById("movCommercialDashboard"),
   movementValueWrap: document.getElementById("movementValueWrap"),
   movementValueLabel: document.getElementById("movementValueLabel"),
   movementValue: document.getElementById("movementValue"),
@@ -1793,6 +1805,22 @@ function isPremiumSaleFarm(farm) {
   return PREMIUM_SALE_FARMS.has(farm.id);
 }
 
+function getFarmCurrency(farmId) {
+  return FARM_CURRENCY_MAP[farmId] || "BRL";
+}
+
+function getFarmCurrencySymbol(farmId) {
+  return getFarmCurrency(farmId) === "USD" ? "US$" : "R$";
+}
+
+function formatFarmCurrencyValue(value, farmId) {
+  const num = Number(value || 0);
+  if (getFarmCurrency(farmId) === "USD") {
+    return `US$ ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num)}`;
+  }
+  return formatCurrency(num);
+}
+
 function createStandardFarm(id, name) {
   return {
     id,
@@ -1933,6 +1961,28 @@ function bindEvents() {
     elements.movementCarcassKg
   ].forEach((input) => {
     input.addEventListener("input", updateSaleComputedValue);
+  });
+
+  // Purchase auto-calc listeners
+  [elements.movPurchaseAvgWeight, elements.movPurchasePricePerKg].forEach((input) => {
+    input?.addEventListener("input", updatePurchaseComputedValues);
+  });
+  elements.movPurchaseTotalWeight?.addEventListener("input", () => {
+    elements.movPurchaseTotalWeight.dataset.manualEdit = "1";
+    updatePurchaseComputedValues();
+  });
+  elements.movementQuantity?.addEventListener("input", () => {
+    updatePurchaseComputedValues();
+    updateSaleComputedValue();
+  });
+  elements.movementValue?.addEventListener("input", () => {
+    if (elements.movementType.value === "compra") {
+      const qty = Number(elements.movementQuantity?.value || 0);
+      const total = Number(elements.movementValue.value || 0);
+      if (qty > 0 && total > 0 && elements.movPurchaseValuePerHead) {
+        elements.movPurchaseValuePerHead.value = +(total / qty).toFixed(2);
+      }
+    }
   });
 
   elements.sanitaryProduct.addEventListener("change", () => {
@@ -2467,6 +2517,14 @@ function openMovTypeRecordsDlg(movType) {
   };
   elements.movTypeRecordsSearch.oninput = () => renderMovTypeRecordsBody(movType, 0);
 
+  const isCommercial = movType === "compra" || movType === "venda";
+  if (isCommercial) {
+    renderCommercialDashboard(movType);
+  } else if (elements.movCommercialDashboard) {
+    elements.movCommercialDashboard.hidden = true;
+    elements.movCommercialDashboard.innerHTML = "";
+  }
+
   runtime._movTypeRecordsPage = 0;
   renderMovTypeRecordsBody(movType, 0);
   elements.movTypeRecordsDlg.showModal();
@@ -2475,6 +2533,9 @@ function openMovTypeRecordsDlg(movType) {
 function renderMovTypeRecordsBody(movType, page) {
   const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
   const query = (elements.movTypeRecordsSearch.value || "").trim().toLowerCase();
+  const isCompra = movType === "compra";
+  const isVenda = movType === "venda";
+  const isCommercial = isCompra || isVenda;
 
   let all;
   if (isTotalView) {
@@ -2489,41 +2550,131 @@ function renderMovTypeRecordsBody(movType, page) {
     .sort((a, b) => new Date(b.date) - new Date(a.date));
 
   if (query) {
-    filtered = filtered.filter((m) =>
-      (m.code || "").toLowerCase().includes(query) ||
-      (m.categoryName || "").toLowerCase().includes(query) ||
-      (m.notes || "").toLowerCase().includes(query) ||
-      (m._farmName || "").toLowerCase().includes(query)
-    );
+    filtered = filtered.filter((m) => {
+      const base = [m.code, m.categoryName, m.notes, m._farmName].join(" ").toLowerCase();
+      const pDetail = isCompra ? (m.purchaseDetails?.sourceProperty || "") : "";
+      const vDetail = isVenda ? (m.saleDetails?.buyer || "") : "";
+      return base.includes(query) || pDetail.toLowerCase().includes(query) || vDetail.toLowerCase().includes(query);
+    });
   }
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / MOV_TYPE_RECORDS_PAGE));
   const safePage = Math.min(page, totalPages - 1);
   const slice = filtered.slice(safePage * MOV_TYPE_RECORDS_PAGE, (safePage + 1) * MOV_TYPE_RECORDS_PAGE);
 
-  // Header
-  elements.movTypeRecordsHead.innerHTML = `<tr>
-    <th>Código</th>
-    ${isTotalView ? "<th>Fazenda</th>" : ""}
-    <th>Data</th>
-    <th>Categoria</th>
-    <th>Qtd.</th>
-    <th>Obs.</th>
-    <th></th>
-  </tr>`;
-
-  // Body
-  if (!slice.length) {
-    const cols = isTotalView ? 7 : 6;
-    elements.movTypeRecordsBody.innerHTML = `<tr><td colspan="${cols}" class="table-empty-cell">${query ? "Nenhum registro encontrado." : "Nenhum lançamento deste tipo ainda."}</td></tr>`;
+  // Build header columns
+  if (isCompra) {
+    elements.movTypeRecordsHead.innerHTML = `<tr>
+      <th>Código</th>
+      ${isTotalView ? "<th>Fazenda</th>" : ""}
+      <th>Data</th>
+      <th>Categoria</th>
+      <th class="num-col">Cabeças</th>
+      <th>Origem / Propriedade</th>
+      <th class="num-col">Peso Total (kg)</th>
+      <th class="num-col">Valor/kg</th>
+      <th class="num-col">Valor Total</th>
+      <th class="num-col">Valor/Animal</th>
+      <th class="num-col">Moeda</th>
+      <th></th>
+    </tr>`;
+  } else if (isVenda) {
+    elements.movTypeRecordsHead.innerHTML = `<tr>
+      <th>Código</th>
+      ${isTotalView ? "<th>Fazenda</th>" : ""}
+      <th>Data</th>
+      <th>Categoria</th>
+      <th class="num-col">Cabeças</th>
+      <th>Frigorífico / Comprador</th>
+      <th class="num-col">Kg Negociados</th>
+      <th class="num-col">Rend.%</th>
+      <th class="num-col">Valor/kg</th>
+      <th class="num-col">Valor Total</th>
+      <th class="num-col">Valor/Animal</th>
+      <th class="num-col">Moeda</th>
+      <th></th>
+    </tr>`;
   } else {
-    const badgeClass = MOVEMENT_TYPE_STYLES[movType] || "badge-neutral";
+    elements.movTypeRecordsHead.innerHTML = `<tr>
+      <th>Código</th>
+      ${isTotalView ? "<th>Fazenda</th>" : ""}
+      <th>Data</th>
+      <th>Categoria</th>
+      <th>Qtd.</th>
+      <th>Obs.</th>
+      <th></th>
+    </tr>`;
+  }
+
+  // Build body rows
+  const colCount = isCommercial ? (isTotalView ? 13 : 12) : (isTotalView ? 7 : 6);
+
+  if (!slice.length) {
+    elements.movTypeRecordsBody.innerHTML = `<tr><td colspan="${colCount}" class="table-empty-cell">${query ? "Nenhum registro encontrado." : "Nenhum lançamento deste tipo ainda."}</td></tr>`;
+  } else {
     elements.movTypeRecordsBody.innerHTML = slice.map((m) => {
       const code = m.code
         ? `<span class="movement-code">${escapeHtml(m.code)}</span>`
         : `<span class="movement-code movement-code-legacy">—</span>`;
-      const deltaSign = m.delta > 0 ? "+" : "";
       const farmCell = isTotalView ? `<td><span class="sanitary-origin manual">${escapeHtml(m._farmName)}</span></td>` : "";
+      const currency = m.currency || getFarmCurrency(m._farmId);
+      const sym = currency === "USD" ? "US$" : "R$";
+      const currencyBadge = `<span class="currency-badge ${currency === "USD" ? "usd" : "brl"}">${currency}</span>`;
+      const fmtVal = (v) => v > 0 ? `${sym} ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)}` : "—";
+      const fmtKg = (v) => v > 0 ? `${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(v)} kg` : "—";
+      const actionsCell = `<td class="movement-actions-cell">
+        <button class="movement-action-btn edit-btn" title="Editar" data-farm-id="${escapeHtml(m._farmId)}" data-movement-id="${escapeHtml(m.id)}">✏️</button>
+        <button class="movement-action-btn delete-btn" title="Excluir" data-farm-id="${escapeHtml(m._farmId)}" data-movement-id="${escapeHtml(m.id)}">🗑️</button>
+      </td>`;
+
+      if (isCompra) {
+        const p = m.purchaseDetails || {};
+        const totalW = p.totalWeight || 0;
+        const priceKg = p.pricePerKg || 0;
+        const vph = p.valuePerHead || (m.quantity > 0 && m.value > 0 ? m.value / m.quantity : 0);
+        return `<tr>
+          <td>${code}</td>
+          ${farmCell}
+          <td>${formatDate(m.date)}</td>
+          <td>${escapeHtml(m.categoryName)}</td>
+          <td class="num-col"><strong>${formatInteger(m.quantity)}</strong></td>
+          <td>${escapeHtml(p.sourceProperty || m.notes || "—")}</td>
+          <td class="num-col">${fmtKg(totalW)}</td>
+          <td class="num-col">${priceKg > 0 ? fmtVal(priceKg) : "—"}</td>
+          <td class="num-col fin-value">${fmtVal(m.value)}</td>
+          <td class="num-col">${fmtVal(vph)}</td>
+          <td class="num-col">${currencyBadge}</td>
+          ${actionsCell}
+        </tr>`;
+      }
+
+      if (isVenda) {
+        const d = m.saleDetails || {};
+        const weightKg = d.weightKg || 0;
+        const priceKg = d.pricePerKg || 0;
+        const yieldPct = d.yieldPct || null;
+        const buyer = d.buyer || extractBuyerFromNotes(m.notes);
+        const vph = d.valuePerHead || (m.quantity > 0 && m.value > 0 ? m.value / m.quantity : 0);
+        const yieldCell = yieldPct ? `${yieldPct}%` : (d.mode === "carcaca" ? extractYieldFromNotes(m.notes) : "—");
+        return `<tr>
+          <td>${code}</td>
+          ${farmCell}
+          <td>${formatDate(m.date)}</td>
+          <td>${escapeHtml(m.categoryName)}</td>
+          <td class="num-col"><strong>${formatInteger(m.quantity)}</strong></td>
+          <td>${escapeHtml(buyer || "—")}${getMovementPhotoFlagMarkup(m)}</td>
+          <td class="num-col">${fmtKg(weightKg)}</td>
+          <td class="num-col">${yieldCell}</td>
+          <td class="num-col">${priceKg > 0 ? fmtVal(priceKg) : "—"}</td>
+          <td class="num-col fin-value">${fmtVal(m.value)}</td>
+          <td class="num-col">${fmtVal(vph)}</td>
+          <td class="num-col">${currencyBadge}</td>
+          ${actionsCell}
+        </tr>`;
+      }
+
+      // Generic types
+      const deltaSign = m.delta > 0 ? "+" : "";
       return `<tr>
         <td>${code}</td>
         ${farmCell}
@@ -2531,10 +2682,7 @@ function renderMovTypeRecordsBody(movType, page) {
         <td>${escapeHtml(m.categoryName)}</td>
         <td>${deltaSign}${formatInteger(m.quantity)}</td>
         <td>${escapeHtml(getMovementNotes(m))}${getMovementPhotoFlagMarkup(m)}</td>
-        <td class="movement-actions-cell">
-          <button class="movement-action-btn edit-btn" title="Editar" data-farm-id="${escapeHtml(m._farmId)}" data-movement-id="${escapeHtml(m.id)}">✏️</button>
-          <button class="movement-action-btn delete-btn" title="Excluir" data-farm-id="${escapeHtml(m._farmId)}" data-movement-id="${escapeHtml(m.id)}">🗑️</button>
-        </td>
+        ${actionsCell}
       </tr>`;
     }).join("");
 
@@ -2546,13 +2694,15 @@ function renderMovTypeRecordsBody(movType, page) {
     });
     elements.movTypeRecordsBody.querySelectorAll(".delete-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
+        if (!confirm("Excluir este registro?")) return;
         deleteMovement(btn.dataset.farmId, btn.dataset.movementId);
         renderMovTypeRecordsBody(movType, safePage);
+        renderCommercialDashboard(movType);
       });
     });
   }
 
-  // Footer pagination
+  // Footer
   elements.movTypeRecordsFooter.innerHTML = `
     <span class="movements-count">${filtered.length} registro${filtered.length !== 1 ? "s" : ""}</span>
     ${totalPages > 1 ? `
@@ -2563,6 +2713,111 @@ function renderMovTypeRecordsBody(movType, page) {
   `;
   document.getElementById("movRecPrev")?.addEventListener("click", () => renderMovTypeRecordsBody(movType, safePage - 1));
   document.getElementById("movRecNext")?.addEventListener("click", () => renderMovTypeRecordsBody(movType, safePage + 1));
+}
+
+// Extrai o nome do frigorífico/comprador a partir das notas legadas (ex: "MARFRIG | ...")
+function extractBuyerFromNotes(notes) {
+  if (!notes) return "";
+  const m = String(notes).match(/^([A-ZÁÉÍÓÚ][A-Za-záéíóúÁÉÍÓÚÃÕ\s]+?)(?:\s*\|)/);
+  return m ? m[1].trim() : "";
+}
+
+// Extrai rendimento % das notas legadas onde não foi salvo explicitamente
+function extractYieldFromNotes(notes) {
+  if (!notes) return "—";
+  const m = String(notes).match(/(\d+[,.]?\d*)\s*%/);
+  return m ? `${m[1].replace(",", ".")}%` : "—";
+}
+
+function renderCommercialDashboard(movType) {
+  const el = elements.movCommercialDashboard;
+  if (!el) return;
+
+  const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
+  const allFarms = isTotalView ? getAllFarms() : [getFarm()].filter(Boolean);
+  const isCompra = movType === "compra";
+
+  // Separate farms by currency to never mix BRL and USD totals
+  const brlFarms = allFarms.filter((f) => getFarmCurrency(f.id) === "BRL");
+  const usdFarms = allFarms.filter((f) => getFarmCurrency(f.id) === "USD");
+
+  function aggregate(farms) {
+    const movs = farms.flatMap((f) =>
+      f.movements.filter((m) => m.type === movType).map((m) => ({ ...m, _farmId: f.id, _farmName: f.name }))
+    );
+    const count = movs.length;
+    const heads = movs.reduce((s, m) => s + Number(m.quantity || 0), 0);
+    const totalValue = movs.reduce((s, m) => s + Number(m.value || 0), 0);
+    const totalWeight = isCompra
+      ? movs.reduce((s, m) => s + Number(m.purchaseDetails?.totalWeight || 0), 0)
+      : movs.reduce((s, m) => s + Number(m.saleDetails?.weightKg || 0), 0);
+    const avgPricePerKg = totalWeight > 0 ? totalValue / totalWeight : 0;
+    const avgPerHead = heads > 0 ? totalValue / heads : 0;
+    const byFarm = farms.map((f) => {
+      const fm = movs.filter((m) => m._farmId === f.id);
+      return { name: f.name, count: fm.length, heads: fm.reduce((s, m) => s + Number(m.quantity || 0), 0), value: fm.reduce((s, m) => s + Number(m.value || 0), 0) };
+    }).filter((x) => x.count > 0);
+    return { count, heads, totalValue, totalWeight, avgPricePerKg, avgPerHead, byFarm };
+  }
+
+  function buildSection(farms, currency) {
+    if (!farms.length) return "";
+    const d = aggregate(farms);
+    if (d.count === 0) return "";
+    const sym = currency === "USD" ? "US$" : "R$";
+    const fmt = (v) => v > 0 ? `${sym} ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)}` : "—";
+    const cards = [
+      { t: isCompra ? "Compras" : "Vendas", v: String(d.count), d2: "registros" },
+      { t: "Cabeças", v: formatInteger(d.heads), d2: isCompra ? "adquiridas" : "negociadas" },
+      { t: isCompra ? "Investimento total" : "Faturamento total", v: fmt(d.totalValue), d2: currency },
+      { t: isCompra ? "Custo médio / cabeça" : "Receita média / cabeça", v: fmt(d.avgPerHead), d2: "ticket médio" },
+      d.totalWeight > 0 ? { t: isCompra ? "Peso adquirido" : "Kg negociados", v: `${new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(d.totalWeight)} kg`, d2: "" } : null,
+      d.avgPricePerKg > 0 ? { t: isCompra ? "Custo médio / kg" : "Valor médio / kg", v: fmt(d.avgPricePerKg), d2: "" } : null,
+    ].filter(Boolean);
+
+    const farmRows = d.byFarm.length > 1 ? `
+      <div class="commercial-farm-breakdown">
+        ${d.byFarm.map((x) => `
+          <div class="commercial-farm-row">
+            <span class="farm-tag">${escapeHtml(x.name)}</span>
+            <span>${formatInteger(x.heads)} cab.</span>
+            <span class="fin-value">${fmt(x.value)}</span>
+          </div>
+        `).join("")}
+      </div>
+    ` : "";
+
+    return `
+      <div class="commercial-currency-block">
+        <div class="commercial-block-header">
+          <span class="currency-badge ${currency === "USD" ? "usd" : "brl"}">${currency}</span>
+          <span class="commercial-block-farms">${farms.map((f) => escapeHtml(f.name)).join(" · ")}</span>
+        </div>
+        <div class="commercial-cards-row">
+          ${cards.map((c) => `
+            <div class="commercial-card">
+              <p class="commercial-card-label">${c.t}</p>
+              <strong class="commercial-card-value">${c.v}</strong>
+              ${c.d2 ? `<p class="commercial-card-detail">${c.d2}</p>` : ""}
+            </div>
+          `).join("")}
+        </div>
+        ${farmRows}
+      </div>
+    `;
+  }
+
+  const brlHtml = buildSection(brlFarms, "BRL");
+  const usdHtml = buildSection(usdFarms, "USD");
+
+  if (!brlHtml && !usdHtml) {
+    el.hidden = true;
+    el.innerHTML = "";
+    return;
+  }
+
+  el.innerHTML = `<div class="commercial-dashboard-inner">${brlHtml}${usdHtml}</div>`;
+  el.hidden = false;
 }
 
 function handleRegisterAction(action) {
@@ -3122,6 +3377,17 @@ function openEditMovementDialog(farmId, movementId) {
       if (elements.movementLivePrice) elements.movementLivePrice.value = d.pricePerKg || "";
       if (elements.movementLiveKg) elements.movementLiveKg.value = d.weightKg || "";
     }
+    if (elements.movSaleBuyer) elements.movSaleBuyer.value = d.buyer || "";
+    if (elements.movSaleYieldPct) elements.movSaleYieldPct.value = d.yieldPct || "";
+  }
+
+  if (movement.type === "compra" && movement.purchaseDetails) {
+    const p = movement.purchaseDetails;
+    if (elements.movPurchaseSource) elements.movPurchaseSource.value = p.sourceProperty || "";
+    if (elements.movPurchaseAvgWeight) elements.movPurchaseAvgWeight.value = p.avgWeight || "";
+    if (elements.movPurchaseTotalWeight) { elements.movPurchaseTotalWeight.value = p.totalWeight || ""; delete elements.movPurchaseTotalWeight.dataset.manualEdit; }
+    if (elements.movPurchasePricePerKg) elements.movPurchasePricePerKg.value = p.pricePerKg || "";
+    if (elements.movPurchaseValuePerHead) elements.movPurchaseValuePerHead.value = p.valuePerHead || "";
   }
 
   if (movement.potreiro && elements.movementPotreiro) {
@@ -5234,6 +5500,13 @@ function openMovementDialog(initialType) {
   elements.movementCarcassKg.value = "";
   elements.movementValue.value = "";
   elements.movementNotes.value = "";
+  if (elements.movSaleBuyer) elements.movSaleBuyer.value = "";
+  if (elements.movSaleYieldPct) elements.movSaleYieldPct.value = "";
+  if (elements.movPurchaseSource) elements.movPurchaseSource.value = "";
+  if (elements.movPurchaseAvgWeight) elements.movPurchaseAvgWeight.value = "";
+  if (elements.movPurchaseTotalWeight) { elements.movPurchaseTotalWeight.value = ""; delete elements.movPurchaseTotalWeight.dataset.manualEdit; }
+  if (elements.movPurchasePricePerKg) elements.movPurchasePricePerKg.value = "";
+  if (elements.movPurchaseValuePerHead) elements.movPurchaseValuePerHead.value = "";
   resetMovementPhotoDrafts();
   updateMovementFormForType(initialType);
   elements.movementDialog.showModal();
@@ -5773,15 +6046,27 @@ function updateMovementFormForType(type) {
   const isSale = type === "venda";
   const isPremiumFarm = isPremiumSaleFarm(farm);
 
+  const isCompra = type === "compra";
   elements.movementSaleModeWrap.hidden = !isSale || !isPremiumFarm;
   elements.movementSaleHint.hidden = !isSale;
+  if (elements.movSaleExtraWrap) elements.movSaleExtraWrap.hidden = !isSale;
+  if (elements.movPurchaseSection) elements.movPurchaseSection.hidden = !isCompra;
+
   elements.movementValueWrap.hidden = false;
   elements.movementValue.readOnly = isSale;
-  elements.movementValueLabel.textContent = isSale ? "Total calculado" : "Valor total (opcional)";
-  elements.movementValue.placeholder = isSale ? "Calculado automaticamente" : "0,00";
-  if (!isSale) {
+  if (isCompra) {
+    elements.movementValue.readOnly = false;
+    elements.movementValueLabel.textContent = "Valor total";
+    elements.movementValue.placeholder = "Calculado automaticamente";
+  } else if (isSale) {
+    elements.movementValueLabel.textContent = "Total calculado";
+    elements.movementValue.placeholder = "Calculado automaticamente";
+  } else {
+    elements.movementValueLabel.textContent = "Valor total (opcional)";
+    elements.movementValue.placeholder = "0,00";
     elements.movementValue.value = "";
   }
+
   if (!movementTypeSupportsPhotos(type)) {
     resetMovementPhotoDrafts();
   } else {
@@ -5828,6 +6113,34 @@ function updateSaleComputedValue() {
   const weightKg = Number(saleMode === "carcaca" ? elements.movementCarcassKg.value : elements.movementLiveKg.value);
   const total = Number.isFinite(pricePerKg) && Number.isFinite(weightKg) ? pricePerKg * weightKg : 0;
   elements.movementValue.value = total > 0 ? total.toFixed(2) : "";
+}
+
+function updatePurchaseComputedValues() {
+  if (elements.movementType.value !== "compra") return;
+  const qty = Number(elements.movementQuantity.value || 0);
+  const avgWeight = Number(elements.movPurchaseAvgWeight?.value || 0);
+  const manualTotalWeight = Number(elements.movPurchaseTotalWeight?.value || 0);
+  const pricePerKg = Number(elements.movPurchasePricePerKg?.value || 0);
+
+  // Auto-fill total weight from qty × avgWeight (only if avg was changed)
+  if (qty > 0 && avgWeight > 0) {
+    const computed = +(qty * avgWeight).toFixed(1);
+    if (elements.movPurchaseTotalWeight && !elements.movPurchaseTotalWeight.dataset.manualEdit) {
+      elements.movPurchaseTotalWeight.value = computed;
+    }
+  }
+
+  const totalWeight = Number(elements.movPurchaseTotalWeight?.value || 0);
+
+  if (pricePerKg > 0 && totalWeight > 0) {
+    const total = +(pricePerKg * totalWeight).toFixed(2);
+    elements.movementValue.value = total;
+    if (qty > 0 && elements.movPurchaseValuePerHead) {
+      elements.movPurchaseValuePerHead.value = +(total / qty).toFixed(2);
+    }
+  } else if (Number(elements.movementValue.value) > 0 && qty > 0 && elements.movPurchaseValuePerHead) {
+    elements.movPurchaseValuePerHead.value = +(Number(elements.movementValue.value) / qty).toFixed(2);
+  }
 }
 
 function syncMovementCategoryOptionsForFarm(farm) {
@@ -6027,6 +6340,7 @@ async function handleMovementSubmit(event) {
   const category = farm.categories.find((item) => item.id === categoryId);
   let value = Number(elements.movementValue.value || 0);
   let saleDetails = null;
+  let purchaseDetails = null;
 
   // Handle transfer between potreiros (no stock change, only reallocation)
   if (type === "transferencia") {
@@ -6075,6 +6389,15 @@ async function handleMovementSubmit(event) {
     return;
   }
 
+  if (type === "compra") {
+    const sourceProperty = elements.movPurchaseSource?.value?.trim() || "";
+    const avgWeight = Number(elements.movPurchaseAvgWeight?.value) || null;
+    const totalWeight = Number(elements.movPurchaseTotalWeight?.value) || null;
+    const pricePerKg = Number(elements.movPurchasePricePerKg?.value) || null;
+    const valuePerHead = Number(elements.movPurchaseValuePerHead?.value) || null;
+    purchaseDetails = { sourceProperty, avgWeight, totalWeight, pricePerKg, valuePerHead };
+  }
+
   if (type === "venda") {
     const saleMode = isPremiumSaleFarm(farm) ? elements.movementSaleMode.value : "vivo";
     const pricePerKg = Number(saleMode === "carcaca" ? elements.movementCarcassPrice.value : elements.movementLivePrice.value);
@@ -6086,10 +6409,16 @@ async function handleMovementSubmit(event) {
     }
 
     value = pricePerKg * weightKg;
+    const buyer = elements.movSaleBuyer?.value?.trim() || "";
+    const yieldPct = Number(elements.movSaleYieldPct?.value) || null;
+    const valuePerHead = quantity > 0 ? +(value / quantity).toFixed(2) : null;
     saleDetails = {
       mode: saleMode,
       pricePerKg,
-      weightKg
+      weightKg,
+      buyer,
+      yieldPct,
+      valuePerHead
     };
   }
 
@@ -6127,6 +6456,8 @@ async function handleMovementSubmit(event) {
     delta,
     value,
     saleDetails,
+    purchaseDetails,
+    currency: getFarmCurrency(farm.id),
     notes,
     potreiro: selectedPotreiro,
     photos: movementTypeSupportsPhotos(type) ? runtime.movementPhotoDrafts.map((photo) => ({ ...photo })) : []

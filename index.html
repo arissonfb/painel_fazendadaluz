@@ -577,6 +577,46 @@
           Análise da venda
           <span class="field-note">O total será calculado automaticamente a partir do valor por kg e do peso informado.</span>
         </label>
+
+        <!-- VENDA: frigorífico + rendimento -->
+        <div class="sale-input-group form-span-2" id="movSaleExtraWrap" hidden>
+          <label>
+            Frigorífico / Comprador
+            <input type="text" id="movSaleBuyer" maxlength="80" placeholder="Ex.: Marfrig, Frigovale…">
+          </label>
+          <label>
+            Rendimento (%)
+            <input type="number" id="movSaleYieldPct" min="0" max="100" step="0.1" placeholder="Ex.: 52,5">
+          </label>
+        </div>
+
+        <!-- COMPRA: detalhes financeiros -->
+        <div class="form-section form-span-2" id="movPurchaseSection" hidden>
+          <div class="form-section-header">Detalhes da Compra</div>
+          <div class="purchase-detail-grid">
+            <label class="form-span-2">
+              Propriedade / Origem
+              <input type="text" id="movPurchaseSource" maxlength="100" placeholder="Ex.: Estância Santa Rosa, Fazenda Modelo…">
+            </label>
+            <label>
+              Peso médio (kg/cabeça)
+              <input type="number" id="movPurchaseAvgWeight" min="0" step="0.1" placeholder="0,0">
+            </label>
+            <label>
+              Peso total (kg)
+              <input type="number" id="movPurchaseTotalWeight" min="0" step="0.1" placeholder="calculado automaticamente">
+            </label>
+            <label>
+              Valor por kg
+              <input type="number" id="movPurchasePricePerKg" min="0" step="0.001" placeholder="0,000">
+            </label>
+            <label>
+              Valor por animal
+              <input type="number" id="movPurchaseValuePerHead" min="0" step="0.01" placeholder="calculado" readonly>
+            </label>
+          </div>
+        </div>
+
         <label id="movementValueWrap">
           <span id="movementValueLabel">Valor total (opcional)</span>
           <input type="number" id="movementValue" min="0" step="0.01" placeholder="0,00">
@@ -872,8 +912,8 @@
   </dialog>
 
   <!-- ── Movement Type Records Dialog ────────────────────────────── -->
-  <dialog id="movTypeRecordsDlg" class="modal">
-    <div class="modal-card mov-records-card">
+  <dialog id="movTypeRecordsDlg" class="modal modal-commercial">
+    <div class="modal-card mov-records-card commercial-records-card">
       <div class="modal-header">
         <div>
           <p class="panel-kicker" id="movTypeRecordsKicker">Movimentações</p>
@@ -881,12 +921,13 @@
         </div>
         <button type="button" class="modal-close" id="closeMovTypeRecordsDlg" aria-label="Fechar">&#x2715;</button>
       </div>
+      <div id="movCommercialDashboard" class="commercial-dashboard" hidden></div>
       <div class="mov-records-toolbar">
-        <input type="search" id="movTypeRecordsSearch" class="movements-search-input" placeholder="Buscar por código, categoria, obs…">
+        <input type="search" id="movTypeRecordsSearch" class="movements-search-input" placeholder="Buscar por código, categoria, fazenda…">
         <button type="button" class="btn-primary-sm" id="movTypeRecordsNewBtn">+ Novo Registro</button>
       </div>
-      <div class="mov-records-table-wrap">
-        <table class="mov-records-table">
+      <div class="mov-records-table-wrap commercial-table-wrap">
+        <table class="mov-records-table commercial-table">
           <thead id="movTypeRecordsHead"></thead>
           <tbody id="movTypeRecordsBody"></tbody>
         </table>

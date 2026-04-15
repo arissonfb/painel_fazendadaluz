@@ -1449,6 +1449,180 @@ input {
   background: rgba(255, 252, 247, 0.7);
 }
 
+/* ── Commercial Records Dialog (wider, financial) ─────────────────── */
+.modal-commercial {
+  --m-max: min(1200px, calc(100vw - 24px));
+}
+.commercial-records-card {
+  width: var(--m-max, min(1200px, calc(100vw - 24px)));
+  max-height: 92vh;
+}
+
+.commercial-table-wrap {
+  overflow: auto;
+  flex: 1;
+}
+
+.commercial-table {
+  min-width: 900px;
+}
+
+.commercial-table .num-col {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.fin-value {
+  font-weight: 700;
+  color: var(--green, #335c43);
+}
+
+/* ── Currency badge ───────────────────────────────────────────────── */
+.currency-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 6px;
+  vertical-align: middle;
+}
+.currency-badge.brl {
+  background: rgba(56, 120, 72, 0.13);
+  color: #2d6a40;
+}
+.currency-badge.usd {
+  background: rgba(60, 100, 180, 0.13);
+  color: #1e4fa0;
+}
+
+/* ── Commercial Dashboard inside dialog ───────────────────────────── */
+.commercial-dashboard {
+  border-bottom: 1px solid var(--line);
+  background: rgba(245, 235, 218, 0.35);
+}
+.commercial-dashboard-inner {
+  display: flex;
+  gap: 0;
+  flex-wrap: wrap;
+}
+.commercial-currency-block {
+  flex: 1 1 340px;
+  padding: 18px 24px 14px;
+  border-right: 1px solid var(--line);
+}
+.commercial-currency-block:last-child {
+  border-right: none;
+}
+.commercial-block-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.commercial-block-farms {
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+.commercial-cards-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.commercial-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 14px;
+  min-width: 120px;
+  flex: 1 1 120px;
+}
+.commercial-card-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin: 0 0 4px;
+}
+.commercial-card-value {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text);
+  display: block;
+  line-height: 1.2;
+}
+.commercial-card-detail {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin: 3px 0 0;
+}
+.commercial-farm-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.commercial-farm-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  background: rgba(255,255,255,0.7);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 4px 10px;
+}
+.farm-tag {
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* ── Purchase detail section in movement dialog ───────────────────── */
+.form-section {
+  background: rgba(245, 235, 218, 0.4);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 16px 10px;
+}
+.form-section-header {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+.purchase-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.purchase-detail-grid .form-span-2 {
+  grid-column: 1 / -1;
+}
+.purchase-detail-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.purchase-detail-grid input {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.9rem;
+  background: #fff;
+}
+.purchase-detail-grid input[readonly] {
+  background: rgba(245, 235, 218, 0.5);
+  color: var(--muted);
+}
+
 /* ── Potreiro Management Dialog ───────────────────────────────────── */
 .potr-manej-card {
   width: min(700px, calc(100vw - 24px));
