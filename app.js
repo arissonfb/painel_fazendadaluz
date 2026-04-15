@@ -1778,14 +1778,7 @@ function bindEvents() {
     btn.addEventListener("click", () => {
       elements.registerMenu.hidden = true;
       elements.registerGoldBtn.setAttribute("aria-expanded", "false");
-      const action = btn.dataset.mov;
-      if (action === "dado-mensal") {
-        openMonthlyDataDialog();
-      } else if (action === "categoria") {
-        openCategoryDialog();
-      } else {
-        openMovementDialog(action);
-      }
+      handleRegisterAction(btn.dataset.mov);
     });
   });
 
@@ -1801,14 +1794,14 @@ function bindEvents() {
   elements.visualHerdGrid.addEventListener("click", (e) => {
     const card = e.target.closest("[data-mov]");
     if (!card) return;
-    openMovementDialog(card.dataset.mov);
+    handleRegisterAction(card.dataset.mov);
   });
   elements.visualHerdGrid.addEventListener("keydown", (e) => {
     if (e.key === "Enter" || e.key === " ") {
       const card = e.target.closest("[data-mov]");
       if (!card) return;
       e.preventDefault();
-      openMovementDialog(card.dataset.mov);
+      handleRegisterAction(card.dataset.mov);
     }
   });
 
@@ -2261,12 +2254,20 @@ function renderDashboardVisualHerdGrid(farm) {
       </div>
     </button>
   `).join("");
+}
 
-  elements.visualHerdGrid.querySelectorAll("[data-mov]").forEach((card) => {
-    card.addEventListener("click", () => {
-      openMovementDialog(card.dataset.mov);
-    });
-  });
+function handleRegisterAction(action) {
+  if (action === "dado-mensal") {
+    openMonthlyDataDialog();
+    return;
+  }
+
+  if (action === "categoria") {
+    openCategoryDialog();
+    return;
+  }
+
+  openMovementDialog(action);
 }
 
 function renderFarmSwitch() {
