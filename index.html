@@ -88,6 +88,7 @@
           <button type="button" class="sidebar-shortcut backup-btn" id="backupButton">Backup dos dados</button>
           <button type="button" class="sidebar-shortcut subtle" id="restoreButton">Restaurar backup</button>
           <input type="file" id="restoreFileInput" accept=".json" hidden>
+          <button type="button" class="sidebar-shortcut" id="myAccountBtn" title="Alterar minha senha">Minha conta</button>
           <button type="button" class="sidebar-shortcut subtle" id="logoutButton">Sair</button>
         </div>
 
@@ -684,6 +685,13 @@
           Nova senha
           <input type="password" id="newUserPassword" maxlength="60" required placeholder="Digite a senha">
         </label>
+        <label>
+          Papel
+          <select id="newUserRole">
+            <option value="usuario">Usuário</option>
+            <option value="admin">Administrador</option>
+          </select>
+        </label>
       </div>
 
       <div class="modal-actions user-actions">
@@ -707,6 +715,13 @@
           <label>
             Senha
             <input type="password" id="editUserPassword" maxlength="60" placeholder="Nova senha (opcional)">
+          </label>
+          <label>
+            Papel
+            <select id="editUserRole">
+              <option value="usuario">Usuário</option>
+              <option value="admin">Administrador</option>
+            </select>
           </label>
         </div>
         <div class="modal-actions user-actions">
@@ -1023,6 +1038,36 @@
       <div id="mobileFarmSwitchList"></div>
     </div>
   </div>
+
+  <dialog id="changeMyPasswordDlg" class="modal">
+    <form method="dialog" id="changeMyPasswordForm" class="modal-card" style="max-width:400px">
+      <div class="modal-header">
+        <div>
+          <p class="panel-kicker">Conta</p>
+          <h2>Alterar senha</h2>
+        </div>
+        <button type="button" class="modal-close" id="closeChangeMyPasswordDlg" aria-label="Fechar">&#x2715;</button>
+      </div>
+      <div class="form-grid" style="grid-template-columns:1fr">
+        <label>
+          Senha atual
+          <input type="password" id="changeMyPasswordCurrent" required autocomplete="current-password">
+        </label>
+        <label>
+          Nova senha
+          <input type="password" id="changeMyPasswordNew" required autocomplete="new-password" minlength="4">
+        </label>
+        <label>
+          Confirmar nova senha
+          <input type="password" id="changeMyPasswordConfirm" required autocomplete="new-password">
+        </label>
+      </div>
+      <p class="auth-feedback" id="changeMyPasswordFeedback" hidden></p>
+      <div class="modal-actions">
+        <button type="submit" class="action-btn secondary">Salvar nova senha</button>
+      </div>
+    </form>
+  </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>

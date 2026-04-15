@@ -157,7 +157,7 @@ const CLOUDINARY_UPLOAD_PRESET = "m6pymz4w";
 const BACKUP_DATE_KEY = "painelPecuario.lastBackup";
 const BACKUP_WARN_DAYS = 7;
 const DEFAULT_USERS = [
-  { id: "user-da-luz", login: "Hugo Balbuena", password: "hugo123" }
+  { id: "user-da-luz", login: "Hugo Balbuena", password: "hugo123", role: "admin" }
 ];
 
 const IMPORTED_SANITARY_RECORDS = {
@@ -1205,6 +1205,15 @@ function isAuthenticated() {
   return Boolean(getCurrentUser());
 }
 
+function isAdmin() {
+  const user = getCurrentUser();
+  return user?.role === "admin";
+}
+
+function getRoleLabel(role) {
+  return role === "admin" ? "Administrador" : "Usuário";
+}
+
 function renderAuthState() {
   const currentUser = getCurrentUser();
   const showSplash = !runtime.splashDismissed && !currentUser;
@@ -1214,7 +1223,25 @@ function renderAuthState() {
   if (elements.mobileBottomNav) elements.mobileBottomNav.hidden = showSplash || !currentUser;
   document.body.classList.toggle("login-mode", !currentUser && !showSplash);
   document.body.classList.toggle("splash-mode", showSplash);
-  elements.currentUserLabel.textContent = currentUser ? `Usuário: ${currentUser.login}` : "Usuário";
+  if (currentUser) {
+    elements.currentUserLabel.textContent = currentUser.login;
+    // show role badge
+    let roleBadge = document.getElementById("currentUserRoleBadge");
+    if (!roleBadge) {
+      roleBadge = document.createElement("span");
+      roleBadge.id = "currentUserRoleBadge";
+      elements.currentUserLabel.parentElement.appendChild(roleBadge);
+    }
+    roleBadge.className = `role-badge role-${currentUser.role || "usuario"}`;
+    roleBadge.textContent = getRoleLabel(currentUser.role);
+  } else {
+    elements.currentUserLabel.textContent = "Usuário";
+    const roleBadge = document.getElementById("currentUserRoleBadge");
+    if (roleBadge) roleBadge.remove();
+  }
+  if (elements.manageUsersButton) {
+    elements.manageUsersButton.hidden = !isAdmin();
+  }
 }
 
 function startSplashExperience() {
@@ -1284,13 +1311,15 @@ function renderUserList() {
   const currentUser = getCurrentUser();
   elements.userList.innerHTML = state.data.auth.users.map((user) => `
     <article class="user-row">
-      <div>
+      <div class="user-row-info">
         <strong>${escapeHtml(user.login)}</strong>
-        <span>${user.id === currentUser?.id ? "Usuário em uso agora" : "Acesso local salvo no navegador"}</span>
+        <span class="role-badge role-${user.role || "usuario"}">${getRoleLabel(user.role)}</span>
+        <small>${user.id === currentUser?.id ? "sessão atual" : ""}</small>
       </div>
       <div class="user-row-actions">
         <button type="button" class="ghost-btn" data-edit-user-id="${user.id}">Editar</button>
         <button type="button" class="ghost-btn" data-reset-user-id="${user.id}">Resetar senha</button>
+        ${user.id !== currentUser?.id ? `<button type="button" class="ghost-btn role-toggle-btn" data-toggle-role-id="${user.id}">${user.role === "admin" ? "→ Usuário" : "→ Admin"}</button>` : ""}
       </div>
     </article>
   `).join("");
@@ -1307,6 +1336,19 @@ function handleUserListInteraction(event) {
   const resetTrigger = event.target.closest("[data-reset-user-id]");
   if (resetTrigger) {
     openUserEditor(resetTrigger.dataset.resetUserId, true);
+    return;
+  }
+
+  const roleTrigger = event.target.closest("[data-toggle-role-id]");
+  if (roleTrigger) {
+    const userId = roleTrigger.dataset.toggleRoleId;
+    const user = state.data.auth.users.find((u) => u.id === userId);
+    if (user) {
+      user.role = user.role === "admin" ? "usuario" : "admin";
+      saveData();
+      renderUserList();
+    }
+    return;
   }
 }
 
@@ -1324,6 +1366,12 @@ function openUserEditor(userId, resetOnly = false) {
   elements.editUserPassword.value = "";
   elements.editUserPassword.placeholder = resetOnly ? "Digite a nova senha" : "Nova senha (opcional)";
   elements.editUserPassword.required = resetOnly;
+  // Show role select with current role
+  const roleSelect = document.getElementById("editUserRole");
+  if (roleSelect) {
+    roleSelect.value = user.role || "usuario";
+    roleSelect.closest("label").hidden = resetOnly;
+  }
 }
 
 function closeUserEditor() {
@@ -1367,14 +1415,16 @@ function handleUserEditSave() {
   if (nextPassword) {
     user.password = nextPassword;
   }
+  if (state.userEditingMode !== "reset") {
+    const roleSelect = document.getElementById("editUserRole");
+    if (roleSelect) {
+      user.role = roleSelect.value;
+    }
+  }
 
   saveData();
   renderUserList();
   renderAuthState();
-
-  if (user.id === state.data.auth.sessionUserId) {
-    elements.currentUserLabel.textContent = `Usuário: ${user.login}`;
-  }
 
   if (nextPassword) {
     alert("Senha atualizada com sucesso.");
@@ -1397,16 +1447,58 @@ function handleManageUsersSubmit(event) {
     return;
   }
 
+  const role = document.getElementById("newUserRole")?.value || "usuario";
   state.data.auth.users.push({
     id: slugify(`${login}-${Date.now()}`),
     login,
-    password
+    password,
+    role
   });
 
   saveData();
   elements.newUserLogin.value = "";
   elements.newUserPassword.value = "";
   renderUserList();
+}
+
+function openChangeMyPasswordDialog() {
+  const dlg = document.getElementById("changeMyPasswordDlg");
+  if (!dlg) return;
+  document.getElementById("changeMyPasswordCurrent").value = "";
+  document.getElementById("changeMyPasswordNew").value = "";
+  document.getElementById("changeMyPasswordConfirm").value = "";
+  document.getElementById("changeMyPasswordFeedback").hidden = true;
+  dlg.showModal();
+}
+
+function handleChangeMyPasswordSubmit(event) {
+  event.preventDefault();
+  const user = getCurrentUser();
+  if (!user) return;
+  const current = document.getElementById("changeMyPasswordCurrent").value;
+  const next = document.getElementById("changeMyPasswordNew").value;
+  const confirm = document.getElementById("changeMyPasswordConfirm").value;
+  const feedback = document.getElementById("changeMyPasswordFeedback");
+
+  if (user.password !== current) {
+    feedback.hidden = false;
+    feedback.textContent = "Senha atual incorreta.";
+    return;
+  }
+  if (next.length < 4) {
+    feedback.hidden = false;
+    feedback.textContent = "A nova senha deve ter pelo menos 4 caracteres.";
+    return;
+  }
+  if (next !== confirm) {
+    feedback.hidden = false;
+    feedback.textContent = "A confirmação não confere com a nova senha.";
+    return;
+  }
+  user.password = next;
+  saveData();
+  document.getElementById("changeMyPasswordDlg").close();
+  alert("Senha alterada com sucesso!");
 }
 
 function getFarm() {
@@ -1730,6 +1822,11 @@ function bindEvents() {
   elements.saveUserEditsButton.addEventListener("click", handleUserEditSave);
   elements.cancelUserEditButton.addEventListener("click", closeUserEditor);
   elements.closeManageUsersDialog.addEventListener("click", () => elements.manageUsersDialog.close());
+  document.getElementById("myAccountBtn")?.addEventListener("click", openChangeMyPasswordDialog);
+  document.getElementById("changeMyPasswordForm")?.addEventListener("submit", handleChangeMyPasswordSubmit);
+  document.getElementById("closeChangeMyPasswordDlg")?.addEventListener("click", () => {
+    document.getElementById("changeMyPasswordDlg").close();
+  });
   elements.sanitaryShortcut.addEventListener("click", () => {
     state.activeView = "sanitary";
     render();
@@ -6951,18 +7048,26 @@ function ensureDataShape(data, options = {}) {
   data.auth.users = data.auth.users.map((user, index) => ({
     id: user.id || `user-${index + 1}`,
     login: user.login || `Usuário ${index + 1}`,
-    password: user.password || ""
+    password: user.password || "",
+    role: user.role || ""
   }));
   data.auth.users = data.auth.users.map((user) => {
     if (user.id === "user-da-luz") {
       return {
         ...user,
         login: user.login || "Hugo Balbuena",
-        password: user.password || "hugo123"
+        password: user.password || "hugo123",
+        role: user.role || "admin"
       };
     }
 
     return user;
+  });
+  // Migrate users without roles — first user is admin, rest are usuario
+  data.auth.users.forEach((user, index) => {
+    if (!user.role) {
+      user.role = index === 0 ? "admin" : "usuario";
+    }
   });
   if (!data.auth.users.some((user) => user.id === data.auth.sessionUserId)) {
     data.auth.sessionUserId = "";

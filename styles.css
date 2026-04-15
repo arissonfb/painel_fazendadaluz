@@ -2067,6 +2067,42 @@ th {
   gap: 12px;
 }
 
+/* Role badges */
+.role-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid;
+}
+
+.role-admin {
+  color: #8B5E0A;
+  background: rgba(201, 140, 79, 0.14);
+  border-color: rgba(201, 140, 79, 0.4);
+}
+
+.role-usuario {
+  color: #2d5c3f;
+  background: rgba(55, 91, 67, 0.1);
+  border-color: rgba(55, 91, 67, 0.3);
+}
+
+.user-row-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.user-row-info small {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
 .user-row {
   display: flex;
   justify-content: space-between;
