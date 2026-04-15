@@ -739,6 +739,8 @@ input {
   border: 1px solid var(--line);
   display: flex;
   align-items: center;
+  position: relative;
+  z-index: 10;
   gap: 14px;
   flex-wrap: wrap;
 }
@@ -1104,6 +1106,39 @@ input {
 .visual-card-count {
   font-size: 1.1rem;
   padding: 5px 12px;
+}
+
+/* Clickable visual cards */
+.visual-card-action {
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.visual-card-action:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 32px rgba(54, 39, 24, 0.14);
+}
+
+.visual-card-action:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.visual-card-cta {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--gold);
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.visual-card-action:hover .visual-card-cta,
+.visual-card-action:focus-visible .visual-card-cta {
+  opacity: 1;
 }
 
 .content-grid {

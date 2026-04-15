@@ -1797,6 +1797,21 @@ function bindEvents() {
     }
   });
 
+  // Visual herd grid — click card to open movement dialog for that type
+  elements.visualHerdGrid.addEventListener("click", (e) => {
+    const card = e.target.closest("[data-mov]");
+    if (!card) return;
+    openMovementDialog(card.dataset.mov);
+  });
+  elements.visualHerdGrid.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      const card = e.target.closest("[data-mov]");
+      if (!card) return;
+      e.preventDefault();
+      openMovementDialog(card.dataset.mov);
+    }
+  });
+
   elements.editStockButton.addEventListener("click", openEditStockDialog);
   elements.georefButton.addEventListener("click", openGeorefDialog);
   elements.editFarmName.addEventListener("change", handleEditFarmChange);
@@ -2220,14 +2235,15 @@ function renderDashboardVisualHerdGrid(farm) {
     : `${MONTH_NAMES[Number(state.filters.month) - 1]}/${state.filters.year}`;
 
   const stats = [
-    { label: "Nascimentos", value: monthly.byType.nascimento, img: "./assets/calf.svg", detail: "nascidos no período" },
-    { label: "Mortes", value: monthly.byType.morte, img: "./assets/cow.svg", detail: "mortes registradas" },
-    { label: "Abate / Consumo", value: monthly.byType.consumo, img: "./assets/bull.svg", detail: "abates e consumo interno" },
-    { label: "Compras", value: monthly.byType.compra, img: "./assets/herd.svg", detail: "animais comprados" }
+    { label: "Nascimentos",    value: monthly.byType.nascimento, img: "./assets/calf.svg",  detail: "nascidos no período",        movType: "nascimento" },
+    { label: "Mortes",         value: monthly.byType.morte,      img: "./assets/cow.svg",   detail: "mortes registradas",          movType: "morte"      },
+    { label: "Abate / Consumo",value: monthly.byType.consumo,    img: "./assets/bull.svg",  detail: "abates e consumo interno",    movType: "consumo"    },
+    { label: "Compras",        value: monthly.byType.compra,     img: "./assets/herd.svg",  detail: "animais comprados",           movType: "compra"     },
+    { label: "Vendas",         value: monthly.byType.venda,      img: "./assets/angus-login.svg", detail: "animais vendidos",      movType: "venda"      },
   ];
 
   elements.visualHerdGrid.innerHTML = stats.map((stat) => `
-    <article class="visual-card">
+    <article class="visual-card visual-card-action" data-mov="${stat.movType}" title="Registrar ${stat.label}" tabindex="0" role="button">
       <div class="visual-card-image">
         <img src="${stat.img}" alt="${escapeHtml(stat.label)}">
       </div>
@@ -2240,6 +2256,7 @@ function renderDashboardVisualHerdGrid(farm) {
           <span class="visual-card-share visual-card-count">${formatInteger(stat.value)}</span>
         </div>
         <p>${stat.value === 0 ? "Nenhum registro no período." : `${formatInteger(stat.value)} ${stat.detail}.`}</p>
+        <span class="visual-card-cta">+ Registrar</span>
       </div>
     </article>
   `).join("");
@@ -6744,34 +6761,35 @@ function ensureDataShape(data, options = {}) {
     applyImportedFarmBaseline(farm);
   });
 
-  if (!preserveSnapshot) {
-    Object.entries(IMPORTED_SANITARY_RECORDS).forEach(([farmId, records]) => {
-      const farm = data.farms[farmId];
-      if (!farm) {
-        return;
+  // Always apply sanitary imports — idempotent (sourceId check prevents duplicates)
+  Object.entries(IMPORTED_SANITARY_RECORDS).forEach(([farmId, records]) => {
+    const farm = data.farms[farmId];
+    if (!farm) {
+      return;
+    }
+
+    records.forEach((record) => {
+      if (!farm.sanitaryRecords.some((item) => item.sourceId === record.sourceId)) {
+        farm.sanitaryRecords.push({
+          ...record,
+          id: record.sourceId || createMovementId(),
+          potreiro: record.potreiro || "Sem potreiro"
+        });
       }
-
-      records.forEach((record) => {
-        if (!farm.sanitaryRecords.some((item) => item.sourceId === record.sourceId)) {
-          farm.sanitaryRecords.push({
-            ...record,
-            id: record.sourceId || createMovementId(),
-            potreiro: record.potreiro || "Sem potreiro"
-          });
-        }
-        if (!farm.sanitaryProducts.includes(record.product)) {
-          farm.sanitaryProducts.push(record.product);
-        }
-        if (record.potreiro && !getPotreroEntries(farm).some((item) => normalizeText(item.name) === normalizeText(record.potreiro))) {
-          farm.potreiros.push({
-            id: createPotreroId(record.potreiro),
-            name: record.potreiro,
-            quantity: 0
-          });
-        }
-      });
+      if (!farm.sanitaryProducts.includes(record.product)) {
+        farm.sanitaryProducts.push(record.product);
+      }
+      if (record.potreiro && !getPotreroEntries(farm).some((item) => normalizeText(item.name) === normalizeText(record.potreiro))) {
+        farm.potreiros.push({
+          id: createPotreroId(record.potreiro),
+          name: record.potreiro,
+          quantity: 0
+        });
+      }
     });
+  });
 
+  if (!preserveSnapshot) {
     const allMonthlyRecords = { ...IMPORTED_MONTHLY_RECORDS };
     Object.entries(EXTENDED_MONTHLY_RECORDS).forEach(([farmId, records]) => {
       if (!allMonthlyRecords[farmId]) allMonthlyRecords[farmId] = [];
