@@ -1354,11 +1354,12 @@ input {
   color: var(--text);
 }
 
-.potr-tab-add.active    { background: var(--green); color: #fff; border-color: var(--green); }
-.potr-tab-transfer.active { background: #4f73a8; color: #fff; border-color: #4f73a8; }
-.potr-tab-sale.active   { background: var(--red); color: #fff; border-color: var(--red); }
-.potr-tab-death.active  { background: #5c3c2e; color: #fff; border-color: #5c3c2e; }
+.potr-tab-add.active     { background: var(--green); color: #fff; border-color: var(--green); }
+.potr-tab-transfer.active{ background: #4f73a8; color: #fff; border-color: #4f73a8; }
+.potr-tab-sale.active    { background: var(--red); color: #fff; border-color: var(--red); }
+.potr-tab-death.active   { background: #5c3c2e; color: #fff; border-color: #5c3c2e; }
 .potr-tab-consume.active { background: #6f5f4d; color: #fff; border-color: #6f5f4d; }
+.potr-tab-retorno.active { background: var(--sand-deep); color: #fff; border-color: var(--sand-deep); }
 
 /* Potreiros view accordion */
 .potreiros-farm-item {

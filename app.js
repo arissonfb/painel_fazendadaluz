@@ -2999,10 +2999,11 @@ function syncPotrManejForm() {
   const isSale = type === "venda";
   const isDeath = type === "morte";
   const isConsume = type === "consumo";
+  const isRetorno = type === "retorno";
   const farmId = runtime.potrManej.farmId;
   const potreirosId = runtime.potrManej.potreirosId;
 
-  // Destination potreiro: shown for adicionar (dest = current potrero pre-set) and intra-farm transfer
+  // Destination potreiro: shown for adicionar and intra-farm transfer (not retorno — dest is always unallocated)
   elements.potrManejDestPotrWrap.hidden = !isAdd && !isTransfer;
   if (isAdd) {
     elements.potrManejDestPotrLabel.textContent = "Potreiro de destino";
@@ -3029,8 +3030,8 @@ function syncPotrManejForm() {
   elements.potrManejPhotoWrap.hidden = !isDeath;
 
   // Submit button label + color
-  const labels = { adicionar: "Adicionar ao Rebanho", transferencia: "Registrar Transferência", venda: "Registrar Venda", morte: "Registrar Morte", consumo: "Registrar Abate" };
-  const classes = { adicionar: "purchase", transferencia: "secondary", venda: "sale", morte: "death", consumo: "neutral" };
+  const labels = { adicionar: "Adicionar ao Rebanho", transferencia: "Registrar Transferência", venda: "Registrar Venda", morte: "Registrar Morte", consumo: "Registrar Abate", retorno: "Retornar ao Total" };
+  const classes = { adicionar: "purchase", transferencia: "secondary", venda: "sale", morte: "death", consumo: "neutral", retorno: "secondary" };
   elements.potrManejSubmit.textContent = labels[type] || "Registrar";
   elements.potrManejSubmit.className = `action-btn ${classes[type] || "purchase"}`;
 }
@@ -3150,6 +3151,23 @@ function handlePotrManejSubmit(event) {
     updatePotreroQuantitiesFromAllocation(farm);
     const photos = type === "morte" ? runtime.potrManej.photoDrafts.map((p) => ({ ...p })) : [];
     farm.movements.push({ id: createMovementId(), type, date, categoryId, categoryName: category.name, quantity: qty, delta: -qty, value: 0, saleDetails: null, notes, potreiro: originId, sourceId: "", photos });
+
+  } else if (type === "retorno") {
+    // Move animals from current potreiro back to unallocated pool — no stock change
+    if (originId === UNALLOCATED_POTREIRO_KEY) {
+      alert("Este potreiro já é o pool geral. Selecione um potreiro específico.");
+      return;
+    }
+    const originQty = Number(category.allocation[originId] || 0);
+    if (originQty < qty) {
+      alert(`Apenas ${formatInteger(originQty)} animais alocados neste potreiro para essa categoria.`);
+      return;
+    }
+    category.allocation[originId] = originQty - qty;
+    category.allocation[UNALLOCATED_POTREIRO_KEY] = (Number(category.allocation[UNALLOCATED_POTREIRO_KEY] || 0)) + qty;
+    updatePotreroQuantitiesFromAllocation(farm);
+    const potreroName = getPotreroEntries(farm).find((p) => p.id === originId)?.name || originId;
+    farm.movements.push({ id: createMovementId(), type: "transferencia", date, categoryId, categoryName: category.name, quantity: qty, delta: 0, value: 0, saleDetails: null, notes: notes || `Retorno ao total — saída de "${potreroName}"`, potreiro: originId, potreiroDest: UNALLOCATED_POTREIRO_KEY, sourceId: "", photos: [] });
   }
 
   saveData();
