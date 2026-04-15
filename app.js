@@ -2243,7 +2243,7 @@ function renderDashboardVisualHerdGrid(farm) {
   ];
 
   elements.visualHerdGrid.innerHTML = stats.map((stat) => `
-    <article class="visual-card visual-card-action" data-mov="${stat.movType}" title="Registrar ${stat.label}" tabindex="0" role="link" aria-label="Abrir registro de ${stat.label}${isTotalView ? " no total" : ` em ${escapeHtml(farm.name)}`}">
+    <button type="button" class="visual-card visual-card-action visual-card-button" data-mov="${stat.movType}" title="Registrar ${stat.label}" aria-label="Abrir registro de ${stat.label}${isTotalView ? " no total" : ` em ${escapeHtml(farm.name)}`}">
       <div class="visual-card-image">
         <img src="${stat.img}" alt="${escapeHtml(stat.label)}">
       </div>
@@ -2258,8 +2258,14 @@ function renderDashboardVisualHerdGrid(farm) {
         <p>${stat.value === 0 ? "Nenhum registro no período." : `${formatInteger(stat.value)} ${stat.detail}.`}</p>
         <span class="visual-card-cta">Abrir registro</span>
       </div>
-    </article>
+    </button>
   `).join("");
+
+  elements.visualHerdGrid.querySelectorAll("[data-mov]").forEach((card) => {
+    card.addEventListener("click", () => {
+      openMovementDialog(card.dataset.mov);
+    });
+  });
 }
 
 function renderFarmSwitch() {

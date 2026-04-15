@@ -1114,6 +1114,18 @@ input {
   transition: transform 160ms ease, box-shadow 160ms ease;
 }
 
+.visual-card-button {
+  display: block;
+  width: 100%;
+  padding: 0;
+  text-align: left;
+  background: linear-gradient(180deg, rgba(255, 252, 247, 0.96), rgba(240, 229, 212, 0.86));
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  color: inherit;
+}
+
 .visual-card-action:hover {
   transform: translateY(-3px);
   box-shadow: 0 10px 32px rgba(54, 39, 24, 0.14);
