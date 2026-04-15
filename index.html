@@ -42,6 +42,7 @@
         <p class="hero-text auth-text">
           Use seu login e senha para acessar o painel das fazendas. O acesso inicial já vem configurado para a equipe Da Luz.
         </p>
+        <p class="hero-text auth-text">Perfis de Usuários e Administradores já podem ser gerenciados no sistema.</p>
 
         <form id="loginForm" class="auth-form">
           <label>
@@ -710,69 +711,75 @@
   </dialog>
 
   <dialog id="manageUsersDialog" class="modal">
-    <form method="dialog" id="manageUsersForm" class="modal-card">
+    <div class="modal-card user-mgmt-card">
       <div class="modal-header">
         <div>
-          <p class="panel-kicker">Acesso local</p>
+          <p class="panel-kicker">Gerenciamento de acesso</p>
           <h2>Usuários do sistema</h2>
         </div>
-        <button type="button" class="ghost-btn" id="closeManageUsersDialog">Fechar</button>
+        <button type="button" class="modal-close" id="closeManageUsersDialog" aria-label="Fechar">&#x2715;</button>
       </div>
 
-      <div class="form-grid">
-        <label>
-          Novo login
-          <input type="text" id="newUserLogin" maxlength="40" required placeholder="Ex.: gestor-arapey">
-        </label>
-        <label>
-          Nova senha
-          <input type="password" id="newUserPassword" maxlength="60" required placeholder="Digite a senha">
-        </label>
-        <label>
-          Papel
-          <select id="newUserRole">
-            <option value="usuario">Usuário</option>
-            <option value="admin">Administrador</option>
-          </select>
-        </label>
-      </div>
-
-      <div class="modal-actions user-actions">
-        <button type="submit" class="action-btn secondary">Adicionar usuário</button>
-      </div>
-
+      <!-- Existing users list -->
       <div class="user-list" id="userList"></div>
 
-      <div class="user-editor-panel" id="userEditorPanel" hidden>
-        <div class="panel-header">
-          <div>
-            <p class="panel-kicker">Editar usuário</p>
-            <h3 id="userEditorTitle">Atualizar credenciais</h3>
+      <!-- Add new user form -->
+      <form id="manageUsersForm" class="user-add-form">
+        <div class="user-add-header">
+          <p class="panel-kicker">Novo acesso</p>
+          <strong>Adicionar usuário</strong>
+        </div>
+        <div class="user-add-grid">
+          <label>
+            Login
+            <input type="text" id="newUserLogin" maxlength="40" required placeholder="Ex.: gestor-arapey">
+          </label>
+          <label>
+            Senha inicial
+            <input type="password" id="newUserPassword" maxlength="60" required placeholder="Mínimo 4 caracteres">
+          </label>
+          <label>
+            Perfil de acesso
+            <select id="newUserRole">
+              <option value="usuario">Usuário</option>
+              <option value="admin">Administrador</option>
+            </select>
+          </label>
+          <div class="user-add-action">
+            <button type="submit" class="action-btn purchase">Adicionar</button>
           </div>
         </div>
-        <div class="form-grid">
+      </form>
+
+      <!-- Edit / Reset panel -->
+      <div class="user-editor-panel" id="userEditorPanel" hidden>
+        <div class="user-editor-header">
+          <p class="panel-kicker" id="userEditorKicker">Editar usuário</p>
+          <strong id="userEditorTitle">Atualizar credenciais</strong>
+        </div>
+        <div class="user-editor-grid">
           <label>
             Login
             <input type="text" id="editUserLogin" maxlength="40" required>
           </label>
           <label>
-            Senha
-            <input type="password" id="editUserPassword" maxlength="60" placeholder="Nova senha (opcional)">
+            <span id="editUserPasswordLabel">Nova senha (deixe vazio para manter)</span>
+            <input type="password" id="editUserPassword" maxlength="60" placeholder="Nova senha">
           </label>
-          <label>
-            Papel
+          <label id="editUserRoleWrap">
+            Perfil de acesso
             <select id="editUserRole">
               <option value="usuario">Usuário</option>
               <option value="admin">Administrador</option>
             </select>
           </label>
         </div>
-        <div class="modal-actions user-actions">
-          <button type="button" class="action-btn secondary" id="saveUserEditsButton">Salvar alterações</button>
+        <div class="user-editor-actions">
+          <button type="button" class="action-btn purchase" id="saveUserEditsButton">Salvar</button>
           <button type="button" class="ghost-btn" id="cancelUserEditButton">Cancelar</button>
         </div>
       </div>
-    </form>
+    </div>
   </dialog>
 
   <dialog id="pdfOptionsDialog" class="modal">

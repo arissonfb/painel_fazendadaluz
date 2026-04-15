@@ -995,14 +995,19 @@ const elements = {
   manageUsersDialog: document.getElementById("manageUsersDialog"),
   userEditorPanel: document.getElementById("userEditorPanel"),
   userEditorTitle: document.getElementById("userEditorTitle"),
+  userEditorKicker: document.getElementById("userEditorKicker"),
+  editUserPasswordLabel: document.getElementById("editUserPasswordLabel"),
+  editUserRoleWrap: document.getElementById("editUserRoleWrap"),
   editUserLogin: document.getElementById("editUserLogin"),
   editUserPassword: document.getElementById("editUserPassword"),
+  editUserRole: document.getElementById("editUserRole"),
   saveUserEditsButton: document.getElementById("saveUserEditsButton"),
   cancelUserEditButton: document.getElementById("cancelUserEditButton"),
   manageUsersForm: document.getElementById("manageUsersForm"),
   closeManageUsersDialog: document.getElementById("closeManageUsersDialog"),
   newUserLogin: document.getElementById("newUserLogin"),
   newUserPassword: document.getElementById("newUserPassword"),
+  newUserRole: document.getElementById("newUserRole"),
   userList: document.getElementById("userList"),
   pdfOptionsDialog: document.getElementById("pdfOptionsDialog"),
   pdfOptionsForm: document.getElementById("pdfOptionsForm"),
@@ -1318,77 +1323,107 @@ function handleLogout() {
 }
 
 function openManageUsersDialog() {
+  if (!isAdmin()) return;
   renderUserList();
   elements.newUserLogin.value = "";
   elements.newUserPassword.value = "";
+  if (elements.newUserRole) elements.newUserRole.value = "usuario";
   elements.manageUsersDialog.showModal();
 }
 
 function renderUserList() {
   const currentUser = getCurrentUser();
-  elements.userList.innerHTML = state.data.auth.users.map((user) => `
-    <article class="user-row">
-      <div class="user-row-info">
-        <strong>${escapeHtml(user.login)}</strong>
-        <span class="role-badge role-${user.role || "usuario"}">${getRoleLabel(user.role)}</span>
-        <small>${user.id === currentUser?.id ? "sessão atual" : ""}</small>
-      </div>
-      <div class="user-row-actions">
-        <button type="button" class="ghost-btn" data-edit-user-id="${user.id}">Editar</button>
-        <button type="button" class="ghost-btn" data-reset-user-id="${user.id}">Resetar senha</button>
-        ${user.id !== currentUser?.id ? `<button type="button" class="ghost-btn role-toggle-btn" data-toggle-role-id="${user.id}">${user.role === "admin" ? "→ Usuário" : "→ Admin"}</button>` : ""}
-      </div>
-    </article>
-  `).join("");
+  const adminCount = state.data.auth.users.filter((u) => u.role === "admin").length;
+
+  elements.userList.innerHTML = state.data.auth.users.map((user) => {
+    const isSelf = user.id === currentUser?.id;
+    const isLastAdmin = user.role === "admin" && adminCount === 1;
+    const canDelete = !isSelf && !isLastAdmin;
+    return `
+      <article class="user-row">
+        <div class="user-row-info">
+          <div class="user-row-identity">
+            <strong>${escapeHtml(user.login)}</strong>
+            ${isSelf ? `<span class="user-self-tag">você</span>` : ""}
+          </div>
+          <span class="role-badge role-${user.role || "usuario"}">${getRoleLabel(user.role)}</span>
+        </div>
+        <div class="user-row-actions">
+          <button type="button" class="user-action-btn" data-edit-user-id="${user.id}" title="Editar login e perfil">Editar</button>
+          <button type="button" class="user-action-btn" data-reset-user-id="${user.id}" title="Redefinir senha">Resetar senha</button>
+          ${canDelete
+            ? `<button type="button" class="user-action-btn user-action-danger" data-delete-user-id="${user.id}" title="Excluir usuário">Excluir</button>`
+            : `<button type="button" class="user-action-btn user-action-disabled" disabled title="${isSelf ? "Não é possível excluir sua própria conta" : "O sistema precisa de ao menos um administrador"}">${isSelf ? "—" : "Excluir"}</button>`
+          }
+        </div>
+      </article>
+    `;
+  }).join("");
   closeUserEditor();
 }
 
 function handleUserListInteraction(event) {
   const editTrigger = event.target.closest("[data-edit-user-id]");
   if (editTrigger) {
-    openUserEditor(editTrigger.dataset.editUserId, false);
+    openUserEditor(editTrigger.dataset.editUserId, "edit");
     return;
   }
 
   const resetTrigger = event.target.closest("[data-reset-user-id]");
   if (resetTrigger) {
-    openUserEditor(resetTrigger.dataset.resetUserId, true);
+    openUserEditor(resetTrigger.dataset.resetUserId, "reset");
     return;
   }
 
-  const roleTrigger = event.target.closest("[data-toggle-role-id]");
-  if (roleTrigger) {
-    const userId = roleTrigger.dataset.toggleRoleId;
+  const deleteTrigger = event.target.closest("[data-delete-user-id]");
+  if (deleteTrigger) {
+    const userId = deleteTrigger.dataset.deleteUserId;
     const user = state.data.auth.users.find((u) => u.id === userId);
-    if (user) {
-      user.role = user.role === "admin" ? "usuario" : "admin";
-      saveData();
-      renderUserList();
+    if (!user) return;
+    if (!confirm(`Excluir o usuário "${user.login}"? Esta ação não pode ser desfeita.`)) return;
+    const adminCount = state.data.auth.users.filter((u) => u.role === "admin").length;
+    if (user.role === "admin" && adminCount <= 1) {
+      alert("Não é possível excluir o último administrador do sistema.");
+      return;
     }
+    if (user.id === state.data.auth.sessionUserId) {
+      alert("Você não pode excluir sua própria conta enquanto está conectado.");
+      return;
+    }
+    state.data.auth.users = state.data.auth.users.filter((u) => u.id !== userId);
+    saveData();
+    renderUserList();
     return;
   }
 }
 
-function openUserEditor(userId, resetOnly = false) {
+function openUserEditor(userId, mode = "edit") {
   const user = state.data.auth.users.find((item) => item.id === userId);
-  if (!user) {
-    return;
-  }
+  if (!user) return;
 
   state.userEditingId = userId;
-  state.userEditingMode = resetOnly ? "reset" : "edit";
+  state.userEditingMode = mode;
+
+  const isReset = mode === "reset";
   elements.userEditorPanel.hidden = false;
-  elements.userEditorTitle.textContent = resetOnly ? `Redefinir senha de ${user.login}` : `Editar ${user.login}`;
+  if (elements.userEditorKicker) elements.userEditorKicker.textContent = isReset ? "Redefinir senha" : "Editar usuário";
+  elements.userEditorTitle.textContent = user.login;
+
   elements.editUserLogin.value = user.login;
+  elements.editUserLogin.readOnly = isReset;
+
   elements.editUserPassword.value = "";
-  elements.editUserPassword.placeholder = resetOnly ? "Digite a nova senha" : "Nova senha (opcional)";
-  elements.editUserPassword.required = resetOnly;
-  // Show role select with current role
-  const roleSelect = document.getElementById("editUserRole");
-  if (roleSelect) {
-    roleSelect.value = user.role || "usuario";
-    roleSelect.closest("label").hidden = resetOnly;
+  elements.editUserPassword.placeholder = isReset ? "Nova senha obrigatória" : "Deixe vazio para manter a senha atual";
+  elements.editUserPassword.required = isReset;
+  if (elements.editUserPasswordLabel) {
+    elements.editUserPasswordLabel.textContent = isReset ? "Nova senha" : "Senha (deixe vazio para manter)";
   }
+
+  if (elements.editUserRole) elements.editUserRole.value = user.role || "usuario";
+  if (elements.editUserRoleWrap) elements.editUserRoleWrap.hidden = isReset;
+
+  // Scroll editor into view
+  elements.userEditorPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 function closeUserEditor() {
@@ -1396,21 +1431,20 @@ function closeUserEditor() {
   state.userEditingMode = null;
   elements.userEditorPanel.hidden = true;
   elements.editUserLogin.value = "";
+  elements.editUserLogin.readOnly = false;
   elements.editUserPassword.value = "";
   elements.editUserPassword.required = false;
+  if (elements.editUserRoleWrap) elements.editUserRoleWrap.hidden = false;
 }
 
 function handleUserEditSave() {
-  if (!state.userEditingId) {
-    return;
-  }
+  if (!state.userEditingId) return;
 
   const user = state.data.auth.users.find((item) => item.id === state.userEditingId);
-  if (!user) {
-    return;
-  }
+  if (!user) return;
 
-  const nextLogin = elements.editUserLogin.value.trim();
+  const isReset = state.userEditingMode === "reset";
+  const nextLogin = isReset ? user.login : elements.editUserLogin.value.trim();
   const nextPassword = elements.editUserPassword.value;
 
   if (!nextLogin) {
@@ -1423,31 +1457,35 @@ function handleUserEditSave() {
     return;
   }
 
-  if (state.userEditingMode === "reset" && !nextPassword) {
-    alert("Digite uma nova senha para redefinir a senha deste usuário.");
+  if (isReset && !nextPassword) {
+    alert("Digite a nova senha para redefinir.");
     return;
   }
 
-  user.login = nextLogin;
+  // Protect: can't downgrade the last admin
+  if (!isReset) {
+    const newRole = elements.editUserRole ? elements.editUserRole.value : user.role;
+    const adminCount = state.data.auth.users.filter((u) => u.role === "admin").length;
+    if (user.role === "admin" && newRole !== "admin" && adminCount <= 1) {
+      alert("Não é possível rebaixar o último administrador do sistema.");
+      return;
+    }
+    user.login = nextLogin;
+    user.role = newRole;
+  }
+
   if (nextPassword) {
     user.password = nextPassword;
-  }
-  if (state.userEditingMode !== "reset") {
-    const roleSelect = document.getElementById("editUserRole");
-    if (roleSelect) {
-      user.role = roleSelect.value;
-    }
   }
 
   saveData();
   renderUserList();
   renderAuthState();
-
-  if (nextPassword) {
-    alert("Senha atualizada com sucesso.");
-  }
-
   closeUserEditor();
+
+  if (isReset) {
+    alert(`Senha de "${user.login}" redefinida com sucesso.`);
+  }
 }
 
 function handleManageUsersSubmit(event) {
@@ -1455,7 +1493,10 @@ function handleManageUsersSubmit(event) {
   const login = elements.newUserLogin.value.trim();
   const password = elements.newUserPassword.value;
 
-  if (!login || !password) {
+  if (!login || !password) return;
+
+  if (password.length < 4) {
+    alert("A senha precisa ter pelo menos 4 caracteres.");
     return;
   }
 
@@ -1464,7 +1505,7 @@ function handleManageUsersSubmit(event) {
     return;
   }
 
-  const role = document.getElementById("newUserRole")?.value || "usuario";
+  const role = elements.newUserRole?.value || "usuario";
   state.data.auth.users.push({
     id: slugify(`${login}-${Date.now()}`),
     login,
@@ -7731,7 +7772,7 @@ function ensureDataShape(data, options = {}) {
     id: user.id || `user-${index + 1}`,
     login: user.login || `Usuário ${index + 1}`,
     password: user.password || "",
-    role: user.role || ""
+    role: user.role || "usuario"
   }));
   data.auth.users = data.auth.users.map((user) => {
     if (user.id === "user-da-luz") {

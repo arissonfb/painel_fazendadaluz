@@ -2248,102 +2248,237 @@ th {
   color: var(--green);
 }
 
-.user-actions {
-  justify-content: flex-start;
-}
-
-.user-list {
-  margin-top: 18px;
-  display: grid;
-  gap: 12px;
-}
-
-/* Role badges */
-.role-badge {
-  display: inline-block;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  padding: 2px 8px;
-  border-radius: 999px;
-  border: 1px solid;
-}
-
-.role-admin {
-  color: #8B5E0A;
-  background: rgba(201, 140, 79, 0.14);
-  border-color: rgba(201, 140, 79, 0.4);
-}
-
-.role-usuario {
-  color: #2d5c3f;
-  background: rgba(55, 91, 67, 0.1);
-  border-color: rgba(55, 91, 67, 0.3);
-}
-
-.user-row-info {
+/* ── User Management Dialog ────────────────────────────────────────── */
+.user-mgmt-card {
+  width: min(640px, calc(100vw - 24px));
+  max-height: 90vh;
+  overflow-y: auto;
   display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  padding: 0;
 }
 
-.user-row-info small {
-  color: var(--muted);
-  font-size: 0.75rem;
+.user-mgmt-card .modal-header {
+  padding: 22px 24px 16px;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  background: var(--card);
+  z-index: 2;
+}
+
+/* User list */
+.user-list {
+  display: grid;
+  gap: 8px;
+  padding: 16px 24px;
 }
 
 .user-row {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
   align-items: center;
-  padding: 14px 16px;
-  border-radius: 18px;
-  background: rgba(255, 252, 247, 0.82);
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: rgba(255, 252, 247, 0.9);
   border: 1px solid rgba(75, 56, 34, 0.1);
+}
+
+.user-row-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.user-row-identity {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .user-row strong {
-  display: block;
-  font-size: 1rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  word-break: break-word;
 }
 
-.user-row span {
+.user-self-tag {
+  font-size: 0.68rem;
+  font-weight: 700;
   color: var(--muted);
-  font-size: 0.88rem;
+  background: rgba(75, 56, 34, 0.08);
+  border-radius: 999px;
+  padding: 1px 7px;
+  letter-spacing: 0.03em;
 }
 
 .user-row-actions {
-  display: inline-flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
+.user-action-btn {
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 5px 11px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text);
+  transition: background 100ms, border-color 100ms;
+}
+
+.user-action-btn:hover {
+  background: rgba(75, 56, 34, 0.07);
+  border-color: rgba(75, 56, 34, 0.25);
+}
+
+.user-action-danger {
+  color: #8a2020;
+  border-color: rgba(138, 32, 32, 0.25);
+}
+
+.user-action-danger:hover {
+  background: rgba(138, 32, 32, 0.07);
+  border-color: rgba(138, 32, 32, 0.4);
+}
+
+.user-action-disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Role badges */
+.role-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid;
+}
+
+.role-admin {
+  color: #7a4e0a;
+  background: rgba(201, 140, 79, 0.16);
+  border-color: rgba(201, 140, 79, 0.45);
+}
+
+.role-usuario {
+  color: #235038;
+  background: rgba(55, 91, 67, 0.1);
+  border-color: rgba(55, 91, 67, 0.3);
+}
+
+/* Add user form */
+.user-add-form {
+  border-top: 1px solid var(--line);
+  padding: 16px 24px;
+  background: rgba(245, 235, 218, 0.3);
+}
+
+.user-add-header {
+  margin-bottom: 12px;
+}
+
+.user-add-header .panel-kicker {
+  margin-bottom: 2px;
+}
+
+.user-add-header strong {
+  font-size: 0.95rem;
+}
+
+.user-add-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.user-add-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.user-add-grid input,
+.user-add-grid select {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 0.88rem;
+  background: #fff;
+}
+
+.user-add-action {
+  display: flex;
+  align-items: flex-end;
+}
+
+/* Edit / reset panel */
 .user-editor-panel {
-  margin-top: 22px;
-  padding: 18px;
-  border-radius: 22px;
-  background: rgba(255, 255, 249, 0.95);
-  border: 1px solid rgba(75, 56, 34, 0.1);
+  border-top: 2px solid var(--green, #335c43);
+  padding: 16px 24px;
+  background: rgba(245, 235, 218, 0.5);
 }
 
-.user-editor-panel .panel-header {
-  margin-bottom: 16px;
-  padding: 0;
+.user-editor-header {
+  margin-bottom: 14px;
 }
 
-.user-editor-panel h3 {
-  margin: 0;
-  font-size: 1.05rem;
+.user-editor-header .panel-kicker {
+  margin-bottom: 2px;
 }
 
-.user-editor-panel .modal-actions {
-  justify-content: flex-start;
-  flex-wrap: wrap;
+.user-editor-header strong {
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.user-editor-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
+  margin-bottom: 14px;
+}
+
+.user-editor-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.user-editor-grid input,
+.user-editor-grid select {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 0.88rem;
+  background: #fff;
+}
+
+.user-editor-grid input[readonly] {
+  background: rgba(245, 235, 218, 0.6);
+  color: var(--muted);
+}
+
+.user-editor-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
 }
 
 .pdf-scope-group {
