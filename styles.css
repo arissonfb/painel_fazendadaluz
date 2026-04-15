@@ -3997,3 +3997,41 @@ th {
   }
   .inv-ranked-pct { display: none; }
 }
+
+/* ── Sanitary History Section ──────────────────────────────────── */
+.san-history-section {
+  margin-top: 18px;
+}
+
+.san-history-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 252, 247, 0.6);
+}
+
+.san-history-toolbar .movements-search-input {
+  flex: 1;
+  min-width: 200px;
+}
+
+.san-code {
+  color: #2d5c3f;
+  background: rgba(55, 91, 67, 0.1);
+  border-color: rgba(55, 91, 67, 0.2);
+  font-size: 0.72rem;
+}
+
+.san-product-badge {
+  display: inline-block;
+  background: rgba(55, 91, 67, 0.08);
+  border: 1px solid rgba(55, 91, 67, 0.15);
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 0.82rem;
+  color: var(--green);
+  font-weight: 600;
+}

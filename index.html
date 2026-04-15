@@ -82,7 +82,7 @@
 
         <div class="sidebar-section">
           <span class="sidebar-label">Acesso rápido</span>
-          <button type="button" class="sidebar-shortcut" id="sanitaryShortcut">Sanitário</button>
+          <button type="button" class="sidebar-shortcut" id="sanitaryShortcut">Manejo Sanitário</button>
           <button type="button" class="sidebar-shortcut" id="potreirosShortcut">Potreiros</button>
           <button type="button" class="sidebar-shortcut" id="manageUsersButton">Usuários</button>
           <button type="button" class="sidebar-shortcut backup-btn" id="backupButton">Backup dos dados</button>
@@ -445,23 +445,30 @@
           </article>
         </section>
 
-        <section class="content-grid lower-grid">
-          <article class="panel timeline-panel">
+        <section class="san-history-section">
+          <article class="panel">
             <div class="panel-header">
               <div>
-                <p class="panel-kicker">Aplicações registradas</p>
-                <h2>Histórico sanitário</h2>
+                <p class="panel-kicker">Histórico de aplicações</p>
+                <h2>Manejo Sanitário registrado</h2>
               </div>
+              <button type="button" class="action-btn secondary" id="exportSanitaryPdfBtn">Relatório Sanitário PDF</button>
+            </div>
+            <div class="san-history-toolbar">
+              <input type="search" id="sanitaryHistorySearch" class="movements-search-input" placeholder="Buscar por código, produto, categoria, potreiro…">
+              <div class="movements-pagination" id="sanitaryHistoryPagination"></div>
             </div>
             <div class="table-wrap">
               <table class="sanitary-table">
-                <thead>
+                <thead id="sanitaryTableHead">
                   <tr>
-                    <th>Fazenda</th>
+                    <th>Código</th>
                     <th>Data</th>
-                    <th>Manejo</th>
-                    <th>Destino e produto</th>
-                    <th>Origem</th>
+                    <th>Fazenda</th>
+                    <th>Categoria</th>
+                    <th>Qtd.</th>
+                    <th>Produto</th>
+                    <th>Potreiro</th>
                     <th>Obs.</th>
                     <th>Ações</th>
                   </tr>

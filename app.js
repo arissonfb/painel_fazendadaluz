@@ -20,6 +20,12 @@ function generateMovementCode(farm) {
   return prefix + String(farm.movementCodeSequence).padStart(5, "0");
 }
 
+function generateSanitaryCode(farm) {
+  farm.sanitaryCodeSequence = (farm.sanitaryCodeSequence || 0) + 1;
+  const prefix = getFarmCodePrefix(farm.id);
+  return `SAN-${prefix}-${String(farm.sanitaryCodeSequence).padStart(5, "0")}`;
+}
+
 function extractMovementCodeSequence(code, farmId) {
   if (typeof code !== "string" || !code.trim()) return 0;
   const prefix = getFarmCodePrefix(farmId);
@@ -785,6 +791,8 @@ const runtime = {
   potrManej: { farmId: null, potreirosId: null, type: "adicionar", photoDrafts: [] },
   movementsSearch: "",
   movementsPage: 0,
+  sanitarySearch: "",
+  sanitaryPage: 0,
 };
 
 const today = new Date();
@@ -1826,6 +1834,8 @@ function bindEvents() {
     render();
   });
 
+  document.getElementById("exportSanitaryPdfBtn")?.addEventListener("click", exportSanitaryPdfReport);
+
   elements.potreirosShortcut.addEventListener("click", () => {
     state.activeView = "potreiros";
     render();
@@ -2576,6 +2586,8 @@ function renderFarmSwitch() {
       state.activeView = "dashboard";
       runtime.movementsPage = 0;
       runtime.movementsSearch = "";
+      runtime.sanitaryPage = 0;
+      runtime.sanitarySearch = "";
       saveData();
       render();
     });
@@ -3215,33 +3227,26 @@ function getMovementNotes(movement) {
 
 function renderSanitarySummary(farm) {
   const { totalApplications, treatedAnimals, uniqueProducts, uniquePotreiros, latestRecord } = getSanitarySummary(farm);
+  const records = getFilteredSanitaryRecords(farm);
+
+  // Most used product
+  const productCount = {};
+  records.forEach((r) => { productCount[r.product] = (productCount[r.product] || 0) + 1; });
+  const topProduct = Object.entries(productCount).sort((a, b) => b[1] - a[1])[0];
+
+  // Most treated category
+  const catCount = {};
+  records.forEach((r) => { catCount[r.categoryName] = (catCount[r.categoryName] || 0) + (r.quantity || 0); });
+  const topCat = Object.entries(catCount).sort((a, b) => b[1] - a[1])[0];
 
   const cards = [
-    {
-      title: "Aplicações",
-      value: formatInteger(totalApplications),
-      detail: "registros sanitários no período filtrado"
-    },
-    {
-      title: "Animais tratados",
-      value: formatInteger(treatedAnimals),
-      detail: "somatório informado nos registros"
-    },
-    {
-      title: "Produtos usados",
-      value: formatInteger(uniqueProducts),
-      detail: "produtos diferentes no período"
-    },
-    {
-      title: "Potreiros usados",
-      value: formatInteger(uniquePotreiros),
-      detail: "destinos registrados no período"
-    },
-    {
-      title: "Último manejo",
-      value: latestRecord ? formatDate(latestRecord.date) : "-",
-      detail: latestRecord ? latestRecord.product : "sem registro no período"
-    }
+    { title: "Aplicações no período", value: formatInteger(totalApplications), detail: "registros sanitários no filtro ativo" },
+    { title: "Animais tratados", value: formatInteger(treatedAnimals), detail: "cabeças somadas nos registros" },
+    { title: "Produtos distintos", value: formatInteger(uniqueProducts), detail: "variedade de produtos aplicados" },
+    { title: "Potreiros atendidos", value: formatInteger(uniquePotreiros), detail: "campos com manejo registrado" },
+    { title: "Produto mais usado", value: topProduct ? escapeHtml(topProduct[0]) : "—", detail: topProduct ? `${topProduct[1]} aplicação(ões)` : "sem registros no período" },
+    { title: "Categoria mais tratada", value: topCat ? escapeHtml(topCat[0]) : "—", detail: topCat ? `${formatInteger(topCat[1])} cabeças no período` : "sem registros no período" },
+    { title: "Último manejo", value: latestRecord ? formatDate(latestRecord.date) : "—", detail: latestRecord ? `${latestRecord.product} · ${latestRecord.potreiro || "sem potreiro"}` : "nenhum registro disponível" }
   ];
 
   elements.sanitarySummary.innerHTML = cards.map((card) => `
@@ -3253,92 +3258,98 @@ function renderSanitarySummary(farm) {
   `).join("");
 }
 
+const SANITARY_PAGE_SIZE = 50;
+
 function renderSanitaryTable(farm) {
   const isTotalView = farm.id === TOTAL_FARM_ID;
 
+  // Build full sorted list with farmId attached
+  let allRecords;
   if (isTotalView) {
-    // Group records by farm
-    const farms = getAllFarms();
-    const farmGroups = farms.map((f) => ({
-      farm: f,
-      records: [...getFilteredSanitaryRecords(f)].sort((a, b) => new Date(b.date) - new Date(a.date))
-    })).filter((g) => g.records.length > 0);
+    allRecords = getAllFarms().flatMap((f) =>
+      getFilteredSanitaryRecords(f).map((r) => ({ ...r, _farmId: f.id, _farmName: f.name }))
+    );
+  } else {
+    allRecords = getFilteredSanitaryRecords(farm).map((r) => ({ ...r, _farmId: farm.id, _farmName: farm.name }));
+  }
+  allRecords = allRecords.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    if (!farmGroups.length) {
-      elements.sanitaryTableBody.innerHTML = `<tr><td colspan="7" class="table-empty-cell">Nenhum registro sanitário encontrado para o período selecionado.</td></tr>`;
-      return;
-    }
+  // Search filter
+  const query = runtime.sanitarySearch.trim().toLowerCase();
+  const filtered = query
+    ? allRecords.filter((r) =>
+        (r.code || "").toLowerCase().includes(query) ||
+        (r.product || "").toLowerCase().includes(query) ||
+        (r.categoryName || "").toLowerCase().includes(query) ||
+        (r.potreiro || "").toLowerCase().includes(query) ||
+        (r.notes || "").toLowerCase().includes(query) ||
+        (r._farmName || "").toLowerCase().includes(query)
+      )
+    : allRecords;
 
-    elements.sanitaryTableBody.innerHTML = farmGroups.map((group) => `
-      <tr class="sanitary-farm-group-row">
-        <td colspan="7">
-          <div class="sanitary-farm-group-header">
-            <span class="sanitary-farm-tag">${escapeHtml(group.farm.name)}</span>
-            <span class="sanitary-farm-count">${group.records.length} registro(s)</span>
-          </div>
-        </td>
-      </tr>
-      ${group.records.map((record) => `
-        <tr>
-          <td data-label="Fazenda"><span class="sanitary-origin imported">${escapeHtml(group.farm.name)}</span></td>
-          <td data-label="Data">${formatDate(record.date)}</td>
-          <td data-label="Manejo">
-            <div class="sanitary-main">
-              <strong>${escapeHtml(record.categoryName)}</strong>
-              <span>${formatMaybeQuantity(record.quantity)} cabeças</span>
-            </div>
-          </td>
-          <td data-label="Potreiro / Produto">
-            <div class="sanitary-main">
-              <strong>${escapeHtml(record.potreiro || "-")}</strong>
-              <span>${escapeHtml(record.product)}</span>
-            </div>
-          </td>
-          <td data-label="Origem">
-            <span class="sanitary-origin ${record.sourceId ? "imported" : "manual"}">${record.sourceId ? "Importado" : "Manual"}</span>
-          </td>
-          <td data-label="Obs.">${escapeHtml(record.notes || "-")}</td>
-          <td data-label="Ações">
-            <button type="button" class="table-action-btn" data-edit-sanitary-id="${record.id || record.sourceId}">Editar</button>
-          </td>
-        </tr>
-      `).join("")}
-    `).join("");
-    return;
+  const totalPages = Math.max(1, Math.ceil(filtered.length / SANITARY_PAGE_SIZE));
+  if (runtime.sanitaryPage >= totalPages) runtime.sanitaryPage = totalPages - 1;
+  const page = runtime.sanitaryPage;
+  const records = filtered.slice(page * SANITARY_PAGE_SIZE, (page + 1) * SANITARY_PAGE_SIZE);
+
+  // Wire search input
+  const searchInput = document.getElementById("sanitaryHistorySearch");
+  if (searchInput) {
+    searchInput.value = runtime.sanitarySearch;
+    searchInput.oninput = (e) => {
+      runtime.sanitarySearch = e.target.value;
+      runtime.sanitaryPage = 0;
+      renderSanitaryTable(farm);
+    };
   }
 
-  const records = [...getFilteredSanitaryRecords(farm)].sort((a, b) => new Date(b.date) - new Date(a.date));
+  // Render pagination
+  const paginationEl = document.getElementById("sanitaryHistoryPagination");
+  if (paginationEl) {
+    paginationEl.innerHTML = `
+      <span class="movements-count">${filtered.length} registro${filtered.length !== 1 ? "s" : ""}</span>
+      ${totalPages > 1 ? `
+        <button class="mov-page-btn" ${page === 0 ? "disabled" : ""} id="sanPrev">&#8249; Anterior</button>
+        <span class="mov-page-info">Pág. ${page + 1}/${totalPages}</span>
+        <button class="mov-page-btn" ${page >= totalPages - 1 ? "disabled" : ""} id="sanNext">Próxima &#8250;</button>
+      ` : ""}
+    `;
+    document.getElementById("sanPrev")?.addEventListener("click", () => { runtime.sanitaryPage--; renderSanitaryTable(farm); });
+    document.getElementById("sanNext")?.addEventListener("click", () => { runtime.sanitaryPage++; renderSanitaryTable(farm); });
+  }
 
   if (!records.length) {
-    elements.sanitaryTableBody.innerHTML = `<tr><td colspan="7" class="table-empty-cell">Nenhum registro sanitário encontrado para o período selecionado.</td></tr>`;
+    elements.sanitaryTableBody.innerHTML = `<tr><td colspan="9" class="table-empty-cell">${query ? "Nenhum registro encontrado." : "Nenhum registro sanitário no período."}</td></tr>`;
     return;
   }
 
-  elements.sanitaryTableBody.innerHTML = records.map((record) => `
-    <tr>
-      <td data-label="Fazenda">${escapeHtml(farm.name)}</td>
-      <td data-label="Data">${formatDate(record.date)}</td>
-      <td data-label="Manejo">
-        <div class="sanitary-main">
-          <strong>${escapeHtml(record.categoryName)}</strong>
-          <span>${formatMaybeQuantity(record.quantity)} cabeças</span>
-        </div>
-      </td>
-      <td data-label="Potreiro / Produto">
-        <div class="sanitary-main">
-          <strong>${escapeHtml(record.potreiro || "-")}</strong>
-          <span>${escapeHtml(record.product)}</span>
-        </div>
-      </td>
-      <td data-label="Origem">
-        <span class="sanitary-origin ${record.sourceId ? "imported" : "manual"}">${record.sourceId ? "Importado" : "Manual"}</span>
-      </td>
-      <td data-label="Obs.">${escapeHtml(record.notes || "-")}</td>
-      <td data-label="Ações">
-        <button type="button" class="table-action-btn" data-edit-sanitary-id="${record.id || record.sourceId}">Editar</button>
-      </td>
-    </tr>
-  `).join("");
+  elements.sanitaryTableBody.innerHTML = records.map((record) => {
+    const code = record.code
+      ? `<span class="movement-code san-code">${escapeHtml(record.code)}</span>`
+      : record.sourceId?.startsWith("xls-san-")
+        ? `<span class="movement-code movement-code-legacy">${escapeHtml("IMP-" + getFarmCodePrefix(record._farmId))}</span>`
+        : `<span class="movement-code movement-code-legacy">—</span>`;
+    const editId = record.id || record.sourceId;
+    return `
+      <tr>
+        <td>${code}</td>
+        <td data-label="Data">${formatDate(record.date)}</td>
+        <td data-label="Fazenda"><span class="sanitary-origin manual">${escapeHtml(record._farmName)}</span></td>
+        <td data-label="Categoria"><strong>${escapeHtml(record.categoryName)}</strong></td>
+        <td data-label="Qtd.">${formatMaybeQuantity(record.quantity)} cab.</td>
+        <td data-label="Produto">
+          <div class="sanitary-product-cell">
+            <span class="san-product-badge">${escapeHtml(record.product)}</span>
+          </div>
+        </td>
+        <td data-label="Potreiro">${escapeHtml(record.potreiro || "—")}</td>
+        <td data-label="Obs.">${escapeHtml(record.notes || "—")}</td>
+        <td data-label="Ações">
+          <button type="button" class="table-action-btn" data-edit-sanitary-id="${escapeHtml(editId)}">Editar</button>
+        </td>
+      </tr>
+    `;
+  }).join("");
 }
 
 function renderSanitaryFarmSwitch() {
@@ -6241,6 +6252,8 @@ function handleSanitarySubmit(event) {
   } else {
     farm.sanitaryRecords.push({
       id: createMovementId(),
+      code: generateSanitaryCode(farm),
+      farmId: farm.id,
       ...recordPayload
     });
   }
@@ -7129,6 +7142,160 @@ async function appendFarmPdfSection(doc, farm, periodLabel, year, month) {
   await appendMovementPhotoPages(doc, farm, year, month);
 }
 
+async function exportSanitaryPdfReport() {
+  if (!window.jspdf || typeof window.jspdf.jsPDF !== "function") {
+    alert("A biblioteca de PDF não foi carregada. Verifique sua conexão e tente novamente.");
+    return;
+  }
+
+  const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
+  const farms = isTotalView ? getAllFarms() : [getFarm()].filter(Boolean);
+  if (!farms.length) {
+    alert("Nenhuma fazenda válida encontrada.");
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+
+  for (const farm of farms) {
+    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    await appendSanitaryPdfReport(doc, farm);
+    const periodSuffix = state.filters.month === "all"
+      ? state.filters.year
+      : `${state.filters.year}-${state.filters.month}`;
+    doc.save(`manejo-sanitario-${slugify(farm.name)}-${periodSuffix}.pdf`);
+  }
+}
+
+async function appendSanitaryPdfReport(doc, farm) {
+  const year = state.filters.year;
+  const month = state.filters.month;
+  const periodLabel = month === "all"
+    ? `Ano ${year}`
+    : `${MONTH_NAMES[Number(month) - 1]}/${year}`;
+
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const margin = 14;
+
+  // Header
+  try {
+    const logoData = await loadLogoForPdf("#ffffff");
+    doc.addImage(logoData, "JPEG", margin, 8, 18, 18);
+  } catch (e) { /* ignore */ }
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text("Relatório de Manejo Sanitário", margin + 22, 14);
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Fazenda: ${farm.name}   Período: ${periodLabel}`, margin + 22, 20);
+  doc.text(`Responsável técnico: ${TECHNICAL_MANAGER_NAME}`, margin + 22, 26);
+
+  // Divider
+  doc.setDrawColor(55, 91, 67);
+  doc.setLineWidth(0.6);
+  doc.line(margin, 30, pageW - margin, 30);
+
+  // Summary stats
+  const { totalApplications, treatedAnimals, uniqueProducts } = getSanitarySummary(farm);
+  const records = getFilteredSanitaryRecords(farm).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(55, 91, 67);
+  doc.text(`Aplicações: ${totalApplications}`, margin, 37);
+  doc.text(`Animais tratados: ${treatedAnimals}`, margin + 50, 37);
+  doc.text(`Produtos distintos: ${uniqueProducts}`, margin + 110, 37);
+  doc.text(`Total de registros: ${records.length}`, margin + 170, 37);
+  doc.setTextColor(0, 0, 0);
+
+  // Table
+  let y = 44;
+  const colW = [
+    (pageW - 2 * margin) * 0.09,
+    (pageW - 2 * margin) * 0.07,
+    (pageW - 2 * margin) * 0.14,
+    (pageW - 2 * margin) * 0.06,
+    (pageW - 2 * margin) * 0.17,
+    (pageW - 2 * margin) * 0.14,
+    (pageW - 2 * margin) * 0.33
+  ];
+  const headers = ["Código", "Data", "Categoria", "Qtd.", "Produto", "Potreiro", "Observações"];
+  const rowH = 8;
+
+  // Table header
+  doc.setFillColor(55, 91, 67);
+  doc.rect(margin, y, pageW - 2 * margin, rowH, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  let x = margin;
+  headers.forEach((h, i) => {
+    doc.text(h, x + 2, y + 5.5);
+    x += colW[i];
+  });
+  y += rowH;
+  doc.setTextColor(0, 0, 0);
+  doc.setFont("helvetica", "normal");
+
+  records.forEach((record, idx) => {
+    if (y + rowH > pageH - 12) {
+      doc.addPage();
+      y = 14;
+      doc.setFillColor(55, 91, 67);
+      doc.rect(margin, y, pageW - 2 * margin, rowH, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      x = margin;
+      headers.forEach((h, i) => { doc.text(h, x + 2, y + 5.5); x += colW[i]; });
+      y += rowH;
+      doc.setTextColor(0, 0, 0);
+      doc.setFont("helvetica", "normal");
+    }
+
+    if (idx % 2 === 0) {
+      doc.setFillColor(245, 240, 230);
+      doc.rect(margin, y, pageW - 2 * margin, rowH, "F");
+    }
+
+    doc.setFontSize(7.5);
+    const cells = [
+      record.code || (record.sourceId?.startsWith("xls-san-") ? `IMP-${getFarmCodePrefix(farm.id)}` : "—"),
+      formatDate(record.date),
+      record.categoryName || "—",
+      String(record.quantity || "—"),
+      record.product || "—",
+      record.potreiro || "—",
+      record.notes || ""
+    ];
+
+    x = margin;
+    cells.forEach((cell, i) => {
+      const maxW = colW[i] - 4;
+      const text = doc.splitTextToSize(String(cell), maxW)[0] || "";
+      doc.text(text, x + 2, y + 5.5);
+      x += colW[i];
+    });
+
+    doc.setDrawColor(220, 210, 195);
+    doc.setLineWidth(0.2);
+    doc.line(margin, y + rowH, pageW - margin, y + rowH);
+    y += rowH;
+  });
+
+  // Footer
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(7.5);
+    doc.setTextColor(150, 130, 100);
+    doc.text(`Página ${i} de ${pageCount}`, pageW - margin, pageH - 6, { align: "right" });
+    doc.text(`Estabelecimentos Da Luz · Manejo Sanitário · ${periodLabel}`, margin, pageH - 6);
+  }
+}
+
 function getPdfFileName(farms, year, month) {
   const periodSuffix = month === "all" ? year : `${year}-${month}`;
   if (farms.length === 1) {
@@ -7282,6 +7449,9 @@ function ensureDataShape(data, options = {}) {
       id: record.id || record.sourceId || createMovementId(),
       potreiro: record.potreiro || "Sem potreiro"
     }));
+    if (typeof farm.sanitaryCodeSequence !== "number") {
+      farm.sanitaryCodeSequence = farm.sanitaryRecords.filter((r) => !r.sourceId).length;
+    }
     farm.movements = farm.movements.map((movement) => ({
       ...movement,
       id: movement.id || movement.sourceId || createMovementId(),
