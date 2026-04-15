@@ -2568,8 +2568,12 @@ function openMovTypeRecordsDlg(movType) {
   elements.movTypeRecordsTitle.textContent = typeMeta ? typeMeta.label : capitalize(movType);
   elements.movTypeRecordsSearch.value = "";
   elements.movTypeRecordsNewBtn.onclick = () => {
-    elements.movTypeRecordsDlg.close();
-    openMovementDialog(movType);
+    if (elements.movTypeRecordsDlg.open) {
+      elements.movTypeRecordsDlg.close();
+    }
+    window.setTimeout(() => {
+      openMovementDialog(movType);
+    }, 0);
   };
   elements.movTypeRecordsSearch.oninput = () => renderMovTypeRecordsBody(movType, 0);
 
