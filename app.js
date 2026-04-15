@@ -2763,13 +2763,10 @@ function openMovTypeRecordsDlg(movType) {
   elements.movTypeRecordsTitle.textContent = typeMeta ? typeMeta.label : capitalize(movType);
   elements.movTypeRecordsSearch.value = "";
   elements.movTypeRecordsNewBtn.textContent = `+ Novo ${typeMeta ? typeMeta.label : capitalize(movType)}`;
+  elements.movTypeRecordsNewBtn.setAttribute("aria-label", `Abrir formulário de novo ${typeMeta ? typeMeta.label.toLowerCase() : movType}`);
   elements.movTypeRecordsNewBtn.onclick = () => {
-    if (elements.movTypeRecordsDlg.open) {
-      runtime.pendingMovementDialogType = movType;
-      elements.movTypeRecordsDlg.close();
-      return;
-    }
-    openMovementDialog(movType);
+    runtime.pendingMovementDialogType = movType;
+    elements.movTypeRecordsDlg.close();
   };
   elements.movTypeRecordsSearch.oninput = () => renderMovTypeRecordsBody(movType, 0);
 

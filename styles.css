@@ -1407,11 +1407,14 @@ input {
   flex-direction: column;
   overflow: hidden;
   padding: 0;
+  background: linear-gradient(180deg, #fff, #fbf7f0);
+  border-radius: 24px;
+  box-shadow: 0 28px 70px rgba(35, 47, 38, 0.12);
 }
 
 .mov-records-card .modal-header {
   padding: 22px 24px 16px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid rgba(118, 110, 94, 0.14);
   flex-shrink: 0;
 }
 
@@ -1419,14 +1422,15 @@ input {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 24px;
-  border-bottom: 1px solid var(--line);
+  padding: 16px 24px;
+  border-bottom: 1px solid rgba(118, 110, 94, 0.12);
   flex-shrink: 0;
-  background: linear-gradient(180deg, rgba(255, 251, 245, 0.98), rgba(246, 236, 221, 0.9));
+  background: linear-gradient(180deg, rgba(255, 254, 250, 0.96), rgba(247, 237, 219, 0.9));
 }
 
 .mov-records-toolbar .movements-search-input {
   flex: 1;
+  min-width: 220px;
 }
 
 .btn-primary-sm {
@@ -1434,14 +1438,14 @@ input {
   background: linear-gradient(135deg, var(--green) 0%, var(--green-deep) 100%);
   color: #fff;
   border: none;
-  border-radius: 10px;
-  padding: 10px 16px;
-  font-size: 0.85rem;
+  border-radius: 14px;
+  padding: 12px 18px;
+  font-size: 0.92rem;
   font-weight: 700;
   cursor: pointer;
   transition: background 120ms ease, transform 120ms ease, box-shadow 120ms ease;
   white-space: nowrap;
-  box-shadow: 0 10px 22px rgba(40, 67, 51, 0.18);
+  box-shadow: 0 14px 28px rgba(40, 67, 51, 0.18);
 }
 
 .btn-primary-sm:hover {
@@ -1457,14 +1461,14 @@ input {
 .mov-records-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.88rem;
+  font-size: 0.9rem;
 }
 
 .mov-records-table th,
 .mov-records-table td {
-  padding: 10px 14px;
+  padding: 14px 16px;
   text-align: left;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid rgba(118, 110, 94, 0.12);
   vertical-align: top;
 }
 
@@ -1473,11 +1477,12 @@ input {
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--muted);
+  letter-spacing: 0.08em;
+  color: #6a5c45;
   position: sticky;
   top: 0;
   z-index: 1;
+  background: rgba(248, 237, 217, 0.95);
 }
 
 .mov-records-table tr:hover td {
@@ -1507,25 +1512,67 @@ input {
 }
 
 .mov-records-main-cell strong {
-  color: var(--text);
-  font-size: 0.9rem;
-  line-height: 1.35;
+  color: #2f3d2c;
+  font-size: 0.95rem;
+  line-height: 1.4;
 }
 
 .mov-records-main-cell span {
-  color: var(--muted);
-  font-size: 0.77rem;
-  line-height: 1.45;
+  color: rgba(85, 75, 60, 0.92);
+  font-size: 0.78rem;
+  line-height: 1.5;
 }
 
 .mov-records-footer {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
-  padding: 12px 24px;
-  border-top: 1px solid var(--line);
+  padding: 14px 24px;
+  border-top: 1px solid rgba(118, 110, 94, 0.14);
   flex-shrink: 0;
-  background: rgba(255, 252, 247, 0.7);
+  background: rgba(252, 247, 239, 0.95);
+}
+
+.movement-actions-cell {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.movement-action-btn {
+  border: 1px solid rgba(53, 80, 56, 0.14);
+  background: #fff;
+  color: #2d4731;
+  padding: 8px 11px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  margin-right: 6px;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+}
+
+.movement-action-btn:hover {
+  background: rgba(53, 80, 56, 0.08);
+  border-color: rgba(53, 80, 56, 0.24);
+  transform: translateY(-1px);
+}
+
+.movement-code {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(54, 84, 57, 0.12);
+  color: #2f4b31;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.table-empty-cell {
+  text-align: center;
+  padding: 46px 0;
+  color: var(--muted);
 }
 
 /* ── Commercial Records Dialog (wider, financial) ─────────────────── */

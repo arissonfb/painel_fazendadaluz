@@ -1,0 +1,15 @@
+services:
+  - type: static_site
+    name: fazenda-daluz
+    env: static
+    branch: main
+    root: .
+    publish: .
+
+  - type: web_service
+    name: painel-pecuário-api
+    env: node
+    branch: main
+    root: backend
+    buildCommand: npm install
+    startCommand: node server.js
