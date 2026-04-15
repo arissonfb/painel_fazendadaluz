@@ -790,7 +790,7 @@ const runtime = {
   cloudSyncing: false,
   cloudEnabled: true,
   editingMovement: null,  // { farmId, movementId } when editing an existing movement
-  potrManej: { farmId: null, potreirosId: null, type: "adicionar", photoDrafts: [] },
+  potrManej: { farmId: null, potreirosId: null, type: "transferencia", photoDrafts: [] },
   movementsSearch: "",
   movementsPage: 0,
   sanitarySearch: "",
@@ -2099,7 +2099,7 @@ function bindEvents() {
   elements.closeMovementDialog.addEventListener("click", () => { runtime.editingMovement = null; elements.movementDialog.close(); });
   elements.closeMovTypeRecordsDlg.addEventListener("click", () => elements.movTypeRecordsDlg.close());
   elements.closePotrManejDlg.addEventListener("click", () => elements.potrManejoDlg.close());
-  elements.potrActionTabs.addEventListener("click", (e) => {
+  elements.potrActionTabs?.addEventListener("click", (e) => {
     const tab = e.target.closest("[data-manej]");
     if (!tab) return;
     const type = tab.dataset.manej;
@@ -2109,7 +2109,7 @@ function bindEvents() {
   });
   elements.potrManejDestFarm.addEventListener("change", syncPotrManejDestFarmPotreiros);
   elements.potrManejForm.addEventListener("submit", handlePotrManejSubmit);
-  elements.potrManejPhotos.addEventListener("change", handlePotrManejPhotosChange);
+  elements.potrManejPhotos?.addEventListener("change", handlePotrManejPhotosChange);
   elements.closeCategoryDialog.addEventListener("click", () => elements.categoryDialog.close());
   elements.closeEditStockDialog.addEventListener("click", () => elements.editStockDialog.close());
   elements.georefSaveButton.addEventListener("click", handleGeorefSave);
@@ -3856,7 +3856,7 @@ function renderPotreirosView() {
             <button type="button" class="potr-manej-btn"
               data-potr-manej-farm="${escapeHtml(farm.id)}"
               data-potr-manej-id="${escapeHtml(p.id)}">
-              Manejo do Potreiro
+              Transferir animais
             </button>
           </article>
         `).join("")
@@ -3902,10 +3902,10 @@ function openPotrManejDialog(farmId, potreirosId) {
   const allocatedTotal = getRegisteredPotreroAnimals(farm);
   const unallocated = farmTotal - allocatedTotal;
 
-  runtime.potrManej = { farmId, potreirosId, type: "adicionar", photoDrafts: [] };
+  runtime.potrManej = { farmId, potreirosId, type: "transferencia", photoDrafts: [] };
 
   elements.potrManejFarmKicker.textContent = farm.name;
-  elements.potrManejDlgTitle.textContent = `Manejo — ${potreroName}`;
+  elements.potrManejDlgTitle.textContent = `Transferência — ${potreroName}`;
   elements.potrManejFarmTotal.textContent = formatInteger(farmTotal);
   elements.potrManejPotrTotal.textContent = formatInteger(potreroQty);
   elements.potrManejUnallocated.textContent = formatInteger(Math.max(0, unallocated));
@@ -3913,28 +3913,23 @@ function openPotrManejDialog(farmId, potreirosId) {
   // Reset form
   elements.potrManejDate.value = new Date().toISOString().slice(0, 10);
   elements.potrManejQty.value = "";
-  elements.potrManejValue.value = "";
+  if (elements.potrManejValue) elements.potrManejValue.value = "";
   elements.potrManejNotes.value = "";
-  elements.potrManejPhotos.value = "";
-  elements.potrManejPhotoPreview.innerHTML = "";
-  elements.potrManejPhotoPanel.hidden = true;
-  elements.potrManejPhotoCounter.textContent = "Nenhuma foto anexada.";
+  if (elements.potrManejPhotos) elements.potrManejPhotos.value = "";
+  if (elements.potrManejPhotoPreview) elements.potrManejPhotoPreview.innerHTML = "";
+  if (elements.potrManejPhotoPanel) elements.potrManejPhotoPanel.hidden = true;
+  if (elements.potrManejPhotoCounter) elements.potrManejPhotoCounter.textContent = "Nenhuma foto anexada.";
 
-  // Reset tabs to "adicionar"
-  elements.potrActionTabs.querySelectorAll(".potr-action-tab").forEach((t) => {
-    t.classList.toggle("active", t.dataset.manej === "adicionar");
-  });
+  if (elements.potrActionTabs) {
+    elements.potrActionTabs.querySelectorAll(".potr-action-tab").forEach((t) => {
+      t.classList.toggle("active", t.dataset.manej === "transferencia");
+    });
+  }
 
   // Populate categories
   elements.potrManejCategory.innerHTML = farm.categories.map((c) => `
     <option value="${escapeHtml(c.id)}">${escapeHtml(c.name)} (${formatInteger(c.quantity)})</option>
   `).join("");
-
-  // Populate potreiros for destination
-  const potreirosOpts = getPotreroEntries(farm).map((p) => `
-    <option value="${escapeHtml(p.id)}" ${p.id === potreirosId ? "selected" : ""}>${escapeHtml(p.name)} (${formatInteger(p.quantity)})</option>
-  `).join("");
-  elements.potrManejDestPotr.innerHTML = potreirosOpts || `<option value="${UNALLOCATED_POTREIRO_KEY}">Sem potreiro</option>`;
 
   // Populate destination farms (all farms except current)
   const allFarms = getAllFarms();
@@ -3951,21 +3946,45 @@ function openPotrManejDialog(farmId, potreirosId) {
 function syncPotrManejDestFarmPotreiros() {
   const destFarmId = elements.potrManejDestFarm.value;
   const destFarm = state.data.farms[destFarmId];
-  if (!destFarm) { elements.potrManejDestFarmPotr.innerHTML = ""; }
-  else {
-    const opts = getPotreroEntries(destFarm).map((p) => `
-      <option value="${escapeHtml(p.id)}">${escapeHtml(p.name)} (${formatInteger(p.quantity)})</option>
-    `).join("");
-    elements.potrManejDestFarmPotr.innerHTML = opts || `<option value="${UNALLOCATED_POTREIRO_KEY}">Sem potreiro</option>`;
+  const originFarmId = runtime.potrManej.farmId;
+  const originPotreroId = runtime.potrManej.potreirosId || UNALLOCATED_POTREIRO_KEY;
+  const isSameFarm = !destFarmId || destFarmId === originFarmId;
+
+  if (!destFarm) {
+    elements.potrManejDestPotr.innerHTML = `<option value="${UNALLOCATED_POTREIRO_KEY}">Sem potreiro</option>`;
+    return;
   }
-  // Re-sync visibility (same vs inter-farm)
-  if (runtime.potrManej.type === "transferencia") {
-    const farmId = runtime.potrManej.farmId;
-    elements.potrManejDestFarmPotrWrap.hidden = !destFarmId || destFarmId === farmId;
+
+  const opts = getPotreroEntries(destFarm)
+    .filter((p) => !isSameFarm || p.id !== originPotreroId)
+    .map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)} (${formatInteger(p.quantity)})</option>`);
+
+  if (isSameFarm) {
+    opts.unshift(`<option value="${UNALLOCATED_POTREIRO_KEY}">Sem potreiro</option>`);
   }
+
+  elements.potrManejDestPotr.innerHTML = opts.join("") || `<option value="${UNALLOCATED_POTREIRO_KEY}">Sem potreiro</option>`;
 }
 
 function syncPotrManejForm() {
+  {
+    runtime.potrManej.type = "transferencia";
+    const farmId = runtime.potrManej.farmId;
+    const destFarmId = elements.potrManejDestFarm.value;
+    const isSameFarm = !destFarmId || destFarmId === farmId;
+
+    elements.potrManejDestFarmWrap.hidden = false;
+    elements.potrManejDestPotrWrap.hidden = false;
+    if (elements.potrManejDestFarmPotrWrap) elements.potrManejDestFarmPotrWrap.hidden = true;
+    if (elements.potrManejValueWrap) elements.potrManejValueWrap.hidden = true;
+    if (elements.potrManejPhotoWrap) elements.potrManejPhotoWrap.hidden = true;
+    if (elements.potrManejPhotoPanel) elements.potrManejPhotoPanel.hidden = true;
+
+    elements.potrManejDestPotrLabel.textContent = isSameFarm ? "Potreiro de destino" : "Potreiro de destino na fazenda selecionada";
+    elements.potrManejSubmit.textContent = "Registrar transferência";
+    elements.potrManejSubmit.className = "action-btn secondary";
+    return;
+  }
   const type = runtime.potrManej.type;
   const isAdd = type === "adicionar";
   const isTransfer = type === "transferencia";
@@ -4029,6 +4048,69 @@ function handlePotrManejPhotosChange() {
 
 function handlePotrManejSubmit(event) {
   event.preventDefault();
+  {
+    const sourceFarmId = runtime.potrManej.farmId;
+    const sourcePotreroId = runtime.potrManej.potreirosId || UNALLOCATED_POTREIRO_KEY;
+    const sourceFarm = state.data.farms[sourceFarmId];
+    if (!sourceFarm) return;
+
+    const date = elements.potrManejDate.value;
+    const qty = Number(elements.potrManejQty.value);
+    const categoryId = elements.potrManejCategory.value;
+    const notes = elements.potrManejNotes.value.trim();
+    const category = sourceFarm.categories.find((c) => c.id === categoryId);
+    if (!date || !qty || qty < 1 || !category) return;
+
+    ensureCategoryAllocation(category);
+    const destFarmId = elements.potrManejDestFarm.value || sourceFarmId;
+    const destPotreroId = elements.potrManejDestPotr.value || UNALLOCATED_POTREIRO_KEY;
+    const isSameFarm = destFarmId === sourceFarmId;
+    const originQty = Number(category.allocation[sourcePotreroId] || 0);
+
+    if (originQty < qty) {
+      alert(`Apenas ${formatInteger(originQty)} animais alocados neste potreiro para essa categoria.`);
+      return;
+    }
+
+    if (isSameFarm && sourcePotreroId === destPotreroId) {
+      alert("Selecione um potreiro de destino diferente para a transferência.");
+      return;
+    }
+
+    if (isSameFarm) {
+      category.allocation[sourcePotreroId] = Math.max(0, originQty - qty);
+      category.allocation[destPotreroId] = (Number(category.allocation[destPotreroId] || 0)) + qty;
+      updatePotreroQuantitiesFromAllocation(sourceFarm);
+      sourceFarm.movements.push({ id: createMovementId(), code: generateMovementCode(sourceFarm), type: "transferencia", date, categoryId, categoryName: category.name, quantity: qty, delta: 0, value: 0, saleDetails: null, notes, potreiro: sourcePotreroId, potreiroDest: destPotreroId, sourceId: "", photos: [] });
+    } else {
+      const destFarm = state.data.farms[destFarmId];
+      if (!destFarm) return;
+      const transferNote = notes || `Transferência de ${sourceFarm.name} para ${destFarm.name}`;
+
+      category.quantity -= qty;
+      category.allocation[sourcePotreroId] = Math.max(0, originQty - qty);
+      updatePotreroQuantitiesFromAllocation(sourceFarm);
+      sourceFarm.movements.push({ id: createMovementId(), code: generateMovementCode(sourceFarm), type: "consumo", date, categoryId, categoryName: category.name, quantity: qty, delta: -qty, value: 0, saleDetails: null, notes: `${transferNote} -> ${destFarm.name}`, potreiro: sourcePotreroId, sourceId: "", photos: [] });
+
+      let destCategory = destFarm.categories.find((c) => c.id === categoryId);
+      if (!destCategory) {
+        destCategory = { id: categoryId, name: category.name, quantity: 0 };
+        destFarm.categories.push(destCategory);
+      }
+      ensureCategoryAllocation(destCategory);
+      destCategory.quantity += qty;
+      destCategory.allocation[destPotreroId] = (Number(destCategory.allocation[destPotreroId] || 0)) + qty;
+      updatePotreroQuantitiesFromAllocation(destFarm);
+      destFarm.movements.push({ id: createMovementId(), code: generateMovementCode(destFarm), type: "compra", date, categoryId, categoryName: category.name, quantity: qty, delta: qty, value: 0, saleDetails: null, notes: `${transferNote} <- ${sourceFarm.name}`, potreiro: destPotreroId, sourceId: "", photos: [] });
+    }
+
+    saveData();
+    populateYearFilter();
+    elements.potrManejoDlg.close();
+    renderPotreirosView();
+    render();
+    return;
+  }
   const { farmId, potreirosId, type } = runtime.potrManej;
   const farm = state.data.farms[farmId];
   if (!farm) return;

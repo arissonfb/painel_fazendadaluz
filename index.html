@@ -971,13 +971,18 @@
       </div>
 
       <!-- Action type tabs -->
-      <div class="potr-action-tabs" id="potrActionTabs">
+      <div class="potr-action-tabs" id="potrActionTabs" hidden>
         <button type="button" class="potr-action-tab potr-tab-add active" data-manej="adicionar">+ Adicionar</button>
         <button type="button" class="potr-action-tab potr-tab-transfer" data-manej="transferencia">⇄ Transferência</button>
         <button type="button" class="potr-action-tab potr-tab-sale" data-manej="venda">💰 Venda</button>
         <button type="button" class="potr-action-tab potr-tab-death" data-manej="morte">📋 Morte</button>
         <button type="button" class="potr-action-tab potr-tab-consume" data-manej="consumo">🔪 Abate</button>
         <button type="button" class="potr-action-tab potr-tab-retorno" data-manej="retorno">↩ Retorno ao Total</button>
+      </div>
+
+      <div class="potr-action-single">
+        <span class="potr-action-single-badge">Transferência</span>
+        <p>Mova animais deste potreiro para outro potreiro da mesma fazenda ou de outra fazenda cadastrada.</p>
       </div>
 
       <form id="potrManejForm">
@@ -1002,7 +1007,7 @@
           </label>
 
           <!-- Destination farm (inter-farm transfer only) -->
-          <label id="potrManejDestFarmWrap" hidden>
+          <label id="potrManejDestFarmWrap">
             Fazenda de destino
             <select id="potrManejDestFarm"></select>
           </label>

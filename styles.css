@@ -1709,6 +1709,35 @@ input {
   color: var(--text);
 }
 
+.potr-action-single {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border: 1px solid rgba(79, 115, 168, 0.24);
+  border-radius: 18px;
+  background: rgba(79, 115, 168, 0.08);
+}
+
+.potr-action-single p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.potr-action-single-badge {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #4f73a8;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .potr-tab-add.active     { background: var(--green); color: #fff; border-color: var(--green); }
 .potr-tab-transfer.active{ background: #4f73a8; color: #fff; border-color: #4f73a8; }
 .potr-tab-sale.active    { background: var(--red); color: #fff; border-color: var(--red); }
