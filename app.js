@@ -20,6 +20,40 @@ function generateMovementCode(farm) {
   return prefix + String(farm.movementCodeSequence).padStart(5, "0");
 }
 
+function extractMovementCodeSequence(code, farmId) {
+  if (typeof code !== "string" || !code.trim()) return 0;
+  const prefix = getFarmCodePrefix(farmId);
+  const normalized = code.trim().toUpperCase();
+  const prefixMatch = normalized.startsWith(prefix)
+    ? normalized.slice(prefix.length).match(/(\d+)$/)
+    : null;
+  if (prefixMatch) {
+    return Number(prefixMatch[1] || 0);
+  }
+  const fallbackMatch = normalized.match(/(\d+)$/);
+  return fallbackMatch ? Number(fallbackMatch[1] || 0) : 0;
+}
+
+function ensureMovementCodesForFarm(farm) {
+  const prefix = getFarmCodePrefix(farm.id);
+  let maxSequence = 0;
+
+  farm.movements.forEach((movement) => {
+    const sequence = extractMovementCodeSequence(movement.code, farm.id);
+    if (sequence > maxSequence) {
+      maxSequence = sequence;
+    }
+  });
+
+  farm.movements.forEach((movement) => {
+    if (movement.code) return;
+    maxSequence += 1;
+    movement.code = prefix + String(maxSequence).padStart(5, "0");
+  });
+
+  farm.movementCodeSequence = maxSequence;
+}
+
 const MOVEMENT_TYPES = [
   { value: "compra", label: "Compra", direction: 1 },
   { value: "venda", label: "Venda", direction: -1 },
@@ -6955,9 +6989,6 @@ function ensureDataShape(data, options = {}) {
       farm.sanitaryProducts = [...DEFAULT_SANITARY_PRODUCTS];
     }
     farm.importedBaselineVersion = Number(farm.importedBaselineVersion || 0);
-    if (typeof farm.movementCodeSequence !== "number") {
-      farm.movementCodeSequence = farm.movements.length; // start after existing records
-    }
     if (!Array.isArray(farm.potreiros)) {
       farm.potreiros = normalizePotreroEntries([], DEFAULT_POTREIROS);
     } else {
@@ -6981,6 +7012,7 @@ function ensureDataShape(data, options = {}) {
     farm.movements = farm.movements.map((movement) => ({
       ...movement,
       id: movement.id || movement.sourceId || createMovementId(),
+      code: movement.code || "",
       sourceId: movement.sourceId || "",
       quantity: Number(movement.quantity || 0),
       delta: Number(movement.delta || 0),
@@ -6995,6 +7027,7 @@ function ensureDataShape(data, options = {}) {
         }
         : null
     }));
+    ensureMovementCodesForFarm(farm);
     farm.monthlyRecords = farm.monthlyRecords.map((record) => ({
       id: record.id || createMovementId(),
       sourceId: record.sourceId || "",
