@@ -829,7 +829,12 @@ const state = {
   },
   userEditingId: null,
   userEditingMode: null,
-  monthlyEditingId: null
+  monthlyEditingId: null,
+  auditSearch: "",
+  auditPage: 0,
+  auditSessionId: "",
+  auditSessionIp: "",
+  auditSessionIpReady: false
 };
 
 const elements = {
@@ -844,6 +849,7 @@ const elements = {
   sanitaryShortcut: document.getElementById("sanitaryShortcut"),
   quickComprasBtn: document.getElementById("quickComprasBtn"),
   quickVendasBtn: document.getElementById("quickVendasBtn"),
+  auditTrailButton: document.getElementById("auditTrailButton"),
   dashboardFarmLabel: document.getElementById("dashboardFarmLabel"),
   dashboardView: document.getElementById("dashboardView"),
   sanitaryView: document.getElementById("sanitaryView"),
@@ -1020,6 +1026,11 @@ const elements = {
   cancelUserEditButton: document.getElementById("cancelUserEditButton"),
   manageUsersForm: document.getElementById("manageUsersForm"),
   closeManageUsersDialog: document.getElementById("closeManageUsersDialog"),
+  auditTrailDialog: document.getElementById("auditTrailDialog"),
+  closeAuditTrailDialog: document.getElementById("closeAuditTrailDialog"),
+  auditTrailSearch: document.getElementById("auditTrailSearch"),
+  auditTrailBody: document.getElementById("auditTrailBody"),
+  auditTrailFooter: document.getElementById("auditTrailFooter"),
   newUserLogin: document.getElementById("newUserLogin"),
   newUserPassword: document.getElementById("newUserPassword"),
   newUserRole: document.getElementById("newUserRole"),
@@ -1162,6 +1173,133 @@ function saveData() {
   cloudPush();
 }
 
+function createAuditSessionId() {
+  return `audit-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function getAuditEntries() {
+  return Array.isArray(state.data.auth.auditLog) ? state.data.auth.auditLog : [];
+}
+
+async function ensureAuditSessionIp() {
+  if (runtime.auditSessionIpReady) {
+    return runtime.auditSessionIp || "IP indisponível";
+  }
+
+  try {
+    const response = await fetch("https://api.ipify.org?format=json");
+    if (!response.ok) throw new Error("ip unavailable");
+    const payload = await response.json();
+    runtime.auditSessionIp = payload.ip || "IP indisponível";
+  } catch {
+    runtime.auditSessionIp = "IP indisponível";
+  }
+
+  runtime.auditSessionIpReady = true;
+  const sessionId = runtime.auditSessionId;
+  if (sessionId) {
+    getAuditEntries().forEach((entry) => {
+      if (entry.sessionId === sessionId && (!entry.ip || entry.ip === "IP pendente")) {
+        entry.ip = runtime.auditSessionIp;
+      }
+    });
+    saveData();
+  }
+  return runtime.auditSessionIp;
+}
+
+function startAuditSession() {
+  runtime.auditSessionId = createAuditSessionId();
+  runtime.auditSessionIp = "";
+  runtime.auditSessionIpReady = false;
+  ensureAuditSessionIp();
+}
+
+function logAuditEvent(action, entity, details, options = {}) {
+  const actor = getCurrentUser();
+  const entry = {
+    id: createMovementId(),
+    timestamp: new Date().toISOString(),
+    sessionId: runtime.auditSessionId || "",
+    userId: actor?.id || "",
+    userLogin: actor?.login || "Sistema",
+    userRole: actor?.role || "system",
+    ip: runtime.auditSessionIpReady ? (runtime.auditSessionIp || "IP indisponível") : "IP pendente",
+    action,
+    entity,
+    farmId: options.farmId || "",
+    farmName: options.farmName || "",
+    recordCode: options.recordCode || "",
+    details: details || ""
+  };
+
+  if (!Array.isArray(state.data.auth.auditLog)) {
+    state.data.auth.auditLog = [];
+  }
+  state.data.auth.auditLog.unshift(entry);
+  if (state.data.auth.auditLog.length > 2000) {
+    state.data.auth.auditLog = state.data.auth.auditLog.slice(0, 2000);
+  }
+}
+
+const AUDIT_PAGE_SIZE = 50;
+
+function renderAuditTrailDialog() {
+  const query = runtime.auditSearch.trim().toLowerCase();
+  const entries = getAuditEntries().filter((entry) => !query || [
+    entry.userLogin,
+    entry.action,
+    entry.entity,
+    entry.farmName,
+    entry.recordCode,
+    entry.details,
+    entry.ip
+  ].some((value) => String(value || "").toLowerCase().includes(query)));
+
+  const totalPages = Math.max(1, Math.ceil(entries.length / AUDIT_PAGE_SIZE));
+  if (runtime.auditPage >= totalPages) runtime.auditPage = totalPages - 1;
+  const page = runtime.auditPage;
+  const slice = entries.slice(page * AUDIT_PAGE_SIZE, (page + 1) * AUDIT_PAGE_SIZE);
+
+  elements.auditTrailSearch.value = runtime.auditSearch;
+  elements.auditTrailBody.innerHTML = slice.length
+    ? slice.map((entry) => `
+        <tr>
+          <td>${new Date(entry.timestamp).toLocaleString("pt-BR")}</td>
+          <td>${escapeHtml(entry.userLogin)}<br><span class="field-note">${escapeHtml(getRoleLabel(entry.userRole === "admin" ? "admin" : "usuario"))}</span></td>
+          <td>${escapeHtml(entry.ip || "IP indisponível")}</td>
+          <td><span class="badge badge-neutral">${escapeHtml(entry.action)}</span></td>
+          <td>${escapeHtml(entry.farmName || "—")}</td>
+          <td>${escapeHtml(entry.recordCode || "—")}</td>
+          <td>${escapeHtml(entry.details || `${entry.entity}`)}</td>
+        </tr>
+      `).join("")
+    : `<tr><td colspan="7" class="table-empty-cell">${query ? "Nenhuma ação encontrada para a busca." : "Nenhuma ação auditada até o momento."}</td></tr>`;
+
+  elements.auditTrailFooter.innerHTML = `
+    <span class="movements-count">${entries.length} evento${entries.length !== 1 ? "s" : ""}</span>
+    ${totalPages > 1 ? `
+      <button class="mov-page-btn" data-audit-page="${page - 1}" ${page === 0 ? "disabled" : ""}>&#8249; Anterior</button>
+      <span class="mov-page-info">Página ${page + 1} de ${totalPages}</span>
+      <button class="mov-page-btn" data-audit-page="${page + 1}" ${page >= totalPages - 1 ? "disabled" : ""}>Próxima &#8250;</button>
+    ` : ""}
+  `;
+
+  elements.auditTrailFooter.querySelectorAll("[data-audit-page]").forEach((button) => {
+    button.addEventListener("click", () => {
+      runtime.auditPage = Number(button.dataset.auditPage);
+      renderAuditTrailDialog();
+    });
+  });
+}
+
+function openAuditTrailDialog() {
+  if (!isAdmin()) return;
+  runtime.auditPage = 0;
+  renderAuditTrailDialog();
+  elements.auditTrailDialog.showModal();
+}
+
 // ─── Cloud Sync ───────────────────────────────────────────────────────────────
 
 async function cloudGetToken() {
@@ -1279,6 +1417,9 @@ function renderAuthState() {
   if (elements.manageUsersButton) {
     elements.manageUsersButton.hidden = !isAdmin();
   }
+  if (elements.auditTrailButton) {
+    elements.auditTrailButton.hidden = !isAdmin();
+  }
 }
 
 function startSplashExperience() {
@@ -1317,6 +1458,8 @@ function handleLoginSubmit(event) {
   elements.loginFeedback.textContent = "";
   elements.loginForm.reset();
   state.data.auth.sessionUserId = user.id;
+  startAuditSession();
+  logAuditEvent("Login", "auth", "Entrada no sistema");
   saveData();
   renderAuthState();
   initializeAppShell();
@@ -1326,6 +1469,7 @@ function handleLoginSubmit(event) {
 }
 
 function handleLogout() {
+  logAuditEvent("Logout", "auth", "Saída do sistema");
   state.data.auth.sessionUserId = "";
   saveData();
   if (elements.manageUsersDialog.open) {
@@ -1405,6 +1549,7 @@ function handleUserListInteraction(event) {
       alert("Você não pode excluir sua própria conta enquanto está conectado.");
       return;
     }
+    logAuditEvent("Exclusão", "usuário", `Usuário removido: ${user.login}`);
     state.data.auth.users = state.data.auth.users.filter((u) => u.id !== userId);
     saveData();
     renderUserList();
@@ -1493,6 +1638,11 @@ function handleUserEditSave() {
     user.password = nextPassword;
   }
 
+  logAuditEvent(
+    isReset ? "Reset de senha" : "Edição",
+    "usuário",
+    isReset ? `Senha redefinida para ${user.login}` : `Usuário atualizado: ${user.login}`
+  );
   saveData();
   renderUserList();
   renderAuthState();
@@ -1528,6 +1678,7 @@ function handleManageUsersSubmit(event) {
     role
   });
 
+  logAuditEvent("Adição", "usuário", `Novo usuário criado: ${login} (${getRoleLabel(role)})`);
   saveData();
   elements.newUserLogin.value = "";
   elements.newUserPassword.value = "";
@@ -1907,6 +2058,13 @@ function bindEvents() {
   elements.logoutButton.addEventListener("click", handleLogout);
   elements.splashShell.addEventListener("click", dismissSplash);
   elements.manageUsersForm.addEventListener("submit", handleManageUsersSubmit);
+  elements.auditTrailButton?.addEventListener("click", openAuditTrailDialog);
+  elements.closeAuditTrailDialog?.addEventListener("click", () => elements.auditTrailDialog.close());
+  elements.auditTrailSearch?.addEventListener("input", (event) => {
+    runtime.auditSearch = event.target.value;
+    runtime.auditPage = 0;
+    renderAuditTrailDialog();
+  });
   elements.userList.addEventListener("click", handleUserListInteraction);
   elements.saveUserEditsButton.addEventListener("click", handleUserEditSave);
   elements.cancelUserEditButton.addEventListener("click", closeUserEditor);
@@ -3630,6 +3788,11 @@ function deleteMovement(farmId, movementId) {
   if (!confirm(`Excluir este lançamento?\n\n${label}\n\nO estoque da categoria será revertido.`)) return;
 
   revertMovementEffect(farm, movement);
+  logAuditEvent("Exclusão", "movimentação", label, {
+    farmId: farm.id,
+    farmName: farm.name,
+    recordCode: movement.code || ""
+  });
   farm.movements = farm.movements.filter((m) => m.id !== movementId);
   saveData();
   render();
@@ -6347,6 +6510,7 @@ function handleSaveStockEdit() {
     farm.potreiros = potrUpdates[farm.id] || farm.potreiros;
   }
 
+  logAuditEvent("Edição", "estoque", "Categorias, potreiros e totais declarados atualizados");
   saveData();
   elements.editStockDialog.close();
   render();
@@ -6691,6 +6855,10 @@ async function handleMovementSubmit(event) {
     return;
   }
 
+  const movementAuditMeta = runtime.editingMovement
+    ? { action: "Edição", details: "Lançamento do rebanho atualizado" }
+    : { action: "Adição", details: "Novo lançamento do rebanho registrado" };
+
   // If editing, revert old movement first then remove it
   const editing = runtime.editingMovement;
   if (editing) {
@@ -6840,6 +7008,12 @@ async function handleMovementSubmit(event) {
     farm.declaredTotal = getFarmTotal(farm);
   }
 
+  const latestMovement = farm.movements[farm.movements.length - 1];
+  logAuditEvent(movementAuditMeta.action, "movimentação", `${movementAuditMeta.details}: ${capitalize(type)} - ${category?.name || "Categoria"}`, {
+    farmId: farm.id,
+    farmName: farm.name,
+    recordCode: latestMovement?.code || ""
+  });
   saveData();
   populateYearFilter();
   resetMovementPhotoDrafts();
@@ -6891,6 +7065,7 @@ function handleMonthlyDataSubmit(event) {
     value: Number.isFinite(value) ? Number(value.toFixed(2)) : 0,
     notes
   };
+  const isEditingMonthly = Boolean(editingId);
 
   if (editingId) {
     const ownerFarm = getAllFarms().find((item) => getMonthlyRecords(item).some((record) => record.id === editingId));
@@ -6917,6 +7092,11 @@ function handleMonthlyDataSubmit(event) {
   }
 
   state.data.selectedFarmId = farm.id;
+  logAuditEvent(isEditingMonthly ? "Edição" : "Adição", "dado mensal", `${title} (${period})`, {
+    farmId: farm.id,
+    farmName: farm.name,
+    recordCode: editingId || ""
+  });
   saveData();
   populateYearFilter();
   elements.monthlyDataDialog.close();
@@ -6943,6 +7123,7 @@ function handleSanitarySubmit(event) {
   const newPotreroName = elements.newPotreroName.value.trim();
   const potreiro = selectedPotrero === "__new__" ? newPotreroName : selectedPotrero;
   const notes = elements.sanitaryNotes.value.trim();
+  const isEditingSanitary = Boolean(editingId);
 
   if (!date || !categoryId || !Number.isFinite(quantity) || quantity < 1 || !product || !potreiro) {
     return;
@@ -6984,6 +7165,14 @@ function handleSanitarySubmit(event) {
     });
   }
 
+  const savedSanitaryRecord = editingId
+    ? farm.sanitaryRecords.find((item) => item.id === editingId || item.sourceId === editingId)
+    : farm.sanitaryRecords[farm.sanitaryRecords.length - 1];
+  logAuditEvent(isEditingSanitary ? "Edição" : "Adição", "sanitário", `${product} em ${potreiro}`, {
+    farmId: farm.id,
+    farmName: farm.name,
+    recordCode: savedSanitaryRecord?.code || ""
+  });
   saveData();
   populateYearFilter();
   elements.sanitaryEditingId.value = "";
@@ -8123,6 +8312,9 @@ function ensureDataShape(data, options = {}) {
   if (typeof data.auth.sessionUserId !== "string") {
     data.auth.sessionUserId = "";
   }
+  if (!Array.isArray(data.auth.auditLog)) {
+    data.auth.auditLog = [];
+  }
   data.auth.users = data.auth.users.map((user, index) => ({
     id: user.id || `user-${index + 1}`,
     login: user.login || `Usuário ${index + 1}`,
@@ -8870,6 +9062,8 @@ function exportBackup() {
   URL.revokeObjectURL(url);
 
   markBackupDone();
+  logAuditEvent("Backup", "sistema", `Backup exportado: backup-painel-pecuario-${dateTag}.json`);
+  saveData();
   alert(`Backup realizado com sucesso!\nArquivo: backup-painel-pecuario-${dateTag}.json\nGuarde em local seguro (Drive, pen drive, etc).`);
 }
 
@@ -8900,6 +9094,7 @@ async function handleRestoreFile(event) {
       : "";
 
     state.data = restored;
+    logAuditEvent("Restauração", "sistema", `Backup restaurado${payload.dataBackup ? ` de ${new Date(payload.dataBackup).toLocaleString("pt-BR")}` : ""}`);
     saveData();
     markBackupDone();
     renderAuthState();

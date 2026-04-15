@@ -4275,6 +4275,18 @@ th {
   opacity: 0.7;
 }
 
+.audit-card {
+  width: min(1120px, calc(100vw - 24px));
+  max-height: 88vh;
+  overflow: auto;
+}
+
+.audit-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
 .movements-search-input {
   width: 100%;
   min-height: 38px;

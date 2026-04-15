@@ -88,6 +88,7 @@
           <button type="button" class="sidebar-shortcut shortcut-compras" id="quickComprasBtn">Registros de Compra</button>
           <button type="button" class="sidebar-shortcut shortcut-vendas" id="quickVendasBtn">Registros de Venda</button>
           <button type="button" class="sidebar-shortcut" id="manageUsersButton">Usuários</button>
+          <button type="button" class="sidebar-shortcut" id="auditTrailButton">Auditoria</button>
           <button type="button" class="sidebar-shortcut backup-btn" id="backupButton">Backup dos dados</button>
           <button type="button" class="sidebar-shortcut subtle" id="restoreButton">Restaurar backup</button>
           <input type="file" id="restoreFileInput" accept=".json" hidden>
@@ -1123,6 +1124,40 @@
         <button type="submit" class="action-btn secondary">Salvar nova senha</button>
       </div>
     </form>
+  </dialog>
+
+  <dialog id="auditTrailDialog" class="modal">
+    <div class="modal-card audit-card">
+      <div class="modal-header">
+        <div>
+          <p class="panel-kicker">Administrador</p>
+          <h2>Trilha de auditoria</h2>
+        </div>
+        <button type="button" class="modal-close" id="closeAuditTrailDialog" aria-label="Fechar">&#x2715;</button>
+      </div>
+      <div class="movements-toolbar audit-toolbar">
+        <div class="movements-search-wrap">
+          <input type="search" id="auditTrailSearch" class="movements-search-input" placeholder="Buscar por usuário, ação, fazenda, código ou IP...">
+        </div>
+        <div class="movements-pagination" id="auditTrailFooter"></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Data/Hora</th>
+              <th>Usuário</th>
+              <th>IP</th>
+              <th>Ação</th>
+              <th>Fazenda</th>
+              <th>Referência</th>
+              <th>Detalhes</th>
+            </tr>
+          </thead>
+          <tbody id="auditTrailBody"></tbody>
+        </table>
+      </div>
+    </div>
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
