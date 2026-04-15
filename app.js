@@ -2698,9 +2698,7 @@ function openEditMovementDialog(farmId, movementId) {
 
   runtime.editingMovement = { farmId, movementId };
 
-  syncMovementFarmOptions();
-  // Set farm
-  if (elements.movementFarm) elements.movementFarm.value = farmId;
+  syncMovementFarmOptions(farmId);
   syncMovementTypeOptions(movement.type);
   syncMovementCategoryOptionsForFarm(farm);
   if (elements.movementCategory) elements.movementCategory.value = movement.categoryId;
@@ -4806,17 +4804,22 @@ function renderMonthlyCategoryModernChart(farm) {
   });
 }
 
-function syncMovementFarmOptions() {
+function syncMovementFarmOptions(selectedFarmId = null) {
   const farms = getAllFarms();
-  const currentId = state.data.selectedFarmId !== TOTAL_FARM_ID ? state.data.selectedFarmId : (farms[0]?.id || "");
-  elements.movementFarm.innerHTML = farms.map((farm) => `
+  const shouldRequireExplicitSelection = !selectedFarmId && state.data.selectedFarmId === TOTAL_FARM_ID;
+  const currentId = selectedFarmId ?? (state.data.selectedFarmId !== TOTAL_FARM_ID ? state.data.selectedFarmId : "");
+  elements.movementFarm.innerHTML = [
+    shouldRequireExplicitSelection ? '<option value="">Selecione uma fazenda</option>' : "",
+    ...farms.map((farm) => `
     <option value="${escapeHtml(farm.id)}" ${farm.id === currentId ? "selected" : ""}>${escapeHtml(farm.name)}</option>
-  `).join("");
+  `)
+  ].join("");
+  elements.movementFarm.value = currentId;
 }
 
 function getMovementDialogFarm() {
   const farmId = elements.movementFarm?.value;
-  return (farmId && state.data.farms[farmId]) ? state.data.farms[farmId] : getFarm();
+  return (farmId && state.data.farms[farmId]) ? state.data.farms[farmId] : null;
 }
 
 function openMovementDialog(initialType) {
@@ -5190,7 +5193,7 @@ function syncMovementTypeOptions(selectedType = elements.movementType.value || "
 }
 
 function updateMovementFormForType(type) {
-  const farm = getFarm();
+  const farm = getMovementDialogFarm() || getFarm();
   const typeMeta = MOVEMENT_TYPES.find((item) => item.value === type);
   elements.movementDialogTitle.textContent = typeMeta ? `Registrar ${typeMeta.label.toLowerCase()}` : "Registrar movimentação";
   elements.adjustDirectionWrap.hidden = type !== "ajuste";
@@ -5269,7 +5272,12 @@ function updateSaleComputedValue() {
 }
 
 function syncMovementCategoryOptionsForFarm(farm) {
-  if (!farm) return;
+  if (!farm) {
+    elements.movementCategory.innerHTML = '<option value="">Selecione uma fazenda primeiro</option>';
+    elements.movementCategory.value = "";
+    syncMovementPotreirosOptions();
+    return;
+  }
   elements.movementCategory.innerHTML = farm.categories.map((category) => `
     <option value="${category.id}">${escapeHtml(category.name)}</option>
   `).join("");
@@ -5284,7 +5292,15 @@ function syncMovementPotreirosOptions() {
   if (!elements.movementPotreiro) return;
   const farm = getMovementDialogFarm();
   const type = elements.movementType?.value;
-  if (!farm || !type) return;
+  if (!farm || !type) {
+    elements.movementPotreiro.innerHTML = '<option value="">Selecione uma fazenda primeiro</option>';
+    elements.movementPotreiro.value = "";
+    if (elements.movementPotreiroDest) {
+      elements.movementPotreiroDest.innerHTML = '<option value="">Selecione uma fazenda primeiro</option>';
+      elements.movementPotreiroDest.value = "";
+    }
+    return;
+  }
 
   const typeMeta = MOVEMENT_TYPES.find((t) => t.value === type);
   const isExit = typeMeta?.direction === -1;
