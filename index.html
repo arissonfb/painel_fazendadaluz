@@ -45,6 +45,15 @@
         <p class="hero-text auth-text">Perfis de Usuários e Administradores já podem ser gerenciados no sistema.</p>
 
         <form id="loginForm" class="auth-form">
+          <div class="auth-role-switch" role="tablist" aria-label="Tipo de acesso">
+            <button type="button" class="auth-role-tab active" id="loginRoleUsuario" data-auth-role="usuario" role="tab" aria-selected="true">
+              Usuário
+            </button>
+            <button type="button" class="auth-role-tab" id="loginRoleAdmin" data-auth-role="admin" role="tab" aria-selected="false">
+              Administrador
+            </button>
+          </div>
+          <p class="auth-role-hint" id="loginRoleHint">Acesso padrão para operação do sistema e consulta dos registros autorizados.</p>
           <label>
             Login
             <input type="text" id="loginUsername" autocomplete="username" required>

@@ -791,6 +791,7 @@ const runtime = {
   storageEnabled: true,
   appInitialized: false,
   splashDismissed: false,
+  authLoginMode: "usuario",
   movementPhotoDrafts: [],
   editStockContextFarmId: TOTAL_FARM_ID,
   pdfContextFarmId: TOTAL_FARM_ID,
@@ -842,6 +843,8 @@ const elements = {
   authShell: document.getElementById("authShell"),
   pageShell: document.getElementById("pageShell"),
   loginForm: document.getElementById("loginForm"),
+  loginRoleTabs: Array.from(document.querySelectorAll("[data-auth-role]")),
+  loginRoleHint: document.getElementById("loginRoleHint"),
   loginUsername: document.getElementById("loginUsername"),
   loginPassword: document.getElementById("loginPassword"),
   loginFeedback: document.getElementById("loginFeedback"),
@@ -1108,6 +1111,7 @@ boot();
 function boot() {
   try {
     bindEvents();
+    setAuthLoginMode(runtime.authLoginMode);
     renderAuthState();
     startSplashExperience();
     if (isAuthenticated()) {
@@ -1442,6 +1446,21 @@ function dismissSplash() {
   renderAuthState();
 }
 
+function setAuthLoginMode(mode) {
+  runtime.authLoginMode = mode === "admin" ? "admin" : "usuario";
+  elements.loginRoleTabs.forEach((button) => {
+    const isActive = button.dataset.authRole === runtime.authLoginMode;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-selected", isActive ? "true" : "false");
+  });
+
+  if (elements.loginRoleHint) {
+    elements.loginRoleHint.textContent = runtime.authLoginMode === "admin"
+      ? "Acesso administrativo para auditoria, cadastro de usuários, redefinição de senhas e configurações sensíveis."
+      : "Acesso padrão para operação do sistema e consulta dos registros autorizados.";
+  }
+}
+
 function handleLoginSubmit(event) {
   event.preventDefault();
   const login = elements.loginUsername.value.trim();
@@ -1451,6 +1470,14 @@ function handleLoginSubmit(event) {
   if (!user) {
     elements.loginFeedback.hidden = false;
     elements.loginFeedback.textContent = "Login ou senha incorretos. Tente novamente.";
+    return;
+  }
+
+  if ((user.role || "usuario") !== runtime.authLoginMode) {
+    elements.loginFeedback.hidden = false;
+    elements.loginFeedback.textContent = runtime.authLoginMode === "admin"
+      ? "Este login nÃ£o possui perfil de Administrador."
+      : "Este login nÃ£o possui perfil de UsuÃ¡rio padrÃ£o.";
     return;
   }
 
@@ -2049,6 +2076,9 @@ function createStandardFarm(id, name) {
 
 function bindEvents() {
   elements.loginForm.addEventListener("submit", handleLoginSubmit);
+  elements.loginRoleTabs.forEach((button) => {
+    button.addEventListener("click", () => setAuthLoginMode(button.dataset.authRole));
+  });
   elements.manageUsersButton.addEventListener("click", openManageUsersDialog);
   elements.backupButton.addEventListener("click", exportBackup);
   elements.restoreButton.addEventListener("click", () => elements.restoreFileInput.click());
