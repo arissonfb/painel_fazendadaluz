@@ -863,6 +863,111 @@
     </div>
   </dialog>
 
+  <!-- ── Potreiro Management Dialog ───────────────────────────────── -->
+  <dialog id="potrManejoDlg" class="modal">
+    <div class="modal-card potr-manej-card">
+      <div class="modal-header">
+        <div>
+          <p class="panel-kicker" id="potrManejFarmKicker">Fazenda</p>
+          <h2 id="potrManejDlgTitle">Manejo do Potreiro</h2>
+        </div>
+        <button type="button" class="ghost-btn" id="closePotrManejDlg">Fechar</button>
+      </div>
+
+      <!-- Context bar -->
+      <div class="potr-manej-ctx">
+        <div class="potr-manej-stat">
+          <span>Total na fazenda</span>
+          <strong id="potrManejFarmTotal">0</strong>
+        </div>
+        <div class="potr-manej-stat potr-manej-stat-highlight">
+          <span>Neste potreiro</span>
+          <strong id="potrManejPotrTotal">0</strong>
+        </div>
+        <div class="potr-manej-stat">
+          <span>Sem potreiro</span>
+          <strong id="potrManejUnallocated">0</strong>
+        </div>
+      </div>
+
+      <!-- Action type tabs -->
+      <div class="potr-action-tabs" id="potrActionTabs">
+        <button type="button" class="potr-action-tab potr-tab-add active" data-manej="adicionar">+ Adicionar</button>
+        <button type="button" class="potr-action-tab potr-tab-transfer" data-manej="transferencia">⇄ Transferência</button>
+        <button type="button" class="potr-action-tab potr-tab-sale" data-manej="venda">💰 Venda</button>
+        <button type="button" class="potr-action-tab potr-tab-death" data-manej="morte">📋 Morte</button>
+        <button type="button" class="potr-action-tab potr-tab-consume" data-manej="consumo">🔪 Abate</button>
+      </div>
+
+      <form id="potrManejForm">
+        <div class="form-grid">
+          <label>
+            Data
+            <input type="date" id="potrManejDate" required>
+          </label>
+          <label>
+            Categoria
+            <select id="potrManejCategory" required></select>
+          </label>
+          <label>
+            Quantidade
+            <input type="number" id="potrManejQty" min="1" step="1" required placeholder="0">
+          </label>
+
+          <!-- Destination potreiro (for adicionar: defaults to current potreiro) -->
+          <label id="potrManejDestPotrWrap">
+            <span id="potrManejDestPotrLabel">Potreiro de destino</span>
+            <select id="potrManejDestPotr"></select>
+          </label>
+
+          <!-- Destination farm (inter-farm transfer only) -->
+          <label id="potrManejDestFarmWrap" hidden>
+            Fazenda de destino
+            <select id="potrManejDestFarm"></select>
+          </label>
+
+          <!-- Destination potreiro in dest farm (inter-farm transfer) -->
+          <label id="potrManejDestFarmPotrWrap" hidden>
+            Potreiro na fazenda destino
+            <select id="potrManejDestFarmPotr"></select>
+          </label>
+
+          <!-- Value (venda only) -->
+          <label id="potrManejValueWrap" hidden>
+            Valor total (R$)
+            <input type="number" id="potrManejValue" min="0" step="0.01" placeholder="0,00">
+          </label>
+
+          <!-- Notes (always) -->
+          <label class="form-span-2">
+            Observação
+            <input type="text" id="potrManejNotes" maxlength="160" placeholder="Ex.: lote revisado após manejo">
+          </label>
+
+          <!-- Photo (morte only) -->
+          <label class="form-span-2" id="potrManejPhotoWrap" hidden>
+            Fotos do registro
+            <input type="file" id="potrManejPhotos" accept="image/*" multiple>
+            <span class="field-note">Imagens salvas no lançamento de morte.</span>
+          </label>
+          <div class="movement-photo-panel form-span-2" id="potrManejPhotoPanel" hidden>
+            <div class="movement-photo-header">
+              <div>
+                <p class="panel-kicker">Anexos</p>
+                <strong id="potrManejPhotoCounter">Nenhuma foto anexada.</strong>
+              </div>
+            </div>
+            <div class="movement-photo-grid" id="potrManejPhotoPreview"></div>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="submit" class="action-btn purchase" id="potrManejSubmit">Registrar</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
   <dialog id="backupWarningDialog" class="modal">
     <div class="modal-card backup-warning-card">
       <div class="backup-warning-icon">!</div>

@@ -1251,6 +1251,115 @@ input {
   background: linear-gradient(180deg, rgba(244, 232, 210, 0.96), rgba(233, 219, 194, 0.92));
 }
 
+/* Manejo button on each potrero card */
+.potrero-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+}
+
+.potrero-card-bar {
+  position: absolute;
+  top: 0; left: 0;
+  height: 3px;
+  background: var(--green);
+  border-radius: 18px 18px 0 0;
+  opacity: 0.55;
+}
+
+.potr-manej-btn {
+  margin-top: auto;
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(201, 140, 79, 0.1);
+  color: var(--sand-deep);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 140ms ease, transform 140ms ease;
+  align-self: flex-start;
+}
+
+.potr-manej-btn:hover {
+  background: rgba(201, 140, 79, 0.22);
+  transform: translateY(-1px);
+}
+
+/* ── Potreiro Management Dialog ───────────────────────────────────── */
+.potr-manej-card {
+  max-width: 520px;
+}
+
+.potr-manej-ctx {
+  display: flex;
+  gap: 14px;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.potr-manej-stat {
+  flex: 1;
+  min-width: 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.potr-manej-stat span {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.potr-manej-stat strong {
+  font-size: 1.4rem;
+  font-family: "Yrsa", serif;
+  color: var(--text);
+}
+
+.potr-manej-stat-highlight strong {
+  color: var(--green);
+}
+
+.potr-action-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.potr-action-tab {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 253, 248, 0.9);
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 140ms ease;
+}
+
+.potr-action-tab:hover {
+  border-color: var(--sand);
+  color: var(--text);
+}
+
+.potr-tab-add.active    { background: var(--green); color: #fff; border-color: var(--green); }
+.potr-tab-transfer.active { background: #4f73a8; color: #fff; border-color: #4f73a8; }
+.potr-tab-sale.active   { background: var(--red); color: #fff; border-color: var(--red); }
+.potr-tab-death.active  { background: #5c3c2e; color: #fff; border-color: #5c3c2e; }
+.potr-tab-consume.active { background: #6f5f4d; color: #fff; border-color: #6f5f4d; }
+
 /* Potreiros view accordion */
 .potreiros-farm-item {
   border: 1px solid var(--line);
