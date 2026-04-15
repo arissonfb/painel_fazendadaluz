@@ -1660,6 +1660,105 @@ input {
 }
 
 /* ── Purchase detail section in movement dialog ───────────────────── */
+
+@media (max-width: 860px) {
+  .mov-records-card,
+  .commercial-records-card {
+    width: min(100vw - 12px, 1000px);
+    max-height: 94vh;
+    border-radius: 20px;
+  }
+
+  .mov-records-card .modal-header {
+    padding: 18px 16px 14px;
+  }
+
+  .mov-records-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px 16px;
+  }
+
+  .mov-records-toolbar .movements-search-input,
+  .mov-records-toolbar .btn-primary-sm {
+    width: 100%;
+  }
+
+  .mov-records-footer {
+    flex-wrap: wrap;
+    justify-content: space-between;
+    padding: 12px 16px;
+  }
+
+  .commercial-currency-block {
+    flex-basis: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+    padding: 16px;
+  }
+
+  .commercial-currency-block:last-child {
+    border-bottom: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .modal-commercial {
+    --m-max: calc(100vw - 8px);
+  }
+
+  .mov-records-card,
+  .commercial-records-card {
+    width: calc(100vw - 8px);
+    max-height: 96vh;
+  }
+
+  .mov-records-card .modal-header {
+    padding: 16px 14px 12px;
+  }
+
+  .mov-records-toolbar,
+  .mov-records-footer {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .mov-records-table {
+    font-size: 0.82rem;
+  }
+
+  .commercial-table {
+    min-width: 760px;
+  }
+
+  .mov-records-table th,
+  .mov-records-table td {
+    padding: 9px 10px;
+  }
+
+  .mov-records-main-cell strong {
+    font-size: 0.84rem;
+  }
+
+  .mov-records-main-cell span {
+    font-size: 0.73rem;
+  }
+
+  .movement-actions-cell {
+    min-width: 118px;
+    padding-right: 4px !important;
+  }
+
+  .movement-action-btn {
+    padding: 6px 8px;
+    font-size: 0.74rem;
+  }
+
+  .mov-page-btn {
+    padding: 6px 10px;
+  }
+}
+
 .form-section {
   background: rgba(245, 235, 218, 0.4);
   border: 1px solid var(--line);
