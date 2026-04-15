@@ -298,6 +298,23 @@ body::before {
   color: var(--text);
 }
 
+.sidebar-shortcut.shortcut-compras {
+  background: rgba(56, 120, 72, 0.12);
+  color: #2d6a40;
+  border-color: rgba(56, 120, 72, 0.25);
+}
+.sidebar-shortcut.shortcut-compras:hover {
+  background: rgba(56, 120, 72, 0.22);
+}
+.sidebar-shortcut.shortcut-vendas {
+  background: rgba(180, 100, 30, 0.12);
+  color: #8a4d10;
+  border-color: rgba(180, 100, 30, 0.25);
+}
+.sidebar-shortcut.shortcut-vendas:hover {
+  background: rgba(180, 100, 30, 0.22);
+}
+
 .sidebar-shortcut.backup-btn {
   background: #d39b5c;
   color: #fff;

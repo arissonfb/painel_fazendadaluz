@@ -825,6 +825,9 @@ const elements = {
   loginFeedback: document.getElementById("loginFeedback"),
   farmSwitch: document.getElementById("farmSwitch"),
   sanitaryShortcut: document.getElementById("sanitaryShortcut"),
+  quickComprasBtn: document.getElementById("quickComprasBtn"),
+  quickVendasBtn: document.getElementById("quickVendasBtn"),
+  dashboardFarmLabel: document.getElementById("dashboardFarmLabel"),
   dashboardView: document.getElementById("dashboardView"),
   sanitaryView: document.getElementById("sanitaryView"),
   heroMetrics: document.getElementById("heroMetrics"),
@@ -1834,6 +1837,18 @@ function bindEvents() {
     render();
   });
 
+  elements.quickComprasBtn?.addEventListener("click", () => {
+    state.activeView = "dashboard";
+    render();
+    openMovTypeRecordsDlg("compra");
+  });
+
+  elements.quickVendasBtn?.addEventListener("click", () => {
+    state.activeView = "dashboard";
+    render();
+    openMovTypeRecordsDlg("venda");
+  });
+
   document.getElementById("exportSanitaryPdfBtn")?.addEventListener("click", exportSanitaryPdfReport);
 
   elements.potreirosShortcut.addEventListener("click", () => {
@@ -2739,6 +2754,13 @@ function renderHero(farm) {
 
   elements.heroFarmName.textContent = farm.name;
   elements.heroFarmNote.textContent = `${farm.note} ${dominantText}`;
+
+  const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
+  if (elements.dashboardFarmLabel) {
+    elements.dashboardFarmLabel.textContent = isTotalView
+      ? "Painel de Controle de Todas as Fazendas"
+      : `Painel de Controle — Fazenda ${farm.name}`;
+  }
 }
 
 function renderHeroMetrics(farm) {
