@@ -34,24 +34,25 @@ function extractMovementCodeSequence(code, farmId) {
   return fallbackMatch ? Number(fallbackMatch[1] || 0) : 0;
 }
 
+function compareMovementOrder(a, b) {
+  const dateCompare = String(a.date || "").localeCompare(String(b.date || ""));
+  if (dateCompare !== 0) return dateCompare;
+
+  const sourceCompare = String(a.sourceId || "").localeCompare(String(b.sourceId || ""));
+  if (sourceCompare !== 0) return sourceCompare;
+
+  return String(a.id || "").localeCompare(String(b.id || ""));
+}
+
 function ensureMovementCodesForFarm(farm) {
   const prefix = getFarmCodePrefix(farm.id);
-  let maxSequence = 0;
+  const ordered = [...farm.movements].sort(compareMovementOrder);
 
-  farm.movements.forEach((movement) => {
-    const sequence = extractMovementCodeSequence(movement.code, farm.id);
-    if (sequence > maxSequence) {
-      maxSequence = sequence;
-    }
+  ordered.forEach((movement, index) => {
+    movement.code = prefix + String(index + 1).padStart(5, "0");
   });
 
-  farm.movements.forEach((movement) => {
-    if (movement.code) return;
-    maxSequence += 1;
-    movement.code = prefix + String(maxSequence).padStart(5, "0");
-  });
-
-  farm.movementCodeSequence = maxSequence;
+  farm.movementCodeSequence = ordered.length;
 }
 
 const MOVEMENT_TYPES = [
@@ -1093,9 +1094,14 @@ function loadData() {
       return freshData;
     }
 
-    const parsedData = ensureDataShape(JSON.parse(stored));
+    const rawData = JSON.parse(stored);
+    const parsedData = ensureDataShape(rawData);
     parsedData.selectedFarmId = TOTAL_FARM_ID;
     parsedData.auth.sessionUserId = "";
+    const normalizedSnapshot = JSON.stringify(parsedData);
+    if (normalizedSnapshot !== stored) {
+      window.localStorage.setItem(STORAGE_KEY, normalizedSnapshot);
+    }
     return parsedData;
   } catch (error) {
     runtime.storageEnabled = false;
@@ -3608,7 +3614,7 @@ function handlePotrManejSubmit(event) {
     category.quantity += qty;
     category.allocation[destId] = (Number(category.allocation[destId] || 0)) + qty;
     updatePotreroQuantitiesFromAllocation(farm);
-    farm.movements.push({ id: createMovementId(), type: "compra", date, categoryId, categoryName: category.name, quantity: qty, delta: qty, value: 0, saleDetails: null, notes: notes || `Adicionado ao potreiro ${getPotreroEntries(farm).find((p) => p.id === destId)?.name || "sem potreiro"}`, potreiro: destId, sourceId: "", photos: [] });
+    farm.movements.push({ id: createMovementId(), code: generateMovementCode(farm), type: "compra", date, categoryId, categoryName: category.name, quantity: qty, delta: qty, value: 0, saleDetails: null, notes: notes || `Adicionado ao potreiro ${getPotreroEntries(farm).find((p) => p.id === destId)?.name || "sem potreiro"}`, potreiro: destId, sourceId: "", photos: [] });
 
   } else if (type === "transferencia") {
     const destFarmId = elements.potrManejDestFarm.value;
@@ -3626,7 +3632,7 @@ function handlePotrManejSubmit(event) {
       category.allocation[originId] -= qty;
       category.allocation[destId] = (Number(category.allocation[destId] || 0)) + qty;
       updatePotreroQuantitiesFromAllocation(farm);
-      farm.movements.push({ id: createMovementId(), type: "transferencia", date, categoryId, categoryName: category.name, quantity: qty, delta: 0, value: 0, saleDetails: null, notes, potreiro: originId, potreiroDest: destId, sourceId: "", photos: [] });
+      farm.movements.push({ id: createMovementId(), code: generateMovementCode(farm), type: "transferencia", date, categoryId, categoryName: category.name, quantity: qty, delta: 0, value: 0, saleDetails: null, notes, potreiro: originId, potreiroDest: destId, sourceId: "", photos: [] });
 
     } else {
       // Inter-farm transfer — remove from source, add to dest
@@ -3644,7 +3650,7 @@ function handlePotrManejSubmit(event) {
       category.quantity -= qty;
       category.allocation[originId] = Math.max(0, category.allocation[originId] - qty);
       updatePotreroQuantitiesFromAllocation(farm);
-      farm.movements.push({ id: createMovementId(), type: "consumo", date, categoryId, categoryName: category.name, quantity: qty, delta: -qty, value: 0, saleDetails: null, notes: `${transferNote} → ${destFarm.name}`, potreiro: originId, sourceId: "", photos: [] });
+      farm.movements.push({ id: createMovementId(), code: generateMovementCode(farm), type: "consumo", date, categoryId, categoryName: category.name, quantity: qty, delta: -qty, value: 0, saleDetails: null, notes: `${transferNote} → ${destFarm.name}`, potreiro: originId, sourceId: "", photos: [] });
 
       // Add to destination farm
       let destCategory = destFarm.categories.find((c) => c.id === categoryId);
@@ -3656,7 +3662,7 @@ function handlePotrManejSubmit(event) {
       destCategory.quantity += qty;
       destCategory.allocation[destPotrId] = (Number(destCategory.allocation[destPotrId] || 0)) + qty;
       updatePotreroQuantitiesFromAllocation(destFarm);
-      destFarm.movements.push({ id: createMovementId(), type: "compra", date, categoryId, categoryName: category.name, quantity: qty, delta: qty, value: 0, saleDetails: null, notes: `${transferNote} ← ${farm.name}`, potreiro: destPotrId, sourceId: "", photos: [] });
+      destFarm.movements.push({ id: createMovementId(), code: generateMovementCode(destFarm), type: "compra", date, categoryId, categoryName: category.name, quantity: qty, delta: qty, value: 0, saleDetails: null, notes: `${transferNote} ← ${farm.name}`, potreiro: destPotrId, sourceId: "", photos: [] });
     }
 
   } else if (type === "venda") {
@@ -3669,7 +3675,7 @@ function handlePotrManejSubmit(event) {
     category.quantity -= qty;
     category.allocation[originId] = Math.max(0, category.allocation[originId] - qty);
     updatePotreroQuantitiesFromAllocation(farm);
-    farm.movements.push({ id: createMovementId(), type: "venda", date, categoryId, categoryName: category.name, quantity: qty, delta: -qty, value, saleDetails: null, notes, potreiro: originId, sourceId: "", photos: [] });
+    farm.movements.push({ id: createMovementId(), code: generateMovementCode(farm), type: "venda", date, categoryId, categoryName: category.name, quantity: qty, delta: -qty, value, saleDetails: null, notes, potreiro: originId, sourceId: "", photos: [] });
 
   } else if (type === "morte" || type === "consumo") {
     const originQty = Number(category.allocation[originId] || 0);
@@ -3681,7 +3687,7 @@ function handlePotrManejSubmit(event) {
     category.allocation[originId] = Math.max(0, category.allocation[originId] - qty);
     updatePotreroQuantitiesFromAllocation(farm);
     const photos = type === "morte" ? runtime.potrManej.photoDrafts.map((p) => ({ ...p })) : [];
-    farm.movements.push({ id: createMovementId(), type, date, categoryId, categoryName: category.name, quantity: qty, delta: -qty, value: 0, saleDetails: null, notes, potreiro: originId, sourceId: "", photos });
+    farm.movements.push({ id: createMovementId(), code: generateMovementCode(farm), type, date, categoryId, categoryName: category.name, quantity: qty, delta: -qty, value: 0, saleDetails: null, notes, potreiro: originId, sourceId: "", photos });
 
   } else if (type === "retorno") {
     // Move animals from current potreiro back to unallocated pool — no stock change
@@ -3698,7 +3704,7 @@ function handlePotrManejSubmit(event) {
     category.allocation[UNALLOCATED_POTREIRO_KEY] = (Number(category.allocation[UNALLOCATED_POTREIRO_KEY] || 0)) + qty;
     updatePotreroQuantitiesFromAllocation(farm);
     const potreroName = getPotreroEntries(farm).find((p) => p.id === originId)?.name || originId;
-    farm.movements.push({ id: createMovementId(), type: "transferencia", date, categoryId, categoryName: category.name, quantity: qty, delta: 0, value: 0, saleDetails: null, notes: notes || `Retorno ao total — saída de "${potreroName}"`, potreiro: originId, potreiroDest: UNALLOCATED_POTREIRO_KEY, sourceId: "", photos: [] });
+    farm.movements.push({ id: createMovementId(), code: generateMovementCode(farm), type: "transferencia", date, categoryId, categoryName: category.name, quantity: qty, delta: 0, value: 0, saleDetails: null, notes: notes || `Retorno ao total — saída de "${potreroName}"`, potreiro: originId, potreiroDest: UNALLOCATED_POTREIRO_KEY, sourceId: "", photos: [] });
   }
 
   saveData();
