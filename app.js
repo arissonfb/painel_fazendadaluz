@@ -146,7 +146,7 @@ const ARAPEY_PRIMARY_GEO_KEYS = new Set([
   "prad 7",
   "prad 8"
 ]);
-const PDF_LOGO_PATH = "./assets/logo-da-luz.jpg";
+const PDF_LOGO_PATH = "./assets/logo-da-luz-transp.png";
 const TECHNICAL_MANAGER_NAME = "Hugo Fabricio Fernandes Balbuena";
 const MOVEMENT_PHOTO_TYPES = new Set(["compra", "venda", "morte"]);
 const MAX_MOVEMENT_PHOTOS = 6;
@@ -6272,7 +6272,7 @@ function handlePdfOptionsSubmit(event) {
 
 async function addPdfHeader(doc, farm, periodLabel, monthly) {
   try {
-    const imageData = await loadAssetAsDataUrl(PDF_LOGO_PATH);
+    const imageData = await loadLogoForPdf("#ffffff");
     doc.addImage(imageData, "JPEG", 14, 10, 22, 22);
   } catch (error) {
     console.warn("Não foi possível carregar o logo para o PDF.", error);
@@ -6335,7 +6335,7 @@ async function appendPdfCoverPage(doc, farms, periodLabel) {
   doc.circle(width / 2, 96, 28, "F");
 
   try {
-    const imageData = await loadAssetAsDataUrl(PDF_LOGO_PATH);
+    const imageData = await loadLogoForPdf("#f7f1e5");
     doc.addImage(imageData, "JPEG", (width / 2) - 19, 77, 38, 38);
   } catch (error) {
     console.warn("Não foi possível carregar o logo para a capa do PDF.", error);
@@ -7276,6 +7276,30 @@ function showStartupError(error) {
       </div>
     </section>
   `;
+}
+
+async function loadLogoForPdf(bgColor = "#ffffff") {
+  const cacheKey = `logo-bg-${bgColor}`;
+  if (assetDataUrlCache.has(cacheKey)) return assetDataUrlCache.get(cacheKey);
+
+  const img = await new Promise((resolve, reject) => {
+    const el = new Image();
+    el.onload = () => resolve(el);
+    el.onerror = () => reject(new Error("Falha ao carregar logo PNG"));
+    el.src = PDF_LOGO_PATH;
+  });
+
+  const canvas = document.createElement("canvas");
+  canvas.width = img.naturalWidth || 256;
+  canvas.height = img.naturalHeight || 256;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, 0, 0);
+
+  const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
+  assetDataUrlCache.set(cacheKey, dataUrl);
+  return dataUrl;
 }
 
 async function loadAssetAsDataUrl(path) {
