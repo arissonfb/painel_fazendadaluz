@@ -792,6 +792,7 @@ const runtime = {
   appInitialized: false,
   splashDismissed: false,
   authLoginMode: "usuario",
+  pendingMovementDialogType: "",
   movementPhotoDrafts: [],
   editStockContextFarmId: TOTAL_FARM_ID,
   pdfContextFarmId: TOTAL_FARM_ID,
@@ -2301,6 +2302,12 @@ function bindEvents() {
   }
   elements.closeMovementDialog.addEventListener("click", () => { runtime.editingMovement = null; elements.movementDialog.close(); });
   elements.closeMovTypeRecordsDlg.addEventListener("click", () => elements.movTypeRecordsDlg.close());
+  elements.movTypeRecordsDlg.addEventListener("close", () => {
+    if (!runtime.pendingMovementDialogType) return;
+    const nextType = runtime.pendingMovementDialogType;
+    runtime.pendingMovementDialogType = "";
+    window.requestAnimationFrame(() => openMovementDialog(nextType));
+  });
   elements.closePotrManejDlg.addEventListener("click", () => elements.potrManejoDlg.close());
   elements.potrActionTabs?.addEventListener("click", (e) => {
     const tab = e.target.closest("[data-manej]");
@@ -2755,13 +2762,14 @@ function openMovTypeRecordsDlg(movType) {
   elements.movTypeRecordsKicker.textContent = farmLabel;
   elements.movTypeRecordsTitle.textContent = typeMeta ? typeMeta.label : capitalize(movType);
   elements.movTypeRecordsSearch.value = "";
+  elements.movTypeRecordsNewBtn.textContent = `+ Novo ${typeMeta ? typeMeta.label : capitalize(movType)}`;
   elements.movTypeRecordsNewBtn.onclick = () => {
     if (elements.movTypeRecordsDlg.open) {
+      runtime.pendingMovementDialogType = movType;
       elements.movTypeRecordsDlg.close();
+      return;
     }
-    window.setTimeout(() => {
-      openMovementDialog(movType);
-    }, 0);
+    openMovementDialog(movType);
   };
   elements.movTypeRecordsSearch.oninput = () => renderMovTypeRecordsBody(movType, 0);
 
@@ -2864,15 +2872,17 @@ function renderMovTypeRecordsBody(movType, page) {
       const code = m.code
         ? `<span class="movement-code">${escapeHtml(m.code)}</span>`
         : `<span class="movement-code movement-code-legacy">—</span>`;
-      const farmCell = isTotalView ? `<td><span class="sanitary-origin manual">${escapeHtml(m._farmName)}</span></td>` : "";
+      const farmCell = isTotalView
+        ? `<td><div class="mov-records-main-cell"><strong>${escapeHtml(m._farmName)}</strong><span>Origem do registro</span></div></td>`
+        : "";
       const currency = m.currency || getFarmCurrency(m._farmId);
       const sym = currency === "USD" ? "US$" : "R$";
       const currencyBadge = `<span class="currency-badge ${currency === "USD" ? "usd" : "brl"}">${currency}</span>`;
       const fmtVal = (v) => v > 0 ? `${sym} ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)}` : "—";
       const fmtKg = (v) => v > 0 ? `${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(v)} kg` : "—";
       const actionsCell = `<td class="movement-actions-cell">
-        <button class="movement-action-btn edit-btn" title="Editar" data-farm-id="${escapeHtml(m._farmId)}" data-movement-id="${escapeHtml(m.id)}">✏️</button>
-        <button class="movement-action-btn delete-btn" title="Excluir" data-farm-id="${escapeHtml(m._farmId)}" data-movement-id="${escapeHtml(m.id)}">🗑️</button>
+        <button class="movement-action-btn edit-btn" title="Editar" data-farm-id="${escapeHtml(m._farmId)}" data-movement-id="${escapeHtml(m.id)}">Editar</button>
+        <button class="movement-action-btn delete-btn" title="Excluir" data-farm-id="${escapeHtml(m._farmId)}" data-movement-id="${escapeHtml(m.id)}">Excluir</button>
       </td>`;
 
       if (isCompra) {
@@ -2880,15 +2890,15 @@ function renderMovTypeRecordsBody(movType, page) {
         const totalW = p.totalWeight || 0;
         const priceKg = p.pricePerKg || 0;
         const vph = p.valuePerHead || (m.quantity > 0 && m.value > 0 ? m.value / m.quantity : 0);
-        return `<tr>
+        return `<tr class="mov-record-row mov-record-row-compra">
           <td>${code}</td>
           ${farmCell}
           <td>${formatDate(m.date)}</td>
-          <td>${escapeHtml(m.categoryName)}</td>
+          <td><div class="mov-records-main-cell"><strong>${escapeHtml(m.categoryName)}</strong><span>${escapeHtml(getMovementNotes(m) || "Compra registrada")}</span></div></td>
           <td class="num-col"><strong>${formatInteger(m.quantity)}</strong></td>
-          <td>${escapeHtml(p.sourceProperty || m.notes || "—")}</td>
+          <td><div class="mov-records-main-cell"><strong>${escapeHtml(p.sourceProperty || "Origem nao informada")}</strong><span>${escapeHtml(m.notes || "Sem observacoes")}</span></div></td>
           <td class="num-col">${fmtKg(totalW)}</td>
-          <td class="num-col">${priceKg > 0 ? fmtVal(priceKg) : "—"}</td>
+          <td class="num-col">${priceKg > 0 ? fmtVal(priceKg) : "--"}</td>
           <td class="num-col fin-value">${fmtVal(m.value)}</td>
           <td class="num-col">${fmtVal(vph)}</td>
           <td class="num-col">${currencyBadge}</td>
@@ -2903,17 +2913,17 @@ function renderMovTypeRecordsBody(movType, page) {
         const yieldPct = d.yieldPct || null;
         const buyer = d.buyer || extractBuyerFromNotes(m.notes);
         const vph = d.valuePerHead || (m.quantity > 0 && m.value > 0 ? m.value / m.quantity : 0);
-        const yieldCell = yieldPct ? `${yieldPct}%` : (d.mode === "carcaca" ? extractYieldFromNotes(m.notes) : "—");
-        return `<tr>
+        const yieldCell = yieldPct ? `${yieldPct}%` : (d.mode === "carcaca" ? extractYieldFromNotes(m.notes) : "--");
+        return `<tr class="mov-record-row mov-record-row-venda">
           <td>${code}</td>
           ${farmCell}
           <td>${formatDate(m.date)}</td>
-          <td>${escapeHtml(m.categoryName)}</td>
+          <td><div class="mov-records-main-cell"><strong>${escapeHtml(m.categoryName)}</strong><span>${escapeHtml(getMovementNotes(m) || "Venda registrada")}</span></div></td>
           <td class="num-col"><strong>${formatInteger(m.quantity)}</strong></td>
-          <td>${escapeHtml(buyer || "—")}${getMovementPhotoFlagMarkup(m)}</td>
+          <td><div class="mov-records-main-cell"><strong>${escapeHtml(buyer || "Comprador nao informado")}</strong><span>${escapeHtml(m.notes || "Sem observacoes")}</span></div>${getMovementPhotoFlagMarkup(m)}</td>
           <td class="num-col">${fmtKg(weightKg)}</td>
           <td class="num-col">${yieldCell}</td>
-          <td class="num-col">${priceKg > 0 ? fmtVal(priceKg) : "—"}</td>
+          <td class="num-col">${priceKg > 0 ? fmtVal(priceKg) : "--"}</td>
           <td class="num-col fin-value">${fmtVal(m.value)}</td>
           <td class="num-col">${fmtVal(vph)}</td>
           <td class="num-col">${currencyBadge}</td>

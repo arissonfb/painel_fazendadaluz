@@ -1422,6 +1422,7 @@ input {
   padding: 12px 24px;
   border-bottom: 1px solid var(--line);
   flex-shrink: 0;
+  background: linear-gradient(180deg, rgba(255, 251, 245, 0.98), rgba(246, 236, 221, 0.9));
 }
 
 .mov-records-toolbar .movements-search-input {
@@ -1430,20 +1431,22 @@ input {
 
 .btn-primary-sm {
   flex-shrink: 0;
-  background: var(--green);
+  background: linear-gradient(135deg, var(--green) 0%, var(--green-deep) 100%);
   color: #fff;
   border: none;
   border-radius: 10px;
-  padding: 8px 16px;
+  padding: 10px 16px;
   font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
-  transition: background 120ms ease;
+  transition: background 120ms ease, transform 120ms ease, box-shadow 120ms ease;
   white-space: nowrap;
+  box-shadow: 0 10px 22px rgba(40, 67, 51, 0.18);
 }
 
 .btn-primary-sm:hover {
-  background: #2d5c3f;
+  background: linear-gradient(135deg, #2f6444 0%, #22412f 100%);
+  transform: translateY(-1px);
 }
 
 .mov-records-table-wrap {
@@ -1462,6 +1465,7 @@ input {
   padding: 10px 14px;
   text-align: left;
   border-bottom: 1px solid var(--line);
+  vertical-align: top;
 }
 
 .mov-records-table th {
@@ -1478,6 +1482,40 @@ input {
 
 .mov-records-table tr:hover td {
   background: rgba(55, 91, 67, 0.04);
+}
+
+.mov-record-row:nth-child(even) td {
+  background: rgba(255, 252, 247, 0.62);
+}
+
+.mov-record-row-compra td:first-child,
+.mov-record-row-venda td:first-child {
+  border-left: 3px solid transparent;
+}
+
+.mov-record-row-compra td:first-child {
+  border-left-color: rgba(201, 140, 79, 0.65);
+}
+
+.mov-record-row-venda td:first-child {
+  border-left-color: rgba(55, 91, 67, 0.65);
+}
+
+.mov-records-main-cell {
+  display: grid;
+  gap: 3px;
+}
+
+.mov-records-main-cell strong {
+  color: var(--text);
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.mov-records-main-cell span {
+  color: var(--muted);
+  font-size: 0.77rem;
+  line-height: 1.45;
 }
 
 .mov-records-footer {
@@ -4391,27 +4429,34 @@ th {
   white-space: nowrap;
   text-align: right;
   padding: 4px 8px !important;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .movement-action-btn {
-  background: none;
-  border: none;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(76, 55, 34, 0.12);
   cursor: pointer;
-  padding: 4px 6px;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  opacity: 0.5;
-  transition: opacity 0.15s, background 0.15s;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--text);
+  opacity: 1;
+  transition: opacity 0.15s, background 0.15s, border-color 0.15s, color 0.15s;
   line-height: 1;
 }
 
 .movement-action-btn:hover {
-  opacity: 1;
   background: rgba(55, 91, 67, 0.1);
+  border-color: rgba(55, 91, 67, 0.24);
 }
 
 .movement-action-btn.delete-btn:hover {
   background: rgba(180, 60, 60, 0.1);
+  border-color: rgba(180, 60, 60, 0.22);
+  color: var(--red);
 }
 
 /* ─── Movement Dialog Potreiro Fields ────────────────────────────────────── */
