@@ -1,5 +1,25 @@
 const STORAGE_KEY = "painelPecuario.v2";
 const API_URL = "https://painel-pecuario-api.onrender.com";
+
+const FARM_CODE_PREFIXES = {
+  "arapey":          "A",
+  "colorado":        "C",
+  "sarandi":         "S",
+  "passa-da-guarda": "PG",
+  "chiquita":        "CH",
+};
+
+function getFarmCodePrefix(farmId) {
+  if (FARM_CODE_PREFIXES[farmId]) return FARM_CODE_PREFIXES[farmId];
+  return (farmId || "X").replace(/[^a-zA-Z]/g, "").slice(0, 3).toUpperCase() || "X";
+}
+
+function generateMovementCode(farm) {
+  farm.movementCodeSequence = (farm.movementCodeSequence || 0) + 1;
+  const prefix = getFarmCodePrefix(farm.id);
+  return prefix + String(farm.movementCodeSequence).padStart(5, "0");
+}
+
 const MOVEMENT_TYPES = [
   { value: "compra", label: "Compra", direction: 1 },
   { value: "venda", label: "Venda", direction: -1 },
@@ -727,7 +747,9 @@ const runtime = {
   cloudSyncing: false,
   cloudEnabled: true,
   editingMovement: null,  // { farmId, movementId } when editing an existing movement
-  potrManej: { farmId: null, potreirosId: null, type: "adicionar", photoDrafts: [] }
+  potrManej: { farmId: null, potreirosId: null, type: "adicionar", photoDrafts: [] },
+  movementsSearch: "",
+  movementsPage: 0,
 };
 
 const today = new Date();
@@ -849,6 +871,15 @@ const elements = {
   potreirosShortcut: document.getElementById("potreirosShortcut"),
   potreirosView: document.getElementById("potreirosView"),
   potreirosAccordion: document.getElementById("potreirosAccordion"),
+  movTypeRecordsDlg: document.getElementById("movTypeRecordsDlg"),
+  closeMovTypeRecordsDlg: document.getElementById("closeMovTypeRecordsDlg"),
+  movTypeRecordsKicker: document.getElementById("movTypeRecordsKicker"),
+  movTypeRecordsTitle: document.getElementById("movTypeRecordsTitle"),
+  movTypeRecordsSearch: document.getElementById("movTypeRecordsSearch"),
+  movTypeRecordsNewBtn: document.getElementById("movTypeRecordsNewBtn"),
+  movTypeRecordsHead: document.getElementById("movTypeRecordsHead"),
+  movTypeRecordsBody: document.getElementById("movTypeRecordsBody"),
+  movTypeRecordsFooter: document.getElementById("movTypeRecordsFooter"),
   potrManejoDlg: document.getElementById("potrManejoDlg"),
   closePotrManejDlg: document.getElementById("closePotrManejDlg"),
   potrManejFarmKicker: document.getElementById("potrManejFarmKicker"),
@@ -1790,18 +1821,18 @@ function bindEvents() {
     }
   });
 
-  // Visual herd grid — click card to open movement dialog for that type
+  // Visual herd grid — click card to open records dialog for that type
   elements.visualHerdGrid.addEventListener("click", (e) => {
     const card = e.target.closest("[data-mov]");
     if (!card) return;
-    handleRegisterAction(card.dataset.mov);
+    openMovTypeRecordsDlg(card.dataset.mov);
   });
   elements.visualHerdGrid.addEventListener("keydown", (e) => {
     if (e.key === "Enter" || e.key === " ") {
       const card = e.target.closest("[data-mov]");
       if (!card) return;
       e.preventDefault();
-      handleRegisterAction(card.dataset.mov);
+      openMovTypeRecordsDlg(card.dataset.mov);
     }
   });
 
@@ -1814,6 +1845,7 @@ function bindEvents() {
     elements.monthlyProtocolList.addEventListener("click", handleMonthlyTableInteraction);
   }
   elements.closeMovementDialog.addEventListener("click", () => { runtime.editingMovement = null; elements.movementDialog.close(); });
+  elements.closeMovTypeRecordsDlg.addEventListener("click", () => elements.movTypeRecordsDlg.close());
   elements.closePotrManejDlg.addEventListener("click", () => elements.potrManejoDlg.close());
   elements.potrActionTabs.addEventListener("click", (e) => {
     const tab = e.target.closest("[data-manej]");
@@ -1928,7 +1960,6 @@ function render() {
   renderSanitaryComposerState(farm);
   renderMonthlySummary(farm);
   renderMonthlyProtocol(farm);
-  renderInsights(farm);
   renderCharts(farm);
   renderActiveView();
   renderGeorefState(farm);
@@ -2256,6 +2287,123 @@ function renderDashboardVisualHerdGrid(farm) {
   `).join("");
 }
 
+// ── Movement Type Records Dialog ─────────────────────────────────────────
+
+const MOV_TYPE_RECORDS_PAGE = 50;
+
+function openMovTypeRecordsDlg(movType) {
+  const typeMeta = MOVEMENT_TYPES.find((t) => t.value === movType);
+  const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
+  const farm = isTotalView ? null : getFarm();
+  const farmLabel = isTotalView ? "Todas as fazendas" : farm?.name || "";
+
+  elements.movTypeRecordsKicker.textContent = farmLabel;
+  elements.movTypeRecordsTitle.textContent = typeMeta ? typeMeta.label : capitalize(movType);
+  elements.movTypeRecordsSearch.value = "";
+  elements.movTypeRecordsNewBtn.onclick = () => {
+    elements.movTypeRecordsDlg.close();
+    openMovementDialog(movType);
+  };
+  elements.movTypeRecordsSearch.oninput = () => renderMovTypeRecordsBody(movType, 0);
+
+  runtime._movTypeRecordsPage = 0;
+  renderMovTypeRecordsBody(movType, 0);
+  elements.movTypeRecordsDlg.showModal();
+}
+
+function renderMovTypeRecordsBody(movType, page) {
+  const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
+  const query = (elements.movTypeRecordsSearch.value || "").trim().toLowerCase();
+
+  let all;
+  if (isTotalView) {
+    all = getAllFarms().flatMap((f) => f.movements.map((m) => ({ ...m, _farmId: f.id, _farmName: f.name })));
+  } else {
+    const farm = getFarm();
+    all = (farm?.movements || []).map((m) => ({ ...m, _farmId: farm.id, _farmName: farm.name }));
+  }
+
+  let filtered = all
+    .filter((m) => m.type === movType)
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  if (query) {
+    filtered = filtered.filter((m) =>
+      (m.code || "").toLowerCase().includes(query) ||
+      (m.categoryName || "").toLowerCase().includes(query) ||
+      (m.notes || "").toLowerCase().includes(query) ||
+      (m._farmName || "").toLowerCase().includes(query)
+    );
+  }
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / MOV_TYPE_RECORDS_PAGE));
+  const safePage = Math.min(page, totalPages - 1);
+  const slice = filtered.slice(safePage * MOV_TYPE_RECORDS_PAGE, (safePage + 1) * MOV_TYPE_RECORDS_PAGE);
+
+  // Header
+  elements.movTypeRecordsHead.innerHTML = `<tr>
+    <th>Código</th>
+    ${isTotalView ? "<th>Fazenda</th>" : ""}
+    <th>Data</th>
+    <th>Categoria</th>
+    <th>Qtd.</th>
+    <th>Obs.</th>
+    <th></th>
+  </tr>`;
+
+  // Body
+  if (!slice.length) {
+    const cols = isTotalView ? 7 : 6;
+    elements.movTypeRecordsBody.innerHTML = `<tr><td colspan="${cols}" class="table-empty-cell">${query ? "Nenhum registro encontrado." : "Nenhum lançamento deste tipo ainda."}</td></tr>`;
+  } else {
+    const badgeClass = MOVEMENT_TYPE_STYLES[movType] || "badge-neutral";
+    elements.movTypeRecordsBody.innerHTML = slice.map((m) => {
+      const code = m.code
+        ? `<span class="movement-code">${escapeHtml(m.code)}</span>`
+        : `<span class="movement-code movement-code-legacy">—</span>`;
+      const deltaSign = m.delta > 0 ? "+" : "";
+      const farmCell = isTotalView ? `<td><span class="sanitary-origin manual">${escapeHtml(m._farmName)}</span></td>` : "";
+      return `<tr>
+        <td>${code}</td>
+        ${farmCell}
+        <td>${formatDate(m.date)}</td>
+        <td>${escapeHtml(m.categoryName)}</td>
+        <td>${deltaSign}${formatInteger(m.quantity)}</td>
+        <td>${escapeHtml(getMovementNotes(m))}${getMovementPhotoFlagMarkup(m)}</td>
+        <td class="movement-actions-cell">
+          <button class="movement-action-btn edit-btn" title="Editar" data-farm-id="${escapeHtml(m._farmId)}" data-movement-id="${escapeHtml(m.id)}">✏️</button>
+          <button class="movement-action-btn delete-btn" title="Excluir" data-farm-id="${escapeHtml(m._farmId)}" data-movement-id="${escapeHtml(m.id)}">🗑️</button>
+        </td>
+      </tr>`;
+    }).join("");
+
+    elements.movTypeRecordsBody.querySelectorAll(".edit-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        elements.movTypeRecordsDlg.close();
+        openEditMovementDialog(btn.dataset.farmId, btn.dataset.movementId);
+      });
+    });
+    elements.movTypeRecordsBody.querySelectorAll(".delete-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        deleteMovement(btn.dataset.farmId, btn.dataset.movementId);
+        renderMovTypeRecordsBody(movType, safePage);
+      });
+    });
+  }
+
+  // Footer pagination
+  elements.movTypeRecordsFooter.innerHTML = `
+    <span class="movements-count">${filtered.length} registro${filtered.length !== 1 ? "s" : ""}</span>
+    ${totalPages > 1 ? `
+      <button class="mov-page-btn" ${safePage === 0 ? "disabled" : ""} id="movRecPrev">&#8249; Anterior</button>
+      <span class="mov-page-info">Página ${safePage + 1} de ${totalPages}</span>
+      <button class="mov-page-btn" ${safePage >= totalPages - 1 ? "disabled" : ""} id="movRecNext">Próxima &#8250;</button>
+    ` : ""}
+  `;
+  document.getElementById("movRecPrev")?.addEventListener("click", () => renderMovTypeRecordsBody(movType, safePage - 1));
+  document.getElementById("movRecNext")?.addEventListener("click", () => renderMovTypeRecordsBody(movType, safePage + 1));
+}
+
 function handleRegisterAction(action) {
   if (action === "dado-mensal") {
     openMonthlyDataDialog();
@@ -2290,6 +2438,8 @@ function renderFarmSwitch() {
     button.addEventListener("click", () => {
       state.data.selectedFarmId = farm.id;
       state.activeView = "dashboard";
+      runtime.movementsPage = 0;
+      runtime.movementsSearch = "";
       saveData();
       render();
     });
@@ -2607,25 +2757,90 @@ const MOVEMENT_TYPE_STYLES = {
   ajuste: "badge-neutral"
 };
 
+const MOVEMENTS_PAGE_SIZE = 50;
+
 function renderMovementsTable(farm) {
   const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
-  if (elements.movementsTableHead) {
-    elements.movementsTableHead.innerHTML = `<tr>${isTotalView ? "<th>Fazenda</th>" : ""}<th>Data</th><th>Tipo</th><th>Categoria</th><th>Qtd.</th><th>Obs.</th><th></th></tr>`;
-  }
-  let movements;
+  const colCount = isTotalView ? 8 : 7;
+
+  // Build full sorted list
+  let allMovements;
   if (isTotalView) {
-    const allFarms = getAllFarms();
-    movements = allFarms.flatMap((f) => f.movements.map((m) => ({ ...m, _farmId: f.id, _farmName: f.name })));
+    allMovements = getAllFarms().flatMap((f) => f.movements.map((m) => ({ ...m, _farmId: f.id, _farmName: f.name })));
   } else {
-    movements = farm.movements.map((m) => ({ ...m, _farmId: farm.id, _farmName: farm.name }));
+    allMovements = farm.movements.map((m) => ({ ...m, _farmId: farm.id, _farmName: farm.name }));
   }
-  movements = movements.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 50);
+  allMovements = allMovements.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  // Apply search filter
+  const query = runtime.movementsSearch.trim().toLowerCase();
+  const filtered = query
+    ? allMovements.filter((m) =>
+        (m.code || "").toLowerCase().includes(query) ||
+        (m.type || "").toLowerCase().includes(query) ||
+        (m.categoryName || "").toLowerCase().includes(query) ||
+        (m.notes || "").toLowerCase().includes(query) ||
+        (m._farmName || "").toLowerCase().includes(query)
+      )
+    : allMovements;
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / MOVEMENTS_PAGE_SIZE));
+  if (runtime.movementsPage >= totalPages) runtime.movementsPage = totalPages - 1;
+  const page = runtime.movementsPage;
+  const movements = filtered.slice(page * MOVEMENTS_PAGE_SIZE, (page + 1) * MOVEMENTS_PAGE_SIZE);
+
+  // Render table header
+  if (elements.movementsTableHead) {
+    elements.movementsTableHead.innerHTML = `<tr>
+      <th>Código</th>
+      ${isTotalView ? "<th>Fazenda</th>" : ""}
+      <th>Data</th><th>Tipo</th><th>Categoria</th><th>Qtd.</th><th>Obs.</th><th></th>
+    </tr>`;
+  }
+
+  // Search bar + pagination controls container
+  const container = elements.movementsTableBody.closest(".table-wrap") || elements.movementsTableBody.parentElement;
+  let toolbar = container.parentElement.querySelector(".movements-toolbar");
+  if (!toolbar) {
+    toolbar = document.createElement("div");
+    toolbar.className = "movements-toolbar";
+    container.parentElement.insertBefore(toolbar, container);
+  }
+  toolbar.innerHTML = `
+    <div class="movements-search-wrap">
+      <input
+        type="search"
+        class="movements-search-input"
+        placeholder="Buscar por código, tipo, categoria…"
+        value="${escapeHtml(runtime.movementsSearch)}"
+        id="movementsSearchInput"
+      >
+    </div>
+    <div class="movements-pagination">
+      <span class="movements-count">${filtered.length} registro${filtered.length !== 1 ? "s" : ""}${query ? " encontrado" + (filtered.length !== 1 ? "s" : "") : ""}</span>
+      ${totalPages > 1 ? `
+        <button class="mov-page-btn" data-page="${page - 1}" ${page === 0 ? "disabled" : ""}>&#8249; Anterior</button>
+        <span class="mov-page-info">Página ${page + 1} de ${totalPages}</span>
+        <button class="mov-page-btn" data-page="${page + 1}" ${page >= totalPages - 1 ? "disabled" : ""}>Próxima &#8250;</button>
+      ` : ""}
+    </div>
+  `;
+
+  toolbar.querySelector("#movementsSearchInput").addEventListener("input", (e) => {
+    runtime.movementsSearch = e.target.value;
+    runtime.movementsPage = 0;
+    renderMovementsTable(farm);
+  });
+  toolbar.querySelectorAll(".mov-page-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      runtime.movementsPage = Number(btn.dataset.page);
+      renderMovementsTable(farm);
+    });
+  });
 
   if (!movements.length) {
     elements.movementsTableBody.innerHTML = `
-      <tr>
-        <td colspan="${isTotalView ? 7 : 6}" class="table-empty-cell">Ainda não há lançamentos. Use os botões acima para iniciar o controle.</td>
-      </tr>
+      <tr><td colspan="${colCount}" class="table-empty-cell">${query ? "Nenhum registro encontrado para a busca." : "Ainda não há lançamentos. Use os botões acima para iniciar o controle."}</td></tr>
     `;
     return;
   }
@@ -2633,9 +2848,15 @@ function renderMovementsTable(farm) {
   elements.movementsTableBody.innerHTML = movements.map((movement) => {
     const badgeClass = MOVEMENT_TYPE_STYLES[movement.type] || "badge-neutral";
     const deltaSign = movement.delta > 0 ? "+" : "";
-    const farmCell = isTotalView ? `<td data-label="Fazenda"><span class="sanitary-origin manual">${escapeHtml(movement._farmName)}</span></td>` : "";
+    const codeDisplay = movement.code
+      ? `<span class="movement-code">${escapeHtml(movement.code)}</span>`
+      : `<span class="movement-code movement-code-legacy">—</span>`;
+    const farmCell = isTotalView
+      ? `<td data-label="Fazenda"><span class="sanitary-origin manual">${escapeHtml(movement._farmName)}</span></td>`
+      : "";
     return `
       <tr>
+        <td data-label="Código">${codeDisplay}</td>
         ${farmCell}
         <td data-label="Data">${formatDate(movement.date)}</td>
         <td data-label="Tipo"><span class="badge ${badgeClass}">${capitalize(movement.type)}</span></td>
@@ -4299,15 +4520,7 @@ function formatArapeyGeoLabel(key) {
 }
 
 function renderInsights(farm) {
-  const insights = getOperationalInsights(farm);
-
-  elements.insightList.innerHTML = insights.map((insight) => `
-    <article class="insight-card">
-      <span>${insight.tag}</span>
-      <strong>${escapeHtml(insight.title)}</strong>
-      <p>${escapeHtml(insight.text)}</p>
-    </article>
-  `).join("");
+  return;
 }
 
 function renderCharts(farm) {
@@ -5504,6 +5717,7 @@ async function handleMovementSubmit(event) {
     updatePotreroQuantitiesFromAllocation(farm);
     farm.movements.push({
       id: createMovementId(),
+      code: generateMovementCode(farm),
       type: "transferencia",
       date,
       categoryId,
@@ -5572,6 +5786,7 @@ async function handleMovementSubmit(event) {
 
   farm.movements.push({
     id: createMovementId(),
+    code: generateMovementCode(farm),
     type,
     date,
     categoryId,
@@ -6740,6 +6955,9 @@ function ensureDataShape(data, options = {}) {
       farm.sanitaryProducts = [...DEFAULT_SANITARY_PRODUCTS];
     }
     farm.importedBaselineVersion = Number(farm.importedBaselineVersion || 0);
+    if (typeof farm.movementCodeSequence !== "number") {
+      farm.movementCodeSequence = farm.movements.length; // start after existing records
+    }
     if (!Array.isArray(farm.potreiros)) {
       farm.potreiros = normalizePotreroEntries([], DEFAULT_POTREIROS);
     } else {

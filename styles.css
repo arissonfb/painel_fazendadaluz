@@ -1159,6 +1159,12 @@ input {
   align-items: stretch;
 }
 
+.movements-full-section {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .sales-priority-grid {
   grid-template-columns: minmax(0, 1.18fr) minmax(320px, 0.82fr);
   align-items: start;
@@ -1333,6 +1339,97 @@ input {
 .potr-manej-btn:hover {
   background: rgba(201, 140, 79, 0.22);
   transform: translateY(-1px);
+}
+
+/* ── Movement Type Records Dialog ────────────────────────────────── */
+.mov-records-card {
+  width: min(860px, calc(100vw - 24px));
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+
+.mov-records-card .modal-header {
+  padding: 22px 24px 16px;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.mov-records-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.mov-records-toolbar .movements-search-input {
+  flex: 1;
+}
+
+.btn-primary-sm {
+  flex-shrink: 0;
+  background: var(--green);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 120ms ease;
+  white-space: nowrap;
+}
+
+.btn-primary-sm:hover {
+  background: #2d5c3f;
+}
+
+.mov-records-table-wrap {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.mov-records-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.mov-records-table th,
+.mov-records-table td {
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+
+.mov-records-table th {
+  background: rgba(245, 235, 218, 0.6);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.mov-records-table tr:hover td {
+  background: rgba(55, 91, 67, 0.04);
+}
+
+.mov-records-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 24px;
+  border-top: 1px solid var(--line);
+  flex-shrink: 0;
+  background: rgba(255, 252, 247, 0.7);
 }
 
 /* ── Potreiro Management Dialog ───────────────────────────────────── */
@@ -3566,6 +3663,100 @@ th {
     gap: 4px;
   }
   .fin-farm-name { grid-column: 1 / -1; }
+}
+
+/* ─── Movement Code Badge ────────────────────────────────────────────────── */
+.movement-code {
+  display: inline-block;
+  font-family: "Courier New", monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--green);
+  background: rgba(55, 91, 67, 0.09);
+  border: 1px solid rgba(55, 91, 67, 0.18);
+  border-radius: 6px;
+  padding: 2px 7px;
+  white-space: nowrap;
+}
+
+.movement-code-legacy {
+  color: var(--muted);
+  background: rgba(0, 0, 0, 0.04);
+  border-color: var(--line);
+}
+
+/* ─── Movements Toolbar (search + pagination) ────────────────────────────── */
+.movements-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 252, 247, 0.6);
+}
+
+.movements-search-wrap {
+  flex: 1 1 200px;
+}
+
+.movements-search-input {
+  width: 100%;
+  min-height: 38px;
+  padding: 0 12px;
+  font-size: 0.88rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text);
+  outline: none;
+}
+
+.movements-search-input:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(55, 91, 67, 0.12);
+}
+
+.movements-pagination {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.movements-count {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.mov-page-btn {
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.mov-page-btn:hover:not(:disabled) {
+  background: rgba(55, 91, 67, 0.08);
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.mov-page-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.mov-page-info {
+  font-size: 0.82rem;
+  color: var(--muted);
+  white-space: nowrap;
 }
 
 /* ─── Movement Table Action Buttons ─────────────────────────────────────── */

@@ -307,7 +307,7 @@
           </article>
         </section>
 
-        <section class="content-grid lower-grid">
+        <section class="movements-full-section">
           <article class="panel timeline-panel">
           <div class="panel-header">
             <div>
@@ -329,16 +329,6 @@
               <tbody id="movementsTableBody"></tbody>
             </table>
           </div>
-          </article>
-
-          <article class="panel quick-panel">
-          <div class="panel-header">
-            <div>
-              <p class="panel-kicker">Direção operacional</p>
-              <h2>Leituras rápidas para decisão</h2>
-            </div>
-          </div>
-          <div class="insight-list" id="insightList"></div>
           </article>
         </section>
 
@@ -860,6 +850,30 @@
 
         <aside class="georef-legend" id="georefLegend"></aside>
       </section>
+    </div>
+  </dialog>
+
+  <!-- ── Movement Type Records Dialog ────────────────────────────── -->
+  <dialog id="movTypeRecordsDlg" class="modal">
+    <div class="modal-card mov-records-card">
+      <div class="modal-header">
+        <div>
+          <p class="panel-kicker" id="movTypeRecordsKicker">Movimentações</p>
+          <h2 id="movTypeRecordsTitle">Registros</h2>
+        </div>
+        <button type="button" class="modal-close" id="closeMovTypeRecordsDlg" aria-label="Fechar">&#x2715;</button>
+      </div>
+      <div class="mov-records-toolbar">
+        <input type="search" id="movTypeRecordsSearch" class="movements-search-input" placeholder="Buscar por código, categoria, obs…">
+        <button type="button" class="btn-primary-sm" id="movTypeRecordsNewBtn">+ Novo Registro</button>
+      </div>
+      <div class="mov-records-table-wrap">
+        <table class="mov-records-table">
+          <thead id="movTypeRecordsHead"></thead>
+          <tbody id="movTypeRecordsBody"></tbody>
+        </table>
+      </div>
+      <div class="mov-records-footer" id="movTypeRecordsFooter"></div>
     </div>
   </dialog>
 
