@@ -2230,20 +2230,20 @@ function renderDashboardVisualHerdGrid(farm) {
   if (!elements.visualHerdGrid) return;
 
   const monthly = summarizePeriod(farm, state.filters.year, state.filters.month);
+  const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
   const periodLabel = state.filters.month === "all"
     ? `Ano ${state.filters.year}`
     : `${MONTH_NAMES[Number(state.filters.month) - 1]}/${state.filters.year}`;
 
   const stats = [
-    { label: "Nascimentos",    value: monthly.byType.nascimento, img: "./assets/calf.svg",  detail: "nascidos no período",        movType: "nascimento" },
-    { label: "Mortes",         value: monthly.byType.morte,      img: "./assets/cow.svg",   detail: "mortes registradas",          movType: "morte"      },
-    { label: "Abate / Consumo",value: monthly.byType.consumo,    img: "./assets/bull.svg",  detail: "abates e consumo interno",    movType: "consumo"    },
-    { label: "Compras",        value: monthly.byType.compra,     img: "./assets/herd.svg",  detail: "animais comprados",           movType: "compra"     },
-    { label: "Vendas",         value: monthly.byType.venda,      img: "./assets/angus-login.svg", detail: "animais vendidos",      movType: "venda"      },
+    { label: "Venda",    value: monthly.byType.venda,   img: "./assets/angus-login.svg", detail: "animais vendidos",        movType: "venda"   },
+    { label: "Morte",    value: monthly.byType.morte,   img: "./assets/cow.svg",         detail: "mortes registradas",      movType: "morte"   },
+    { label: "Abate",    value: monthly.byType.consumo, img: "./assets/bull.svg",        detail: "abates e consumo interno",movType: "consumo" },
+    { label: "Compras",  value: monthly.byType.compra,  img: "./assets/herd.svg",        detail: "animais comprados",       movType: "compra"  },
   ];
 
   elements.visualHerdGrid.innerHTML = stats.map((stat) => `
-    <article class="visual-card visual-card-action" data-mov="${stat.movType}" title="Registrar ${stat.label}" tabindex="0" role="button">
+    <article class="visual-card visual-card-action" data-mov="${stat.movType}" title="Registrar ${stat.label}" tabindex="0" role="link" aria-label="Abrir registro de ${stat.label}${isTotalView ? " no total" : ` em ${escapeHtml(farm.name)}`}">
       <div class="visual-card-image">
         <img src="${stat.img}" alt="${escapeHtml(stat.label)}">
       </div>
@@ -2256,7 +2256,7 @@ function renderDashboardVisualHerdGrid(farm) {
           <span class="visual-card-share visual-card-count">${formatInteger(stat.value)}</span>
         </div>
         <p>${stat.value === 0 ? "Nenhum registro no período." : `${formatInteger(stat.value)} ${stat.detail}.`}</p>
-        <span class="visual-card-cta">+ Registrar</span>
+        <span class="visual-card-cta">Abrir registro</span>
       </div>
     </article>
   `).join("");
@@ -2699,6 +2699,9 @@ function openEditMovementDialog(farmId, movementId) {
   runtime.editingMovement = { farmId, movementId };
 
   syncMovementFarmOptions(farmId);
+  if (elements.movementFarmWrap) {
+    elements.movementFarmWrap.hidden = true;
+  }
   syncMovementTypeOptions(movement.type);
   syncMovementCategoryOptionsForFarm(farm);
   if (elements.movementCategory) elements.movementCategory.value = movement.categoryId;
@@ -4815,6 +4818,9 @@ function syncMovementFarmOptions(selectedFarmId = null) {
   `)
   ].join("");
   elements.movementFarm.value = currentId;
+  if (elements.movementFarmWrap) {
+    elements.movementFarmWrap.hidden = state.data.selectedFarmId !== TOTAL_FARM_ID && !selectedFarmId;
+  }
 }
 
 function getMovementDialogFarm() {
