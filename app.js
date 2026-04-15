@@ -944,14 +944,8 @@ const elements = {
   potrManejPhotoPreview: document.getElementById("potrManejPhotoPreview"),
   potrManejSubmit: document.getElementById("potrManejSubmit"),
   editStockDialog: document.getElementById("editStockDialog"),
-  editStockForm: document.getElementById("editStockForm"),
   editStockButton: document.getElementById("editStockButton"),
   closeEditStockDialog: document.getElementById("closeEditStockDialog"),
-  editFarmName: document.getElementById("editFarmName"),
-  editDeclaredTotal: document.getElementById("editDeclaredTotal"),
-  editStockList: document.getElementById("editStockList"),
-  addPotreroButton: document.getElementById("addPotreroButton"),
-  potreroStockList: document.getElementById("potreroStockList"),
   georefButton: document.getElementById("georefButton"),
   georefDialog: document.getElementById("georefDialog"),
   georefSaveButton: document.getElementById("georefSaveButton"),
@@ -1975,9 +1969,14 @@ function bindEvents() {
 
   elements.editStockButton.addEventListener("click", openEditStockDialog);
   elements.georefButton.addEventListener("click", openGeorefDialog);
-  elements.editFarmName.addEventListener("change", handleEditFarmChange);
-  elements.addPotreroButton.addEventListener("click", handleAddPotreroRow);
-  elements.potreroStockList.addEventListener("click", handlePotreroListInteraction);
+  elements.closeEditStockDialog.addEventListener("click", () => elements.editStockDialog.close());
+  document.getElementById("cancelStockEditBtn").addEventListener("click", () => elements.editStockDialog.close());
+  document.getElementById("saveStockEditBtn").addEventListener("click", handleSaveStockEdit);
+  document.getElementById("stockCategoryAccordion").addEventListener("click", handleStockCategoryAccordionClick);
+  document.getElementById("stockPotreirosAccordion").addEventListener("click", handleStockPotreirosAccordionClick);
+  document.querySelectorAll(".stock-tab").forEach((btn) => {
+    btn.addEventListener("click", () => setStockEditorTab(btn.dataset.stockTab));
+  });
   if (elements.monthlyProtocolList) {
     elements.monthlyProtocolList.addEventListener("click", handleMonthlyTableInteraction);
   }
@@ -2013,7 +2012,7 @@ function bindEvents() {
   elements.movementForm.addEventListener("submit", handleMovementSubmit);
   elements.categoryForm.addEventListener("submit", handleCategorySubmit);
   elements.sanitaryForm.addEventListener("submit", handleSanitarySubmit);
-  elements.editStockForm.addEventListener("submit", handleEditStockSubmit);
+  // editStockForm replaced by button-driven stock editor
   elements.monthlyDataForm.addEventListener("submit", handleMonthlyDataSubmit);
 }
 
@@ -5381,134 +5380,297 @@ function openMonthlyDataEditorForFarm(recordId, farmId) {
   elements.monthlyDataDialog.showModal();
 }
 
+// ── Stock Editor ──────────────────────────────────────────────────────────
+
 function openEditStockDialog() {
-  runtime.editStockContextFarmId = state.data.selectedFarmId;
-  const initialFarmId = state.data.selectedFarmId === TOTAL_FARM_ID
-    ? getAllFarms()[0]?.id
-    : state.data.selectedFarmId;
-  if (!initialFarmId || !state.data.farms[initialFarmId]) {
-    alert("Nenhuma fazenda está disponível para editar o estoque.");
-    return;
-  }
-
-  renderEditStockForm(initialFarmId);
-  elements.editStockDialog.showModal();
-  return;
-  if (state.data.selectedFarmId === TOTAL_FARM_ID) {
-    alert("Selecione uma fazenda específica para editar o estoque.");
-    return;
-  }
-
-  if (!initialFarmId || !state.data.farms[initialFarmId]) {
-    alert("Nenhuma fazenda estÃ¡ disponÃ­vel para editar o estoque.");
-    return;
-  }
-
-  renderEditStockForm(initialFarmId);
+  renderStockCategoryAccordion();
+  renderStockPotreirosAccordion();
+  setStockEditorTab("categorias");
+  updateStockEditorHint();
   elements.editStockDialog.showModal();
 }
 
-function renderEditStockForm(farmId) {
-  const farm = state.data.farms[farmId];
-  if (!farm) {
-    return;
-  }
-
-  elements.editFarmName.innerHTML = getAllFarms().map((item) => `
-    <option value="${item.id}" ${item.id === farm.id ? "selected" : ""}>${escapeHtml(item.name)}</option>
-  `).join("");
-  elements.editFarmName.value = farm.id;
-  elements.editDeclaredTotal.value = String(farm.declaredTotal || getFarmTotal(farm));
-  elements.editStockList.innerHTML = farm.categories.map((category) => `
-    <div class="edit-stock-row" data-category-row data-category-id="${category.id}">
-      <label class="edit-stock-main-field">
-        Categoria
-        <input
-          type="text"
-          maxlength="80"
-          value="${escapeHtml(category.name)}"
-          data-category-name
-          aria-label="Nome da categoria ${escapeHtml(category.name)}"
-          required
-        >
-        <p>Edite o nome da categoria e a quantidade atual do gado.</p>
-      </label>
-      <label>
-        Quantidade atual
-        <input
-          type="number"
-          min="0"
-          step="1"
-          value="${Number(category.quantity || 0)}"
-          data-category-quantity
-          aria-label="Quantidade de ${escapeHtml(category.name)}"
-          required
-        >
-      </label>
-    </div>
-  `).join("");
-  renderPotreroStockList(getPotreroEntries(farm));
+function setStockEditorTab(tab) {
+  document.querySelectorAll(".stock-tab").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.stockTab === tab);
+  });
+  document.getElementById("stockPanelCategorias").hidden = tab !== "categorias";
+  document.getElementById("stockPanelPotreiros").hidden  = tab !== "potreiros";
 }
 
-function handleEditFarmChange() {
-  renderEditStockForm(elements.editFarmName.value);
+function updateStockEditorHint() {
+  const hint = document.getElementById("stockEditorHint");
+  if (!hint) return;
+  const farms = getAllFarms();
+  const total = farms.reduce((s, f) => s + getFarmTotal(f), 0);
+  hint.textContent = `${farms.length} fazenda(s) · ${formatInteger(total)} animais no sistema`;
 }
 
-function createPotreroStockRow(entry = {}) {
-  const name = String(entry.name || "").trim();
-  const quantity = normalizePotreroQuantity(entry.quantity);
-  const potreroId = entry.id || createPotreroId(name || "potreiro");
-
+function stockCategoryRowHtml(farmId, cat) {
   return `
-    <div class="potrero-stock-row" data-potrero-row data-potrero-id="${escapeHtml(potreroId)}">
-      <label>
-        Nome do potreiro
-        <input
-          type="text"
-          maxlength="80"
-          value="${escapeHtml(name)}"
-          data-potrero-name
-          placeholder="Ex.: Potreiro Norte"
-          required
-        >
-      </label>
-      <label>
-        Quantidade de animais
-        <input
-          type="number"
-          min="0"
-          step="1"
-          value="${quantity}"
-          data-potrero-quantity
-          placeholder="0"
-          required
-        >
-      </label>
-      <button type="button" class="ghost-btn potrero-remove-btn" data-remove-potrero-id="${escapeHtml(potreroId)}">Remover</button>
-    </div>
-  `;
+    <tr data-cat-row="${escapeHtml(cat.id)}" data-farm-id="${escapeHtml(farmId)}">
+      <td><input type="text" class="stock-input" value="${escapeHtml(cat.name)}"
+          data-cat-name="${escapeHtml(cat.id)}" maxlength="80" placeholder="Nome da categoria" required></td>
+      <td><input type="number" class="stock-input stock-qty" value="${Number(cat.quantity || 0)}"
+          min="0" step="1" data-cat-qty="${escapeHtml(cat.id)}"></td>
+      <td><button type="button" class="stock-remove-btn" title="Remover categoria"
+          data-remove-cat="${escapeHtml(cat.id)}" data-farm-id="${escapeHtml(farmId)}">&#x2715;</button></td>
+    </tr>`;
 }
 
-function renderPotreroStockList(entries = []) {
-  const potreiros = entries.length ? entries : [];
-  elements.potreroStockList.innerHTML = potreiros.length
-    ? potreiros.map((entry) => createPotreroStockRow(entry)).join("")
-    : "";
+function stockPotreirosRowHtml(farmId, p) {
+  return `
+    <tr data-potr-row="${escapeHtml(p.id)}" data-farm-id="${escapeHtml(farmId)}">
+      <td><input type="text" class="stock-input" value="${escapeHtml(p.name)}"
+          data-potr-name="${escapeHtml(p.id)}" maxlength="80" placeholder="Nome do potreiro" required></td>
+      <td><input type="number" class="stock-input stock-qty" value="${Number(p.quantity || 0)}"
+          min="0" step="1" data-potr-qty="${escapeHtml(p.id)}"></td>
+      <td><button type="button" class="stock-remove-btn" title="Remover potreiro"
+          data-remove-potr="${escapeHtml(p.id)}" data-farm-id="${escapeHtml(farmId)}">&#x2715;</button></td>
+    </tr>`;
 }
 
-function handleAddPotreroRow() {
-  elements.potreroStockList.insertAdjacentHTML("beforeend", createPotreroStockRow());
-  const lastNameInput = elements.potreroStockList.querySelector('[data-potrero-row]:last-child [data-potrero-name]');
-  lastNameInput?.focus();
+function renderStockCategoryAccordion() {
+  const farms = getAllFarms();
+  const el = document.getElementById("stockCategoryAccordion");
+  el.innerHTML = farms.map((farm, i) => {
+    const total = getFarmTotal(farm);
+    const declared = farm.declaredTotal || total;
+    const diff = declared - total;
+    const diffLabel = diff === 0
+      ? '<span class="stock-ok">✓ Alinhado</span>'
+      : `<span class="stock-diff ${diff > 0 ? "stock-diff-pos" : "stock-diff-neg"}">${diff > 0 ? "+" : ""}${formatInteger(diff)} declarado vs. calculado</span>`;
+    return `
+      <div class="stock-accordion-item" data-cat-farm="${escapeHtml(farm.id)}">
+        <button type="button" class="stock-accordion-hdr" data-toggle-cat="${escapeHtml(farm.id)}">
+          <span class="stock-farm-name">${escapeHtml(farm.name)}</span>
+          <span class="stock-farm-meta">${farm.categories.length} categoria(s) · ${formatInteger(total)} animais ${diffLabel}</span>
+          <span class="stock-chevron">${i === 0 ? "▲" : "▼"}</span>
+        </button>
+        <div class="stock-accordion-body" ${i > 0 ? "hidden" : ""} data-cat-body="${escapeHtml(farm.id)}">
+          <div class="stock-declared-row">
+            <label>Total declarado
+              <input type="number" class="stock-input" min="0" step="1"
+                value="${declared}" data-declared="${escapeHtml(farm.id)}">
+            </label>
+            <span class="stock-live-total" data-live="${escapeHtml(farm.id)}">Calculado: ${formatInteger(total)}</span>
+          </div>
+          <table class="stock-table">
+            <thead><tr><th>Categoria</th><th>Quantidade</th><th></th></tr></thead>
+            <tbody data-cat-tbody="${escapeHtml(farm.id)}">
+              ${farm.categories.map((cat) => stockCategoryRowHtml(farm.id, cat)).join("")}
+            </tbody>
+          </table>
+          <button type="button" class="stock-add-btn" data-add-cat="${escapeHtml(farm.id)}">+ Adicionar categoria</button>
+        </div>
+      </div>`;
+  }).join("");
+
+  // Live quantity total update
+  el.addEventListener("input", (e) => {
+    const qtyInput = e.target.closest("[data-cat-qty]");
+    if (!qtyInput) return;
+    const row = qtyInput.closest("[data-cat-row]");
+    const farmId = row?.dataset.farmId;
+    if (!farmId) return;
+    const tbody = el.querySelector(`[data-cat-tbody="${farmId}"]`);
+    let live = 0;
+    tbody?.querySelectorAll("[data-cat-qty]").forEach((inp) => { live += Number(inp.value) || 0; });
+    const liveEl = el.querySelector(`[data-live="${farmId}"]`);
+    if (liveEl) liveEl.textContent = `Calculado: ${formatInteger(live)}`;
+  });
 }
 
-function handlePotreroListInteraction(event) {
-  const removeTrigger = event.target.closest("[data-remove-potrero-id]");
-  if (!removeTrigger) {
+function renderStockPotreirosAccordion() {
+  const farms = getAllFarms();
+  const el = document.getElementById("stockPotreirosAccordion");
+  el.innerHTML = farms.map((farm, i) => {
+    const potreiros = getPotreroEntries(farm);
+    const allocated = potreiros.reduce((s, p) => s + (Number(p.quantity) || 0), 0);
+    const farmTotal = getFarmTotal(farm);
+    const pct = farmTotal > 0 ? Math.round((allocated / farmTotal) * 100) : 0;
+    return `
+      <div class="stock-accordion-item" data-potr-farm="${escapeHtml(farm.id)}">
+        <button type="button" class="stock-accordion-hdr" data-toggle-potr="${escapeHtml(farm.id)}">
+          <span class="stock-farm-name">${escapeHtml(farm.name)}</span>
+          <span class="stock-farm-meta">${potreiros.length} potreiro(s) · ${formatInteger(allocated)}/${formatInteger(farmTotal)} alocados (${pct}%)</span>
+          <span class="stock-chevron">${i === 0 ? "▲" : "▼"}</span>
+        </button>
+        <div class="stock-accordion-body" ${i > 0 ? "hidden" : ""} data-potr-body="${escapeHtml(farm.id)}">
+          <table class="stock-table">
+            <thead><tr><th>Potreiro</th><th>Animais</th><th></th></tr></thead>
+            <tbody data-potr-tbody="${escapeHtml(farm.id)}">
+              ${potreiros.map((p) => stockPotreirosRowHtml(farm.id, p)).join("")}
+            </tbody>
+          </table>
+          <button type="button" class="stock-add-btn" data-add-potr="${escapeHtml(farm.id)}">+ Adicionar potreiro</button>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function handleStockCategoryAccordionClick(e) {
+  // Toggle accordion
+  const toggleBtn = e.target.closest("[data-toggle-cat]");
+  if (toggleBtn) {
+    const farmId = toggleBtn.dataset.toggleCat;
+    const body = document.querySelector(`[data-cat-body="${farmId}"]`);
+    const chevron = toggleBtn.querySelector(".stock-chevron");
+    if (body) {
+      body.hidden = !body.hidden;
+      if (chevron) chevron.textContent = body.hidden ? "▼" : "▲";
+    }
+    return;
+  }
+  // Remove category row
+  const removeBtn = e.target.closest("[data-remove-cat]");
+  if (removeBtn) {
+    removeBtn.closest("[data-cat-row]")?.remove();
+    return;
+  }
+  // Add category row
+  const addBtn = e.target.closest("[data-add-cat]");
+  if (addBtn) {
+    const farmId = addBtn.dataset.addCat;
+    const tbody = document.querySelector(`[data-cat-tbody="${farmId}"]`);
+    if (tbody) {
+      const newId = `new-cat-${Date.now()}`;
+      const newRow = document.createElement("tr");
+      newRow.dataset.catRow = newId;
+      newRow.dataset.farmId = farmId;
+      newRow.innerHTML = `
+        <td><input type="text" class="stock-input" value="" data-cat-name="${newId}" maxlength="80" placeholder="Nome da categoria" required></td>
+        <td><input type="number" class="stock-input stock-qty" value="0" min="0" step="1" data-cat-qty="${newId}"></td>
+        <td><button type="button" class="stock-remove-btn" data-remove-cat="${newId}" data-farm-id="${farmId}">&#x2715;</button></td>`;
+      tbody.appendChild(newRow);
+      newRow.querySelector("[data-cat-name]")?.focus();
+    }
+  }
+}
+
+function handleStockPotreirosAccordionClick(e) {
+  // Toggle accordion
+  const toggleBtn = e.target.closest("[data-toggle-potr]");
+  if (toggleBtn) {
+    const farmId = toggleBtn.dataset.togglePotr;
+    const body = document.querySelector(`[data-potr-body="${farmId}"]`);
+    const chevron = toggleBtn.querySelector(".stock-chevron");
+    if (body) {
+      body.hidden = !body.hidden;
+      if (chevron) chevron.textContent = body.hidden ? "▼" : "▲";
+    }
+    return;
+  }
+  // Remove potreiro row
+  const removeBtn = e.target.closest("[data-remove-potr]");
+  if (removeBtn) {
+    removeBtn.closest("[data-potr-row]")?.remove();
+    return;
+  }
+  // Add potreiro row
+  const addBtn = e.target.closest("[data-add-potr]");
+  if (addBtn) {
+    const farmId = addBtn.dataset.addPotr;
+    const tbody = document.querySelector(`[data-potr-tbody="${farmId}"]`);
+    if (tbody) {
+      const newId = createPotreroId(`potreiro-${Date.now()}`);
+      const newRow = document.createElement("tr");
+      newRow.dataset.potrRow = newId;
+      newRow.dataset.farmId = farmId;
+      newRow.innerHTML = `
+        <td><input type="text" class="stock-input" value="" data-potr-name="${newId}" maxlength="80" placeholder="Ex.: Potreiro Norte" required></td>
+        <td><input type="number" class="stock-input stock-qty" value="0" min="0" step="1" data-potr-qty="${newId}"></td>
+        <td><button type="button" class="stock-remove-btn" data-remove-potr="${newId}" data-farm-id="${farmId}">&#x2715;</button></td>`;
+      tbody.appendChild(newRow);
+      newRow.querySelector("[data-potr-name]")?.focus();
+    }
+  }
+}
+
+function handleSaveStockEdit() {
+  const farms = getAllFarms();
+  const errors = [];
+
+  // Validate & collect categories
+  const catUpdates = {};
+  for (const farm of farms) {
+    const tbody = document.querySelector(`[data-cat-tbody="${farm.id}"]`);
+    if (!tbody) continue;
+    const rows = [...tbody.querySelectorAll("[data-cat-row]")];
+    const seen = new Set();
+    const cats = [];
+    for (const row of rows) {
+      const catId = row.dataset.catRow;
+      const name = row.querySelector("[data-cat-name]")?.value.trim() || "";
+      const qty = Number(row.querySelector("[data-cat-qty]")?.value);
+      if (!name) { errors.push(`${farm.name}: nome de categoria em branco.`); break; }
+      if (!Number.isFinite(qty) || qty < 0) { errors.push(`${farm.name}: quantidade inválida em "${name}".`); break; }
+      const normalized = normalizeText(name);
+      if (seen.has(normalized)) { errors.push(`${farm.name}: categoria "${name}" duplicada.`); break; }
+      seen.add(normalized);
+      cats.push({ id: catId, name, qty });
+    }
+    const declaredInput = document.querySelector(`[data-declared="${farm.id}"]`);
+    const declared = Number(declaredInput?.value);
+    catUpdates[farm.id] = { cats, declared: Number.isFinite(declared) && declared >= 0 ? declared : getFarmTotal(farm) };
+  }
+
+  // Validate & collect potreiros
+  const potrUpdates = {};
+  for (const farm of farms) {
+    const tbody = document.querySelector(`[data-potr-tbody="${farm.id}"]`);
+    if (!tbody) continue;
+    const rows = [...tbody.querySelectorAll("[data-potr-row]")];
+    const seen = new Set();
+    const potrs = [];
+    for (const row of rows) {
+      const potrId = row.dataset.potrRow;
+      const name = row.querySelector("[data-potr-name]")?.value.trim() || "";
+      const qty = Number(row.querySelector("[data-potr-qty]")?.value);
+      if (!name) { errors.push(`${farm.name}: nome de potreiro em branco.`); break; }
+      if (!Number.isFinite(qty) || qty < 0) { errors.push(`${farm.name}: quantidade inválida em "${name}".`); break; }
+      const normalized = normalizeText(name);
+      if (seen.has(normalized)) { errors.push(`${farm.name}: potreiro "${name}" duplicado.`); break; }
+      seen.add(normalized);
+      potrs.push({ id: potrId.startsWith("new-") ? createPotreroId(name) : potrId, name, quantity: qty });
+    }
+    potrUpdates[farm.id] = potrs;
+  }
+
+  if (errors.length) {
+    alert(errors[0]);
     return;
   }
 
-  removeTrigger.closest("[data-potrero-row]")?.remove();
+  // Apply all changes
+  for (const farm of farms) {
+    const { cats, declared } = catUpdates[farm.id] || { cats: [], declared: 0 };
+    for (const { id, name, qty } of cats) {
+      const existing = farm.categories.find((c) => c.id === id);
+      if (existing) {
+        if (existing.name !== name) {
+          farm.movements.forEach((m) => { if (m.categoryId === id) m.categoryName = name; });
+          farm.sanitaryRecords.forEach((r) => { if (r.categoryId === id) r.categoryName = name; });
+          existing.name = name;
+        }
+        existing.quantity = qty;
+      } else {
+        // New category
+        const newCatId = slugify(`${name}-${Date.now()}`);
+        farm.categories.push({ id: newCatId, name, quantity: qty, allocation: {} });
+      }
+    }
+    // Remove categories no longer in the list
+    const keptIds = new Set(cats.map((c) => c.id));
+    farm.categories = farm.categories.filter((c) => keptIds.has(c.id));
+
+    farm.declaredTotal = declared;
+    farm.potreiros = potrUpdates[farm.id] || farm.potreiros;
+  }
+
+  saveData();
+  elements.editStockDialog.close();
+  render();
 }
 
 function openSanitaryEditor(recordId) {
@@ -6097,10 +6259,10 @@ function handleSanitarySubmit(event) {
 }
 
 function handleEditStockSubmit(event) {
-  event.preventDefault();
-  const farm = state.data.farms[elements.editFarmName.value];
+  // Legacy stub — replaced by handleSaveStockEdit
+  event?.preventDefault();
+  const farm = state.data.farms[Object.keys(state.data.farms)[0]];
   if (!farm) {
-    alert("Selecione uma fazenda válida para salvar.");
     return;
   }
   const declaredTotal = Number(elements.editDeclaredTotal.value);

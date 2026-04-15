@@ -626,44 +626,38 @@
   </dialog>
 
   <dialog id="editStockDialog" class="modal">
-    <form method="dialog" id="editStockForm" class="modal-card modal-card-wide">
+    <div class="modal-card stock-editor-card">
       <div class="modal-header">
         <div>
-          <p class="panel-kicker">Edição direta</p>
-          <h2>Editar estoque, potreiros e total declarado</h2>
+          <p class="panel-kicker">Gestão de estoque</p>
+          <h2>Editar categorias e potreiros</h2>
         </div>
-        <button type="button" class="ghost-btn" id="closeEditStockDialog">Fechar</button>
+        <button type="button" class="modal-close" id="closeEditStockDialog" aria-label="Fechar">&#x2715;</button>
       </div>
 
-      <div class="form-grid">
-        <label>
-          Fazenda vinculada
-          <select id="editFarmName" required></select>
-        </label>
-        <label>
-          Total declarado da fazenda
-          <input type="number" id="editDeclaredTotal" min="0" step="1" required>
-        </label>
+      <div class="stock-editor-tabs" role="tablist">
+        <button type="button" class="stock-tab active" data-stock-tab="categorias" role="tab">
+          <span>🐄</span> Categorias
+        </button>
+        <button type="button" class="stock-tab" data-stock-tab="potreiros" role="tab">
+          <span>🌿</span> Potreiros
+        </button>
       </div>
 
-      <div class="edit-stock-list" id="editStockList"></div>
-
-      <section class="edit-stock-section">
-        <div class="panel-header edit-stock-section-header">
-          <div>
-            <p class="panel-kicker">Distribuição por potreiro</p>
-            <h3>Cadastro atual de lotação</h3>
-          </div>
-          <button type="button" class="ghost-btn" id="addPotreroButton">Novo potreiro</button>
-        </div>
-        <p class="field-note">Registre cada campo ou potreiro com a fazenda vinculada acima. Os campos importados hoje ficam vinculados à Arapey.</p>
-        <div class="potrero-stock-list" id="potreroStockList"></div>
-      </section>
-
-      <div class="modal-actions">
-        <button type="submit" class="action-btn secondary">Salvar edição</button>
+      <div class="stock-panel" id="stockPanelCategorias">
+        <div class="stock-accordion" id="stockCategoryAccordion"></div>
       </div>
-    </form>
+
+      <div class="stock-panel" id="stockPanelPotreiros" hidden>
+        <div class="stock-accordion" id="stockPotreirosAccordion"></div>
+      </div>
+
+      <div class="stock-editor-footer">
+        <span class="stock-footer-hint" id="stockEditorHint"></span>
+        <button type="button" class="ghost-btn" id="cancelStockEditBtn">Cancelar</button>
+        <button type="button" class="action-btn secondary" id="saveStockEditBtn">Salvar todas as alterações</button>
+      </div>
+    </div>
   </dialog>
 
   <dialog id="manageUsersDialog" class="modal">
