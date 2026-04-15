@@ -61,6 +61,17 @@ function ensureMovementCodesForFarm(farm) {
   farm.movementCodeSequence = ordered.length;
 }
 
+function ensureSanitaryCodesForFarm(farm) {
+  const prefix = getFarmCodePrefix(farm.id);
+  const ordered = [...farm.sanitaryRecords].sort(compareMovementOrder);
+
+  ordered.forEach((record, index) => {
+    record.code = `SAN-${prefix}-${String(index + 1).padStart(5, "0")}`;
+  });
+
+  farm.sanitaryCodeSequence = ordered.length;
+}
+
 const MOVEMENT_TYPES = [
   { value: "compra", label: "Compra", direction: 1 },
   { value: "venda", label: "Venda", direction: -1 },
@@ -793,6 +804,10 @@ const runtime = {
   potrManej: { farmId: null, potreirosId: null, type: "transferencia", photoDrafts: [] },
   movementsSearch: "",
   movementsPage: 0,
+  movementsFarmFilter: "all",
+  movementsCategoryFilter: "all",
+  movementsOperationFilter: "all",
+  movementsYearFilter: "all",
   sanitarySearch: "",
   sanitaryPage: 0,
 };
@@ -3220,7 +3235,9 @@ const MOVEMENT_TYPE_STYLES = {
   venda: "badge-exit",
   morte: "badge-err",
   consumo: "badge-warn",
-  ajuste: "badge-neutral"
+  ajuste: "badge-neutral",
+  transferencia: "badge-neutral",
+  sanitario: "badge-ok"
 };
 
 const MOVEMENTS_PAGE_SIZE = 50;
@@ -3342,6 +3359,235 @@ function renderMovementsTable(farm) {
   });
   elements.movementsTableBody.querySelectorAll(".delete-btn").forEach((btn) => {
     btn.addEventListener("click", () => deleteMovement(btn.dataset.farmId, btn.dataset.movementId));
+  });
+}
+
+function getHistoryOperationLabel(operation) {
+  if (operation === "sanitario") return "Sanitário";
+  const meta = MOVEMENT_TYPES.find((item) => item.value === operation);
+  return meta ? meta.label : capitalize(operation || "registro");
+}
+
+function getHistoryRecordCode(record) {
+  if (record.code) return record.code;
+  if (record.kind === "sanitary") return `SAN-${getFarmCodePrefix(record.farmId)}-LEG`;
+  return `LEG-${getFarmCodePrefix(record.farmId)}`;
+}
+
+function getUnifiedHistoryRecords(baseFarm, options = {}) {
+  const forceSingleFarm = options.scope === "single";
+  const farms = forceSingleFarm
+    ? [baseFarm].filter(Boolean)
+    : (state.data.selectedFarmId === TOTAL_FARM_ID ? getAllFarms() : [baseFarm].filter(Boolean));
+
+  return farms.flatMap((farm) => {
+    const movementRecords = farm.movements.map((movement) => ({
+      kind: "movement",
+      id: movement.id,
+      farmId: farm.id,
+      farmName: farm.name,
+      date: movement.date,
+      year: String(movement.date || "").slice(0, 4),
+      code: movement.code || "",
+      operation: movement.type || "movimento",
+      categoryName: movement.categoryName || "—",
+      quantity: Number(movement.quantity || 0),
+      details: [
+        movement.potreiro ? `Potreiro: ${movement.potreiro}` : "",
+        movement.potreiroDest ? `Destino: ${movement.potreiroDest}` : "",
+        movement.value ? `Valor: ${formatCurrency(movement.value)}` : "",
+        getMovementNotes(movement)
+      ].filter(Boolean).join(" · "),
+      raw: movement
+    }));
+
+    const sanitaryRecords = farm.sanitaryRecords.map((record) => ({
+      kind: "sanitary",
+      id: record.id || record.sourceId,
+      farmId: farm.id,
+      farmName: farm.name,
+      date: record.date,
+      year: String(record.date || "").slice(0, 4),
+      code: record.code || "",
+      operation: "sanitario",
+      categoryName: record.categoryName || "—",
+      quantity: Number(record.quantity || 0),
+      details: [
+        record.product ? `Produto: ${record.product}` : "",
+        record.potreiro ? `Potreiro: ${record.potreiro}` : "",
+        record.notes || ""
+      ].filter(Boolean).join(" · "),
+      raw: record
+    }));
+
+    return [...movementRecords, ...sanitaryRecords];
+  }).sort((a, b) =>
+    String(b.date || "").localeCompare(String(a.date || ""))
+    || String(getHistoryRecordCode(a)).localeCompare(String(getHistoryRecordCode(b)))
+    || String(a.id || "").localeCompare(String(b.id || ""))
+  );
+}
+
+function renderMovementsTable(farm) {
+  const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
+  const colCount = isTotalView ? 8 : 7;
+  const allRecords = getUnifiedHistoryRecords(farm);
+  const years = [...new Set(allRecords.map((record) => record.year).filter(Boolean))].sort((a, b) => b.localeCompare(a));
+  const categories = [...new Set(allRecords.map((record) => record.categoryName).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  const operations = [...new Set(allRecords.map((record) => record.operation).filter(Boolean))];
+  const query = runtime.movementsSearch.trim().toLowerCase();
+
+  const filtered = allRecords.filter((record) => {
+    const matchesQuery = !query || [
+      getHistoryRecordCode(record),
+      getHistoryOperationLabel(record.operation),
+      record.categoryName,
+      record.details,
+      record.farmName
+    ].some((value) => String(value || "").toLowerCase().includes(query));
+
+    const matchesYear = runtime.movementsYearFilter === "all" || record.year === runtime.movementsYearFilter;
+    const matchesCategory = runtime.movementsCategoryFilter === "all" || record.categoryName === runtime.movementsCategoryFilter;
+    const matchesOperation = runtime.movementsOperationFilter === "all" || record.operation === runtime.movementsOperationFilter;
+    const matchesFarm = !isTotalView || runtime.movementsFarmFilter === "all" || record.farmId === runtime.movementsFarmFilter;
+
+    return matchesQuery && matchesYear && matchesCategory && matchesOperation && matchesFarm;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / MOVEMENTS_PAGE_SIZE));
+  if (runtime.movementsPage >= totalPages) runtime.movementsPage = totalPages - 1;
+  const page = runtime.movementsPage;
+  const records = filtered.slice(page * MOVEMENTS_PAGE_SIZE, (page + 1) * MOVEMENTS_PAGE_SIZE);
+
+  if (elements.movementsTableHead) {
+    elements.movementsTableHead.innerHTML = `<tr>
+      <th>Código</th>
+      ${isTotalView ? "<th>Fazenda</th>" : ""}
+      <th>Data</th><th>Operação</th><th>Categoria</th><th>Qtd.</th><th>Registro</th><th></th>
+    </tr>`;
+  }
+
+  const container = elements.movementsTableBody.closest(".table-wrap") || elements.movementsTableBody.parentElement;
+  let toolbar = container.parentElement.querySelector(".movements-toolbar");
+  if (!toolbar) {
+    toolbar = document.createElement("div");
+    toolbar.className = "movements-toolbar";
+    container.parentElement.insertBefore(toolbar, container);
+  }
+  toolbar.innerHTML = `
+    <div class="movements-search-wrap">
+      <input
+        type="search"
+        class="movements-search-input"
+        placeholder="Buscar por código, fazenda, operação, categoria ou registro..."
+        value="${escapeHtml(runtime.movementsSearch)}"
+        id="movementsSearchInput"
+      >
+    </div>
+    <div class="movements-filter-group">
+      ${isTotalView
+        ? `<select class="movements-filter-select" id="movementsFarmFilter">
+            <option value="all">Todas as fazendas</option>
+            ${getAllFarms().map((item) => `<option value="${escapeHtml(item.id)}" ${runtime.movementsFarmFilter === item.id ? "selected" : ""}>${escapeHtml(item.name)}</option>`).join("")}
+          </select>`
+        : `<select class="movements-filter-select" id="movementsFarmFilter" disabled><option value="${escapeHtml(farm.id)}">${escapeHtml(farm.name)}</option></select>`
+      }
+      <select class="movements-filter-select" id="movementsOperationFilter">
+        <option value="all">Todas as operações</option>
+        ${operations.map((operation) => `<option value="${escapeHtml(operation)}" ${runtime.movementsOperationFilter === operation ? "selected" : ""}>${escapeHtml(getHistoryOperationLabel(operation))}</option>`).join("")}
+      </select>
+      <select class="movements-filter-select" id="movementsCategoryFilter">
+        <option value="all">Todas as categorias</option>
+        ${categories.map((category) => `<option value="${escapeHtml(category)}" ${runtime.movementsCategoryFilter === category ? "selected" : ""}>${escapeHtml(category)}</option>`).join("")}
+      </select>
+      <select class="movements-filter-select" id="movementsYearFilter">
+        <option value="all">Todos os anos</option>
+        ${years.map((year) => `<option value="${escapeHtml(year)}" ${runtime.movementsYearFilter === year ? "selected" : ""}>${escapeHtml(year)}</option>`).join("")}
+      </select>
+    </div>
+    <div class="movements-pagination">
+      <span class="movements-count">${filtered.length} registro${filtered.length !== 1 ? "s" : ""}${query ? " encontrado" + (filtered.length !== 1 ? "s" : "") : ""}</span>
+      ${totalPages > 1 ? `
+        <button class="mov-page-btn" data-page="${page - 1}" ${page === 0 ? "disabled" : ""}>&#8249; Anterior</button>
+        <span class="mov-page-info">Página ${page + 1} de ${totalPages}</span>
+        <button class="mov-page-btn" data-page="${page + 1}" ${page >= totalPages - 1 ? "disabled" : ""}>Próxima &#8250;</button>
+      ` : ""}
+    </div>
+  `;
+
+  toolbar.querySelector("#movementsSearchInput").addEventListener("input", (e) => {
+    runtime.movementsSearch = e.target.value;
+    runtime.movementsPage = 0;
+    renderMovementsTable(farm);
+  });
+  toolbar.querySelector("#movementsFarmFilter")?.addEventListener("change", (e) => {
+    runtime.movementsFarmFilter = e.target.value;
+    runtime.movementsPage = 0;
+    renderMovementsTable(farm);
+  });
+  toolbar.querySelector("#movementsOperationFilter")?.addEventListener("change", (e) => {
+    runtime.movementsOperationFilter = e.target.value;
+    runtime.movementsPage = 0;
+    renderMovementsTable(farm);
+  });
+  toolbar.querySelector("#movementsCategoryFilter")?.addEventListener("change", (e) => {
+    runtime.movementsCategoryFilter = e.target.value;
+    runtime.movementsPage = 0;
+    renderMovementsTable(farm);
+  });
+  toolbar.querySelector("#movementsYearFilter")?.addEventListener("change", (e) => {
+    runtime.movementsYearFilter = e.target.value;
+    runtime.movementsPage = 0;
+    renderMovementsTable(farm);
+  });
+  toolbar.querySelectorAll(".mov-page-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      runtime.movementsPage = Number(btn.dataset.page);
+      renderMovementsTable(farm);
+    });
+  });
+
+  if (!records.length) {
+    elements.movementsTableBody.innerHTML = `
+      <tr><td colspan="${colCount}" class="table-empty-cell">${query ? "Nenhum registro encontrado para a busca." : "Ainda não há registros no histórico consolidado."}</td></tr>
+    `;
+    return;
+  }
+
+  elements.movementsTableBody.innerHTML = records.map((record) => {
+    const badgeClass = MOVEMENT_TYPE_STYLES[record.operation] || "badge-neutral";
+    const codeDisplay = `<span class="movement-code ${record.kind === "sanitary" ? "san-code" : ""}">${escapeHtml(getHistoryRecordCode(record))}</span>`;
+    const farmCell = isTotalView
+      ? `<td data-label="Fazenda"><span class="sanitary-origin manual">${escapeHtml(record.farmName)}</span></td>`
+      : "";
+    const actionButtons = record.kind === "movement"
+      ? `
+          <button class="movement-action-btn edit-btn" title="Editar" data-farm-id="${escapeHtml(record.farmId)}" data-movement-id="${escapeHtml(record.id)}">✏️</button>
+          <button class="movement-action-btn delete-btn" title="Excluir" data-farm-id="${escapeHtml(record.farmId)}" data-movement-id="${escapeHtml(record.id)}">🗑️</button>
+        `
+      : `<button class="movement-action-btn edit-sanitary-btn" title="Editar sanitário" data-edit-sanitary-id="${escapeHtml(record.id)}">✏️</button>`;
+    return `
+      <tr>
+        <td data-label="Código">${codeDisplay}</td>
+        ${farmCell}
+        <td data-label="Data">${formatDate(record.date)}</td>
+        <td data-label="Operação"><span class="badge ${badgeClass}">${escapeHtml(getHistoryOperationLabel(record.operation))}</span></td>
+        <td data-label="Categoria">${escapeHtml(record.categoryName)}</td>
+        <td data-label="Qtd.">${formatInteger(record.quantity)}</td>
+        <td data-label="Registro">${escapeHtml(record.details || "—")}${record.kind === "movement" ? getMovementPhotoFlagMarkup(record.raw) : ""}</td>
+        <td class="movement-actions-cell">${actionButtons}</td>
+      </tr>
+    `;
+  }).join("");
+
+  elements.movementsTableBody.querySelectorAll(".edit-btn").forEach((btn) => {
+    btn.addEventListener("click", () => openEditMovementDialog(btn.dataset.farmId, btn.dataset.movementId));
+  });
+  elements.movementsTableBody.querySelectorAll(".delete-btn").forEach((btn) => {
+    btn.addEventListener("click", () => deleteMovement(btn.dataset.farmId, btn.dataset.movementId));
+  });
+  elements.movementsTableBody.querySelectorAll(".edit-sanitary-btn").forEach((btn) => {
+    btn.addEventListener("click", () => openSanitaryEditor(btn.dataset.editSanitaryId));
   });
 }
 
@@ -7461,6 +7707,25 @@ function appendRecentMovementsPdfTable(doc, recentMovements) {
   });
 }
 
+function appendUnifiedHistoryPdfTable(doc, records) {
+  doc.autoTable({
+    startY: doc.lastAutoTable.finalY + 10,
+    head: [["Código", "Data", "Operação", "Categoria", "Qtd.", "Registro"]],
+    body: records.length
+      ? records.map((record) => [
+        getHistoryRecordCode(record),
+        formatDate(record.date),
+        getHistoryOperationLabel(record.operation),
+        record.categoryName,
+        formatInteger(record.quantity),
+        record.details || "-"
+      ])
+      : [["-", "-", "-", "-", "-", "Sem registros no histórico do período"]],
+    theme: "striped",
+    headStyles: { fillColor: [138, 75, 56] }
+  });
+}
+
 async function appendMovementPhotoPages(doc, farm, year, month) {
   const photoEntries = getMovementPhotoEntries(farm, year, month);
   if (!photoEntries.length) {
@@ -7595,7 +7860,11 @@ async function appendFarmPdfSection(doc, farm, periodLabel, year, month) {
   const monthlySummary = getMonthlySummary(farm, year, month);
   const monthlyRecords = [...monthlySummary.records].sort((a, b) => a.period < b.period ? 1 : -1);
   const potreroTotals = getPotreroTotals(farm);
-  const recentMovements = [...farm.movements].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 12);
+  const unifiedHistory = getUnifiedHistoryRecords(farm, { scope: "single" }).filter((record) => {
+    if (!record.date || !String(record.date).startsWith(String(year))) return false;
+    if (month === "all") return true;
+    return String(record.date).slice(5, 7) === String(month).padStart(2, "0");
+  }).slice(0, 50);
   const insights = getOperationalInsights(farm, year, month);
   const discrepancy = getDiscrepancy(farm);
   const topY = await addPdfHeader(doc, farm, periodLabel, monthly);
@@ -7614,7 +7883,7 @@ async function appendFarmPdfSection(doc, farm, periodLabel, year, month) {
   appendSanitarySummaryPdfTable(doc, sanitarySummary);
   appendSanitaryDetailsPdfTable(doc, sanitaryRecords);
   appendInsightsPdfTable(doc, insights);
-  appendRecentMovementsPdfTable(doc, recentMovements);
+  appendUnifiedHistoryPdfTable(doc, unifiedHistory);
   await appendMovementPhotoPages(doc, farm, year, month);
 }
 
@@ -7923,6 +8192,7 @@ function ensureDataShape(data, options = {}) {
     farm.sanitaryRecords = farm.sanitaryRecords.map((record) => ({
       ...record,
       id: record.id || record.sourceId || createMovementId(),
+      code: record.code || "",
       potreiro: record.potreiro || "Sem potreiro"
     }));
     if (typeof farm.sanitaryCodeSequence !== "number") {
@@ -7946,6 +8216,7 @@ function ensureDataShape(data, options = {}) {
         }
         : null
     }));
+    ensureSanitaryCodesForFarm(farm);
     ensureMovementCodesForFarm(farm);
     farm.monthlyRecords = farm.monthlyRecords.map((record) => ({
       id: record.id || createMovementId(),
@@ -7987,6 +8258,11 @@ function ensureDataShape(data, options = {}) {
         });
       }
     });
+  });
+
+  Object.values(data.farms).forEach((farm) => {
+    ensureSanitaryCodesForFarm(farm);
+    ensureMovementCodesForFarm(farm);
   });
 
   if (!preserveSnapshot) {
