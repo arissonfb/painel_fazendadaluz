@@ -1290,39 +1290,59 @@ input {
 
 /* ── Potreiro Management Dialog ───────────────────────────────────── */
 .potr-manej-card {
-  max-width: 520px;
+  width: min(700px, calc(100vw - 24px));
+}
+
+.potr-manej-card .form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.potr-manej-card .modal-header {
+  margin-bottom: 16px;
+}
+
+.potr-action-tabs {
+  gap: 8px;
+  margin-bottom: 20px;
 }
 
 .potr-manej-ctx {
   display: flex;
-  gap: 14px;
-  padding: 14px 0;
+  gap: 0;
+  padding: 16px 0;
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
-  margin-bottom: 16px;
+  margin-bottom: 20px;
   flex-wrap: wrap;
 }
 
 .potr-manej-stat {
   flex: 1;
-  min-width: 100px;
+  min-width: 120px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
+  padding: 8px 20px;
+  border-right: 1px solid var(--line);
+}
+
+.potr-manej-stat:last-child {
+  border-right: 0;
 }
 
 .potr-manej-stat span {
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   color: var(--muted);
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
 }
 
 .potr-manej-stat strong {
-  font-size: 1.4rem;
+  font-size: 1.7rem;
   font-family: "Yrsa", serif;
   color: var(--text);
+  line-height: 1.1;
 }
 
 .potr-manej-stat-highlight strong {
