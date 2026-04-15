@@ -2236,6 +2236,7 @@ function renderDashboardVisualHerdGrid(farm) {
     : `${MONTH_NAMES[Number(state.filters.month) - 1]}/${state.filters.year}`;
 
   const stats = [
+    { label: "Nascimento", value: monthly.byType.nascimento, img: "./assets/calf.svg",        detail: "nascidos no período",       movType: "nascimento" },
     { label: "Venda",    value: monthly.byType.venda,   img: "./assets/angus-login.svg", detail: "animais vendidos",        movType: "venda"   },
     { label: "Morte",    value: monthly.byType.morte,   img: "./assets/cow.svg",         detail: "mortes registradas",      movType: "morte"   },
     { label: "Abate",    value: monthly.byType.consumo, img: "./assets/bull.svg",        detail: "abates e consumo interno",movType: "consumo" },
