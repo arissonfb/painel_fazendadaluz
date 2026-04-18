@@ -2037,7 +2037,7 @@ function syncFilterYearForFarm(farm, force = false) {
 }
 
 function isPremiumSaleFarm(farm) {
-  return PREMIUM_SALE_FARMS.has(farm.id);
+  return !!farm && PREMIUM_SALE_FARMS.has(farm.id);
 }
 
 function getFarmCurrency(farmId) {
@@ -3851,7 +3851,6 @@ function openEditMovementDialog(farmId, movementId) {
   resetMovementPhotoDrafts();
   updateMovementFormForType(movement.type);
   elements.movementDialogTitle.textContent = `Editar ${capitalize(movement.type)}`;
-  if (elements.movementDialog.open) elements.movementDialog.close();
   elements.movementDialog.showModal();
 }
 
@@ -6612,7 +6611,7 @@ function updateMovementFormForType(type) {
 }
 
 function updateSaleFieldVisibility() {
-  const farm = getMovementDialogFarm();
+  const farm = getMovementDialogFarm() || getFarm();
   const isSale = elements.movementType.value === "venda";
   const isPremiumFarm = isPremiumSaleFarm(farm);
   const saleMode = isPremiumFarm ? elements.movementSaleMode.value : "vivo";
