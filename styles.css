@@ -1706,6 +1706,83 @@ input {
   color: var(--text);
 }
 
+/* ── Commercial summary strip (compact dashboard) ────────────────── */
+.comm-summary {
+  padding: 10px 20px 8px;
+}
+.comm-summary-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 20px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+.comm-summary-row:last-child {
+  border-bottom: none;
+}
+.comm-row-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 180px;
+}
+.comm-row-farms {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+.comm-row-stats {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+.comm-stat {
+  font-size: 0.85rem;
+  color: var(--text);
+}
+.comm-stat strong {
+  font-weight: 700;
+}
+.comm-stat span {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.comm-sep {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.comm-avg {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.comm-farm-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+  padding-top: 4px;
+}
+.comm-farm-tag {
+  font-size: 0.78rem;
+  background: rgba(255,255,255,0.7);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 3px 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.comm-farm-tag strong {
+  font-weight: 700;
+  color: var(--text);
+}
+.muted-cell {
+  color: var(--muted);
+}
+
 /* ── Purchase detail section in movement dialog ───────────────────── */
 
 @media (max-width: 860px) {

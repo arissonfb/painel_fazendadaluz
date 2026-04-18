@@ -2766,8 +2766,8 @@ function openMovTypeRecordsDlg(movType) {
   elements.movTypeRecordsNewBtn.textContent = `+ Novo ${typeMeta ? typeMeta.label : capitalize(movType)}`;
   elements.movTypeRecordsNewBtn.setAttribute("aria-label", `Abrir formulário de novo ${typeMeta ? typeMeta.label.toLowerCase() : movType}`);
   elements.movTypeRecordsNewBtn.onclick = () => {
-    runtime.pendingMovementDialogType = movType;
     elements.movTypeRecordsDlg.close();
+    requestAnimationFrame(() => requestAnimationFrame(() => openMovementDialog(movType)));
   };
   elements.movTypeRecordsSearch.oninput = () => renderMovTypeRecordsBody(movType, 0);
 
@@ -2825,11 +2825,7 @@ function renderMovTypeRecordsBody(movType, page) {
       <th>Categoria</th>
       <th class="num-col">Cabeças</th>
       <th>Origem / Propriedade</th>
-      <th class="num-col">Peso Total (kg)</th>
-      <th class="num-col">Valor/kg</th>
       <th class="num-col">Valor Total</th>
-      <th class="num-col">Valor/Animal</th>
-      <th class="num-col">Moeda</th>
       <th></th>
     </tr>`;
   } else if (isVenda) {
@@ -2840,12 +2836,8 @@ function renderMovTypeRecordsBody(movType, page) {
       <th>Categoria</th>
       <th class="num-col">Cabeças</th>
       <th>Frigorífico / Comprador</th>
-      <th class="num-col">Kg Negociados</th>
-      <th class="num-col">Rend.%</th>
-      <th class="num-col">Valor/kg</th>
+      <th class="num-col">Kg negociados</th>
       <th class="num-col">Valor Total</th>
-      <th class="num-col">Valor/Animal</th>
-      <th class="num-col">Moeda</th>
       <th></th>
     </tr>`;
   } else {
@@ -2861,7 +2853,7 @@ function renderMovTypeRecordsBody(movType, page) {
   }
 
   // Build body rows
-  const colCount = isCommercial ? (isTotalView ? 13 : 12) : (isTotalView ? 7 : 6);
+  const colCount = isCompra ? (isTotalView ? 8 : 7) : isVenda ? (isTotalView ? 9 : 8) : (isTotalView ? 7 : 6);
 
   if (!slice.length) {
     elements.movTypeRecordsBody.innerHTML = `<tr><td colspan="${colCount}" class="table-empty-cell">${query ? "Nenhum registro encontrado." : "Nenhum lançamento deste tipo ainda."}</td></tr>`;
@@ -2885,21 +2877,16 @@ function renderMovTypeRecordsBody(movType, page) {
 
       if (isCompra) {
         const p = m.purchaseDetails || {};
-        const totalW = p.totalWeight || 0;
-        const priceKg = p.pricePerKg || 0;
-        const vph = p.valuePerHead || (m.quantity > 0 && m.value > 0 ? m.value / m.quantity : 0);
+        const origin = p.sourceProperty ? escapeHtml(p.sourceProperty) : `<span class="muted-cell">—</span>`;
+        const noteSpan = m.notes ? `<span>${escapeHtml(m.notes)}</span>` : "";
         return `<tr class="mov-record-row mov-record-row-compra">
           <td>${code}</td>
           ${farmCell}
           <td>${formatDate(m.date)}</td>
-          <td><div class="mov-records-main-cell"><strong>${escapeHtml(m.categoryName)}</strong><span>${escapeHtml(getMovementNotes(m) || "Compra registrada")}</span></div></td>
+          <td><div class="mov-records-main-cell"><strong>${escapeHtml(m.categoryName)}</strong>${noteSpan}</div></td>
           <td class="num-col"><strong>${formatInteger(m.quantity)}</strong></td>
-          <td><div class="mov-records-main-cell"><strong>${escapeHtml(p.sourceProperty || "Origem nao informada")}</strong><span>${escapeHtml(m.notes || "Sem observacoes")}</span></div></td>
-          <td class="num-col">${fmtKg(totalW)}</td>
-          <td class="num-col">${priceKg > 0 ? fmtVal(priceKg) : "--"}</td>
+          <td>${origin}</td>
           <td class="num-col fin-value">${fmtVal(m.value)}</td>
-          <td class="num-col">${fmtVal(vph)}</td>
-          <td class="num-col">${currencyBadge}</td>
           ${actionsCell}
         </tr>`;
       }
@@ -2907,24 +2894,18 @@ function renderMovTypeRecordsBody(movType, page) {
       if (isVenda) {
         const d = m.saleDetails || {};
         const weightKg = d.weightKg || 0;
-        const priceKg = d.pricePerKg || 0;
-        const yieldPct = d.yieldPct || null;
         const buyer = d.buyer || extractBuyerFromNotes(m.notes);
-        const vph = d.valuePerHead || (m.quantity > 0 && m.value > 0 ? m.value / m.quantity : 0);
-        const yieldCell = yieldPct ? `${yieldPct}%` : (d.mode === "carcaca" ? extractYieldFromNotes(m.notes) : "--");
+        const buyerCell = buyer ? escapeHtml(buyer) : `<span class="muted-cell">—</span>`;
+        const noteSpan = m.notes ? `<span>${escapeHtml(m.notes)}</span>` : "";
         return `<tr class="mov-record-row mov-record-row-venda">
           <td>${code}</td>
           ${farmCell}
           <td>${formatDate(m.date)}</td>
-          <td><div class="mov-records-main-cell"><strong>${escapeHtml(m.categoryName)}</strong><span>${escapeHtml(getMovementNotes(m) || "Venda registrada")}</span></div></td>
+          <td><div class="mov-records-main-cell"><strong>${escapeHtml(m.categoryName)}</strong>${noteSpan}</div>${getMovementPhotoFlagMarkup(m)}</td>
           <td class="num-col"><strong>${formatInteger(m.quantity)}</strong></td>
-          <td><div class="mov-records-main-cell"><strong>${escapeHtml(buyer || "Comprador nao informado")}</strong><span>${escapeHtml(m.notes || "Sem observacoes")}</span></div>${getMovementPhotoFlagMarkup(m)}</td>
+          <td>${buyerCell}</td>
           <td class="num-col">${fmtKg(weightKg)}</td>
-          <td class="num-col">${yieldCell}</td>
-          <td class="num-col">${priceKg > 0 ? fmtVal(priceKg) : "--"}</td>
           <td class="num-col fin-value">${fmtVal(m.value)}</td>
-          <td class="num-col">${fmtVal(vph)}</td>
-          <td class="num-col">${currencyBadge}</td>
           ${actionsCell}
         </tr>`;
       }
@@ -2993,7 +2974,6 @@ function renderCommercialDashboard(movType) {
   const allFarms = isTotalView ? getAllFarms() : [getFarm()].filter(Boolean);
   const isCompra = movType === "compra";
 
-  // Separate farms by currency to never mix BRL and USD totals
   const brlFarms = allFarms.filter((f) => getFarmCurrency(f.id) === "BRL");
   const usdFarms = allFarms.filter((f) => getFarmCurrency(f.id) === "USD");
 
@@ -3004,67 +2984,46 @@ function renderCommercialDashboard(movType) {
     const count = movs.length;
     const heads = movs.reduce((s, m) => s + Number(m.quantity || 0), 0);
     const totalValue = movs.reduce((s, m) => s + Number(m.value || 0), 0);
-    const totalWeight = isCompra
-      ? movs.reduce((s, m) => s + Number(m.purchaseDetails?.totalWeight || 0), 0)
-      : movs.reduce((s, m) => s + Number(m.saleDetails?.weightKg || 0), 0);
-    const avgPricePerKg = totalWeight > 0 ? totalValue / totalWeight : 0;
     const avgPerHead = heads > 0 ? totalValue / heads : 0;
     const byFarm = farms.map((f) => {
       const fm = movs.filter((m) => m._farmId === f.id);
-      return { name: f.name, count: fm.length, heads: fm.reduce((s, m) => s + Number(m.quantity || 0), 0), value: fm.reduce((s, m) => s + Number(m.value || 0), 0) };
-    }).filter((x) => x.count > 0);
-    return { count, heads, totalValue, totalWeight, avgPricePerKg, avgPerHead, byFarm };
+      return { name: f.name, heads: fm.reduce((s, m) => s + Number(m.quantity || 0), 0), value: fm.reduce((s, m) => s + Number(m.value || 0), 0) };
+    }).filter((x) => x.heads > 0);
+    return { count, heads, totalValue, avgPerHead, byFarm };
   }
 
-  function buildSection(farms, currency) {
+  function buildRow(farms, currency) {
     if (!farms.length) return "";
     const d = aggregate(farms);
     if (d.count === 0) return "";
     const sym = currency === "USD" ? "US$" : "R$";
     const fmt = (v) => v > 0 ? `${sym} ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)}` : "—";
-    const cards = [
-      { t: isCompra ? "Compras" : "Vendas", v: String(d.count), d2: "registros" },
-      { t: "Cabeças", v: formatInteger(d.heads), d2: isCompra ? "adquiridas" : "negociadas" },
-      { t: isCompra ? "Investimento total" : "Faturamento total", v: fmt(d.totalValue), d2: currency },
-      { t: isCompra ? "Custo médio / cabeça" : "Receita média / cabeça", v: fmt(d.avgPerHead), d2: "ticket médio" },
-      d.totalWeight > 0 ? { t: isCompra ? "Peso adquirido" : "Kg negociados", v: `${new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(d.totalWeight)} kg`, d2: "" } : null,
-      d.avgPricePerKg > 0 ? { t: isCompra ? "Custo médio / kg" : "Valor médio / kg", v: fmt(d.avgPricePerKg), d2: "" } : null,
-    ].filter(Boolean);
-
-    const farmRows = d.byFarm.length > 1 ? `
-      <div class="commercial-farm-breakdown">
-        ${d.byFarm.map((x) => `
-          <div class="commercial-farm-row">
-            <span class="farm-tag">${escapeHtml(x.name)}</span>
-            <span>${formatInteger(x.heads)} cab.</span>
-            <span class="fin-value">${fmt(x.value)}</span>
-          </div>
-        `).join("")}
-      </div>
-    ` : "";
+    const farmNames = farms.map((f) => escapeHtml(f.name)).join(" · ");
+    const farmTags = d.byFarm.length > 1 ? `<div class="comm-farm-tags">${d.byFarm.map((x) =>
+      `<span class="comm-farm-tag"><strong>${escapeHtml(x.name)}</strong> ${formatInteger(x.heads)} cab. <span class="fin-value">${fmt(x.value)}</span></span>`
+    ).join("")}</div>` : "";
 
     return `
-      <div class="commercial-currency-block">
-        <div class="commercial-block-header">
+      <div class="comm-summary-row">
+        <div class="comm-row-meta">
           <span class="currency-badge ${currency === "USD" ? "usd" : "brl"}">${currency}</span>
-          <span class="commercial-block-farms">${farms.map((f) => escapeHtml(f.name)).join(" · ")}</span>
+          <span class="comm-row-farms">${farmNames}</span>
         </div>
-        <div class="commercial-cards-row">
-          ${cards.map((c) => `
-            <div class="commercial-card">
-              <p class="commercial-card-label">${c.t}</p>
-              <strong class="commercial-card-value">${c.v}</strong>
-              ${c.d2 ? `<p class="commercial-card-detail">${c.d2}</p>` : ""}
-            </div>
-          `).join("")}
+        <div class="comm-row-stats">
+          <span class="comm-stat"><strong>${d.count}</strong> <span>op.</span></span>
+          <span class="comm-sep">·</span>
+          <span class="comm-stat"><strong>${formatInteger(d.heads)}</strong> <span>cab.</span></span>
+          <span class="comm-sep">·</span>
+          <span class="comm-stat fin-value"><strong>${fmt(d.totalValue)}</strong></span>
+          ${d.avgPerHead > 0 ? `<span class="comm-sep">·</span><span class="comm-stat comm-avg">${fmt(d.avgPerHead)}/cab.</span>` : ""}
         </div>
-        ${farmRows}
+        ${farmTags}
       </div>
     `;
   }
 
-  const brlHtml = buildSection(brlFarms, "BRL");
-  const usdHtml = buildSection(usdFarms, "USD");
+  const brlHtml = buildRow(brlFarms, "BRL");
+  const usdHtml = buildRow(usdFarms, "USD");
 
   if (!brlHtml && !usdHtml) {
     el.hidden = true;
@@ -3072,7 +3031,7 @@ function renderCommercialDashboard(movType) {
     return;
   }
 
-  el.innerHTML = `<div class="commercial-dashboard-inner">${brlHtml}${usdHtml}</div>`;
+  el.innerHTML = `<div class="comm-summary">${brlHtml}${usdHtml}</div>`;
   el.hidden = false;
 }
 
