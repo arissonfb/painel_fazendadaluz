@@ -30,7 +30,28 @@ Painel web para gestao de gado das Fazendas Da Luz, com foco em estoque animal, 
 
 ## Deploy no Render
 
-O projeto ja inclui um arquivo `render.yaml` pronto para publicar como site estatico no Render.
+Este repositorio agora inclui um arquivo `render.yaml` na raiz com os tres recursos necessarios:
+
+- site estatico para o frontend
+- web service Node para a API
+- banco Render Postgres para persistencia
+
+### Como publicar
+
+1. Suba este repositorio para o GitHub.
+2. No Render, clique em `New > Blueprint`.
+3. Conecte o repositorio `painel_fazendadaluz`.
+4. Confirme o uso do arquivo `render.yaml` na raiz.
+5. Informe os segredos solicitados pelo Render:
+   - `JWT_SECRET`
+   - `ADMIN_BOOTSTRAP_PASSWORD`
+6. Finalize o deploy do Blueprint.
+
+### Observacoes importantes
+
+- O backend usa `DATABASE_URL`, que sera preenchido automaticamente a partir do banco definido no Blueprint.
+- O frontend ja esta apontando para `https://painel-pecuario-api.onrender.com`, entao o nome do servico da API no Render precisa continuar `painel-pecuario-api`.
+- Se voce ja tiver servicos existentes no Render gerenciados por outro Blueprint, nao sincronize os mesmos recursos com dois Blueprints diferentes.
 
 ## Observacao importante
 

@@ -131,9 +131,14 @@
                 </select>
               </label>
             </div>
+            <div class="sync-status" id="syncStatusWrap">
+              <span class="chip sync-chip" id="syncStatusChip">Local</span>
+              <button type="button" class="ghost-btn sync-retry-btn" id="syncRetryButton" hidden>Recarregar</button>
+            </div>
             <span class="chip" id="currentUserLabel">Usuário</span>
           </div>
         </section>
+        <div class="api-notice" id="apiNotice" hidden></div>
 
         <header class="hero">
           <div class="hero-copy">
@@ -937,7 +942,10 @@
           <p class="panel-kicker" id="movTypeRecordsKicker">Movimentações</p>
           <h2 id="movTypeRecordsTitle">Registros</h2>
         </div>
-        <button type="button" class="modal-close" id="closeMovTypeRecordsDlg" aria-label="Fechar">&#x2715;</button>
+        <div class="modal-header-actions">
+          <button type="button" class="modal-maximize-btn" id="maximizeMovTypeRecordsDlg" aria-label="Maximizar" title="Maximizar">&#x26F6;</button>
+          <button type="button" class="modal-close" id="closeMovTypeRecordsDlg" aria-label="Fechar">&#x2715;</button>
+        </div>
       </div>
       <div id="movCommercialDashboard" class="commercial-dashboard" hidden></div>
       <div class="mov-records-toolbar">

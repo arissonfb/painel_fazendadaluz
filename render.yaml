@@ -1,3 +1,8 @@
+databases:
+  - name: painel-pecuario-db
+    databaseName: painel_pecuario
+    user: painel_pecuario
+
 services:
   - type: static_site
     name: fazenda-daluz
@@ -7,9 +12,18 @@ services:
     publish: .
 
   - type: web_service
-    name: painel-pecuário-api
+    name: painel-pecuario-api
     env: node
     branch: main
     root: backend
     buildCommand: npm install
     startCommand: node server.js
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: painel-pecuario-db
+          property: connectionString
+      - key: JWT_SECRET
+        sync: false
+      - key: ADMIN_BOOTSTRAP_PASSWORD
+        sync: false

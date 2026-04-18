@@ -387,6 +387,72 @@ body::before {
   min-width: 0;
 }
 
+.sync-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sync-chip {
+  min-width: 118px;
+  justify-content: center;
+  text-align: center;
+}
+
+.sync-chip.sync-ok {
+  background: rgba(55, 91, 67, 0.12);
+  color: #274632;
+}
+
+.sync-chip.sync-busy {
+  background: rgba(201, 140, 79, 0.16);
+  color: #8a5b2b;
+}
+
+.sync-chip.sync-warn {
+  background: rgba(140, 75, 56, 0.14);
+  color: #8c4b38;
+}
+
+.sync-chip.sync-idle {
+  background: rgba(76, 55, 34, 0.08);
+  color: var(--muted);
+}
+
+.sync-retry-btn {
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.api-notice {
+  margin: 14px 0 0;
+  padding: 12px 16px;
+  border-radius: 16px;
+  border: 1px solid transparent;
+  font-size: 0.94rem;
+  line-height: 1.5;
+}
+
+.api-notice.notice-info {
+  background: rgba(191, 142, 78, 0.12);
+  border-color: rgba(191, 142, 78, 0.24);
+  color: #73481f;
+}
+
+.api-notice.notice-warn {
+  background: rgba(140, 75, 56, 0.12);
+  border-color: rgba(140, 75, 56, 0.26);
+  color: #7a3929;
+}
+
+.api-notice.notice-error {
+  background: rgba(123, 43, 43, 0.1);
+  border-color: rgba(123, 43, 43, 0.24);
+  color: #6f2323;
+}
+
 .auth-shell {
   min-height: 100vh;
   display: grid;
@@ -1573,6 +1639,61 @@ input {
   text-align: center;
   padding: 46px 0;
   color: var(--muted);
+}
+
+/* ── Maximize button ──────────────────────────────────────────────── */
+.modal-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-maximize-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: rgba(118, 110, 94, 0.06);
+  border: 1px solid rgba(118, 110, 94, 0.14);
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--muted);
+  padding: 0;
+  border-radius: 10px;
+  line-height: 1;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.15s;
+}
+
+.modal-maximize-btn:hover {
+  background: rgba(118, 110, 94, 0.1);
+  color: var(--text);
+  border-color: rgba(118, 110, 94, 0.24);
+  transform: translateY(-1px);
+}
+
+.modal-maximize-btn:focus-visible {
+  outline: 2px solid rgba(63, 110, 78, 0.35);
+  outline-offset: 2px;
+}
+
+#movTypeRecordsDlg.is-maximized .modal-maximize-btn {
+  background: rgba(63, 110, 78, 0.12);
+  border-color: rgba(63, 110, 78, 0.22);
+  color: #23402d;
+}
+
+#movTypeRecordsDlg.is-maximized {
+  padding: 8px;
+}
+
+#movTypeRecordsDlg.is-maximized .mov-records-card,
+#movTypeRecordsDlg.is-maximized .commercial-records-card {
+  width: min(100vw - 16px, 1500px);
+  max-width: min(100vw - 16px, 1500px);
+  height: calc(100vh - 16px);
+  max-height: calc(100vh - 16px);
+  border-radius: 16px;
 }
 
 /* ── Commercial Records Dialog (wider, financial) ─────────────────── */

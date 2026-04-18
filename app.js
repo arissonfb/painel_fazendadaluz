@@ -175,9 +175,7 @@ const CLOUDINARY_CLOUD_NAME = "dsmpclqqa";
 const CLOUDINARY_UPLOAD_PRESET = "m6pymz4w";
 const BACKUP_DATE_KEY = "painelPecuario.lastBackup";
 const BACKUP_WARN_DAYS = 7;
-const DEFAULT_USERS = [
-  { id: "user-da-luz", login: "Hugo Balbuena", password: "hugo123", role: "admin" }
-];
+const DEFAULT_USERS = [];
 
 const IMPORTED_SANITARY_RECORDS = {
   arapey: [
@@ -793,6 +791,7 @@ const runtime = {
   splashDismissed: false,
   authLoginMode: "usuario",
   pendingMovementDialogType: "",
+  returnToMovTypeRecords: null,
   movementPhotoDrafts: [],
   editStockContextFarmId: TOTAL_FARM_ID,
   pdfContextFarmId: TOTAL_FARM_ID,
@@ -802,6 +801,11 @@ const runtime = {
   cloudToken: null,
   cloudSyncing: false,
   cloudEnabled: true,
+  cloudRevision: 0,
+  cloudConflict: false,
+  cloudPushTimer: null,
+  apiNoticeMessage: "",
+  apiNoticeLevel: "info",
   editingMovement: null,  // { farmId, movementId } when editing an existing movement
   potrManej: { farmId: null, potreirosId: null, type: "transferencia", photoDrafts: [] },
   movementsSearch: "",
@@ -955,6 +959,7 @@ const elements = {
   potreirosView: document.getElementById("potreirosView"),
   potreirosAccordion: document.getElementById("potreirosAccordion"),
   movTypeRecordsDlg: document.getElementById("movTypeRecordsDlg"),
+  maximizeMovTypeRecordsDlg: document.getElementById("maximizeMovTypeRecordsDlg"),
   closeMovTypeRecordsDlg: document.getElementById("closeMovTypeRecordsDlg"),
   movTypeRecordsKicker: document.getElementById("movTypeRecordsKicker"),
   movTypeRecordsTitle: document.getElementById("movTypeRecordsTitle"),
@@ -1015,6 +1020,10 @@ const elements = {
   backupWarningDoNow: document.getElementById("backupWarningDoNow"),
   backupWarningDismiss: document.getElementById("backupWarningDismiss"),
   logoutButton: document.getElementById("logoutButton"),
+  syncStatusWrap: document.getElementById("syncStatusWrap"),
+  syncStatusChip: document.getElementById("syncStatusChip"),
+  syncRetryButton: document.getElementById("syncRetryButton"),
+  apiNotice: document.getElementById("apiNotice"),
   closeMovementDialog: document.getElementById("closeMovementDialog"),
   closeCategoryDialog: document.getElementById("closeCategoryDialog"),
   manageUsersDialog: document.getElementById("manageUsersDialog"),
@@ -1166,7 +1175,7 @@ function loadData() {
   }
 }
 
-function saveData() {
+function saveData(options = {}) {
   if (runtime.storageEnabled) {
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
@@ -1175,7 +1184,35 @@ function saveData() {
       console.warn("Não foi possível salvar localmente. A sessão segue sem persistência.", error);
     }
   }
-  cloudPush();
+  if (!options.skipCloud) {
+    scheduleCloudPush();
+  }
+}
+
+function setApiNotice(message = "", level = "info") {
+  runtime.apiNoticeMessage = message || "";
+  runtime.apiNoticeLevel = level;
+  if (!elements.apiNotice) return;
+  if (!runtime.apiNoticeMessage) {
+    elements.apiNotice.hidden = true;
+    elements.apiNotice.textContent = "";
+    elements.apiNotice.className = "api-notice";
+    return;
+  }
+  elements.apiNotice.hidden = false;
+  elements.apiNotice.textContent = runtime.apiNoticeMessage;
+  elements.apiNotice.className = `api-notice notice-${level}`;
+}
+
+function scheduleCloudPush() {
+  if (!runtime.cloudEnabled || !runtime.cloudToken) return;
+  if (runtime.cloudPushTimer) {
+    window.clearTimeout(runtime.cloudPushTimer);
+  }
+  runtime.cloudPushTimer = window.setTimeout(() => {
+    runtime.cloudPushTimer = null;
+    void cloudPush();
+  }, 900);
 }
 
 function createAuditSessionId() {
@@ -1308,23 +1345,10 @@ function openAuditTrailDialog() {
 // ─── Cloud Sync ───────────────────────────────────────────────────────────────
 
 async function cloudGetToken() {
-  if (runtime.cloudToken) return runtime.cloudToken;
-  try {
-    const res = await fetch(`${API_URL}/api/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: "admin", password: "daluz2026" })
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    runtime.cloudToken = data.token || null;
-    return runtime.cloudToken;
-  } catch {
-    return null;
-  }
+  return runtime.cloudToken || null;
 }
 
-async function cloudPush() {
+async function legacyCloudPushUnused() {
   if (!runtime.cloudEnabled || runtime.cloudSyncing) return;
   runtime.cloudSyncing = true;
   try {
@@ -1345,7 +1369,7 @@ async function cloudPush() {
   }
 }
 
-async function cloudPull() {
+async function legacyCloudPullUnused() {
   if (!runtime.cloudEnabled) return;
   try {
     const token = await cloudGetToken();
@@ -1377,6 +1401,249 @@ async function cloudPull() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+function normalizeApiRole(role) {
+  return role === "admin" ? "admin" : "usuario";
+}
+
+function normalizeApiUser(user) {
+  if (!user) return null;
+  return {
+    id: String(user.id),
+    login: String(user.username || user.login || ""),
+    role: normalizeApiRole(user.role)
+  };
+}
+
+async function apiRequest(path, options = {}) {
+  const headers = { ...(options.headers || {}) };
+  if (runtime.cloudToken) {
+    headers.Authorization = `Bearer ${runtime.cloudToken}`;
+  }
+  const response = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers
+  });
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch {
+    payload = null;
+  }
+  if (!response.ok) {
+    const error = new Error(payload?.error || "Falha na requisiÃ§Ã£o.");
+    error.status = response.status;
+    error.payload = payload;
+    throw error;
+  }
+  return payload;
+}
+
+function upsertAuthUser(user) {
+  const normalized = normalizeApiUser(user);
+  if (!normalized) return null;
+  const nextUsers = Array.isArray(state.data.auth.users) ? [...state.data.auth.users] : [];
+  const index = nextUsers.findIndex((item) => String(item.id) === String(normalized.id));
+  if (index >= 0) nextUsers[index] = normalized;
+  else nextUsers.push(normalized);
+  state.data.auth.users = nextUsers;
+  return normalized;
+}
+
+function replaceAuthUsers(users) {
+  state.data.auth.users = (Array.isArray(users) ? users : [])
+    .map((user) => normalizeApiUser(user))
+    .filter(Boolean);
+}
+
+async function refreshUsersFromApi() {
+  if (!runtime.cloudToken) return;
+  if (isAdmin()) {
+    const users = await apiRequest("/api/users");
+    replaceAuthUsers(users);
+  } else {
+    const me = await apiRequest("/api/auth/me");
+    replaceAuthUsers([me]);
+  }
+}
+
+async function intermediateCloudPushUnused() {
+  if (!runtime.cloudEnabled || runtime.cloudSyncing || !runtime.cloudToken) return;
+  if (runtime.cloudPushTimer) {
+    window.clearTimeout(runtime.cloudPushTimer);
+    runtime.cloudPushTimer = null;
+  }
+  runtime.cloudSyncing = true;
+  renderSyncStatus();
+  try {
+    const pushPayload = JSON.parse(JSON.stringify(state.data));
+    pushPayload.auth = {
+      ...pushPayload.auth,
+      sessionUserId: "",
+      users: (pushPayload.auth.users || []).map((user) => ({
+        id: user.id,
+        login: user.login,
+        role: user.role
+      }))
+    };
+    const response = await apiRequest("/api/data", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ payload: pushPayload, baseRevision: runtime.cloudRevision })
+    });
+    runtime.cloudRevision = Number(response?.revision || runtime.cloudRevision || 0);
+    runtime.cloudConflict = false;
+    setApiNotice("");
+  } catch (error) {
+    if (error.status === 401) {
+      runtime.cloudToken = null;
+    } else if (error.status === 409) {
+      runtime.cloudConflict = true;
+      alert("Outra sessÃ£o salvou dados antes desta. Suas alteraÃ§Ãµes ficaram locais neste navegador. Recarregue os dados antes de continuar.");
+    }
+  } finally {
+    runtime.cloudSyncing = false;
+    renderSyncStatus();
+  }
+}
+
+async function intermediateCloudPullUnused() {
+  if (!runtime.cloudEnabled || !runtime.cloudToken) return;
+  try {
+    runtime.cloudSyncing = true;
+    renderSyncStatus();
+    const response = await apiRequest("/api/data");
+    runtime.cloudRevision = Number(response?.revision || 0);
+    runtime.cloudConflict = false;
+    if (!response?.payload) return;
+    const currentSessionUserId = state.data.auth.sessionUserId;
+    const currentFarmId = state.data.selectedFarmId;
+    const currentUsers = Array.isArray(state.data.auth.users) ? [...state.data.auth.users] : [];
+    const merged = ensureDataShape(response.payload, { preserveSnapshot: true });
+    merged.selectedFarmId = currentFarmId || TOTAL_FARM_ID;
+    merged.auth.sessionUserId = currentSessionUserId;
+    merged.auth.users = currentUsers;
+    const localJson = JSON.stringify(state.data.farms);
+    const cloudJson = JSON.stringify(merged.farms);
+    if (localJson !== cloudJson) {
+      state.data = merged;
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
+      if (isAuthenticated()) {
+        render();
+      }
+    }
+  } catch (error) {
+    if (error.status === 401) {
+      runtime.cloudToken = null;
+    }
+  } finally {
+    runtime.cloudSyncing = false;
+    renderSyncStatus();
+  }
+}
+
+async function cloudPush() {
+  if (!runtime.cloudEnabled || runtime.cloudSyncing || !runtime.cloudToken) return;
+  if (runtime.cloudPushTimer) {
+    window.clearTimeout(runtime.cloudPushTimer);
+    runtime.cloudPushTimer = null;
+  }
+  runtime.cloudSyncing = true;
+  renderSyncStatus();
+  try {
+    const pushPayload = JSON.parse(JSON.stringify(state.data));
+    pushPayload.auth = {
+      ...pushPayload.auth,
+      sessionUserId: "",
+      users: (pushPayload.auth.users || []).map((user) => ({
+        id: user.id,
+        login: user.login,
+        role: user.role
+      }))
+    };
+    const response = await apiRequest("/api/data", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ payload: pushPayload, baseRevision: runtime.cloudRevision })
+    });
+    runtime.cloudRevision = Number(response?.revision || runtime.cloudRevision || 0);
+    runtime.cloudConflict = false;
+    setApiNotice("");
+  } catch (error) {
+    if (error.status === 401) {
+      runtime.cloudToken = null;
+      setApiNotice("Sua sessao na nuvem expirou. Entre novamente para voltar a sincronizar.", "warn");
+    } else if (error.status === 409) {
+      runtime.cloudConflict = true;
+      setApiNotice("Outra sessao salvou antes desta. Seus dados continuam locais neste navegador; recarregue a nuvem antes de seguir.", "warn");
+    } else {
+      setApiNotice("Nao foi possivel sincronizar agora. O trabalho continua salvo localmente neste navegador.", "error");
+    }
+  } finally {
+    runtime.cloudSyncing = false;
+    renderSyncStatus();
+  }
+}
+
+async function cloudPull() {
+  if (!runtime.cloudEnabled || !runtime.cloudToken) return;
+  try {
+    runtime.cloudSyncing = true;
+    renderSyncStatus();
+    const response = await apiRequest("/api/data");
+    runtime.cloudRevision = Number(response?.revision || 0);
+    runtime.cloudConflict = false;
+    setApiNotice("");
+    if (!response?.payload) return;
+    const currentSessionUserId = state.data.auth.sessionUserId;
+    const currentFarmId = state.data.selectedFarmId;
+    const currentUsers = Array.isArray(state.data.auth.users) ? [...state.data.auth.users] : [];
+    const merged = ensureDataShape(response.payload, { preserveSnapshot: true });
+    merged.selectedFarmId = currentFarmId || TOTAL_FARM_ID;
+    merged.auth.sessionUserId = currentSessionUserId;
+    merged.auth.users = currentUsers;
+    const localJson = JSON.stringify(state.data.farms);
+    const cloudJson = JSON.stringify(merged.farms);
+    if (localJson !== cloudJson) {
+      state.data = merged;
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
+      if (isAuthenticated()) {
+        render();
+      }
+    }
+  } catch (error) {
+    if (error.status === 401) {
+      runtime.cloudToken = null;
+      setApiNotice("Sua sessao na nuvem expirou. Entre novamente para recarregar os dados.", "warn");
+    } else {
+      setApiNotice("Nao foi possivel recarregar os dados da nuvem agora. Tentaremos novamente quando voce mandar salvar.", "error");
+    }
+  } finally {
+    runtime.cloudSyncing = false;
+    renderSyncStatus();
+  }
+}
+
+async function legacyHandleSyncRetryUnused() {
+  if (!runtime.cloudToken) return;
+  try {
+    await cloudPull();
+    render();
+  } catch (error) {
+    console.warn("NÃ£o foi possÃ­vel recarregar os dados da nuvem.", error);
+  }
+}
+
+async function handleSyncRetry() {
+  if (!runtime.cloudToken) return;
+  try {
+    await cloudPull();
+    render();
+  } catch (error) {
+    console.warn("Nao foi possivel recarregar os dados da nuvem.", error);
+    setApiNotice("A recarga manual da nuvem falhou. Verifique a conexao e tente novamente.", "error");
+  }
+}
+
 function getCurrentUser() {
   return state.data.auth.users.find((user) => user.id === state.data.auth.sessionUserId) || null;
 }
@@ -1392,6 +1659,35 @@ function isAdmin() {
 
 function getRoleLabel(role) {
   return role === "admin" ? "Administrador" : "Usuário";
+}
+
+function renderSyncStatus() {
+  if (!elements.syncStatusChip) return;
+
+  let label = "Local";
+  let className = "chip sync-chip sync-idle";
+  const canRetry = Boolean(runtime.cloudToken) && runtime.cloudConflict;
+
+  if (!isAuthenticated() || !runtime.cloudToken) {
+    label = "Sem nuvem";
+  } else if (runtime.cloudConflict) {
+    label = "Conflito";
+    className = "chip sync-chip sync-warn";
+  } else if (runtime.cloudSyncing) {
+    label = "Sincronizando";
+    className = "chip sync-chip sync-busy";
+  } else if (runtime.cloudRevision > 0) {
+    label = "Sincronizado";
+    className = "chip sync-chip sync-ok";
+  }
+
+  elements.syncStatusChip.textContent = label;
+  elements.syncStatusChip.className = className;
+  elements.syncStatusChip.title = label;
+  if (elements.syncRetryButton) {
+    elements.syncRetryButton.hidden = !canRetry;
+  }
+  setApiNotice(runtime.apiNoticeMessage, runtime.apiNoticeLevel);
 }
 
 function renderAuthState() {
@@ -1425,6 +1721,7 @@ function renderAuthState() {
   if (elements.auditTrailButton) {
     elements.auditTrailButton.hidden = !isAdmin();
   }
+  renderSyncStatus();
 }
 
 function startSplashExperience() {
@@ -1462,11 +1759,11 @@ function setAuthLoginMode(mode) {
   }
 }
 
-function handleLoginSubmit(event) {
+function legacyHandleLoginSubmitUnused(event) {
   event.preventDefault();
   const login = elements.loginUsername.value.trim();
   const password = elements.loginPassword.value;
-  const user = state.data.auth.users.find((item) => normalizeText(item.login) === normalizeText(login) && item.password === password);
+  const user = null;
 
   if (!user) {
     elements.loginFeedback.hidden = false;
@@ -1496,7 +1793,7 @@ function handleLoginSubmit(event) {
   cloudPull();
 }
 
-function handleLogout() {
+function legacyHandleLogoutUnused() {
   logAuditEvent("Logout", "auth", "Saída do sistema");
   state.data.auth.sessionUserId = "";
   saveData();
@@ -1509,7 +1806,7 @@ function handleLogout() {
   startSplashExperience();
 }
 
-function openManageUsersDialog() {
+function legacyOpenManageUsersDialogUnused() {
   if (!isAdmin()) return;
   renderUserList();
   elements.newUserLogin.value = "";
@@ -1518,7 +1815,7 @@ function openManageUsersDialog() {
   elements.manageUsersDialog.showModal();
 }
 
-function renderUserList() {
+function legacyRenderUserListUnused() {
   const currentUser = getCurrentUser();
   const adminCount = state.data.auth.users.filter((u) => u.role === "admin").length;
 
@@ -1549,7 +1846,7 @@ function renderUserList() {
   closeUserEditor();
 }
 
-function handleUserListInteraction(event) {
+function legacyHandleUserListInteractionUnused(event) {
   const editTrigger = event.target.closest("[data-edit-user-id]");
   if (editTrigger) {
     openUserEditor(editTrigger.dataset.editUserId, "edit");
@@ -1625,7 +1922,7 @@ function closeUserEditor() {
   if (elements.editUserRoleWrap) elements.editUserRoleWrap.hidden = false;
 }
 
-function handleUserEditSave() {
+function legacyHandleUserEditSaveUnused() {
   if (!state.userEditingId) return;
 
   const user = state.data.auth.users.find((item) => item.id === state.userEditingId);
@@ -1663,7 +1960,7 @@ function handleUserEditSave() {
   }
 
   if (nextPassword) {
-    user.password = nextPassword;
+    // senha gerenciada pela API
   }
 
   logAuditEvent(
@@ -1681,7 +1978,7 @@ function handleUserEditSave() {
   }
 }
 
-function handleManageUsersSubmit(event) {
+function legacyHandleManageUsersSubmitUnused(event) {
   event.preventDefault();
   const login = elements.newUserLogin.value.trim();
   const password = elements.newUserPassword.value;
@@ -1702,7 +1999,7 @@ function handleManageUsersSubmit(event) {
   state.data.auth.users.push({
     id: slugify(`${login}-${Date.now()}`),
     login,
-    password,
+    password: "",
     role
   });
 
@@ -1723,7 +2020,7 @@ function openChangeMyPasswordDialog() {
   dlg.showModal();
 }
 
-function handleChangeMyPasswordSubmit(event) {
+function legacyHandleChangeMyPasswordSubmitUnused(event) {
   event.preventDefault();
   const user = getCurrentUser();
   if (!user) return;
@@ -1732,7 +2029,7 @@ function handleChangeMyPasswordSubmit(event) {
   const confirm = document.getElementById("changeMyPasswordConfirm").value;
   const feedback = document.getElementById("changeMyPasswordFeedback");
 
-  if (user.password !== current) {
+  if (false) {
     feedback.hidden = false;
     feedback.textContent = "Senha atual incorreta.";
     return;
@@ -1747,10 +2044,336 @@ function handleChangeMyPasswordSubmit(event) {
     feedback.textContent = "A confirmação não confere com a nova senha.";
     return;
   }
-  user.password = next;
+  // senha gerenciada pela API
   saveData();
   document.getElementById("changeMyPasswordDlg").close();
   alert("Senha alterada com sucesso!");
+}
+
+async function legacyHandleLoginSubmitApiUnused(event) {
+  event.preventDefault();
+  const login = elements.loginUsername.value.trim();
+  const password = elements.loginPassword.value;
+
+  try {
+    const data = await apiRequest("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: login, password })
+    });
+    const user = upsertAuthUser(data.user);
+    if (!user) {
+      throw new Error("Falha ao carregar usuÃ¡rio autenticado.");
+    }
+    if ((user.role || "usuario") !== runtime.authLoginMode) {
+      elements.loginFeedback.hidden = false;
+      elements.loginFeedback.textContent = runtime.authLoginMode === "admin"
+        ? "Este login nÃ£o possui perfil de Administrador."
+        : "Este login nÃ£o possui perfil de UsuÃ¡rio padrÃ£o.";
+      return;
+    }
+
+    runtime.cloudToken = data.token || null;
+    runtime.cloudConflict = false;
+    runtime.cloudRevision = 0;
+    setApiNotice("");
+    state.data.auth.sessionUserId = user.id;
+    elements.loginFeedback.hidden = true;
+    elements.loginFeedback.textContent = "";
+    elements.loginForm.reset();
+    startAuditSession();
+    logAuditEvent("Login", "auth", "Entrada no sistema");
+    saveData({ skipCloud: true });
+    renderAuthState();
+    initializeAppShell();
+    try {
+      await refreshUsersFromApi();
+      await cloudPull();
+    } catch (syncError) {
+      console.warn("Login concluÃ­do, mas a sincronizaÃ§Ã£o inicial falhou.", syncError);
+    }
+    render();
+    checkBackupWarning();
+  } catch (error) {
+    elements.loginFeedback.hidden = false;
+    elements.loginFeedback.textContent = error.message || "NÃ£o foi possÃ­vel autenticar.";
+  }
+}
+
+function legacyHandleLogoutApiUnused() {
+  logAuditEvent("Logout", "auth", "SaÃ­da do sistema");
+  state.data.auth.sessionUserId = "";
+  runtime.cloudToken = null;
+  runtime.cloudRevision = 0;
+  saveData({ skipCloud: true });
+  if (elements.manageUsersDialog.open) {
+    elements.manageUsersDialog.close();
+  }
+  elements.loginFeedback.hidden = true;
+  elements.loginFeedback.textContent = "";
+  renderAuthState();
+  startSplashExperience();
+}
+
+async function handleLoginSubmit(event) {
+  event.preventDefault();
+  const login = elements.loginUsername.value.trim();
+  const password = elements.loginPassword.value;
+
+  try {
+    const data = await apiRequest("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: login, password })
+    });
+    const user = upsertAuthUser(data.user);
+    if (!user) {
+      throw new Error("Falha ao carregar usuario autenticado.");
+    }
+    if ((user.role || "usuario") !== runtime.authLoginMode) {
+      elements.loginFeedback.hidden = false;
+      elements.loginFeedback.textContent = runtime.authLoginMode === "admin"
+        ? "Este login nao possui perfil de Administrador."
+        : "Este login nao possui perfil de Usuario padrao.";
+      return;
+    }
+
+    runtime.cloudToken = data.token || null;
+    runtime.cloudConflict = false;
+    runtime.cloudRevision = 0;
+    setApiNotice("");
+    state.data.auth.sessionUserId = user.id;
+    elements.loginFeedback.hidden = true;
+    elements.loginFeedback.textContent = "";
+    elements.loginForm.reset();
+    startAuditSession();
+    logAuditEvent("Login", "auth", "Entrada no sistema");
+    saveData({ skipCloud: true });
+    renderAuthState();
+    initializeAppShell();
+    try {
+      await refreshUsersFromApi();
+      await cloudPull();
+    } catch (syncError) {
+      console.warn("Login concluido, mas a sincronizacao inicial falhou.", syncError);
+      setApiNotice("Login concluido, mas a sincronizacao inicial falhou. Seus dados locais continuam disponiveis.", "warn");
+    }
+    render();
+    checkBackupWarning();
+  } catch (error) {
+    elements.loginFeedback.hidden = false;
+    elements.loginFeedback.textContent = error.message || "Nao foi possivel autenticar.";
+  }
+}
+
+function handleLogout() {
+  logAuditEvent("Logout", "auth", "Saida do sistema");
+  state.data.auth.sessionUserId = "";
+  if (runtime.cloudPushTimer) {
+    window.clearTimeout(runtime.cloudPushTimer);
+    runtime.cloudPushTimer = null;
+  }
+  runtime.cloudToken = null;
+  runtime.cloudRevision = 0;
+  runtime.cloudConflict = false;
+  setApiNotice("");
+  saveData({ skipCloud: true });
+  if (elements.manageUsersDialog.open) {
+    elements.manageUsersDialog.close();
+  }
+  elements.loginFeedback.hidden = true;
+  elements.loginFeedback.textContent = "";
+  renderAuthState();
+  startSplashExperience();
+}
+
+async function openManageUsersDialog() {
+  if (!isAdmin()) return;
+  try {
+    await refreshUsersFromApi();
+  } catch (error) {
+    alert(error.message || "NÃ£o foi possÃ­vel carregar os usuÃ¡rios.");
+    return;
+  }
+  renderUserList();
+  elements.newUserLogin.value = "";
+  elements.newUserPassword.value = "";
+  if (elements.newUserRole) elements.newUserRole.value = "usuario";
+  elements.manageUsersDialog.showModal();
+}
+
+function renderUserList() {
+  const currentUser = getCurrentUser();
+  const adminCount = state.data.auth.users.filter((u) => u.role === "admin").length;
+
+  elements.userList.innerHTML = state.data.auth.users.map((user) => {
+    const isSelf = String(user.id) === String(currentUser?.id);
+    const isLastAdmin = user.role === "admin" && adminCount === 1;
+    const canDelete = !isSelf && !isLastAdmin;
+    return `
+      <article class="user-row">
+        <div class="user-row-info">
+          <div class="user-row-identity">
+            <strong>${escapeHtml(user.login)}</strong>
+            ${isSelf ? `<span class="user-self-tag">vocÃª</span>` : ""}
+          </div>
+          <span class="role-badge role-${user.role || "usuario"}">${getRoleLabel(user.role)}</span>
+        </div>
+        <div class="user-row-actions">
+          <button type="button" class="user-action-btn" data-edit-user-id="${user.id}" title="Editar login e perfil">Editar</button>
+          <button type="button" class="user-action-btn" data-reset-user-id="${user.id}" title="Redefinir senha">Resetar senha</button>
+          ${canDelete
+            ? `<button type="button" class="user-action-btn user-action-danger" data-delete-user-id="${user.id}" title="Excluir usuÃ¡rio">Excluir</button>`
+            : `<button type="button" class="user-action-btn user-action-disabled" disabled title="${isSelf ? "NÃ£o Ã© possÃ­vel excluir sua prÃ³pria conta" : "O sistema precisa de ao menos um administrador"}">${isSelf ? "â€”" : "Excluir"}</button>`
+          }
+        </div>
+      </article>
+    `;
+  }).join("");
+  closeUserEditor();
+}
+
+async function handleUserListInteraction(event) {
+  const editTrigger = event.target.closest("[data-edit-user-id]");
+  if (editTrigger) {
+    openUserEditor(editTrigger.dataset.editUserId, "edit");
+    return;
+  }
+
+  const resetTrigger = event.target.closest("[data-reset-user-id]");
+  if (resetTrigger) {
+    openUserEditor(resetTrigger.dataset.resetUserId, "reset");
+    return;
+  }
+
+  const deleteTrigger = event.target.closest("[data-delete-user-id]");
+  if (!deleteTrigger) return;
+
+  const userId = deleteTrigger.dataset.deleteUserId;
+  const user = state.data.auth.users.find((u) => String(u.id) === String(userId));
+  if (!user) return;
+  if (!confirm(`Excluir o usuÃ¡rio "${user.login}"? Esta aÃ§Ã£o nÃ£o pode ser desfeita.`)) return;
+
+  try {
+    await apiRequest(`/api/users/${encodeURIComponent(userId)}`, { method: "DELETE" });
+    logAuditEvent("ExclusÃ£o", "usuÃ¡rio", `UsuÃ¡rio removido: ${user.login}`);
+    state.data.auth.users = state.data.auth.users.filter((u) => String(u.id) !== String(userId));
+    saveData();
+    renderUserList();
+  } catch (error) {
+    alert(error.message || "NÃ£o foi possÃ­vel excluir o usuÃ¡rio.");
+  }
+}
+
+async function handleUserEditSave() {
+  if (!state.userEditingId) return;
+
+  const user = state.data.auth.users.find((item) => String(item.id) === String(state.userEditingId));
+  if (!user) return;
+
+  const isReset = state.userEditingMode === "reset";
+  const nextLogin = isReset ? user.login : elements.editUserLogin.value.trim();
+  const nextPassword = elements.editUserPassword.value;
+  const nextRole = isReset ? user.role : (elements.editUserRole ? elements.editUserRole.value : user.role);
+
+  if (!nextLogin) {
+    alert("O login nÃ£o pode ficar vazio.");
+    return;
+  }
+  if (isReset && !nextPassword) {
+    alert("Digite a nova senha para redefinir.");
+    return;
+  }
+
+  try {
+    await apiRequest(`/api/users/${encodeURIComponent(user.id)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: nextLogin,
+        password: nextPassword || undefined,
+        role: nextRole
+      })
+    });
+    user.login = nextLogin;
+    user.role = normalizeApiRole(nextRole);
+    logAuditEvent(
+      isReset ? "Reset de senha" : "EdiÃ§Ã£o",
+      "usuÃ¡rio",
+      isReset ? `Senha redefinida para ${user.login}` : `UsuÃ¡rio atualizado: ${user.login}`
+    );
+    saveData();
+    renderUserList();
+    renderAuthState();
+    closeUserEditor();
+    if (isReset) {
+      alert(`Senha de "${user.login}" redefinida com sucesso.`);
+    }
+  } catch (error) {
+    alert(error.message || "NÃ£o foi possÃ­vel atualizar o usuÃ¡rio.");
+  }
+}
+
+async function handleManageUsersSubmit(event) {
+  event.preventDefault();
+  const login = elements.newUserLogin.value.trim();
+  const password = elements.newUserPassword.value;
+  const role = elements.newUserRole?.value || "usuario";
+
+  if (!login || !password) return;
+  if (password.length < 4) {
+    alert("A senha precisa ter pelo menos 4 caracteres.");
+    return;
+  }
+
+  try {
+    const created = await apiRequest("/api/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: login, password, role })
+    });
+    upsertAuthUser(created);
+    logAuditEvent("AdiÃ§Ã£o", "usuÃ¡rio", `Novo usuÃ¡rio criado: ${login} (${getRoleLabel(role)})`);
+    saveData();
+    elements.newUserLogin.value = "";
+    elements.newUserPassword.value = "";
+    renderUserList();
+  } catch (error) {
+    alert(error.message || "NÃ£o foi possÃ­vel criar o usuÃ¡rio.");
+  }
+}
+
+async function handleChangeMyPasswordSubmit(event) {
+  event.preventDefault();
+  const current = document.getElementById("changeMyPasswordCurrent").value;
+  const next = document.getElementById("changeMyPasswordNew").value;
+  const confirm = document.getElementById("changeMyPasswordConfirm").value;
+  const feedback = document.getElementById("changeMyPasswordFeedback");
+
+  if (next.length < 4) {
+    feedback.hidden = false;
+    feedback.textContent = "A nova senha deve ter pelo menos 4 caracteres.";
+    return;
+  }
+  if (next !== confirm) {
+    feedback.hidden = false;
+    feedback.textContent = "A confirmaÃ§Ã£o nÃ£o confere com a nova senha.";
+    return;
+  }
+
+  try {
+    await apiRequest("/api/auth/change-password", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ currentPassword: current, newPassword: next })
+    });
+    feedback.hidden = true;
+    document.getElementById("changeMyPasswordDlg").close();
+    alert("Senha alterada com sucesso!");
+  } catch (error) {
+    feedback.hidden = false;
+    feedback.textContent = error.message || "NÃ£o foi possÃ­vel alterar a senha.";
+  }
 }
 
 function getFarm() {
@@ -2087,6 +2710,7 @@ function bindEvents() {
   elements.backupWarningDoNow.addEventListener("click", () => { elements.backupWarningDialog.close(); exportBackup(); });
   elements.backupWarningDismiss.addEventListener("click", () => elements.backupWarningDialog.close());
   elements.logoutButton.addEventListener("click", handleLogout);
+  elements.syncRetryButton?.addEventListener("click", handleSyncRetry);
   elements.splashShell.addEventListener("click", dismissSplash);
   elements.manageUsersForm.addEventListener("submit", handleManageUsersSubmit);
   elements.auditTrailButton?.addEventListener("click", openAuditTrailDialog);
@@ -2303,7 +2927,15 @@ function bindEvents() {
   }
   elements.closeMovementDialog.addEventListener("click", () => { runtime.editingMovement = null; elements.movementDialog.close(); });
   elements.closeMovTypeRecordsDlg.addEventListener("click", () => elements.movTypeRecordsDlg.close());
+  elements.maximizeMovTypeRecordsDlg?.addEventListener("click", toggleMovTypeRecordsMaximize);
+  elements.movementDialog.addEventListener("close", () => {
+    if (!runtime.returnToMovTypeRecords) return;
+    const context = runtime.returnToMovTypeRecords;
+    runtime.returnToMovTypeRecords = null;
+    window.requestAnimationFrame(() => openMovTypeRecordsDlg(context.movType, context));
+  });
   elements.movTypeRecordsDlg.addEventListener("close", () => {
+    setMovTypeRecordsMaximized(false);
     if (!runtime.pendingMovementDialogType) return;
     const nextType = runtime.pendingMovementDialogType;
     runtime.pendingMovementDialogType = "";
@@ -2754,18 +3386,37 @@ function renderDashboardVisualHerdGrid(farm) {
 
 const MOV_TYPE_RECORDS_PAGE = 50;
 
-function openMovTypeRecordsDlg(movType) {
+function setMovTypeRecordsMaximized(isMaximized) {
+  elements.movTypeRecordsDlg?.classList.toggle("is-maximized", Boolean(isMaximized));
+  if (!elements.maximizeMovTypeRecordsDlg) return;
+  const label = isMaximized ? "Restaurar tamanho" : "Maximizar";
+  elements.maximizeMovTypeRecordsDlg.setAttribute("aria-label", label);
+  elements.maximizeMovTypeRecordsDlg.setAttribute("title", label);
+  elements.maximizeMovTypeRecordsDlg.innerHTML = isMaximized ? "&#x2752;" : "&#x26F6;";
+}
+
+function toggleMovTypeRecordsMaximize() {
+  if (!elements.movTypeRecordsDlg) return;
+  const nextState = !elements.movTypeRecordsDlg.classList.contains("is-maximized");
+  setMovTypeRecordsMaximized(nextState);
+}
+
+function openMovTypeRecordsDlg(movType, options = {}) {
   const typeMeta = MOVEMENT_TYPES.find((t) => t.value === movType);
   const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
   const farm = isTotalView ? null : getFarm();
   const farmLabel = isTotalView ? "Todas as fazendas" : farm?.name || "";
+  const searchValue = typeof options.search === "string" ? options.search : "";
+  const page = Number.isInteger(options.page) ? options.page : 0;
+  const maximized = Boolean(options.maximized);
 
   elements.movTypeRecordsKicker.textContent = farmLabel;
   elements.movTypeRecordsTitle.textContent = typeMeta ? typeMeta.label : capitalize(movType);
-  elements.movTypeRecordsSearch.value = "";
+  elements.movTypeRecordsSearch.value = searchValue;
   elements.movTypeRecordsNewBtn.textContent = `+ Novo ${typeMeta ? typeMeta.label : capitalize(movType)}`;
   elements.movTypeRecordsNewBtn.setAttribute("aria-label", `Abrir formulário de novo ${typeMeta ? typeMeta.label.toLowerCase() : movType}`);
   elements.movTypeRecordsNewBtn.onclick = () => {
+    runtime.returnToMovTypeRecords = null;
     elements.movTypeRecordsDlg.close();
     setTimeout(() => openMovementDialog(movType), 80);
   };
@@ -2779,9 +3430,13 @@ function openMovTypeRecordsDlg(movType) {
     elements.movCommercialDashboard.innerHTML = "";
   }
 
-  runtime._movTypeRecordsPage = 0;
-  renderMovTypeRecordsBody(movType, 0);
+  runtime._movTypeRecordsPage = page;
+  setMovTypeRecordsMaximized(false);
+  renderMovTypeRecordsBody(movType, page);
   elements.movTypeRecordsDlg.showModal();
+  if (maximized) {
+    setMovTypeRecordsMaximized(true);
+  }
 }
 
 function renderMovTypeRecordsBody(movType, page) {
@@ -2925,8 +3580,14 @@ function renderMovTypeRecordsBody(movType, page) {
 
     elements.movTypeRecordsBody.querySelectorAll(".edit-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
+        runtime.returnToMovTypeRecords = {
+          movType,
+          search: elements.movTypeRecordsSearch.value || "",
+          page: safePage,
+          maximized: elements.movTypeRecordsDlg.classList.contains("is-maximized")
+        };
         elements.movTypeRecordsDlg.close();
-        openEditMovementDialog(btn.dataset.farmId, btn.dataset.movementId);
+        window.requestAnimationFrame(() => openEditMovementDialog(btn.dataset.farmId, btn.dataset.movementId));
       });
     });
     elements.movTypeRecordsBody.querySelectorAll(".delete-btn").forEach((btn) => {
@@ -6859,11 +7520,21 @@ async function handleMovementSubmit(event) {
 
   // If editing, revert old movement first then remove it
   const editing = runtime.editingMovement;
+  let editingRollback = null;
+  const rollbackEditing = () => {
+    if (!editingRollback) return;
+    state.data.farms[editingRollback.farmId] = editingRollback.snapshot;
+    runtime.editingMovement = editing;
+  };
   if (editing) {
     const editFarm = state.data.farms[editing.farmId];
     if (editFarm) {
       const oldMovement = editFarm.movements.find((m) => m.id === editing.movementId);
       if (oldMovement) {
+        editingRollback = {
+          farmId: editFarm.id,
+          snapshot: cloneDeep(editFarm)
+        };
         revertMovementEffect(editFarm, oldMovement);
         editFarm.movements = editFarm.movements.filter((m) => m.id !== editing.movementId);
       }
@@ -6883,16 +7554,21 @@ async function handleMovementSubmit(event) {
 
   // Handle transfer between potreiros (no stock change, only reallocation)
   if (type === "transferencia") {
-    if (!category || !date || !quantity || quantity < 1) return;
+    if (!category || !date || !quantity || quantity < 1) {
+      rollbackEditing();
+      return;
+    }
     const originId = elements.movementPotreiro?.value || UNALLOCATED_POTREIRO_KEY;
     const destId = elements.movementPotreiroDest?.value || UNALLOCATED_POTREIRO_KEY;
     if (originId === destId) {
+      rollbackEditing();
       alert("Selecione potreiros de origem e destino diferentes para a transferência.");
       return;
     }
     ensureCategoryAllocation(category);
     const originQty = Number(category.allocation[originId] || 0);
     if (originQty < quantity) {
+      rollbackEditing();
       const originName = originId === UNALLOCATED_POTREIRO_KEY ? "Sem potreiro" : (farm.potreiros.find((p) => p.id === originId)?.name || originId);
       alert(`Apenas ${formatInteger(originQty)} animais estão alocados em "${originName}" para essa categoria.`);
       return;
@@ -6925,6 +7601,7 @@ async function handleMovementSubmit(event) {
   }
 
   if (!category || !date || !quantity || quantity < 1) {
+    rollbackEditing();
     return;
   }
 
@@ -6943,6 +7620,7 @@ async function handleMovementSubmit(event) {
     const weightKg = Number(saleMode === "carcaca" ? elements.movementCarcassKg.value : elements.movementLiveKg.value);
 
     if (!Number.isFinite(pricePerKg) || pricePerKg <= 0 || !Number.isFinite(weightKg) || weightKg <= 0) {
+      rollbackEditing();
       alert("Preencha o valor por kg e o peso da venda para calcular o total.");
       return;
     }
@@ -6963,10 +7641,12 @@ async function handleMovementSubmit(event) {
 
   const delta = getMovementDelta(type, quantity, adjustDirection);
   if (!Number.isFinite(delta)) {
+    rollbackEditing();
     return;
   }
 
   if (category.quantity + delta < 0) {
+    rollbackEditing();
     alert("A quantidade informada deixa o estoque negativo para essa categoria.");
     return;
   }
@@ -8540,7 +9220,6 @@ function ensureDataShape(data, options = {}) {
   data.auth.users = data.auth.users.map((user, index) => ({
     id: user.id || `user-${index + 1}`,
     login: user.login || `Usuário ${index + 1}`,
-    password: user.password || "",
     role: user.role || "usuario"
   }));
   data.auth.users = data.auth.users.map((user) => {
@@ -8548,7 +9227,6 @@ function ensureDataShape(data, options = {}) {
       return {
         ...user,
         login: user.login || "Hugo Balbuena",
-        password: user.password || "hugo123",
         role: user.role || "admin"
       };
     }
@@ -9265,7 +9943,15 @@ function markBackupDone() {
 
 function exportBackup() {
   const snapshot = JSON.parse(JSON.stringify(state.data));
-  snapshot.auth = { ...snapshot.auth, sessionUserId: "" };
+  snapshot.auth = {
+    ...snapshot.auth,
+    sessionUserId: "",
+    users: (snapshot.auth.users || []).map((user) => ({
+      id: user.id,
+      login: user.login,
+      role: user.role
+    }))
+  };
 
   const payload = {
     sistema: "Painel Pecuário Da Luz",
@@ -9310,7 +9996,9 @@ async function handleRestoreFile(event) {
 
     const restored = ensureDataShape(payload.dados, { preserveSnapshot: true });
     const currentSessionUserId = state.data.auth.sessionUserId;
+    const currentUsers = Array.isArray(state.data.auth.users) ? [...state.data.auth.users] : [];
     restored.selectedFarmId = TOTAL_FARM_ID;
+    restored.auth.users = currentUsers;
     restored.auth.sessionUserId = restored.auth.users.some((user) => user.id === currentSessionUserId)
       ? currentSessionUserId
       : "";
