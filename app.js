@@ -2767,7 +2767,7 @@ function openMovTypeRecordsDlg(movType) {
   elements.movTypeRecordsNewBtn.setAttribute("aria-label", `Abrir formulário de novo ${typeMeta ? typeMeta.label.toLowerCase() : movType}`);
   elements.movTypeRecordsNewBtn.onclick = () => {
     elements.movTypeRecordsDlg.close();
-    requestAnimationFrame(() => requestAnimationFrame(() => openMovementDialog(movType)));
+    setTimeout(() => openMovementDialog(movType), 80);
   };
   elements.movTypeRecordsSearch.oninput = () => renderMovTypeRecordsBody(movType, 0);
 
@@ -3851,6 +3851,7 @@ function openEditMovementDialog(farmId, movementId) {
   resetMovementPhotoDrafts();
   updateMovementFormForType(movement.type);
   elements.movementDialogTitle.textContent = `Editar ${capitalize(movement.type)}`;
+  if (elements.movementDialog.open) elements.movementDialog.close();
   elements.movementDialog.showModal();
 }
 
@@ -6042,6 +6043,7 @@ function openMovementDialog(initialType) {
   if (elements.movPurchaseValuePerHead) elements.movPurchaseValuePerHead.value = "";
   resetMovementPhotoDrafts();
   updateMovementFormForType(initialType);
+  if (elements.movementDialog.open) elements.movementDialog.close();
   elements.movementDialog.showModal();
 }
 
