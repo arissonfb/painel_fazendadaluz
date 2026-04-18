@@ -7556,12 +7556,9 @@ async function appendPdfCoverPage(doc, farms, periodLabel) {
 
   drawPdfPastureBackground(doc);
 
-  doc.setFillColor(247, 241, 229);
-  doc.circle(width / 2, 96, 28, "F");
-
   try {
-    const imageData = await loadLogoForPdf("#f7f1e5");
-    doc.addImage(imageData, "JPEG", (width / 2) - 19, 77, 38, 38);
+    const imageData = await loadLogoForPdf("#1b4d2f");
+    doc.addImage(imageData, "JPEG", (width / 2) - 45, 18, 90, 90);
   } catch (error) {
     console.warn("Não foi possível carregar o logo para a capa do PDF.", error);
   }
@@ -7569,19 +7566,19 @@ async function appendPdfCoverPage(doc, farms, periodLabel) {
   doc.setTextColor(248, 244, 236);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(24);
-  doc.text("Painel Pecuário", width / 2, 142, { align: "center" });
+  doc.text("Painel Pecuário", width / 2, 122, { align: "center" });
   doc.setFontSize(12);
-  doc.text("Estabelecimentos Da Luz", width / 2, 151, { align: "center" });
+  doc.text("Estabelecimentos Da Luz", width / 2, 131, { align: "center" });
 
   doc.setDrawColor(225, 232, 214);
   doc.setLineWidth(0.7);
-  doc.line(58, 162, width - 58, 162);
+  doc.line(58, 141, width - 58, 141);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
-  doc.text(scopeLabel, width / 2, 174, { align: "center" });
-  doc.text(`Período analisado: ${periodLabel}`, width / 2, 183, { align: "center" });
-  doc.text(`Responsável técnico: ${TECHNICAL_MANAGER_NAME}`, width / 2, 192, { align: "center" });
+  doc.text(scopeLabel, width / 2, 152, { align: "center" });
+  doc.text(`Período analisado: ${periodLabel}`, width / 2, 161, { align: "center" });
+  doc.text(`Responsável técnico: ${TECHNICAL_MANAGER_NAME}`, width / 2, 170, { align: "center" });
 
   doc.setFontSize(9.5);
   doc.setTextColor(230, 239, 223);
