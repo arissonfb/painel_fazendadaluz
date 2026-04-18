@@ -51,6 +51,8 @@ Este repositorio agora inclui um arquivo `render.yaml` na raiz com os tres recur
 
 - O backend usa `DATABASE_URL`, que sera preenchido automaticamente a partir do banco definido no Blueprint.
 - O frontend ja esta apontando para `https://painel-pecuario-api.onrender.com`, entao o nome do servico da API no Render precisa continuar `painel-pecuario-api`.
+- O primeiro login publicado no Render usa `admin` como usuario e o valor de `ADMIN_BOOTSTRAP_PASSWORD` como senha.
+- Se a API tiver subido antes de `ADMIN_BOOTSTRAP_PASSWORD` ser configurado, defina a variavel no Render e faca um novo deploy para o usuario `admin` ser criado.
 - Se voce ja tiver servicos existentes no Render gerenciados por outro Blueprint, nao sincronize os mesmos recursos com dois Blueprints diferentes.
 
 ## Observacao importante

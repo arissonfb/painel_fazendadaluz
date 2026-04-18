@@ -28,6 +28,24 @@ function normalizeRole(role) {
   return role === "admin" ? "admin" : "usuario";
 }
 
+async function ensureBootstrapAdmin(client) {
+  if (!ADMIN_BOOTSTRAP_PASSWORD) {
+    return false;
+  }
+
+  const passwordHash = await bcrypt.hash(ADMIN_BOOTSTRAP_PASSWORD, 10);
+  const result = await client.query(
+    `INSERT INTO users(username,password_hash,role)
+     VALUES($1,$2,$3)
+     ON CONFLICT (username) DO UPDATE
+     SET password_hash = EXCLUDED.password_hash,
+         role = EXCLUDED.role
+     RETURNING id`,
+    ["admin", passwordHash, "admin"]
+  );
+  return Boolean(result.rowCount);
+}
+
 function authMiddleware(req, res, next) {
   const header = req.headers.authorization;
   if (!header) {
@@ -62,7 +80,12 @@ app.post("/api/auth/login", async (req, res) => {
   }
 
   try {
-    const result = await pool.query("SELECT id,username,password_hash,role,created_at FROM users WHERE username=$1", [username.trim()]);
+    const normalizedUsername = String(username).trim();
+    if (normalizedUsername === "admin" && ADMIN_BOOTSTRAP_PASSWORD) {
+      await ensureBootstrapAdmin(pool);
+    }
+
+    const result = await pool.query("SELECT id,username,password_hash,role,created_at FROM users WHERE username=$1", [normalizedUsername]);
     if (!result.rowCount) {
       return res.status(401).json({ error: "Usuario ou senha incorretos." });
     }
@@ -340,15 +363,11 @@ async function initDB() {
     await client.query("ALTER TABLE users ALTER COLUMN role SET DEFAULT 'usuario'");
     await client.query("UPDATE users SET role='usuario' WHERE role IS NULL OR role='' OR role='user'");
 
-    const existingAdmin = await client.query("SELECT id FROM users WHERE username=$1", ["admin"]);
-    if (!existingAdmin.rowCount) {
-      if (!ADMIN_BOOTSTRAP_PASSWORD) {
-        console.warn("Nenhum admin encontrado e ADMIN_BOOTSTRAP_PASSWORD nao definido. Crie o usuario admin manualmente.");
-      } else {
-        const passwordHash = await bcrypt.hash(ADMIN_BOOTSTRAP_PASSWORD, 10);
-        await client.query("INSERT INTO users(username,password_hash,role) VALUES($1,$2,$3)", ["admin", passwordHash, "admin"]);
-        console.log("Admin bootstrap criado a partir de ADMIN_BOOTSTRAP_PASSWORD.");
-      }
+    if (!ADMIN_BOOTSTRAP_PASSWORD) {
+      console.warn("ADMIN_BOOTSTRAP_PASSWORD nao definido. O usuario admin nao sera criado automaticamente.");
+    } else {
+      await ensureBootstrapAdmin(client);
+      console.log("Usuario admin garantido a partir de ADMIN_BOOTSTRAP_PASSWORD.");
     }
 
     console.log("Banco inicializado.");
