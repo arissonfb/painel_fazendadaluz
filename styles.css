@@ -381,10 +381,18 @@ body::before {
 
 .topbar-side {
   display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
   min-width: 0;
+}
+
+.topbar-chips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .sync-status {
@@ -809,7 +817,8 @@ body::before {
 .period-controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px;
+  align-items: center;
 }
 
 .farm-btn,
@@ -839,10 +848,19 @@ input {
 }
 
 .period-controls label {
-  display: grid;
-  gap: 8px;
-  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.82rem;
+  font-weight: 600;
   color: var(--muted);
+}
+
+.period-controls select {
+  min-height: 36px;
+  font-size: 0.88rem;
+  padding: 0 10px;
+  border-radius: 10px;
 }
 
 select,
@@ -3793,8 +3811,17 @@ th {
   }
 
   .topbar-side,
+  .topbar-chips,
   .period-controls {
     width: 100%;
+  }
+
+  .topbar-side {
+    align-items: stretch;
+  }
+
+  .topbar-chips {
+    justify-content: flex-start;
   }
 
   .sidebar {

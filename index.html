@@ -119,6 +119,13 @@
             <strong id="dashboardFarmLabel">Painel de Controle de Todas as Fazendas</strong>
           </div>
           <div class="topbar-side">
+            <div class="topbar-chips">
+              <div class="sync-status" id="syncStatusWrap">
+                <span class="chip sync-chip" id="syncStatusChip">Local</span>
+                <button type="button" class="ghost-btn sync-retry-btn" id="syncRetryButton" hidden>Recarregar</button>
+              </div>
+              <span class="chip" id="currentUserLabel">Usuário</span>
+            </div>
             <div class="period-controls">
               <label>
                 Ano
@@ -131,11 +138,6 @@
                 </select>
               </label>
             </div>
-            <div class="sync-status" id="syncStatusWrap">
-              <span class="chip sync-chip" id="syncStatusChip">Local</span>
-              <button type="button" class="ghost-btn sync-retry-btn" id="syncRetryButton" hidden>Recarregar</button>
-            </div>
-            <span class="chip" id="currentUserLabel">Usuário</span>
           </div>
         </section>
         <div class="api-notice" id="apiNotice" hidden></div>
