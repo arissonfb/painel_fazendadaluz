@@ -7592,8 +7592,6 @@ function appendFarmDividerPage(doc, farm, periodLabel, year, month, sectionIndex
   const monthly = summarizePeriod(farm, year, month);
   const sanitarySummary = getSanitarySummary(farm, year, month);
   const monthlySummary = getMonthlySummary(farm, year, month);
-  const registeredPotreiros = getPotreroEntries(farm).length;
-
   doc.setFillColor(242, 238, 228);
   doc.rect(0, 0, width, height, "F");
 
@@ -7623,9 +7621,7 @@ function appendFarmDividerPage(doc, farm, periodLabel, year, month, sectionIndex
   const cards = [
     { label: "Estoque atual", value: `${formatInteger(getFarmTotal(farm))} animais` },
     { label: "Movimentações", value: formatInteger(monthly.totalMovements) },
-    { label: "Potreiros cadastrados", value: formatInteger(registeredPotreiros) },
     { label: "Registros sanitários", value: formatInteger(sanitarySummary.totalApplications) },
-    { label: "Dados mensais", value: formatInteger(monthlySummary.count) },
     { label: "Valor atribuído", value: formatCurrency(monthlySummary.totalValue) }
   ];
 
