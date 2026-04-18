@@ -2123,6 +2123,7 @@ function bindEvents() {
   });
 
   document.getElementById("exportSanitaryPdfBtn")?.addEventListener("click", exportSanitaryPdfReport);
+  document.getElementById("exportSanitaryPdfMainBtn")?.addEventListener("click", exportSanitaryPdfReport);
 
   elements.potreirosShortcut.addEventListener("click", () => {
     state.activeView = "potreiros";
@@ -8294,9 +8295,6 @@ async function appendFarmPdfSection(doc, farm, periodLabel, year, month) {
   const monthly = summarizePeriod(farm, year, month);
   const saleSummary = summarizeSalePeriod(farm, year, month);
   const purchaseSummary = summarizePurchasePeriod(farm, year, month);
-  const sanitarySummary = getSanitarySummary(farm, year, month);
-  const sanitaryRecords = [...getFilteredSanitaryRecords(farm, year, month)].sort((a, b) => new Date(a.date) - new Date(b.date));
-
   const topY = await addPdfHeader(doc, farm, periodLabel, monthly);
 
   const { width } = getPdfPageSize(doc);
@@ -8345,9 +8343,6 @@ async function appendFarmPdfSection(doc, farm, periodLabel, year, month) {
 
   appendPdfSectionTitle(doc, `Evolução Cronológica – ${year}`);
   appendChronologicalEvolutionPdfTable(doc, farm, year);
-
-  appendPdfSectionTitle(doc, "Manejo Sanitário");
-  appendSanitaryByProductPdfTable(doc, sanitaryRecords);
 }
 
 async function exportSanitaryPdfReport() {
