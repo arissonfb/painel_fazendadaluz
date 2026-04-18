@@ -8009,112 +8009,349 @@ async function appendMovementPhotoPages(doc, farm, year, month) {
   }
 }
 
+function appendPdfSectionTitle(doc, title, startY) {
+  doc.autoTable({
+    startY: startY !== undefined ? startY : (doc.lastAutoTable ? doc.lastAutoTable.finalY + 8 : 55),
+    head: [[{ content: title, styles: { halign: "left" } }]],
+    body: [],
+    theme: "plain",
+    headStyles: {
+      fillColor: [37, 88, 58],
+      textColor: [255, 252, 245],
+      fontSize: 9.5,
+      fontStyle: "bold",
+      cellPadding: { top: 3, bottom: 3, left: 5, right: 5 }
+    },
+    margin: { left: 14, right: 14 }
+  });
+}
+
+function appendInventoryWithPercentTable(doc, farm) {
+  const total = getFarmTotal(farm);
+  const rows = farm.categories.map((cat) => [
+    cat.name,
+    formatInteger(cat.quantity),
+    total > 0 ? `${((cat.quantity / total) * 100).toFixed(1)}%` : "0,0%"
+  ]);
+  if (!rows.length) rows.push(["Sem categorias cadastradas", "0", "0,0%"]);
+  doc.autoTable({
+    startY: doc.lastAutoTable ? doc.lastAutoTable.finalY + 2 : 55,
+    head: [["Categoria", "Quantidade", "% do rebanho"]],
+    body: rows,
+    foot: [["Total", formatInteger(total), "100%"]],
+    theme: "striped",
+    headStyles: { fillColor: [51, 92, 67] },
+    footStyles: { fillColor: [237, 244, 238], fontStyle: "bold", textColor: [30, 60, 40] },
+    alternateRowStyles: { fillColor: [245, 250, 246] },
+    margin: { left: 14, right: 14 }
+  });
+}
+
+function appendPurchasesByCategoryPdfTable(doc, purchaseSummary) {
+  const byCategory = {};
+  purchaseSummary.movements.forEach((m) => {
+    const cat = m.categoryName || "Sem categoria";
+    if (!byCategory[cat]) byCategory[cat] = { qty: 0, value: 0 };
+    byCategory[cat].qty += Number(m.quantity || 0);
+    byCategory[cat].value += Number(m.value || 0);
+  });
+  const rows = Object.entries(byCategory)
+    .sort((a, b) => b[1].qty - a[1].qty)
+    .map(([cat, data]) => [
+      cat,
+      formatInteger(data.qty),
+      formatCurrency(data.value),
+      data.qty > 0 ? formatCurrency(data.value / data.qty) : "-"
+    ]);
+  if (!rows.length) {
+    rows.push(["Sem compras no período", "-", "-", "-"]);
+  } else {
+    rows.push(["TOTAL", formatInteger(purchaseSummary.totalAnimals), formatCurrency(purchaseSummary.totalValue),
+      purchaseSummary.totalAnimals > 0 ? formatCurrency(purchaseSummary.totalValue / purchaseSummary.totalAnimals) : "-"]);
+  }
+  doc.autoTable({
+    startY: doc.lastAutoTable ? doc.lastAutoTable.finalY + 2 : 55,
+    head: [["Categoria", "Qtd. animais", "Custo total", "Custo/cab."]],
+    body: rows,
+    theme: "striped",
+    headStyles: { fillColor: [79, 115, 168] },
+    alternateRowStyles: { fillColor: [240, 246, 255] },
+    margin: { left: 14, right: 14 }
+  });
+}
+
+function appendSalesByCategoryPdfTable(doc, saleSummary) {
+  const byCategory = {};
+  saleSummary.movements.forEach((m) => {
+    const cat = m.categoryName || "Sem categoria";
+    if (!byCategory[cat]) byCategory[cat] = { qty: 0, value: 0, liveKg: 0 };
+    byCategory[cat].qty += Number(m.quantity || 0);
+    byCategory[cat].value += Number(m.value || 0);
+    if (m.saleDetails && (m.saleDetails.mode || "vivo") !== "carcaca") {
+      byCategory[cat].liveKg += Number(m.saleDetails.weightKg || 0);
+    }
+  });
+  const totalQty = saleSummary.movements.reduce((s, m) => s + Number(m.quantity || 0), 0);
+  const rows = Object.entries(byCategory)
+    .sort((a, b) => b[1].value - a[1].value)
+    .map(([cat, data]) => [
+      cat,
+      formatInteger(data.qty),
+      data.liveKg > 0 ? formatWeight(data.liveKg) : "-",
+      formatCurrency(data.value),
+      data.liveKg > 0 ? formatCurrency(data.value / data.liveKg) : "-"
+    ]);
+  if (!rows.length) {
+    rows.push(["Sem vendas no período", "-", "-", "-", "-"]);
+  } else {
+    rows.push(["TOTAL", formatInteger(totalQty), formatWeight(saleSummary.liveKg),
+      formatCurrency(saleSummary.totalValue),
+      saleSummary.liveKg > 0 ? formatCurrency(saleSummary.totalValue / saleSummary.liveKg) : "-"]);
+  }
+  doc.autoTable({
+    startY: doc.lastAutoTable ? doc.lastAutoTable.finalY + 2 : 55,
+    head: [["Categoria", "Qtd. animais", "Kg vivo", "Receita total", "R$/kg vivo"]],
+    body: rows,
+    theme: "striped",
+    headStyles: { fillColor: [201, 140, 79] },
+    alternateRowStyles: { fillColor: [255, 247, 237] },
+    margin: { left: 14, right: 14 }
+  });
+}
+
+function appendChronologicalEvolutionPdfTable(doc, farm, year) {
+  let totalBuyQty = 0, totalBuyVal = 0, totalSellQty = 0, totalSellVal = 0;
+  const rows = [];
+  for (let m = 1; m <= 12; m++) {
+    const monthStr = String(m).padStart(2, "0");
+    const purchase = summarizePurchasePeriod(farm, year, monthStr);
+    const sale = summarizeSalePeriod(farm, year, monthStr);
+    if (purchase.count === 0 && sale.count === 0) continue;
+    const saldo = sale.totalValue - purchase.totalValue;
+    rows.push([
+      MONTH_NAMES[m - 1],
+      formatInteger(purchase.count),
+      formatCurrency(purchase.totalValue),
+      formatInteger(sale.count),
+      formatCurrency(sale.totalValue),
+      `${saldo >= 0 ? "+" : ""}${formatCurrency(saldo)}`
+    ]);
+    totalBuyQty += purchase.count;
+    totalBuyVal += purchase.totalValue;
+    totalSellQty += sale.count;
+    totalSellVal += sale.totalValue;
+  }
+  if (!rows.length) {
+    rows.push(["Sem movimentações no ano", "-", "-", "-", "-", "-"]);
+  } else {
+    const totalSaldo = totalSellVal - totalBuyVal;
+    rows.push(["TOTAL", formatInteger(totalBuyQty), formatCurrency(totalBuyVal),
+      formatInteger(totalSellQty), formatCurrency(totalSellVal),
+      `${totalSaldo >= 0 ? "+" : ""}${formatCurrency(totalSaldo)}`]);
+  }
+  doc.autoTable({
+    startY: doc.lastAutoTable ? doc.lastAutoTable.finalY + 2 : 55,
+    head: [["Mês", "Compras (op.)", "Custo compras", "Vendas (op.)", "Receita vendas", "Saldo"]],
+    body: rows,
+    theme: "striped",
+    headStyles: { fillColor: [37, 88, 58] },
+    alternateRowStyles: { fillColor: [240, 248, 242] },
+    margin: { left: 14, right: 14 }
+  });
+}
+
+function appendSanitaryByProductPdfTable(doc, sanitaryRecords) {
+  const byProduct = {};
+  sanitaryRecords.forEach((record) => {
+    const product = record.product || "Produto não informado";
+    if (!byProduct[product]) byProduct[product] = { applications: 0, animals: 0, lastDate: "" };
+    byProduct[product].applications += 1;
+    byProduct[product].animals += Number(record.quantity || 0);
+    if (!byProduct[product].lastDate || record.date > byProduct[product].lastDate) {
+      byProduct[product].lastDate = record.date;
+    }
+  });
+  const rows = Object.entries(byProduct)
+    .sort((a, b) => b[1].applications - a[1].applications)
+    .map(([product, data]) => [
+      product,
+      formatInteger(data.applications),
+      formatInteger(data.animals),
+      data.lastDate ? formatDate(data.lastDate) : "-"
+    ]);
+  if (!rows.length) rows.push(["Sem registros sanitários no período", "-", "-", "-"]);
+  doc.autoTable({
+    startY: doc.lastAutoTable ? doc.lastAutoTable.finalY + 2 : 55,
+    head: [["Produto / Vacina", "Aplicações", "Animais tratados", "Último uso"]],
+    body: rows,
+    theme: "striped",
+    headStyles: { fillColor: [55, 91, 67] },
+    alternateRowStyles: { fillColor: [240, 248, 242] },
+    margin: { left: 14, right: 14 }
+  });
+}
+
 function appendConsolidatedPdfIntro(doc, farms, periodLabel, year, month) {
-  const totals = farms.reduce((summary, farm) => {
-    const monthly = summarizePeriod(farm, year, month);
-    const saleSummary = summarizeSalePeriod(farm, year, month);
-    const sanitarySummary = getSanitarySummary(farm, year, month);
-    const monthlySummary = getMonthlySummary(farm, year, month);
-    summary.animals += getFarmTotal(farm);
-    summary.allocatedAnimals += getRegisteredPotreroAnimals(farm);
-    summary.potreiros += getPotreroEntries(farm).length;
-    summary.movements += monthly.totalMovements;
-    summary.salesValue += saleSummary.totalValue;
-    summary.sanitaryRecords += sanitarySummary.totalApplications;
-    summary.monthlyRecords += monthlySummary.count;
-    summary.monthlyValue += monthlySummary.totalValue;
-    return summary;
-  }, { animals: 0, allocatedAnimals: 0, potreiros: 0, movements: 0, salesValue: 0, sanitaryRecords: 0, monthlyRecords: 0, monthlyValue: 0 });
+  const totals = farms.reduce((acc, farm) => {
+    const sale = summarizeSalePeriod(farm, year, month);
+    const purchase = summarizePurchasePeriod(farm, year, month);
+    const sanitary = getSanitarySummary(farm, year, month);
+    acc.animals += getFarmTotal(farm);
+    acc.salesValue += sale.totalValue;
+    acc.salesQty += sale.count;
+    acc.purchasesValue += purchase.totalValue;
+    acc.purchasesQty += purchase.count;
+    acc.sanitaryCount += sanitary.totalApplications;
+    acc.treatedAnimals += sanitary.treatedAnimals;
+    return acc;
+  }, { animals: 0, salesValue: 0, salesQty: 0, purchasesValue: 0, purchasesQty: 0, sanitaryCount: 0, treatedAnimals: 0 });
+
+  const { width } = getPdfPageSize(doc);
+  const margin = 14;
+  const saldo = totals.salesValue - totals.purchasesValue;
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(20);
-  doc.text("Estabelecimentos Da Luz", 14, 18);
-  doc.setFontSize(16);
-  doc.text("Relatório consolidado de fazendas", 14, 28);
+  doc.setFontSize(18);
+  doc.setTextColor(27, 77, 47);
+  doc.text("Grupo Estabelecimentos Da Luz", margin, 16);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10.5);
-  doc.text(`Período analisado: ${periodLabel}`, 14, 36);
-  doc.text(`Responsável técnico: ${TECHNICAL_MANAGER_NAME}`, 14, 42);
+  doc.setTextColor(87, 69, 52);
+  doc.text(`Visão consolidada · ${periodLabel} · ${formatInteger(farms.length)} fazendas`, margin, 23);
+  doc.setTextColor(45, 35, 25);
 
-  doc.autoTable({
-    startY: 50,
-    head: [["Indicador consolidado", "Valor"]],
-    body: [
-      ["Fazendas selecionadas", formatInteger(farms.length)],
-      ["Estoque consolidado", `${formatInteger(totals.animals)} animais`],
-      ["Potreiros cadastrados", formatInteger(totals.potreiros)],
-      ["Animais alocados em potreiros", `${formatInteger(totals.allocatedAnimals)} animais`],
-      ["Movimentações no período", formatInteger(totals.movements)],
-      ["Dados mensais no período", formatInteger(totals.monthlyRecords)],
-      ["Valor mensal atribuído", formatCurrency(totals.monthlyValue)],
-      ["Faturamento de vendas", formatCurrency(totals.salesValue)],
-      ["Registros sanitários", formatInteger(totals.sanitaryRecords)]
-    ],
-    theme: "striped",
-    headStyles: { fillColor: [76, 64, 50] }
+  const kpis = [
+    { label: "Total de animais", value: formatInteger(totals.animals), color: [37, 88, 58] },
+    { label: "Compras realizadas", value: `${formatInteger(totals.purchasesQty)} op.`, color: [79, 115, 168] },
+    { label: "Custo total de compras", value: formatCurrency(totals.purchasesValue), color: [60, 90, 145] },
+    { label: "Vendas realizadas", value: `${formatInteger(totals.salesQty)} op.`, color: [195, 130, 65] },
+    { label: "Receita total de vendas", value: formatCurrency(totals.salesValue), color: [170, 110, 50] },
+    { label: "Saldo financeiro", value: formatCurrency(Math.abs(saldo)), sub: saldo >= 0 ? "positivo" : "negativo", color: saldo >= 0 ? [55, 91, 67] : [140, 60, 50] },
+    { label: "Aplicações sanitárias", value: formatInteger(totals.sanitaryCount), color: [80, 110, 60] },
+    { label: "Animais tratados", value: formatInteger(totals.treatedAnimals), color: [65, 90, 50] }
+  ];
+
+  const cardsPerRow = 4;
+  const gap = 4;
+  const cardW = (width - margin * 2 - gap * (cardsPerRow - 1)) / cardsPerRow;
+  const cardH = 26;
+  const startY = 28;
+
+  kpis.forEach((kpi, i) => {
+    const col = i % cardsPerRow;
+    const row = Math.floor(i / cardsPerRow);
+    const x = margin + col * (cardW + gap);
+    const y = startY + row * (cardH + 4);
+    doc.setFillColor(...kpi.color);
+    doc.roundedRect(x, y, cardW, cardH, 3, 3, "F");
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+    doc.setTextColor(200, 195, 180);
+    doc.text(kpi.label, x + 4, y + 7);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(255, 252, 245);
+    doc.text(kpi.value, x + 4, y + 18);
+    if (kpi.sub) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(200, 195, 180);
+      doc.text(kpi.sub, x + 4, y + 24);
+    }
   });
 
+  const tableY = startY + Math.ceil(kpis.length / cardsPerRow) * (cardH + 4) + 6;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(27, 77, 47);
+  doc.text("Comparativo por fazenda", margin, tableY);
+
   doc.autoTable({
-    startY: doc.lastAutoTable.finalY + 10,
-    head: [["Fazenda", "Estoque", "Potreiros", "Alocados", "Mov.", "Dados", "Valor mensal", "Vendas", "Sanitário"]],
+    startY: tableY + 4,
+    head: [["Fazenda", "Animais", "Compras (op.)", "Custo compras", "Vendas (op.)", "Receita vendas", "Saldo", "Sanitário"]],
     body: farms.map((farm) => {
-      const monthly = summarizePeriod(farm, year, month);
-      const saleSummary = summarizeSalePeriod(farm, year, month);
-      const sanitarySummary = getSanitarySummary(farm, year, month);
-      const monthlySummary = getMonthlySummary(farm, year, month);
+      const sale = summarizeSalePeriod(farm, year, month);
+      const purchase = summarizePurchasePeriod(farm, year, month);
+      const sanitary = getSanitarySummary(farm, year, month);
+      const farmSaldo = sale.totalValue - purchase.totalValue;
       return [
         farm.name,
         formatInteger(getFarmTotal(farm)),
-        formatInteger(getPotreroEntries(farm).length),
-        formatInteger(getRegisteredPotreroAnimals(farm)),
-        formatInteger(monthly.totalMovements),
-        formatInteger(monthlySummary.count),
-        formatCurrency(monthlySummary.totalValue),
-        formatCurrency(saleSummary.totalValue),
-        formatInteger(sanitarySummary.totalApplications)
+        formatInteger(purchase.count),
+        formatCurrency(purchase.totalValue),
+        formatInteger(sale.count),
+        formatCurrency(sale.totalValue),
+        `${farmSaldo >= 0 ? "+" : ""}${formatCurrency(farmSaldo)}`,
+        formatInteger(sanitary.totalApplications)
       ];
     }),
     theme: "striped",
-    headStyles: { fillColor: [51, 92, 67] },
-    styles: { fontSize: 8.5, cellPadding: 2 }
+    headStyles: { fillColor: [37, 88, 58], fontSize: 8 },
+    styles: { fontSize: 8.5, cellPadding: 2.5 },
+    alternateRowStyles: { fillColor: [245, 250, 246] },
+    margin: { left: 14, right: 14 }
   });
 }
 
 async function appendFarmPdfSection(doc, farm, periodLabel, year, month) {
   const monthly = summarizePeriod(farm, year, month);
-  const annual = summarizePeriod(farm, year, "all");
   const saleSummary = summarizeSalePeriod(farm, year, month);
   const purchaseSummary = summarizePurchasePeriod(farm, year, month);
   const sanitarySummary = getSanitarySummary(farm, year, month);
   const sanitaryRecords = [...getFilteredSanitaryRecords(farm, year, month)].sort((a, b) => new Date(a.date) - new Date(b.date));
-  const monthlySummary = getMonthlySummary(farm, year, month);
-  const monthlyRecords = [...monthlySummary.records].sort((a, b) => a.period < b.period ? 1 : -1);
-  const potreroTotals = getPotreroTotals(farm);
-  const unifiedHistory = getUnifiedHistoryRecords(farm, { scope: "single" }).filter((record) => {
-    if (!record.date || !String(record.date).startsWith(String(year))) return false;
-    if (month === "all") return true;
-    return String(record.date).slice(5, 7) === String(month).padStart(2, "0");
-  }).slice(0, 50);
-  const insights = getOperationalInsights(farm, year, month);
-  const discrepancy = getDiscrepancy(farm);
+
   const topY = await addPdfHeader(doc, farm, periodLabel, monthly);
 
-  appendExecutivePdfTable(doc, farm, monthly, discrepancy, topY);
-  appendInventoryPdfTable(doc, farm);
-  appendOperationalPdfTable(doc, monthly, annual, saleSummary);
+  const { width } = getPdfPageSize(doc);
+  const margin = 14;
+  const saldo = saleSummary.totalValue - purchaseSummary.totalValue;
+  const kpis = [
+    { label: "Estoque atual", value: `${formatInteger(getFarmTotal(farm))} animais`, color: [37, 88, 58] },
+    { label: "Receita de vendas", value: formatCurrency(saleSummary.totalValue), color: [195, 130, 65] },
+    { label: "Custo de compras", value: formatCurrency(purchaseSummary.totalValue), color: [79, 115, 168] },
+    { label: "Saldo financeiro", value: formatCurrency(Math.abs(saldo)), sub: saldo >= 0 ? "positivo" : "negativo", color: saldo >= 0 ? [55, 91, 67] : [140, 60, 50] }
+  ];
+  const cardW = (width - margin * 2 - 12) / 4;
+  const cardH = 22;
+  kpis.forEach((kpi, i) => {
+    const x = margin + i * (cardW + 4);
+    doc.setFillColor(...kpi.color);
+    doc.roundedRect(x, topY, cardW, cardH, 3, 3, "F");
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+    doc.setTextColor(200, 195, 180);
+    doc.text(kpi.label, x + 4, topY + 7);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9.5);
+    doc.setTextColor(255, 252, 245);
+    doc.text(kpi.value, x + 4, topY + 16);
+    if (kpi.sub) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(200, 195, 180);
+      doc.text(kpi.sub, x + 4, topY + 21);
+    }
+  });
+
+  const afterCardsY = topY + cardH + 6;
+
+  appendPdfSectionTitle(doc, "Estoque por Categoria", afterCardsY);
+  appendInventoryWithPercentTable(doc, farm);
+
+  appendPdfSectionTitle(doc, "Compras no Período");
+  appendPurchasesByCategoryPdfTable(doc, purchaseSummary);
+
+  appendPdfSectionTitle(doc, "Vendas no Período");
+  appendSalesByCategoryPdfTable(doc, saleSummary);
+
   appendFinancialBalancePdfTable(doc, saleSummary, purchaseSummary);
-  appendSaleSummaryPdfTable(doc, saleSummary);
-  appendSaleDetailsPdfTable(doc, saleSummary);
-  appendPurchaseSummaryPdfTable(doc, purchaseSummary);
-  appendPurchaseDetailsPdfTable(doc, purchaseSummary);
-  appendPotreroPdfTable(doc, potreroTotals);
-  appendMonthlySummaryPdfTable(doc, monthlySummary);
-  appendMonthlyDetailsPdfTable(doc, farm, monthlyRecords);
-  appendSanitarySummaryPdfTable(doc, sanitarySummary);
-  appendSanitaryDetailsPdfTable(doc, sanitaryRecords);
-  appendInsightsPdfTable(doc, insights);
-  appendUnifiedHistoryPdfTable(doc, unifiedHistory);
-  await appendMovementPhotoPages(doc, farm, year, month);
+
+  appendPdfSectionTitle(doc, `Evolução Cronológica – ${year}`);
+  appendChronologicalEvolutionPdfTable(doc, farm, year);
+
+  appendPdfSectionTitle(doc, "Manejo Sanitário");
+  appendSanitaryByProductPdfTable(doc, sanitaryRecords);
 }
 
 async function exportSanitaryPdfReport() {
