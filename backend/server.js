@@ -46,6 +46,7 @@ async function ensureBootstrapAdmin(client) {
   return Boolean(result.rowCount);
 }
 
+
 function authMiddleware(req, res, next) {
   const header = req.headers.authorization;
   if (!header) {

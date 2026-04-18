@@ -3154,34 +3154,50 @@ function renderConsolidatedCategories(farms, isTotalView) {
   }
 
   elements.globalCategoryBreakdown.innerHTML = `
-    <div class="consolidated-categories-header">
-      <p class="panel-kicker">Estoque por categoria</p>
-      <h3>Consolidado do rebanho — todas as fazendas</h3>
-      <span class="chip">${formatInteger(grandTotal)} animais</span>
-    </div>
-    <div class="consolidated-categories-table">
-      <div class="cat-table-head">
-        <span>Categoria</span>
-        <span>Fazendas</span>
-        <span>Animais</span>
-        <span>% do rebanho</span>
+    <div class="cat-collapse-card">
+      <div class="cat-collapse-header">
+        <div class="cat-collapse-info">
+          <p class="panel-kicker">Estoque por categoria</p>
+          <h3>Consolidado do rebanho — todas as fazendas</h3>
+        </div>
+        <span class="chip">${formatInteger(grandTotal)} animais</span>
+        <button class="cat-expand-btn" type="button" aria-expanded="false">Expandir</button>
       </div>
-      ${sorted.map((cat) => {
-        const pct = grandTotal > 0 ? (cat.quantity / grandTotal * 100) : 0;
-        return `
-          <div class="cat-table-row">
-            <span class="cat-name">${escapeHtml(cat.name)}</span>
-            <span class="cat-farms">${[...cat.farms].map(escapeHtml).join(", ")}</span>
-            <strong class="cat-qty">${formatInteger(cat.quantity)}</strong>
-            <span class="cat-pct">
-              <span class="cat-pct-bar" style="width:${Math.min(pct, 100).toFixed(1)}%"></span>
-              <span class="cat-pct-label">${pct.toFixed(1)}%</span>
-            </span>
+      <div class="cat-collapse-body" hidden>
+        <div class="consolidated-categories-table">
+          <div class="cat-table-head">
+            <span>Categoria</span>
+            <span>Fazendas</span>
+            <span>Animais</span>
+            <span>% do rebanho</span>
           </div>
-        `;
-      }).join("")}
+          ${sorted.map((cat) => {
+            const pct = grandTotal > 0 ? (cat.quantity / grandTotal * 100) : 0;
+            return `
+              <div class="cat-table-row">
+                <span class="cat-name">${escapeHtml(cat.name)}</span>
+                <span class="cat-farms">${[...cat.farms].map(escapeHtml).join(", ")}</span>
+                <strong class="cat-qty">${formatInteger(cat.quantity)}</strong>
+                <span class="cat-pct">
+                  <span class="cat-pct-bar" style="width:${Math.min(pct, 100).toFixed(1)}%"></span>
+                  <span class="cat-pct-label">${pct.toFixed(1)}%</span>
+                </span>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      </div>
     </div>
   `;
+
+  const btn = elements.globalCategoryBreakdown.querySelector(".cat-expand-btn");
+  const body = elements.globalCategoryBreakdown.querySelector(".cat-collapse-body");
+  btn.addEventListener("click", () => {
+    const isOpen = !body.hidden;
+    body.hidden = isOpen;
+    btn.textContent = isOpen ? "Expandir" : "Recolher";
+    btn.setAttribute("aria-expanded", String(!isOpen));
+  });
 }
 
 function renderFinancialPanel(farms, isTotalView) {
