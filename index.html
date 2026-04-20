@@ -94,6 +94,7 @@
           <span class="sidebar-label">Acesso rápido</span>
           <button type="button" class="sidebar-shortcut" id="sanitaryShortcut">Manejo Sanitário</button>
           <button type="button" class="sidebar-shortcut" id="potreirosShortcut">Potreiros</button>
+          <button type="button" class="sidebar-shortcut" id="reproducaoShortcut">Reprodução</button>
           <button type="button" class="sidebar-shortcut shortcut-compras" id="quickComprasBtn">Registros de Compra</button>
           <button type="button" class="sidebar-shortcut shortcut-vendas" id="quickVendasBtn">Registros de Venda</button>
           <button type="button" class="sidebar-shortcut" id="manageUsersButton">Usuários</button>
@@ -512,6 +513,85 @@
           </div>
           <p class="field-note" style="margin-bottom:18px">Clique em uma fazenda para ver os potreiros e a quantidade de animais em cada campo.</p>
           <div id="potreirosAccordion"></div>
+        </section>
+      </div>
+
+      <div id="reproducaoView" hidden>
+        <section class="panel sanitary-toolbar">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">Programa reprodutivo</p>
+              <h2>Controle de Reprodução do Rebanho</h2>
+            </div>
+            <button type="button" class="register-gold-btn" id="repRegisterBtn">
+              <span class="register-gold-plus">+</span>
+              Registrar Evento
+            </button>
+          </div>
+          <div class="farm-switch rep-farm-switch" id="repFarmSwitch"></div>
+        </section>
+
+        <section class="rep-summary-section" id="repSummarySection"></section>
+
+        <section class="content-grid">
+          <article class="panel chart-panel rep-chart-wide">
+            <div class="panel-header">
+              <div>
+                <p class="panel-kicker">Desempenho por fazenda</p>
+                <h2>Inseminações, Entouradas e Resultados</h2>
+              </div>
+            </div>
+            <canvas id="repBarChart" aria-label="Gráfico de reprodução por fazenda"></canvas>
+          </article>
+          <article class="panel chart-panel">
+            <div class="panel-header">
+              <div>
+                <p class="panel-kicker">Taxa geral</p>
+                <h2>Prenha × Falhada</h2>
+              </div>
+            </div>
+            <div class="rep-donut-wrap">
+              <canvas id="repDonutChart" aria-label="Gráfico de taxa de sucesso reprodutivo"></canvas>
+            </div>
+            <div id="repDonutLegend" class="rep-donut-legend"></div>
+          </article>
+        </section>
+
+        <section class="san-history-section">
+          <article class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="panel-kicker">Histórico de eventos reprodutivos</p>
+                <h2>Registros de Reprodução</h2>
+              </div>
+            </div>
+            <div class="san-history-toolbar">
+              <input type="search" id="repHistorySearch" class="movements-search-input" placeholder="Buscar por código, fazenda, categoria, potreiro…">
+              <div class="movements-pagination" id="repHistoryPagination"></div>
+            </div>
+            <div class="table-wrap">
+              <table class="sanitary-table">
+                <thead>
+                  <tr>
+                    <th>Código</th>
+                    <th>Fazenda</th>
+                    <th>Tipo</th>
+                    <th>Data Evento</th>
+                    <th>Categoria</th>
+                    <th>Qtd.</th>
+                    <th>Potreiro</th>
+                    <th>Data Verif.</th>
+                    <th>Prenha</th>
+                    <th>Falhada</th>
+                    <th>% Prenhez</th>
+                    <th>Obs.</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="repTableBody"></tbody>
+              </table>
+            </div>
+          </article>
         </section>
       </div>
         </main>
@@ -1100,6 +1180,10 @@
       <span class="mobile-nav-icon">🌿</span>
       <span>Potreiros</span>
     </button>
+    <button type="button" class="mobile-nav-btn" id="mobileNavReproducao">
+      <span class="mobile-nav-icon">🐂</span>
+      <span>Reprodução</span>
+    </button>
     <button type="button" class="mobile-nav-btn" id="mobileNavFarms">
       <span class="mobile-nav-icon">🐄</span>
       <span>Fazendas</span>
@@ -1176,6 +1260,101 @@
           </thead>
           <tbody id="auditTrailBody"></tbody>
         </table>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Modal: Registro de Evento Reprodutivo -->
+  <dialog id="reproducaoDlg" class="modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <p class="panel-kicker">Reprodução</p>
+          <h2 id="repDlgTitle">Novo Evento Reprodutivo</h2>
+        </div>
+        <button type="button" class="modal-close" id="closeRepDlg" aria-label="Fechar">&#x2715;</button>
+      </div>
+      <div class="form-grid">
+        <input type="hidden" id="repEditingId">
+        <label>
+          Fazenda
+          <select id="repFarm" required></select>
+        </label>
+        <label>
+          Tipo de evento
+          <select id="repType" required>
+            <option value="inseminacao">Inseminação artificial</option>
+            <option value="entourada">Entourada (cobertura com touro)</option>
+          </select>
+        </label>
+        <label>
+          Data do evento
+          <input type="date" id="repDate" required>
+        </label>
+        <label>
+          Categoria dos animais
+          <select id="repCategory" required></select>
+        </label>
+        <label>
+          Potreiro
+          <select id="repPotreiro" required></select>
+        </label>
+        <label>
+          Quantidade de animais
+          <input type="number" id="repQuantity" min="1" step="1" placeholder="Ex.: 50" required>
+        </label>
+        <label id="repBullInfoWrap">
+          Identificação do touro
+          <input type="text" id="repBullInfo" maxlength="80" placeholder="Ex.: Touro 01, Angus 457">
+        </label>
+        <label id="repTechInfoWrap" hidden>
+          Técnico responsável
+          <input type="text" id="repTechInfo" maxlength="80" placeholder="Ex.: Dr. João Silva">
+        </label>
+        <label class="form-span-2">
+          Observações
+          <input type="text" id="repNotes" maxlength="200" placeholder="Ex.: Lote sincronizado, protocolo IATF">
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="action-btn purchase" id="repFormSubmit">Salvar evento</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Modal: Verificação de Gestação (Pegou/Falhou) -->
+  <dialog id="repVerifDlg" class="modal">
+    <div class="modal-card" style="max-width:480px">
+      <div class="modal-header">
+        <div>
+          <p class="panel-kicker">Diagnóstico de gestação</p>
+          <h2>Registrar Resultado</h2>
+        </div>
+        <button type="button" class="modal-close" id="closeRepVerifDlg" aria-label="Fechar">&#x2715;</button>
+      </div>
+      <div id="repVerifInfo" class="rep-verif-info"></div>
+      <div class="form-grid">
+        <input type="hidden" id="repVerifId">
+        <label>
+          Data da verificação
+          <input type="date" id="repVerifDate" required>
+        </label>
+        <label>
+          Qtd. Prenha
+          <input type="number" id="repVerifPegou" min="0" step="1" placeholder="Ex.: 35" required>
+        </label>
+        <label>
+          Qtd. Falhada (calculado)
+          <input type="number" id="repVerifFalhou" readonly tabindex="-1">
+        </label>
+        <label class="form-span-2">
+          Observações
+          <input type="text" id="repVerifNotes" maxlength="200" placeholder="Ex.: Diagnóstico por ultrassom, 30 dias pós evento">
+        </label>
+      </div>
+      <p class="auth-feedback" id="repVerifFeedback" hidden></p>
+      <div class="modal-actions">
+        <button type="button" class="action-btn purchase" id="repVerifSubmit">Confirmar resultado</button>
       </div>
     </div>
   </dialog>

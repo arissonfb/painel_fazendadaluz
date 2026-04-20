@@ -26,6 +26,12 @@ function generateSanitaryCode(farm) {
   return `SAN-${prefix}-${String(farm.sanitaryCodeSequence).padStart(5, "0")}`;
 }
 
+function generateReproductionCode(farm) {
+  farm.reproductionCodeSequence = (farm.reproductionCodeSequence || 0) + 1;
+  const prefix = getFarmCodePrefix(farm.id);
+  return `REP-${prefix}-${String(farm.reproductionCodeSequence).padStart(5, "0")}`;
+}
+
 function extractMovementCodeSequence(code, farmId) {
   if (typeof code !== "string" || !code.trim()) return 0;
   const prefix = getFarmCodePrefix(farmId);
@@ -816,6 +822,8 @@ const runtime = {
   movementsYearFilter: "all",
   sanitarySearch: "",
   sanitaryPage: 0,
+  repPage: 0,
+  repSearch: ""
 };
 
 const today = new Date();
@@ -831,7 +839,9 @@ const state = {
     movement: null,
     ranking: null,
     monthlyEvolution: null,
-    monthlyCategory: null
+    monthlyCategory: null,
+    repBar: null,
+    repDonut: null
   },
   userEditingId: null,
   userEditingMode: null,
@@ -855,6 +865,7 @@ const elements = {
   loginFeedback: document.getElementById("loginFeedback"),
   farmSwitch: document.getElementById("farmSwitch"),
   sanitaryShortcut: document.getElementById("sanitaryShortcut"),
+  reproducaoShortcut: document.getElementById("reproducaoShortcut"),
   quickComprasBtn: document.getElementById("quickComprasBtn"),
   quickVendasBtn: document.getElementById("quickVendasBtn"),
   auditTrailButton: document.getElementById("auditTrailButton"),
@@ -958,6 +969,15 @@ const elements = {
   potreirosShortcut: document.getElementById("potreirosShortcut"),
   potreirosView: document.getElementById("potreirosView"),
   potreirosAccordion: document.getElementById("potreirosAccordion"),
+  reproducaoView: document.getElementById("reproducaoView"),
+  repFarmSwitch: document.getElementById("repFarmSwitch"),
+  repSummarySection: document.getElementById("repSummarySection"),
+  repTableBody: document.getElementById("repTableBody"),
+  repHistoryPagination: document.getElementById("repHistoryPagination"),
+  repHistorySearch: document.getElementById("repHistorySearch"),
+  reproducaoDlg: document.getElementById("reproducaoDlg"),
+  repVerifDlg: document.getElementById("repVerifDlg"),
+  mobileNavReproducao: document.getElementById("mobileNavReproducao"),
   movTypeRecordsDlg: document.getElementById("movTypeRecordsDlg"),
   maximizeMovTypeRecordsDlg: document.getElementById("maximizeMovTypeRecordsDlg"),
   closeMovTypeRecordsDlg: document.getElementById("closeMovTypeRecordsDlg"),
@@ -2694,7 +2714,9 @@ function createStandardFarm(id, name) {
     })),
     movements: [],
     sanitaryRecords: [],
-    monthlyRecords: []
+    monthlyRecords: [],
+    reproductionRecords: [],
+    reproductionCodeSequence: 0
   };
 }
 
@@ -2754,6 +2776,25 @@ function bindEvents() {
     render();
   });
 
+  elements.reproducaoShortcut.addEventListener("click", () => {
+    state.activeView = "reproducao";
+    render();
+  });
+
+  // Reproduction dialogs
+  document.getElementById("closeRepDlg")?.addEventListener("click", () => elements.reproducaoDlg.close());
+  document.getElementById("closeRepVerifDlg")?.addEventListener("click", () => elements.repVerifDlg.close());
+  document.getElementById("repRegisterBtn")?.addEventListener("click", () => openRepDialog());
+  document.getElementById("repFormSubmit")?.addEventListener("click", handleRepFormSubmit);
+  document.getElementById("repVerifSubmit")?.addEventListener("click", handleRepVerifSubmit);
+  document.getElementById("repType")?.addEventListener("change", syncRepTypeFields);
+  document.getElementById("repFarm")?.addEventListener("change", syncRepFarmFields);
+  document.getElementById("repVerifPegou")?.addEventListener("input", updateRepVerifFalhou);
+  elements.repHistorySearch?.addEventListener("input", () => {
+    runtime.repPage = 0;
+    renderRepHistoryTable();
+  });
+
   // Mobile bottom nav
   if (elements.mobileNavDashboard) {
     elements.mobileNavDashboard.addEventListener("click", () => {
@@ -2766,6 +2807,10 @@ function bindEvents() {
     });
     elements.mobileNavPotreiros.addEventListener("click", () => {
       state.activeView = "potreiros";
+      render();
+    });
+    elements.mobileNavReproducao?.addEventListener("click", () => {
+      state.activeView = "reproducao";
       render();
     });
     elements.mobileNavFarms.addEventListener("click", () => {
@@ -3831,22 +3876,28 @@ function renderActiveView() {
   elements.dashboardView.hidden = view !== "dashboard";
   elements.sanitaryView.hidden = view !== "sanitary";
   elements.potreirosView.hidden = view !== "potreiros";
+  elements.reproducaoView.hidden = view !== "reproducao";
   elements.sanitaryShortcut.classList.toggle("active", view === "sanitary");
   elements.potreirosShortcut.classList.toggle("active", view === "potreiros");
+  elements.reproducaoShortcut.classList.toggle("active", view === "reproducao");
   if (view === "potreiros") {
     renderPotreirosView();
+  }
+  if (view === "reproducao") {
+    renderReproducaoView();
   }
   syncMobileNav(view);
 }
 
 function syncMobileNav(view) {
   if (!elements.mobileBottomNav) return;
-  [elements.mobileNavDashboard, elements.mobileNavSanitary, elements.mobileNavPotreiros, elements.mobileNavFarms].forEach((btn) => {
+  [elements.mobileNavDashboard, elements.mobileNavSanitary, elements.mobileNavPotreiros, elements.mobileNavReproducao, elements.mobileNavFarms].forEach((btn) => {
     if (btn) btn.classList.remove("active");
   });
   if (view === "dashboard" && elements.mobileNavDashboard) elements.mobileNavDashboard.classList.add("active");
   if (view === "sanitary" && elements.mobileNavSanitary) elements.mobileNavSanitary.classList.add("active");
   if (view === "potreiros" && elements.mobileNavPotreiros) elements.mobileNavPotreiros.classList.add("active");
+  if (view === "reproducao" && elements.mobileNavReproducao) elements.mobileNavReproducao.classList.add("active");
 }
 
 function renderMobileFarmDrawer() {
@@ -9282,6 +9333,12 @@ function ensureDataShape(data, options = {}) {
     if (!Array.isArray(farm.monthlyRecords)) {
       farm.monthlyRecords = [];
     }
+    if (!Array.isArray(farm.reproductionRecords)) {
+      farm.reproductionRecords = [];
+    }
+    if (typeof farm.reproductionCodeSequence !== "number") {
+      farm.reproductionCodeSequence = farm.reproductionRecords.length;
+    }
     if (!Array.isArray(farm.sanitaryProducts) || !farm.sanitaryProducts.length) {
       farm.sanitaryProducts = [...DEFAULT_SANITARY_PRODUCTS];
     }
@@ -10050,4 +10107,649 @@ function checkBackupWarning() {
   }
 
   elements.backupWarningDialog.showModal();
+}
+
+// ─── MÓDULO: REPRODUÇÃO ───────────────────────────────────────────────────────
+
+function getReproductionRecords(farm) {
+  return Array.isArray(farm?.reproductionRecords) ? farm.reproductionRecords : [];
+}
+
+function getAllReproductionRecords() {
+  return getAllFarms().flatMap((farm) =>
+    getReproductionRecords(farm).map((rec) => ({ ...rec, farmId: farm.id, farmName: farm.name }))
+  );
+}
+
+function getFilteredReproductionRecords() {
+  const farmId = state.data.selectedFarmId;
+  const year = state.filters.year;
+  const month = state.filters.month;
+
+  let records;
+  if (farmId === TOTAL_FARM_ID) {
+    records = getAllReproductionRecords();
+  } else {
+    const farm = state.data.farms[farmId];
+    records = farm ? getReproductionRecords(farm).map((rec) => ({ ...rec, farmId: farm.id, farmName: farm.name })) : [];
+  }
+
+  return records.filter((rec) => {
+    const d = rec.date || "";
+    if (year !== "all" && !d.startsWith(year)) return false;
+    if (month !== "all") {
+      const m = d.slice(5, 7);
+      if (m !== String(month).padStart(2, "0")) return false;
+    }
+    return true;
+  }).sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+}
+
+function calcReproductionStats(records) {
+  let totalInseminacoes = 0;
+  let totalEntouradas = 0;
+  let verifiedInseminacoes = 0;
+  let verifiedEntouradas = 0;
+  let totalPegou = 0;
+  let totalFalhou = 0;
+
+  records.forEach((rec) => {
+    const qty = Number(rec.quantity || 0);
+    if (rec.type === "inseminacao") {
+      totalInseminacoes += qty;
+    } else {
+      totalEntouradas += qty;
+    }
+    if (rec.verificationDate && rec.quantityPegou != null) {
+      const pegou = Number(rec.quantityPegou || 0);
+      const falhou = qty - pegou;
+      totalPegou += pegou;
+      totalFalhou += Math.max(0, falhou);
+      if (rec.type === "inseminacao") verifiedInseminacoes += qty;
+      else verifiedEntouradas += qty;
+    }
+  });
+
+  const totalVerified = verifiedInseminacoes + verifiedEntouradas;
+  const taxaSucesso = totalVerified > 0 ? (totalPegou / totalVerified) * 100 : null;
+
+  return { totalInseminacoes, totalEntouradas, totalPegou, totalFalhou, taxaSucesso, totalVerified };
+}
+
+function renderReproducaoView() {
+  renderRepFarmSwitch();
+  renderRepSummaryCards();
+  renderRepCharts();
+  renderRepHistoryTable();
+}
+
+function renderRepFarmSwitch() {
+  if (!elements.repFarmSwitch) return;
+  elements.repFarmSwitch.innerHTML = "";
+  const items = [{ id: TOTAL_FARM_ID, name: "Todas as fazendas" }, ...getAllFarms()];
+  items.forEach((item) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `farm-btn ${item.id === state.data.selectedFarmId ? "active" : ""}`;
+    btn.textContent = item.name;
+    btn.addEventListener("click", () => {
+      state.data.selectedFarmId = item.id;
+      saveData();
+      renderReproducaoView();
+    });
+    elements.repFarmSwitch.appendChild(btn);
+  });
+}
+
+function renderRepSummaryCards() {
+  if (!elements.repSummarySection) return;
+  const records = getFilteredReproductionRecords();
+  const stats = calcReproductionStats(records);
+  const pendingVerif = records.filter((r) => !r.verificationDate).length;
+
+  const taxaLabel = stats.taxaSucesso != null
+    ? `${stats.taxaSucesso.toFixed(1)}%`
+    : "—";
+  const taxaColor = stats.taxaSucesso == null ? ""
+    : stats.taxaSucesso >= 70 ? "color:var(--green)"
+    : stats.taxaSucesso >= 50 ? "color:var(--sand)"
+    : "color:var(--red)";
+
+  elements.repSummarySection.innerHTML = `
+    <div class="rep-kpi-grid">
+      <article class="summary-card">
+        <p class="panel-kicker">Inseminações</p>
+        <strong>${formatInteger(stats.totalInseminacoes)}</strong>
+        <p>animais inseminados no período</p>
+      </article>
+      <article class="summary-card">
+        <p class="panel-kicker">Entouradas</p>
+        <strong>${formatInteger(stats.totalEntouradas)}</strong>
+        <p>animais entourados no período</p>
+      </article>
+      <article class="summary-card">
+        <p class="panel-kicker">Prenha</p>
+        <strong style="color:var(--green)">${formatInteger(stats.totalPegou)}</strong>
+        <p>animais confirmados prenhes</p>
+      </article>
+      <article class="summary-card">
+        <p class="panel-kicker">Falhada</p>
+        <strong style="color:var(--red)">${formatInteger(stats.totalFalhou)}</strong>
+        <p>animais que não ficaram prenhes</p>
+      </article>
+      <article class="summary-card">
+        <p class="panel-kicker">Taxa de Prenhez</p>
+        <strong style="${taxaColor}">${taxaLabel}</strong>
+        <p>${stats.totalVerified > 0 ? `base: ${formatInteger(stats.totalVerified)} verificados` : "aguardando verificações"}</p>
+      </article>
+      <article class="summary-card">
+        <p class="panel-kicker">Aguardando Resultado</p>
+        <strong style="color:var(--sand)">${formatInteger(pendingVerif)}</strong>
+        <p>eventos sem verificação registrada</p>
+      </article>
+    </div>
+  `;
+}
+
+function renderRepCharts() {
+  renderRepBarChart();
+  renderRepDonutChart();
+}
+
+function renderRepBarChart() {
+  const canvas = document.getElementById("repBarChart");
+  if (!canvas) return;
+
+  if (state.charts.repBar) {
+    state.charts.repBar.destroy();
+    state.charts.repBar = null;
+  }
+
+  const farms = getAllFarms();
+  const labels = [];
+  const dataInsem = [];
+  const dataEntour = [];
+  const dataPegou = [];
+  const dataFalhou = [];
+
+  const year = state.filters.year;
+  const month = state.filters.month;
+
+  farms.forEach((farm) => {
+    let recs = getReproductionRecords(farm).map((r) => ({ ...r, farmId: farm.id }));
+    recs = recs.filter((rec) => {
+      const d = rec.date || "";
+      if (year !== "all" && !d.startsWith(year)) return false;
+      if (month !== "all") {
+        const m = d.slice(5, 7);
+        if (m !== String(month).padStart(2, "0")) return false;
+      }
+      return true;
+    });
+    if (!recs.length) return;
+    const stats = calcReproductionStats(recs);
+    labels.push(farm.name);
+    dataInsem.push(stats.totalInseminacoes);
+    dataEntour.push(stats.totalEntouradas);
+    dataPegou.push(stats.totalPegou);
+    dataFalhou.push(stats.totalFalhou);
+  });
+
+  if (!labels.length) {
+    canvas.style.display = "none";
+    const existing = canvas.parentElement.querySelector(".rep-empty-note");
+    if (!existing) {
+      const p = document.createElement("p");
+      p.className = "field-note rep-empty-note";
+      p.style.cssText = "text-align:center;padding:24px";
+      p.textContent = "Nenhum dado para exibir no período selecionado.";
+      canvas.parentElement.appendChild(p);
+    }
+    return;
+  }
+  canvas.style.display = "";
+  canvas.parentElement.querySelector(".rep-empty-note")?.remove();
+
+  state.charts.repBar = new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        { label: "Inseminações", data: dataInsem, backgroundColor: "#517a60" },
+        { label: "Entouradas", data: dataEntour, backgroundColor: "#c98c4f" },
+        { label: "Prenha", data: dataPegou, backgroundColor: "#375b43" },
+        { label: "Falhada", data: dataFalhou, backgroundColor: "#8c4b38" }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: "bottom" } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+    }
+  });
+}
+
+function renderRepDonutChart() {
+  const canvas = document.getElementById("repDonutChart");
+  const legendEl = document.getElementById("repDonutLegend");
+  if (!canvas || !legendEl) return;
+
+  if (state.charts.repDonut) {
+    state.charts.repDonut.destroy();
+    state.charts.repDonut = null;
+  }
+
+  const records = getFilteredReproductionRecords();
+  const stats = calcReproductionStats(records);
+
+  if (!stats.totalVerified) {
+    legendEl.innerHTML = `<p class="field-note" style="text-align:center">Nenhum resultado verificado ainda.</p>`;
+    return;
+  }
+
+  const taxaStr = stats.taxaSucesso != null ? `${stats.taxaSucesso.toFixed(1)}%` : "—";
+
+  state.charts.repDonut = new Chart(canvas, {
+    type: "doughnut",
+    data: {
+      labels: ["Prenha", "Falhada"],
+      datasets: [{
+        data: [stats.totalPegou, stats.totalFalhou],
+        backgroundColor: ["#375b43", "#8c4b38"],
+        borderWidth: 2,
+        borderColor: "#fffbf5"
+      }]
+    },
+    options: {
+      responsive: true,
+      cutout: "65%",
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const pct = stats.totalVerified > 0 ? ((ctx.parsed / stats.totalVerified) * 100).toFixed(1) : 0;
+              return ` ${ctx.label}: ${ctx.parsed} (${pct}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+
+  legendEl.innerHTML = `
+    <div class="rep-donut-legend-items">
+      <span class="rep-legend-dot" style="background:#375b43"></span>
+      <span>Prenha: <strong>${formatInteger(stats.totalPegou)}</strong></span>
+      <span class="rep-legend-dot" style="background:#8c4b38"></span>
+      <span>Falhada: <strong>${formatInteger(stats.totalFalhou)}</strong></span>
+    </div>
+    <p class="rep-taxa-label">Taxa de Prenhez: <strong>${taxaStr}</strong></p>
+  `;
+}
+
+const REP_PAGE_SIZE = 50;
+
+function renderRepHistoryTable() {
+  if (!elements.repTableBody) return;
+
+  const searchEl = elements.repHistorySearch;
+  const search = (searchEl?.value || "").toLowerCase().trim();
+  let records = getFilteredReproductionRecords();
+
+  if (search) {
+    records = records.filter((rec) => {
+      const farmName = (rec.farmName || rec.farmId || "").toLowerCase();
+      const code = (rec.code || "").toLowerCase();
+      const category = (rec.categoryName || rec.categoryId || "").toLowerCase();
+      const potreiro = (rec.potreiro || "").toLowerCase();
+      const notes = (rec.notes || "").toLowerCase();
+      const typeLabel = rec.type === "inseminacao" ? "inseminação" : "entourada";
+      return [farmName, code, category, potreiro, notes, typeLabel].some((s) => s.includes(search));
+    });
+  }
+
+  const page = runtime.repPage || 0;
+  const total = records.length;
+  const start = page * REP_PAGE_SIZE;
+  const pageRecords = records.slice(start, start + REP_PAGE_SIZE);
+
+  elements.repTableBody.innerHTML = pageRecords.map((rec) => {
+    const farmId = rec.farmId || state.data.selectedFarmId;
+    const pegou = rec.quantityPegou != null ? formatInteger(rec.quantityPegou) : "—";
+    const qty = Number(rec.quantity || 0);
+    const falhou = rec.verificationDate && rec.quantityPegou != null
+      ? formatInteger(Math.max(0, qty - Number(rec.quantityPegou)))
+      : "—";
+    const taxa = rec.verificationDate && rec.quantityPegou != null && qty > 0
+      ? `${((Number(rec.quantityPegou) / qty) * 100).toFixed(1)}%`
+      : "—";
+    const verifDate = rec.verificationDate
+      ? formatDate(rec.verificationDate)
+      : `<button type="button" class="ghost-btn rep-verif-btn" data-rep-verif-id="${escapeHtml(rec.id)}" data-farm-id="${escapeHtml(farmId)}">Registrar</button>`;
+    const typeTag = rec.type === "inseminacao"
+      ? `<span class="rep-tag rep-tag-insem">Inseminação</span>`
+      : `<span class="rep-tag rep-tag-entour">Entourada</span>`;
+    const farmLabel = rec.farmName || farmId;
+
+    return `
+      <tr>
+        <td><code>${escapeHtml(rec.code || "—")}</code></td>
+        <td>${escapeHtml(farmLabel)}</td>
+        <td>${typeTag}</td>
+        <td>${formatDate(rec.date)}</td>
+        <td>${escapeHtml(rec.categoryName || rec.categoryId || "—")}</td>
+        <td>${formatInteger(qty)}</td>
+        <td>${escapeHtml(rec.potreiro || "—")}</td>
+        <td>${verifDate}</td>
+        <td><strong style="color:var(--green)">${pegou}</strong></td>
+        <td><strong style="color:var(--red)">${falhou}</strong></td>
+        <td>${taxa}</td>
+        <td title="${escapeHtml(rec.notes || "")}">${escapeHtml((rec.notes || "").slice(0, 30) + (rec.notes?.length > 30 ? "…" : ""))}</td>
+        <td>
+          <button type="button" class="ghost-btn" data-rep-edit-id="${escapeHtml(rec.id)}" data-farm-id="${escapeHtml(farmId)}">Editar</button>
+          <button type="button" class="ghost-btn rep-del-btn" data-rep-del-id="${escapeHtml(rec.id)}" data-farm-id="${escapeHtml(farmId)}">Excluir</button>
+        </td>
+      </tr>
+    `;
+  }).join("");
+
+  if (!pageRecords.length) {
+    elements.repTableBody.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:32px;color:var(--muted)">Nenhum registro encontrado${search ? " para a busca realizada" : ". Clique em + Registrar Evento para começar"}.</td></tr>`;
+  }
+
+  // Pagination
+  renderRepPagination(total, page);
+
+  // Table click delegation
+  elements.repTableBody.querySelectorAll("[data-rep-edit-id]").forEach((btn) => {
+    btn.addEventListener("click", () => openRepDialog(btn.dataset.repEditId, btn.dataset.farmId));
+  });
+  elements.repTableBody.querySelectorAll("[data-rep-del-id]").forEach((btn) => {
+    btn.addEventListener("click", () => deleteRepRecord(btn.dataset.repDelId, btn.dataset.farmId));
+  });
+  elements.repTableBody.querySelectorAll("[data-rep-verif-id]").forEach((btn) => {
+    btn.addEventListener("click", () => openRepVerifDialog(btn.dataset.repVerifId, btn.dataset.farmId));
+  });
+}
+
+function renderRepPagination(total, page) {
+  if (!elements.repHistoryPagination) return;
+  const totalPages = Math.ceil(total / REP_PAGE_SIZE);
+  if (totalPages <= 1) {
+    elements.repHistoryPagination.innerHTML = total > 0 ? `<span class="pagination-info">${total} registro${total !== 1 ? "s" : ""}</span>` : "";
+    return;
+  }
+  elements.repHistoryPagination.innerHTML = `
+    <span class="pagination-info">${total} registros</span>
+    <button type="button" class="ghost-btn" id="repPagePrev" ${page === 0 ? "disabled" : ""}>&#8592; Anterior</button>
+    <span class="pagination-info">Página ${page + 1} de ${totalPages}</span>
+    <button type="button" class="ghost-btn" id="repPageNext" ${page >= totalPages - 1 ? "disabled" : ""}>Próxima &#8594;</button>
+  `;
+  document.getElementById("repPagePrev")?.addEventListener("click", () => {
+    runtime.repPage = Math.max(0, (runtime.repPage || 0) - 1);
+    renderRepHistoryTable();
+  });
+  document.getElementById("repPageNext")?.addEventListener("click", () => {
+    runtime.repPage = Math.min(totalPages - 1, (runtime.repPage || 0) + 1);
+    renderRepHistoryTable();
+  });
+}
+
+function openRepDialog(editingId = null, editingFarmId = null) {
+  const dlg = elements.reproducaoDlg;
+  if (!dlg) return;
+
+  const titleEl = document.getElementById("repDlgTitle");
+  const idEl = document.getElementById("repEditingId");
+  const farmEl = document.getElementById("repFarm");
+  const typeEl = document.getElementById("repType");
+  const dateEl = document.getElementById("repDate");
+  const catEl = document.getElementById("repCategory");
+  const potrEl = document.getElementById("repPotreiro");
+  const qtyEl = document.getElementById("repQuantity");
+  const bullEl = document.getElementById("repBullInfo");
+  const techEl = document.getElementById("repTechInfo");
+  const notesEl = document.getElementById("repNotes");
+
+  // Populate farm selector
+  const farms = getAllFarms();
+  farmEl.innerHTML = farms.map((f) => `<option value="${escapeHtml(f.id)}">${escapeHtml(f.name)}</option>`).join("");
+
+  if (editingId) {
+    const farmId = editingFarmId || state.data.selectedFarmId;
+    const farm = farmId !== TOTAL_FARM_ID ? state.data.farms[farmId] : null;
+    const rec = farm ? getReproductionRecords(farm).find((r) => r.id === editingId) : null;
+    if (!rec) return;
+    titleEl.textContent = "Editar Evento Reprodutivo";
+    idEl.value = rec.id;
+    farmEl.value = farmId;
+    typeEl.value = rec.type;
+    dateEl.value = rec.date || "";
+    qtyEl.value = rec.quantity || "";
+    bullEl.value = rec.bullInfo || "";
+    techEl.value = rec.techInfo || "";
+    notesEl.value = rec.notes || "";
+    syncRepFarmFields();
+    // Restore category/potreiro after sync
+    setTimeout(() => {
+      catEl.value = rec.categoryId || "";
+      potrEl.value = rec.potreiro || "";
+    }, 0);
+  } else {
+    titleEl.textContent = "Novo Evento Reprodutivo";
+    idEl.value = "";
+    const currentFarmId = state.data.selectedFarmId !== TOTAL_FARM_ID ? state.data.selectedFarmId : farms[0]?.id || "";
+    farmEl.value = currentFarmId;
+    typeEl.value = "inseminacao";
+    dateEl.value = new Date().toISOString().slice(0, 10);
+    qtyEl.value = "";
+    bullEl.value = "";
+    techEl.value = "";
+    notesEl.value = "";
+    syncRepFarmFields();
+  }
+
+  syncRepTypeFields();
+  dlg.showModal();
+}
+
+function syncRepFarmFields() {
+  const farmEl = document.getElementById("repFarm");
+  const catEl = document.getElementById("repCategory");
+  const potrEl = document.getElementById("repPotreiro");
+  if (!farmEl || !catEl || !potrEl) return;
+
+  const farm = state.data.farms[farmEl.value];
+  if (!farm) return;
+
+  catEl.innerHTML = farm.categories.map((c) => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join("");
+
+  const potreiros = getPotreroEntries(farm).map((p) => p.name);
+  potrEl.innerHTML = [
+    `<option value="">Sem potreiro</option>`,
+    ...potreiros.map((p) => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`)
+  ].join("");
+}
+
+function syncRepTypeFields() {
+  const typeEl = document.getElementById("repType");
+  const bullWrap = document.getElementById("repBullInfoWrap");
+  const techWrap = document.getElementById("repTechInfoWrap");
+  if (!typeEl || !bullWrap || !techWrap) return;
+  const isEntourada = typeEl.value === "entourada";
+  bullWrap.hidden = !isEntourada;
+  techWrap.hidden = isEntourada;
+}
+
+function handleRepFormSubmit() {
+  const farmEl = document.getElementById("repFarm");
+  const typeEl = document.getElementById("repType");
+  const dateEl = document.getElementById("repDate");
+  const catEl = document.getElementById("repCategory");
+  const potrEl = document.getElementById("repPotreiro");
+  const qtyEl = document.getElementById("repQuantity");
+  const bullEl = document.getElementById("repBullInfo");
+  const techEl = document.getElementById("repTechInfo");
+  const notesEl = document.getElementById("repNotes");
+  const idEl = document.getElementById("repEditingId");
+
+  const farmId = farmEl?.value;
+  const type = typeEl?.value;
+  const date = dateEl?.value;
+  const qty = Number(qtyEl?.value || 0);
+
+  if (!farmId || !type || !date || qty < 1) {
+    alert("Preencha todos os campos obrigatórios (fazenda, tipo, data e quantidade).");
+    return;
+  }
+
+  const farm = state.data.farms[farmId];
+  if (!farm) return;
+
+  const catId = catEl?.value || "";
+  const catName = farm.categories.find((c) => c.id === catId)?.name || catId;
+  const editId = idEl?.value;
+
+  if (editId) {
+    const recIdx = farm.reproductionRecords.findIndex((r) => r.id === editId);
+    if (recIdx >= 0) {
+      farm.reproductionRecords[recIdx] = {
+        ...farm.reproductionRecords[recIdx],
+        type,
+        date,
+        categoryId: catId,
+        categoryName: catName,
+        potreiro: potrEl?.value || "",
+        quantity: qty,
+        bullInfo: bullEl?.value || "",
+        techInfo: techEl?.value || "",
+        notes: notesEl?.value || ""
+      };
+      logAuditEvent("Reprodução editada", farmId, `${farm.reproductionRecords[recIdx].code} — ${type} em ${date}`);
+    }
+  } else {
+    const newRec = {
+      id: createMovementId(),
+      code: generateReproductionCode(farm),
+      farmId,
+      type,
+      date,
+      categoryId: catId,
+      categoryName: catName,
+      potreiro: potrEl?.value || "",
+      quantity: qty,
+      bullInfo: bullEl?.value || "",
+      techInfo: techEl?.value || "",
+      verificationDate: null,
+      quantityPegou: null,
+      verificationNotes: "",
+      notes: notesEl?.value || "",
+      createdAt: new Date().toISOString()
+    };
+    farm.reproductionRecords.push(newRec);
+    logAuditEvent("Reprodução registrada", farmId, `${newRec.code} — ${type} em ${date} (${qty} animais)`);
+  }
+
+  saveData();
+  elements.reproducaoDlg.close();
+  if (state.activeView === "reproducao") renderReproducaoView();
+}
+
+function deleteRepRecord(id, farmId) {
+  const farm = farmId !== TOTAL_FARM_ID ? state.data.farms[farmId] : null;
+  if (!farm) return;
+  const rec = getReproductionRecords(farm).find((r) => r.id === id);
+  if (!rec) return;
+  if (!confirm(`Excluir o registro ${rec.code}?\n\nEsta ação não pode ser desfeita.`)) return;
+  farm.reproductionRecords = farm.reproductionRecords.filter((r) => r.id !== id);
+  logAuditEvent("Reprodução excluída", farmId, `${rec.code} — ${rec.type} em ${rec.date}`);
+  saveData();
+  renderReproducaoView();
+}
+
+function openRepVerifDialog(recordId, farmId) {
+  const dlg = elements.repVerifDlg;
+  if (!dlg) return;
+
+  const farm = farmId !== TOTAL_FARM_ID ? state.data.farms[farmId] : null;
+  const rec = farm ? getReproductionRecords(farm).find((r) => r.id === recordId) : null;
+  if (!rec || !farm) return;
+
+  document.getElementById("repVerifId").value = recordId;
+  document.getElementById("repVerifId").dataset.farmId = farmId;
+  document.getElementById("repVerifDate").value = rec.verificationDate || new Date().toISOString().slice(0, 10);
+  document.getElementById("repVerifPegou").value = rec.quantityPegou != null ? rec.quantityPegou : "";
+  document.getElementById("repVerifNotes").value = rec.verificationNotes || "";
+  document.getElementById("repVerifFeedback").hidden = true;
+
+  const typeLabel = rec.type === "inseminacao" ? "Inseminação" : "Entourada";
+  document.getElementById("repVerifInfo").innerHTML = `
+    <div class="rep-verif-info-box">
+      <span class="rep-tag ${rec.type === "inseminacao" ? "rep-tag-insem" : "rep-tag-entour"}">${typeLabel}</span>
+      <span><strong>Fazenda:</strong> ${escapeHtml(farm.name)}</span>
+      <span><strong>Data do evento:</strong> ${formatDate(rec.date)}</span>
+      <span><strong>Categoria:</strong> ${escapeHtml(rec.categoryName || rec.categoryId)}</span>
+      <span><strong>Potreiro:</strong> ${escapeHtml(rec.potreiro || "—")}</span>
+      <span><strong>Total no evento:</strong> ${formatInteger(Number(rec.quantity || 0))} animais</span>
+    </div>
+  `;
+
+  updateRepVerifFalhou();
+  dlg.showModal();
+}
+
+function updateRepVerifFalhou() {
+  const verifId = document.getElementById("repVerifId");
+  const pegouEl = document.getElementById("repVerifPegou");
+  const falhouEl = document.getElementById("repVerifFalhou");
+  if (!verifId || !pegouEl || !falhouEl) return;
+
+  const farmId = verifId.dataset.farmId;
+  const farm = farmId ? state.data.farms[farmId] : null;
+  const rec = farm ? getReproductionRecords(farm).find((r) => r.id === verifId.value) : null;
+  if (!rec) return;
+
+  const qty = Number(rec.quantity || 0);
+  const pegou = Number(pegouEl.value || 0);
+  falhouEl.value = Math.max(0, qty - pegou);
+}
+
+function handleRepVerifSubmit() {
+  const verifIdEl = document.getElementById("repVerifId");
+  const dateEl = document.getElementById("repVerifDate");
+  const pegouEl = document.getElementById("repVerifPegou");
+  const notesEl = document.getElementById("repVerifNotes");
+  const feedbackEl = document.getElementById("repVerifFeedback");
+
+  const recordId = verifIdEl?.value;
+  const farmId = verifIdEl?.dataset.farmId;
+  const date = dateEl?.value;
+  const pegou = Number(pegouEl?.value ?? "");
+
+  if (!date || isNaN(pegou) || pegou < 0) {
+    if (feedbackEl) { feedbackEl.textContent = "Preencha a data e a quantidade de animais prenhas."; feedbackEl.hidden = false; }
+    return;
+  }
+
+  const farm = farmId ? state.data.farms[farmId] : null;
+  const recIdx = farm ? farm.reproductionRecords.findIndex((r) => r.id === recordId) : -1;
+  if (recIdx < 0) return;
+
+  const qty = Number(farm.reproductionRecords[recIdx].quantity || 0);
+  if (pegou > qty) {
+    if (feedbackEl) { feedbackEl.textContent = `Qtd. que pegou (${pegou}) não pode exceder o total do evento (${qty}).`; feedbackEl.hidden = false; }
+    return;
+  }
+
+  farm.reproductionRecords[recIdx].verificationDate = date;
+  farm.reproductionRecords[recIdx].quantityPegou = pegou;
+  farm.reproductionRecords[recIdx].verificationNotes = notesEl?.value || "";
+
+  const rec = farm.reproductionRecords[recIdx];
+  logAuditEvent("Verificação reprodutiva", farmId, `${rec.code} — ${pegou} prenhes de ${qty} (${((pegou / qty) * 100).toFixed(1)}%)`);
+
+  saveData();
+  elements.repVerifDlg.close();
+  if (state.activeView === "reproducao") renderReproducaoView();
 }

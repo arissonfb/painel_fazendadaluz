@@ -4911,3 +4911,129 @@ th {
   color: var(--green);
   font-weight: 600;
 }
+
+/* ─── REPRODUÇÃO ─────────────────────────────────────────────────────────── */
+
+.rep-farm-switch {
+  margin-top: 12px;
+}
+
+.rep-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px;
+  padding: 0 0 4px;
+}
+
+.rep-summary-section {
+  margin-top: 18px;
+}
+
+.rep-chart-wide {
+  grid-column: span 1;
+}
+
+.rep-donut-wrap {
+  max-width: 240px;
+  margin: 0 auto;
+}
+
+.rep-donut-legend {
+  text-align: center;
+  margin-top: 14px;
+}
+
+.rep-donut-legend-items {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  font-size: 0.9rem;
+}
+
+.rep-legend-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.rep-taxa-label {
+  margin-top: 10px;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+.rep-taxa-label strong {
+  color: var(--text);
+}
+
+/* Tags de tipo */
+.rep-tag {
+  display: inline-block;
+  border-radius: 6px;
+  padding: 2px 9px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.rep-tag-insem {
+  background: rgba(81, 122, 96, 0.15);
+  color: var(--green);
+  border: 1px solid rgba(81, 122, 96, 0.25);
+}
+
+.rep-tag-entour {
+  background: rgba(201, 140, 79, 0.15);
+  color: var(--sand);
+  border: 1px solid rgba(201, 140, 79, 0.3);
+}
+
+.rep-verif-btn {
+  font-size: 0.78rem;
+  color: var(--sand);
+  border-color: rgba(201, 140, 79, 0.4);
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+.rep-del-btn {
+  color: var(--red);
+}
+
+/* Verification dialog info box */
+.rep-verif-info {
+  margin-bottom: 16px;
+}
+
+.rep-verif-info-box {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  background: var(--green-soft);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 0.88rem;
+  color: var(--text);
+}
+
+.rep-verif-info-box span {
+  white-space: nowrap;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .rep-kpi-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .rep-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
