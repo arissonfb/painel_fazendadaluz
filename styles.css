@@ -2466,6 +2466,10 @@ th {
   text-decoration: none;
 }
 
+.mobile-utility-bar {
+  display: none;
+}
+
 .georef-dialog-card {
   display: grid;
   gap: 18px;
@@ -4059,6 +4063,42 @@ th {
 }
 
 @media (max-width: 640px) {
+  .mobile-utility-bar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: -6px;
+  }
+
+  .mobile-utility-bar[hidden] {
+    display: none !important;
+  }
+
+  .mobile-utility-btn,
+  .mobile-farm-app-btn {
+    min-height: 48px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: rgba(255, 252, 247, 0.94);
+    color: var(--text);
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+    transition: 150ms ease;
+  }
+
+  .mobile-utility-btn:hover,
+  .mobile-farm-app-btn:hover {
+    transform: translateY(-1px);
+  }
+
+  .mobile-utility-app,
+  .mobile-farm-app-btn {
+    background: linear-gradient(135deg, rgba(55, 91, 67, 0.16), rgba(211, 155, 92, 0.24));
+    color: var(--green-deep);
+    border-color: rgba(55, 91, 67, 0.16);
+  }
+
   .mobile-bottom-nav {
     display: flex;
     position: fixed;
@@ -4145,6 +4185,10 @@ th {
     gap: 10px;
     max-height: 75vh;
     overflow-y: auto;
+  }
+
+  .mobile-farm-app-btn {
+    width: 100%;
   }
 
   .mobile-farm-drawer-header {

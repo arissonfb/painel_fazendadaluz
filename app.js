@@ -872,6 +872,8 @@ const elements = {
   loginFeedback: document.getElementById("loginFeedback"),
   farmSwitch: document.getElementById("farmSwitch"),
   mobileAppButton: document.getElementById("mobileAppButton"),
+  mobileAppQuickButton: document.getElementById("mobileAppQuickButton"),
+  mobileFarmQuickButton: document.getElementById("mobileFarmQuickButton"),
   sanitaryShortcut: document.getElementById("sanitaryShortcut"),
   reproducaoShortcut: document.getElementById("reproducaoShortcut"),
   quickComprasBtn: document.getElementById("quickComprasBtn"),
@@ -1104,13 +1106,15 @@ const elements = {
   monthlyDataNotes: document.getElementById("monthlyDataNotes"),
   monthlyDataSubmitButton: document.getElementById("monthlyDataSubmitButton"),
   mobileBottomNav: document.getElementById("mobileBottomNav"),
+  mobileUtilityBar: document.getElementById("mobileUtilityBar"),
   mobileNavDashboard: document.getElementById("mobileNavDashboard"),
   mobileNavSanitary: document.getElementById("mobileNavSanitary"),
   mobileNavPotreiros: document.getElementById("mobileNavPotreiros"),
   mobileNavFarms: document.getElementById("mobileNavFarms"),
   mobileFarmDrawer: document.getElementById("mobileFarmDrawer"),
   mobileFarmSwitchList: document.getElementById("mobileFarmSwitchList"),
-  closeMobileFarmDrawer: document.getElementById("closeMobileFarmDrawer")
+  closeMobileFarmDrawer: document.getElementById("closeMobileFarmDrawer"),
+  mobileDrawerAppButton: document.getElementById("mobileDrawerAppButton")
 };
 
 function hasDirectMobileDownload() {
@@ -1160,6 +1164,13 @@ function configureMobileAppLinks() {
 function openMobileAppDialog() {
   configureMobileAppLinks();
   elements.mobileAppDialog?.showModal();
+}
+
+function openMobileFarmDrawer() {
+  renderMobileFarmDrawer();
+  if (elements.mobileFarmDrawer) {
+    elements.mobileFarmDrawer.hidden = false;
+  }
 }
 
 function collapseDashboardSection(section) {
@@ -1782,6 +1793,7 @@ function renderAuthState() {
   elements.authShell.hidden = showSplash || Boolean(currentUser);
   elements.pageShell.hidden = showSplash || !currentUser;
   if (elements.mobileBottomNav) elements.mobileBottomNav.hidden = showSplash || !currentUser;
+  if (elements.mobileUtilityBar) elements.mobileUtilityBar.hidden = showSplash || !currentUser;
   document.body.classList.toggle("login-mode", !currentUser && !showSplash);
   document.body.classList.toggle("splash-mode", showSplash);
   if (currentUser) {
@@ -2792,6 +2804,9 @@ function bindEvents() {
     button.addEventListener("click", () => setAuthLoginMode(button.dataset.authRole));
   });
   elements.mobileAppButton?.addEventListener("click", openMobileAppDialog);
+  elements.mobileAppQuickButton?.addEventListener("click", openMobileAppDialog);
+  elements.mobileDrawerAppButton?.addEventListener("click", openMobileAppDialog);
+  elements.mobileFarmQuickButton?.addEventListener("click", openMobileFarmDrawer);
   elements.closeMobileAppDialog?.addEventListener("click", () => elements.mobileAppDialog.close());
   elements.manageUsersButton.addEventListener("click", openManageUsersDialog);
   elements.backupButton.addEventListener("click", exportBackup);
@@ -2881,10 +2896,7 @@ function bindEvents() {
       state.activeView = "reproducao";
       render();
     });
-    elements.mobileNavFarms.addEventListener("click", () => {
-      renderMobileFarmDrawer();
-      elements.mobileFarmDrawer.hidden = false;
-    });
+    elements.mobileNavFarms.addEventListener("click", openMobileFarmDrawer);
     elements.closeMobileFarmDrawer.addEventListener("click", () => {
       elements.mobileFarmDrawer.hidden = true;
     });
