@@ -10315,7 +10315,7 @@ function renderRepBarChart() {
     data: {
       labels,
       datasets: [
-        { label: "Inseminações", data: dataInsem, backgroundColor: "#517a60" },
+        { label: "Inseminações", data: dataInsem, backgroundColor: "#5b8db8" },
         { label: "Entouradas", data: dataEntour, backgroundColor: "#c98c4f" },
         { label: "Prenha", data: dataPegou, backgroundColor: "#375b43" },
         { label: "Falhada", data: dataFalhou, backgroundColor: "#8c4b38" }
