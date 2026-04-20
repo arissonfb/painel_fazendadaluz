@@ -92,6 +92,7 @@
 
         <div class="sidebar-section">
           <span class="sidebar-label">Acesso rápido</span>
+          <button type="button" class="sidebar-shortcut shortcut-mobile-app" id="mobileAppButton">App no celular</button>
           <button type="button" class="sidebar-shortcut" id="sanitaryShortcut">Manejo Sanitário</button>
           <button type="button" class="sidebar-shortcut" id="potreirosShortcut">Potreiros</button>
           <button type="button" class="sidebar-shortcut" id="reproducaoShortcut">Reprodução</button>
@@ -1228,6 +1229,36 @@
         <button type="submit" class="action-btn secondary">Salvar nova senha</button>
       </div>
     </form>
+  </dialog>
+
+  <dialog id="mobileAppDialog" class="modal">
+    <div class="modal-card mobile-app-card" style="max-width:560px">
+      <div class="modal-header">
+        <div>
+          <p class="panel-kicker">Mobile</p>
+          <h2>Usar o sistema no celular</h2>
+        </div>
+        <button type="button" class="modal-close" id="closeMobileAppDialog" aria-label="Fechar">&#x2715;</button>
+      </div>
+      <div class="mobile-app-summary">
+        <span class="chip" id="mobileAppStatusChip">Acesso mobile</span>
+        <p class="mobile-app-intro" id="mobileAppIntro">
+          O app usa o mesmo banco do sistema web. Tudo que for registrado no celular aparece aqui no painel e vice-versa.
+        </p>
+      </div>
+      <div class="mobile-app-actions">
+        <a id="mobileAndroidLink" class="action-btn purchase mobile-app-link" href="#" target="_blank" rel="noopener noreferrer">Android</a>
+        <a id="mobileIosLink" class="ghost-btn mobile-app-link" href="#" target="_blank" rel="noopener noreferrer">iPhone</a>
+      </div>
+      <div class="mobile-app-notes">
+        <p><strong>Login:</strong> use o mesmo usuário e senha do sistema web.</p>
+        <p><strong>Sincronização:</strong> compras, vendas, manejo sanitário, reprodução e movimentações ficam compartilhados entre site e app.</p>
+        <p id="mobileAppHint"><strong>Dica:</strong> instale o app indicado acima e depois entre com a mesma conta usada no painel.</p>
+      </div>
+      <div class="modal-actions">
+        <a id="mobileSystemLink" class="ghost-btn mobile-app-link" href="https://fazenda-daluz.onrender.com" target="_blank" rel="noopener noreferrer">Abrir sistema web</a>
+      </div>
+    </div>
   </dialog>
 
   <dialog id="auditTrailDialog" class="modal">

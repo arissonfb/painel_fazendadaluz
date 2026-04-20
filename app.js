@@ -1,5 +1,12 @@
 const STORAGE_KEY = "painelPecuario.v2";
 const API_URL = "https://painel-pecuario-api.onrender.com";
+const MOBILE_APP_CONFIG = {
+  androidDownloadUrl: "",
+  iosDownloadUrl: "",
+  androidFallbackUrl: "https://play.google.com/store/apps/details?id=host.exp.exponent",
+  iosFallbackUrl: "https://apps.apple.com/app/expo-go/id982107779",
+  webUrl: "https://fazenda-daluz.onrender.com"
+};
 
 const FARM_CODE_PREFIXES = {
   "arapey":          "A",
@@ -864,6 +871,7 @@ const elements = {
   loginPassword: document.getElementById("loginPassword"),
   loginFeedback: document.getElementById("loginFeedback"),
   farmSwitch: document.getElementById("farmSwitch"),
+  mobileAppButton: document.getElementById("mobileAppButton"),
   sanitaryShortcut: document.getElementById("sanitaryShortcut"),
   reproducaoShortcut: document.getElementById("reproducaoShortcut"),
   quickComprasBtn: document.getElementById("quickComprasBtn"),
@@ -1059,6 +1067,14 @@ const elements = {
   cancelUserEditButton: document.getElementById("cancelUserEditButton"),
   manageUsersForm: document.getElementById("manageUsersForm"),
   closeManageUsersDialog: document.getElementById("closeManageUsersDialog"),
+  mobileAppDialog: document.getElementById("mobileAppDialog"),
+  closeMobileAppDialog: document.getElementById("closeMobileAppDialog"),
+  mobileAppStatusChip: document.getElementById("mobileAppStatusChip"),
+  mobileAppIntro: document.getElementById("mobileAppIntro"),
+  mobileAppHint: document.getElementById("mobileAppHint"),
+  mobileAndroidLink: document.getElementById("mobileAndroidLink"),
+  mobileIosLink: document.getElementById("mobileIosLink"),
+  mobileSystemLink: document.getElementById("mobileSystemLink"),
   auditTrailDialog: document.getElementById("auditTrailDialog"),
   closeAuditTrailDialog: document.getElementById("closeAuditTrailDialog"),
   auditTrailSearch: document.getElementById("auditTrailSearch"),
@@ -1096,6 +1112,55 @@ const elements = {
   mobileFarmSwitchList: document.getElementById("mobileFarmSwitchList"),
   closeMobileFarmDrawer: document.getElementById("closeMobileFarmDrawer")
 };
+
+function hasDirectMobileDownload() {
+  return Boolean(String(MOBILE_APP_CONFIG.androidDownloadUrl || "").trim() || String(MOBILE_APP_CONFIG.iosDownloadUrl || "").trim());
+}
+
+function configureMobileAppLinks() {
+  const androidUrl = String(MOBILE_APP_CONFIG.androidDownloadUrl || "").trim() || MOBILE_APP_CONFIG.androidFallbackUrl;
+  const iosUrl = String(MOBILE_APP_CONFIG.iosDownloadUrl || "").trim() || MOBILE_APP_CONFIG.iosFallbackUrl;
+  const usingDirectDownload = hasDirectMobileDownload();
+
+  if (elements.mobileAndroidLink) {
+    elements.mobileAndroidLink.href = androidUrl;
+    elements.mobileAndroidLink.textContent = String(MOBILE_APP_CONFIG.androidDownloadUrl || "").trim()
+      ? "Baixar APK Android"
+      : "Instalar Expo Go no Android";
+  }
+
+  if (elements.mobileIosLink) {
+    elements.mobileIosLink.href = iosUrl;
+    elements.mobileIosLink.textContent = String(MOBILE_APP_CONFIG.iosDownloadUrl || "").trim()
+      ? "Baixar app no iPhone"
+      : "Instalar Expo Go no iPhone";
+  }
+
+  if (elements.mobileSystemLink) {
+    elements.mobileSystemLink.href = MOBILE_APP_CONFIG.webUrl;
+  }
+
+  if (elements.mobileAppStatusChip) {
+    elements.mobileAppStatusChip.textContent = usingDirectDownload ? "Download disponível" : "Acesso via Expo Go";
+  }
+
+  if (elements.mobileAppIntro) {
+    elements.mobileAppIntro.textContent = usingDirectDownload
+      ? "Baixe o app no celular e entre com o mesmo usuário do sistema web. Os dados continuam sincronizados entre app e site."
+      : "O app usa o mesmo banco do sistema web. Enquanto o APK final não estiver publicado, o acesso no celular acontece pelo Expo Go com a mesma conta do painel.";
+  }
+
+  if (elements.mobileAppHint) {
+    elements.mobileAppHint.innerHTML = usingDirectDownload
+      ? "<strong>Dica:</strong> depois de publicar um novo APK, basta trocar a URL em <code>MOBILE_APP_CONFIG.androidDownloadUrl</code>."
+      : "<strong>Dica:</strong> quando o APK Android estiver pronto, basta preencher <code>MOBILE_APP_CONFIG.androidDownloadUrl</code> no <code>app.js</code> para o botão baixar direto.";
+  }
+}
+
+function openMobileAppDialog() {
+  configureMobileAppLinks();
+  elements.mobileAppDialog?.showModal();
+}
 
 function collapseDashboardSection(section) {
   if (!section) {
@@ -2721,10 +2786,13 @@ function createStandardFarm(id, name) {
 }
 
 function bindEvents() {
+  configureMobileAppLinks();
   elements.loginForm.addEventListener("submit", handleLoginSubmit);
   elements.loginRoleTabs.forEach((button) => {
     button.addEventListener("click", () => setAuthLoginMode(button.dataset.authRole));
   });
+  elements.mobileAppButton?.addEventListener("click", openMobileAppDialog);
+  elements.closeMobileAppDialog?.addEventListener("click", () => elements.mobileAppDialog.close());
   elements.manageUsersButton.addEventListener("click", openManageUsersDialog);
   elements.backupButton.addEventListener("click", exportBackup);
   elements.restoreButton.addEventListener("click", () => elements.restoreFileInput.click());

@@ -315,6 +315,16 @@ body::before {
   background: rgba(180, 100, 30, 0.22);
 }
 
+.sidebar-shortcut.shortcut-mobile-app {
+  background: linear-gradient(135deg, rgba(55, 91, 67, 0.14), rgba(211, 155, 92, 0.22));
+  color: var(--green-deep);
+  border-color: rgba(55, 91, 67, 0.18);
+}
+
+.sidebar-shortcut.shortcut-mobile-app:hover {
+  background: linear-gradient(135deg, rgba(55, 91, 67, 0.22), rgba(211, 155, 92, 0.3));
+}
+
 .sidebar-shortcut.backup-btn {
   background: #d39b5c;
   color: #fff;
@@ -2423,6 +2433,37 @@ th {
 
 .modal-card-wide {
   width: min(920px, calc(100vw - 24px));
+}
+
+.mobile-app-card {
+  display: grid;
+  gap: 18px;
+}
+
+.mobile-app-summary,
+.mobile-app-notes {
+  display: grid;
+  gap: 12px;
+}
+
+.mobile-app-intro,
+.mobile-app-notes p {
+  margin: 0;
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.mobile-app-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.mobile-app-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
 }
 
 .georef-dialog-card {
