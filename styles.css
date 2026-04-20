@@ -4934,8 +4934,16 @@ th {
 }
 
 .rep-donut-wrap {
-  max-width: 240px;
+  max-width: 180px;
   margin: 0 auto;
+}
+
+#repBarChart {
+  max-height: 220px;
+}
+
+#repDonutChart {
+  max-height: 180px;
 }
 
 .rep-donut-legend {
