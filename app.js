@@ -1,10 +1,10 @@
 const STORAGE_KEY = "painelPecuario.v2";
 const API_URL = "https://painel-pecuario-api.onrender.com";
 const MOBILE_APP_CONFIG = {
-  androidDownloadUrl: "",
+  androidDownloadUrl: "https://expo.dev/artifacts/eas/nWa4UbJ1YMANp2pg9tvNQP.apk",
   iosDownloadUrl: "",
-  androidFallbackUrl: "https://play.google.com/store/apps/details?id=host.exp.exponent",
-  iosFallbackUrl: "https://apps.apple.com/app/expo-go/id982107779",
+  androidFallbackUrl: "",
+  iosFallbackUrl: "",
   webUrl: "https://fazenda-daluz.onrender.com"
 };
 
@@ -1122,22 +1122,24 @@ function hasDirectMobileDownload() {
 }
 
 function configureMobileAppLinks() {
-  const androidUrl = String(MOBILE_APP_CONFIG.androidDownloadUrl || "").trim() || MOBILE_APP_CONFIG.androidFallbackUrl;
-  const iosUrl = String(MOBILE_APP_CONFIG.iosDownloadUrl || "").trim() || MOBILE_APP_CONFIG.iosFallbackUrl;
-  const usingDirectDownload = hasDirectMobileDownload();
+  const androidDirectUrl = String(MOBILE_APP_CONFIG.androidDownloadUrl || "").trim();
+  const iosDirectUrl = String(MOBILE_APP_CONFIG.iosDownloadUrl || "").trim();
+  const androidUrl = androidDirectUrl || MOBILE_APP_CONFIG.androidFallbackUrl || MOBILE_APP_CONFIG.webUrl;
+  const iosUrl = iosDirectUrl || MOBILE_APP_CONFIG.iosFallbackUrl || MOBILE_APP_CONFIG.webUrl;
+  const usingDirectDownload = Boolean(androidDirectUrl || iosDirectUrl);
 
   if (elements.mobileAndroidLink) {
     elements.mobileAndroidLink.href = androidUrl;
-    elements.mobileAndroidLink.textContent = String(MOBILE_APP_CONFIG.androidDownloadUrl || "").trim()
+    elements.mobileAndroidLink.textContent = androidDirectUrl
       ? "Baixar APK Android"
-      : "Instalar Expo Go no Android";
+      : "APK Android em breve";
   }
 
   if (elements.mobileIosLink) {
     elements.mobileIosLink.href = iosUrl;
-    elements.mobileIosLink.textContent = String(MOBILE_APP_CONFIG.iosDownloadUrl || "").trim()
+    elements.mobileIosLink.textContent = iosDirectUrl
       ? "Baixar app no iPhone"
-      : "Instalar Expo Go no iPhone";
+      : "iPhone em breve";
   }
 
   if (elements.mobileSystemLink) {
@@ -1145,13 +1147,13 @@ function configureMobileAppLinks() {
   }
 
   if (elements.mobileAppStatusChip) {
-    elements.mobileAppStatusChip.textContent = usingDirectDownload ? "Download disponível" : "Acesso via Expo Go";
+    elements.mobileAppStatusChip.textContent = usingDirectDownload ? "Download disponível" : "APK em preparação";
   }
 
   if (elements.mobileAppIntro) {
     elements.mobileAppIntro.textContent = usingDirectDownload
       ? "Baixe o app no celular e entre com o mesmo usuário do sistema web. Os dados continuam sincronizados entre app e site."
-      : "O app usa o mesmo banco do sistema web. Enquanto o APK final não estiver publicado, o acesso no celular acontece pelo Expo Go com a mesma conta do painel.";
+      : "O app usará o mesmo banco do sistema web. Assim que o APK Android estiver publicado, o download será direto pelo sistema.";
   }
 
   if (elements.mobileAppHint) {
