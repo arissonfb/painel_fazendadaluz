@@ -59,14 +59,14 @@ export default function PerfilScreen() {
 
   async function handleReport() {
     if (!farms.length) {
-      Alert.alert("Relatorio", "Nenhuma fazenda disponivel para gerar o PDF.");
+      Alert.alert("Relatório", "Nenhuma fazenda disponível para gerar o PDF.");
       return;
     }
     setReporting(true);
     try {
       await shareFarmReport(farms[0]);
     } catch (error) {
-      Alert.alert("Erro", error.message || "Nao foi possivel gerar o relatorio.");
+      Alert.alert("Erro", error.message || "Não foi possível gerar o relatório.");
     } finally {
       setReporting(false);
     }
@@ -74,14 +74,14 @@ export default function PerfilScreen() {
 
   async function handleSanitaryReport() {
     if (!farms.length) {
-      Alert.alert("Relatorio", "Nenhuma fazenda disponivel para gerar o PDF.");
+      Alert.alert("Relatório", "Nenhuma fazenda disponível para gerar o PDF.");
       return;
     }
     setReportingSanitary(true);
     try {
       await shareSanitaryReport(farms[0]);
     } catch (error) {
-      Alert.alert("Erro", error.message || "Nao foi possivel gerar o relatorio sanitario.");
+      Alert.alert("Erro", error.message || "Não foi possível gerar o relatório sanitário.");
     } finally {
       setReportingSanitary(false);
     }
@@ -97,20 +97,20 @@ export default function PerfilScreen() {
           <View style={{ flex: 1 }}>
             <Text style={styles.userName}>{user?.username}</Text>
             <Text style={styles.userRole}>{user?.role === "admin" ? "Administrador do sistema" : "Operador"}</Text>
-            <Text style={styles.syncLabel}>Ultima sincronizacao: {lastSync ? lastSync.toLocaleString("pt-BR") : "—"}</Text>
+            <Text style={styles.syncLabel}>Última sincronização: {lastSync ? lastSync.toLocaleString("pt-BR") : "—"}</Text>
           </View>
         </View>
 
         <View style={styles.summaryGrid}>
           <SummaryCard title="Fazendas" value={farms.length} helper="ativas no app" icon="leaf" tone="primary" />
           <SummaryCard title="Animais" value={totalAnimals} helper="estoque total" icon="paw" tone="accent" />
-          <SummaryCard title="Sanitario" value={totalSanitary} helper="registros" icon="medkit" tone="blue" />
+          <SummaryCard title="Sanitário" value={totalSanitary} helper="registros" icon="medkit" tone="blue" />
           <SummaryCard title="Prenhez" value={`${reproStats.taxa}%`} helper={`${reproStats.totalPrenha} prenhas`} icon="heart" tone="danger" />
         </View>
 
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Operacao do sistema</Text>
-          <InfoRow icon="swap-horizontal-outline" label="Movimentacoes registradas" value={String(totalMovements)} />
+          <Text style={styles.sectionTitle}>Operação do sistema</Text>
+          <InfoRow icon="swap-horizontal-outline" label="Movimentações registradas" value={String(totalMovements)} />
           <Divider />
           <InfoRow icon="server-outline" label="Base sincronizada" value="Render + PostgreSQL" />
           <Divider />
@@ -118,7 +118,7 @@ export default function PerfilScreen() {
         </View>
 
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Acoes</Text>
+          <Text style={styles.sectionTitle}>Ações</Text>
           <ActionRow
             icon="sync-outline"
             label="Sincronizar agora"
@@ -130,8 +130,8 @@ export default function PerfilScreen() {
           <Divider />
           <ActionRow
             icon="document-text-outline"
-            label="Relatorio geral PDF"
-            helper="Movimentacoes, reproducao e estoque"
+            label="Relatório geral PDF"
+            helper="Movimentações, reprodução e estoque"
             color={colors.blue}
             loading={reporting}
             onPress={handleReport}
@@ -139,8 +139,8 @@ export default function PerfilScreen() {
           <Divider />
           <ActionRow
             icon="medkit-outline"
-            label="Relatorio sanitario PDF"
-            helper="Todos os registros de manejo sanitario"
+            label="Relatório sanitário PDF"
+            helper="Todos os registros de manejo sanitário"
             color={colors.accent}
             loading={reportingSanitary}
             onPress={handleSanitaryReport}
@@ -149,7 +149,7 @@ export default function PerfilScreen() {
           <ActionRow
             icon="log-out-outline"
             label="Sair do sistema"
-            helper="Encerra a sessao atual"
+            helper="Encerra a sessão atual"
             color={colors.danger}
             loading={loggingOut}
             onPress={confirmLogout}

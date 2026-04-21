@@ -34,11 +34,7 @@ export default function DashboardScreen({ navigation }) {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    try {
-      await pull();
-    } catch {
-      // ignore
-    }
+    try { await pull(); } catch { }
     setRefreshing(false);
   }, [pull]);
 
@@ -76,19 +72,49 @@ export default function DashboardScreen({ navigation }) {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
       >
-        <View style={styles.heroCard}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.greeting}>Ola, {user?.username}</Text>
-            <Text style={styles.headerSub}>{lastSync ? `Atualizado ${fmtDate(lastSync.toISOString())}` : "Fazendas Da Luz"}</Text>
-            <Text style={styles.heroTitle}>{currentFarmName}</Text>
-            <Text style={styles.heroText}>Visao premium do manejo com reproducao, sanitario, movimentacao e relatorios.</Text>
+        {/* ── HERO BRANDING ───────────────────────────────────── */}
+        <View style={styles.brandHero}>
+          <View style={styles.brandTopRow}>
+            <View>
+              <Text style={styles.brandEyebrow}>PAINEL PECUÁRIO</Text>
+              <Text style={styles.brandName}>Fazendas Da Luz</Text>
+            </View>
+            <View style={[styles.syncBadge, syncing && styles.syncBadgeActive]}>
+              <Ionicons name={syncing ? "sync" : "cloud-done-outline"} size={12} color={syncing ? colors.accent : "#a8c4b0"} />
+              <Text style={[styles.syncBadgeText, syncing && { color: colors.accent }]}>{syncing ? "Sync..." : "Online"}</Text>
+            </View>
           </View>
-          <View style={[styles.syncChip, syncing && styles.syncChipActive]}>
-            <Ionicons name={syncing ? "sync" : "cloud-done-outline"} size={14} color={syncing ? colors.accent : colors.primary} />
-            <Text style={[styles.syncLabel, syncing && { color: colors.accent }]}>{syncing ? "Sync..." : "Online"}</Text>
+
+          <Text style={styles.heroGreeting}>Olá, {user?.username}</Text>
+          <Text style={styles.heroNumber}>{totalAnimals.toLocaleString("pt-BR")}</Text>
+          <Text style={styles.heroSub}>
+            animais em estoque · {currentFarmName}
+          </Text>
+
+          <View style={styles.heroStrip}>
+            <View style={styles.heroMetric}>
+              <Text style={styles.heroMetricValue}>{repStats.taxa}%</Text>
+              <Text style={styles.heroMetricLabel}>Prenhez</Text>
+            </View>
+            <View style={styles.heroStripDiv} />
+            <View style={styles.heroMetric}>
+              <Text style={styles.heroMetricValue}>{totalSanitary}</Text>
+              <Text style={styles.heroMetricLabel}>Sanitário</Text>
+            </View>
+            <View style={styles.heroStripDiv} />
+            <View style={styles.heroMetric}>
+              <Text style={styles.heroMetricValue}>{totalMovements}</Text>
+              <Text style={styles.heroMetricLabel}>Movimentos</Text>
+            </View>
+            <View style={styles.heroStripDiv} />
+            <View style={styles.heroMetric}>
+              <Text style={styles.heroMetricValue}>{repStats.aguardando}</Text>
+              <Text style={styles.heroMetricLabel}>Pendentes</Text>
+            </View>
           </View>
         </View>
 
+        {/* ── SELETOR DE FAZENDA ─────────────────────────────── */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsScroll}>
           <View style={styles.tabs}>
             <TouchableOpacity style={[styles.tab, isTotal && styles.tabActive]} onPress={() => setSelectedFarm(TOTAL_ID)}>
@@ -105,37 +131,71 @@ export default function DashboardScreen({ navigation }) {
           </View>
         </ScrollView>
 
-        <View style={styles.quickRibbon}>
-          <QuickRibbonItem icon="sparkles" label="Inicio" helper="Painel geral" />
-          <QuickRibbonItem icon="heart-circle" label="Reproducao" helper={`${repStats.aguardando} pendentes`} />
-          <QuickRibbonItem icon="medkit" label="Sanitario" helper={`${totalSanitary} manejos`} />
-          <QuickRibbonItem icon="swap-horizontal" label="Movimentacao" helper={`${totalMovements} registros`} />
-          <QuickRibbonItem icon="person-circle" label="Perfil" helper="Relatorios e sync" />
-        </View>
-
+        {/* ── KPIs PRINCIPAIS ────────────────────────────────── */}
         <View style={styles.kpiRow}>
-          <KpiCard icon="paw" iconColor={colors.primary} iconBg={colors.primaryFaded} label="Estoque total" value={totalAnimals.toLocaleString("pt-BR")} unit="animais" />
-          <KpiCard icon="heart-circle" iconColor={colors.accent} iconBg={colors.accentFaded} label="Taxa de prenhez" value={`${repStats.taxa}%`} unit="reproducao" />
+          <KpiCard
+            icon="paw"
+            iconColor={colors.primary}
+            iconBg={colors.primaryFaded}
+            label="Estoque total"
+            value={totalAnimals.toLocaleString("pt-BR")}
+            unit="animais"
+          />
+          <KpiCard
+            icon="heart-circle"
+            iconColor={colors.accent}
+            iconBg={colors.accentFaded}
+            label="Taxa de prenhez"
+            value={`${repStats.taxa}%`}
+            unit="reprodução"
+          />
         </View>
 
-        <SectionTitle title="Reproducao" onPress={() => navigation.navigate("Reproducao")} />
+        {/* ── REPRODUÇÃO ─────────────────────────────────────── */}
+        <SectionTitle title="Reprodução" onPress={() => navigation.navigate("Reproducao")} />
         <View style={styles.kpiGrid}>
-          <SmallKpi label="Inseminacoes" value={repStats.totalInsem} color={colors.blue} />
-          <SmallKpi label="Entouradas" value={repStats.totalEntour} color={colors.accent} />
-          <SmallKpi label="Prenhas" value={repStats.totalPrenha} color={colors.primary} />
-          <SmallKpi label="Falhadas" value={repStats.totalFalhada} color={colors.danger} />
-          <SmallKpi label="Aguardando" value={repStats.aguardando} color={colors.textSecondary} />
-          <SmallKpi label="Taxa" value={`${repStats.taxa}%`} color={colors.primary} isHighlight />
+          <SmallKpi label="Inseminações" value={repStats.totalInsem} color={colors.blue} icon="flask" />
+          <SmallKpi label="Entouradas" value={repStats.totalEntour} color={colors.accent} icon="paw" />
+          <SmallKpi label="Prenhas" value={repStats.totalPrenha} color={colors.primary} icon="checkmark-circle" />
+          <SmallKpi label="Falhadas" value={repStats.totalFalhada} color={colors.danger} icon="close-circle" />
+          <SmallKpi label="Aguardando" value={repStats.aguardando} color={colors.textSecondary} icon="time" />
+          <SmallKpi label="Taxa" value={`${repStats.taxa}%`} color={colors.primary} icon="analytics" isHighlight />
         </View>
 
-        <SectionTitle title="Operacao diaria" />
+        {/* ── MÓDULOS ────────────────────────────────────────── */}
+        <SectionTitle title="Operação diária" />
         <View style={styles.moduleGrid}>
-          <ModuleCard title="Reproducao" subtitle={`${repStats.totalPrenha} prenhas | ${repStats.aguardando} aguardando`} icon="heart-circle" color={colors.primary} onPress={() => navigation.navigate("Reproducao")} />
-          <ModuleCard title="Sanitario" subtitle={`${totalSanitary} registros | ${activeFarms.reduce((acc, farm) => acc + (farm.sanitaryProducts?.length || 0), 0)} produtos`} icon="medkit" color={colors.blue} onPress={() => navigation.navigate("Sanitario")} />
-          <ModuleCard title="Movimentacoes" subtitle={`Saldo ${movementSummary.saldo} | ${movementSummary.venda} vendas`} icon="swap-horizontal" color={colors.accent} onPress={() => navigation.navigate("Movimentacoes")} />
-          <ModuleCard title="Perfil e relatorios" subtitle="Sincronizacao, PDF e administracao" icon="person-circle" color={colors.danger} onPress={() => navigation.navigate("Perfil")} />
+          <ModuleCard
+            title="Reprodução"
+            subtitle={`${repStats.totalPrenha} prenhas · ${repStats.aguardando} aguardando`}
+            icon="heart-circle"
+            color={colors.primary}
+            onPress={() => navigation.navigate("Reproducao")}
+          />
+          <ModuleCard
+            title="Sanitário"
+            subtitle={`${totalSanitary} registros · ${activeFarms.reduce((acc, farm) => acc + (farm.sanitaryProducts?.length || 0), 0)} produtos`}
+            icon="medkit"
+            color={colors.blue}
+            onPress={() => navigation.navigate("Sanitario")}
+          />
+          <ModuleCard
+            title="Movimentações"
+            subtitle={`Saldo ${movementSummary.saldo > 0 ? "+" : ""}${movementSummary.saldo} · ${movementSummary.venda} vendas`}
+            icon="swap-horizontal"
+            color={colors.accent}
+            onPress={() => navigation.navigate("Movimentacoes")}
+          />
+          <ModuleCard
+            title="Perfil e relatórios"
+            subtitle="Sincronização, PDF e administração"
+            icon="person-circle"
+            color={colors.danger}
+            onPress={() => navigation.navigate("Perfil")}
+          />
         </View>
 
+        {/* ── ESTOQUE POR FAZENDA ────────────────────────────── */}
         {isTotal ? (
           <>
             <SectionTitle title="Estoque por fazenda" />
@@ -145,19 +205,17 @@ export default function DashboardScreen({ navigation }) {
                 const stats = calcReproStats(farm.reproductionRecords || []);
                 return (
                   <TouchableOpacity key={farm.id} style={styles.farmCard} onPress={() => setSelectedFarm(farm.id)} activeOpacity={0.85}>
-                    <View style={styles.farmCardLeft}>
-                      <View style={styles.farmDot} />
-                      <View>
-                        <Text style={styles.farmCardName}>{farm.name}</Text>
-                        <Text style={styles.farmCardCurrency}>{farm.currency || "Rebanho ativo"}</Text>
-                      </View>
+                    <View style={styles.farmDot} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.farmCardName}>{farm.name}</Text>
+                      <Text style={styles.farmCardSub}>{farm.currency || "Rebanho ativo"}</Text>
                     </View>
-                    <View style={styles.farmCardRight}>
-                      <Text style={styles.farmCardStock}>{stock.toLocaleString("pt-BR")}</Text>
+                    <View style={styles.farmCardStat}>
+                      <Text style={styles.farmCardNumber}>{stock.toLocaleString("pt-BR")}</Text>
                       <Text style={styles.farmCardUnit}>animais</Text>
                     </View>
-                    <View style={styles.farmCardRepro}>
-                      <Text style={styles.farmCardTaxa}>{stats.taxa}%</Text>
+                    <View style={styles.farmCardStat}>
+                      <Text style={[styles.farmCardNumber, { color: colors.accent }]}>{stats.taxa}%</Text>
                       <Text style={styles.farmCardUnit}>prenhez</Text>
                     </View>
                     <Ionicons name="chevron-forward" size={16} color={colors.textLight} />
@@ -175,9 +233,10 @@ export default function DashboardScreen({ navigation }) {
 function SectionTitle({ title, onPress }) {
   return (
     <View style={styles.sectionRow}>
+      <View style={styles.sectionAccent} />
       <Text style={styles.sectionTitle}>{title}</Text>
       {onPress ? (
-        <TouchableOpacity onPress={onPress}>
+        <TouchableOpacity onPress={onPress} style={{ marginLeft: "auto" }}>
           <Text style={styles.sectionLink}>Ver tudo</Text>
         </TouchableOpacity>
       ) : null}
@@ -185,23 +244,23 @@ function SectionTitle({ title, onPress }) {
   );
 }
 
-function KpiCard({ icon, iconColor, iconBg, label, value, unit, onPress }) {
-  const Wrapper = onPress ? TouchableOpacity : View;
+function KpiCard({ icon, iconColor, iconBg, label, value, unit }) {
   return (
-    <Wrapper style={styles.kpiCard} onPress={onPress} activeOpacity={0.85}>
+    <View style={styles.kpiCard}>
       <View style={[styles.kpiIcon, { backgroundColor: iconBg }]}>
         <Ionicons name={icon} size={26} color={iconColor} />
       </View>
       <Text style={styles.kpiValue}>{value}</Text>
       <Text style={styles.kpiLabel}>{label}</Text>
       {unit ? <Text style={styles.kpiUnit}>{unit}</Text> : null}
-    </Wrapper>
+    </View>
   );
 }
 
-function SmallKpi({ label, value, color, isHighlight }) {
+function SmallKpi({ label, value, color, icon, isHighlight }) {
   return (
     <View style={[styles.smallKpi, isHighlight && { backgroundColor: colors.primaryFaded }]}>
+      <Ionicons name={icon} size={16} color={color} style={{ marginBottom: 4 }} />
       <Text style={[styles.smallKpiValue, { color }]}>{value}</Text>
       <Text style={styles.smallKpiLabel}>{label}</Text>
     </View>
@@ -211,60 +270,87 @@ function SmallKpi({ label, value, color, isHighlight }) {
 function ModuleCard({ title, subtitle, icon, color, onPress }) {
   return (
     <TouchableOpacity style={styles.moduleCard} onPress={onPress} activeOpacity={0.85}>
-      <View style={[styles.moduleIcon, { backgroundColor: `${color}20` }]}>
+      <View style={[styles.moduleAccentBar, { backgroundColor: color }]} />
+      <View style={[styles.moduleIconWrap, { backgroundColor: `${color}18` }]}>
         <Ionicons name={icon} size={26} color={color} />
       </View>
       <Text style={styles.moduleTitle}>{title}</Text>
       <Text style={styles.moduleSubtitle}>{subtitle}</Text>
-      <Ionicons name="chevron-forward" size={16} color={colors.textLight} style={{ marginTop: spacing.sm }} />
-    </TouchableOpacity>
-  );
-}
-
-function QuickRibbonItem({ icon, label, helper }) {
-  return (
-    <View style={styles.ribbonItem}>
-      <View style={styles.ribbonIcon}>
-        <Ionicons name={icon} size={16} color={colors.primary} />
+      <View style={styles.moduleFooter}>
+        <Text style={[styles.moduleAction, { color }]}>Acessar</Text>
+        <Ionicons name="arrow-forward" size={14} color={color} />
       </View>
-      <Text style={styles.ribbonLabel}>{label}</Text>
-      <Text style={styles.ribbonHelper}>{helper}</Text>
-    </View>
+    </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   scroll: { flex: 1 },
-  content: { padding: spacing.md, paddingBottom: 112 },
+  content: { paddingBottom: 120 },
   loadingCenter: { flex: 1, justifyContent: "center", alignItems: "center" },
-  heroCard: {
-    backgroundColor: colors.card,
-    borderRadius: radius.xl,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    ...shadow.md,
+
+  // ── BRAND HERO ──────────────────────────────────────────────
+  brandHero: {
+    backgroundColor: colors.primaryDark,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
     marginBottom: spacing.md,
   },
-  greeting: { fontSize: 20, fontWeight: "800", color: colors.text },
-  headerSub: { fontSize: 12, color: colors.textLight, marginTop: 2 },
-  heroTitle: { fontSize: 24, fontWeight: "800", color: colors.primary, marginTop: spacing.sm },
-  heroText: { fontSize: 13, color: colors.textSecondary, marginTop: 6, lineHeight: 18, maxWidth: "90%" },
-  syncChip: {
+  brandTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: spacing.md,
+  },
+  brandEyebrow: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: colors.accent,
+    letterSpacing: 2,
+  },
+  brandName: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#ffffff",
+    marginTop: 2,
+    letterSpacing: -0.3,
+  },
+  syncBadge: {
     flexDirection: "row",
     alignItems: "center",
-    alignSelf: "flex-start",
-    backgroundColor: colors.primaryFaded,
+    gap: 4,
+    backgroundColor: "rgba(255,255,255,0.1)",
     borderRadius: radius.full,
     paddingHorizontal: 10,
     paddingVertical: 5,
-    gap: 4,
-    marginTop: spacing.md,
   },
-  syncChipActive: { backgroundColor: colors.accentFaded },
-  syncLabel: { fontSize: 11, fontWeight: "700", color: colors.primary },
-  tabsScroll: { marginBottom: spacing.md },
+  syncBadgeActive: { backgroundColor: "rgba(201,140,79,0.15)" },
+  syncBadgeText: { fontSize: 11, fontWeight: "600", color: "#a8c4b0" },
+  heroGreeting: { fontSize: 13, color: "#a8c4b0", marginBottom: 4 },
+  heroNumber: {
+    fontSize: 56,
+    fontWeight: "800",
+    color: "#ffffff",
+    letterSpacing: -2,
+    lineHeight: 60,
+  },
+  heroSub: { fontSize: 13, color: "#a8c4b0", marginBottom: spacing.md },
+  heroStrip: {
+    flexDirection: "row",
+    backgroundColor: "rgba(255,255,255,0.07)",
+    borderRadius: radius.md,
+    paddingVertical: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  heroMetric: { flex: 1, alignItems: "center" },
+  heroMetricValue: { fontSize: 18, fontWeight: "800", color: "#ffffff" },
+  heroMetricLabel: { fontSize: 10, color: "#a8c4b0", marginTop: 2, fontWeight: "600" },
+  heroStripDiv: { width: 1, backgroundColor: "rgba(255,255,255,0.12)", marginVertical: 4 },
+
+  // ── FARM TABS ───────────────────────────────────────────────
+  tabsScroll: { marginHorizontal: spacing.md, marginBottom: spacing.md },
   tabs: { flexDirection: "row", gap: spacing.sm, paddingRight: spacing.md },
   tab: {
     paddingHorizontal: spacing.md,
@@ -277,29 +363,9 @@ const styles = StyleSheet.create({
   tabActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   tabText: { fontSize: 13, fontWeight: "700", color: colors.textSecondary },
   tabTextActive: { color: colors.textInverse },
-  quickRibbon: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginBottom: spacing.md },
-  ribbonItem: {
-    width: "30.5%",
-    minHeight: 88,
-    backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    padding: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-    ...shadow.sm,
-  },
-  ribbonIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: colors.primaryFaded,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  ribbonLabel: { fontSize: 12, fontWeight: "800", color: colors.text },
-  ribbonHelper: { fontSize: 10, color: colors.textSecondary, marginTop: 4, lineHeight: 14 },
-  kpiRow: { flexDirection: "row", gap: spacing.sm, marginBottom: spacing.md },
+
+  // ── KPI ROW ─────────────────────────────────────────────────
+  kpiRow: { flexDirection: "row", gap: spacing.sm, marginHorizontal: spacing.md, marginBottom: spacing.md },
   kpiCard: {
     flex: 1,
     backgroundColor: colors.card,
@@ -317,19 +383,31 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: spacing.sm,
   },
-  kpiValue: { fontSize: 24, fontWeight: "800", color: colors.text },
+  kpiValue: { fontSize: 26, fontWeight: "800", color: colors.text },
   kpiLabel: { fontSize: 12, fontWeight: "700", color: colors.textSecondary, marginTop: 2 },
   kpiUnit: { fontSize: 11, color: colors.textLight, marginTop: 1 },
+
+  // ── SECTION TITLE ───────────────────────────────────────────
   sectionRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    marginHorizontal: spacing.md,
     marginBottom: spacing.sm,
     marginTop: spacing.xs,
+    gap: spacing.sm,
   },
+  sectionAccent: { width: 4, height: 18, borderRadius: 2, backgroundColor: colors.accent },
   sectionTitle: { fontSize: 15, fontWeight: "800", color: colors.text },
   sectionLink: { fontSize: 13, color: colors.primary, fontWeight: "700" },
-  kpiGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginBottom: spacing.md },
+
+  // ── KPI GRID (reprodução) ───────────────────────────────────
+  kpiGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.md,
+  },
   smallKpi: {
     width: "30.5%",
     backgroundColor: colors.card,
@@ -342,27 +420,48 @@ const styles = StyleSheet.create({
   },
   smallKpiValue: { fontSize: 20, fontWeight: "800" },
   smallKpiLabel: { fontSize: 10, fontWeight: "700", color: colors.textLight, marginTop: 2, textAlign: "center" },
-  moduleGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginBottom: spacing.md },
+
+  // ── MODULE CARDS ────────────────────────────────────────────
+  moduleGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.md,
+  },
   moduleCard: {
     width: "48.5%",
     backgroundColor: colors.card,
     borderRadius: radius.lg,
-    padding: spacing.md,
+    overflow: "hidden",
     borderWidth: 1,
     borderColor: colors.border,
     ...shadow.sm,
   },
-  moduleIcon: {
+  moduleAccentBar: { height: 4, width: "100%" },
+  moduleIconWrap: {
     width: 52,
     height: 52,
     borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
+    margin: spacing.md,
     marginBottom: spacing.sm,
   },
-  moduleTitle: { fontSize: 15, fontWeight: "800", color: colors.text },
-  moduleSubtitle: { fontSize: 12, color: colors.textSecondary, marginTop: 6, lineHeight: 17 },
-  farmsList: { gap: spacing.sm, marginBottom: spacing.md },
+  moduleTitle: { fontSize: 15, fontWeight: "800", color: colors.text, paddingHorizontal: spacing.md },
+  moduleSubtitle: { fontSize: 12, color: colors.textSecondary, marginTop: 4, lineHeight: 17, paddingHorizontal: spacing.md },
+  moduleFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  moduleAction: { fontSize: 12, fontWeight: "700" },
+
+  // ── FARM CARDS ──────────────────────────────────────────────
+  farmsList: { gap: spacing.sm, marginHorizontal: spacing.md, marginBottom: spacing.md },
   farmCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -374,13 +473,10 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     ...shadow.sm,
   },
-  farmCardLeft: { flexDirection: "row", alignItems: "center", gap: spacing.sm, flex: 1 },
   farmDot: { width: 4, height: 22, borderRadius: 2, backgroundColor: colors.primary },
   farmCardName: { fontSize: 14, fontWeight: "800", color: colors.text },
-  farmCardCurrency: { fontSize: 11, color: colors.textLight },
-  farmCardRight: { alignItems: "flex-end", marginRight: spacing.sm },
-  farmCardRepro: { alignItems: "flex-end", marginRight: spacing.xs },
-  farmCardStock: { fontSize: 16, fontWeight: "800", color: colors.text },
-  farmCardTaxa: { fontSize: 16, fontWeight: "800", color: colors.primary },
+  farmCardSub: { fontSize: 11, color: colors.textLight, marginTop: 1 },
+  farmCardStat: { alignItems: "flex-end", marginRight: spacing.xs },
+  farmCardNumber: { fontSize: 16, fontWeight: "800", color: colors.text },
   farmCardUnit: { fontSize: 10, color: colors.textLight },
 });
