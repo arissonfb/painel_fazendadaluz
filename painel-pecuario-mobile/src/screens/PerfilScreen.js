@@ -64,7 +64,7 @@ export default function PerfilScreen() {
     }
     setReporting(true);
     try {
-      await shareFarmReport(farms[0]);
+      await shareFarmReport(farms);
     } catch (error) {
       Alert.alert("Erro", error.message || "Não foi possível gerar o relatório.");
     } finally {
@@ -79,7 +79,7 @@ export default function PerfilScreen() {
     }
     setReportingSanitary(true);
     try {
-      await shareSanitaryReport(farms[0]);
+      await shareSanitaryReport(farms);
     } catch (error) {
       Alert.alert("Erro", error.message || "Não foi possível gerar o relatório sanitário.");
     } finally {
