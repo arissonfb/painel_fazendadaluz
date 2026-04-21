@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "Fazendas Da Luz",
+    "slug": "painel-pecuario-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#375b43"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.fazendadaluz.painel",
+      "buildNumber": "1.0.0"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#375b43"
+      },
+      "package": "com.fazendadaluz.painel",
+      "versionCode": 2
+    },
+    "newArchEnabled": false,
+    "plugins": [
+      [
+        "expo-secure-store"
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "aa40ac57-c264-4e7d-8521-530fd9a9ebeb"
+      }
+    },
+    "owner": "balbuena.expo"
+  }
+}
