@@ -1,7 +1,7 @@
 const STORAGE_KEY = "painelPecuario.v2";
 const API_URL = "https://painel-pecuario-api.onrender.com";
 const MOBILE_APP_CONFIG = {
-  androidDownloadUrl: "https://expo.dev/artifacts/eas/2WxgCam3SgH7Ng4yzUEEBw.apk",
+  androidDownloadUrl: "https://expo.dev/artifacts/eas/cB3JaegfsXkawe9w4dX6T1.apk",
   iosDownloadUrl: "",
   androidFallbackUrl: "",
   iosFallbackUrl: "",
