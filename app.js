@@ -829,6 +829,11 @@ const runtime = {
   movementsYearFilter: "all",
   sanitarySearch: "",
   sanitaryPage: 0,
+  sanitaryFarmFilter: "all",
+  sanitaryDateFilter: "",
+  sanitaryPotreroFilter: "all",
+  sanitaryCategoryFilter: "all",
+  sanitaryProductFilter: "all",
   repPage: 0,
   repSearch: ""
 };
@@ -980,6 +985,12 @@ const elements = {
   sanitaryTableBody: document.getElementById("sanitaryTableBody"),
   sanitaryFarmSwitch: document.getElementById("sanitaryFarmSwitch"),
   sanitaryViewNote: document.getElementById("sanitaryViewNote"),
+  sanitaryFilterFarm: document.getElementById("sanitaryFilterFarm"),
+  sanitaryFilterDate: document.getElementById("sanitaryFilterDate"),
+  sanitaryFilterPotrero: document.getElementById("sanitaryFilterPotrero"),
+  sanitaryFilterCategory: document.getElementById("sanitaryFilterCategory"),
+  sanitaryFilterProduct: document.getElementById("sanitaryFilterProduct"),
+  clearSanitaryFiltersButton: document.getElementById("clearSanitaryFiltersButton"),
   potreirosShortcut: document.getElementById("potreirosShortcut"),
   potreirosView: document.getElementById("potreirosView"),
   potreirosAccordion: document.getElementById("potreirosAccordion"),
@@ -4003,6 +4014,7 @@ function renderFarmSwitch() {
       runtime.movementsSearch = "";
       runtime.sanitaryPage = 0;
       runtime.sanitarySearch = "";
+      resetSanitaryTableFilters();
       saveData();
       render();
     });
@@ -4932,6 +4944,102 @@ function renderSanitarySummary(farm) {
   `).join("");
 }
 
+function resetSanitaryTableFilters() {
+  runtime.sanitaryFarmFilter = "all";
+  runtime.sanitaryDateFilter = "";
+  runtime.sanitaryPotreroFilter = "all";
+  runtime.sanitaryCategoryFilter = "all";
+  runtime.sanitaryProductFilter = "all";
+}
+
+function setSanitarySelectOptions(select, options, selectedValue, allLabel) {
+  if (!select) {
+    return;
+  }
+
+  const normalizedOptions = Array.from(new Set(options.filter(Boolean))).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  const validValues = new Set(["all", ...normalizedOptions]);
+  const nextValue = validValues.has(selectedValue) ? selectedValue : "all";
+
+  select.innerHTML = [
+    `<option value="all">${escapeHtml(allLabel)}</option>`,
+    ...normalizedOptions.map((option) => `<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`)
+  ].join("");
+  select.value = nextValue;
+}
+
+function syncSanitaryHistoryFilters(allRecords, farm, isTotalView) {
+  const farmOptions = isTotalView
+    ? allRecords.map((record) => record._farmName)
+    : (farm?.name ? [farm.name] : []);
+  const potreroOptions = allRecords.map((record) => record.potreiro || "Sem potreiro");
+  const categoryOptions = allRecords.map((record) => record.categoryName || "");
+  const productOptions = allRecords.map((record) => record.product || "");
+
+  setSanitarySelectOptions(elements.sanitaryFilterFarm, farmOptions, runtime.sanitaryFarmFilter, "Todas as fazendas");
+  setSanitarySelectOptions(elements.sanitaryFilterPotrero, potreroOptions, runtime.sanitaryPotreroFilter, "Todos os potreiros");
+  setSanitarySelectOptions(elements.sanitaryFilterCategory, categoryOptions, runtime.sanitaryCategoryFilter, "Todas as categorias");
+  setSanitarySelectOptions(elements.sanitaryFilterProduct, productOptions, runtime.sanitaryProductFilter, "Todos os produtos");
+
+  if (elements.sanitaryFilterDate) {
+    elements.sanitaryFilterDate.value = runtime.sanitaryDateFilter;
+  }
+
+  if (elements.sanitaryFilterFarm) {
+    runtime.sanitaryFarmFilter = elements.sanitaryFilterFarm.value || "all";
+    elements.sanitaryFilterFarm.disabled = !isTotalView;
+    elements.sanitaryFilterFarm.onchange = (event) => {
+      runtime.sanitaryFarmFilter = event.target.value || "all";
+      runtime.sanitaryPage = 0;
+      renderSanitaryTable(getFarm());
+    };
+  }
+
+  if (elements.sanitaryFilterDate) {
+    elements.sanitaryFilterDate.oninput = (event) => {
+      runtime.sanitaryDateFilter = event.target.value || "";
+      runtime.sanitaryPage = 0;
+      renderSanitaryTable(getFarm());
+    };
+  }
+
+  if (elements.sanitaryFilterPotrero) {
+    runtime.sanitaryPotreroFilter = elements.sanitaryFilterPotrero.value || "all";
+    elements.sanitaryFilterPotrero.onchange = (event) => {
+      runtime.sanitaryPotreroFilter = event.target.value || "all";
+      runtime.sanitaryPage = 0;
+      renderSanitaryTable(getFarm());
+    };
+  }
+
+  if (elements.sanitaryFilterCategory) {
+    runtime.sanitaryCategoryFilter = elements.sanitaryFilterCategory.value || "all";
+    elements.sanitaryFilterCategory.onchange = (event) => {
+      runtime.sanitaryCategoryFilter = event.target.value || "all";
+      runtime.sanitaryPage = 0;
+      renderSanitaryTable(getFarm());
+    };
+  }
+
+  if (elements.sanitaryFilterProduct) {
+    runtime.sanitaryProductFilter = elements.sanitaryFilterProduct.value || "all";
+    elements.sanitaryFilterProduct.onchange = (event) => {
+      runtime.sanitaryProductFilter = event.target.value || "all";
+      runtime.sanitaryPage = 0;
+      renderSanitaryTable(getFarm());
+    };
+  }
+
+  if (elements.clearSanitaryFiltersButton) {
+    elements.clearSanitaryFiltersButton.onclick = () => {
+      runtime.sanitarySearch = "";
+      resetSanitaryTableFilters();
+      runtime.sanitaryPage = 0;
+      renderSanitaryTable(getFarm());
+    };
+  }
+}
+
 const SANITARY_PAGE_SIZE = 50;
 
 function renderSanitaryTable(farm) {
@@ -4947,11 +5055,21 @@ function renderSanitaryTable(farm) {
     allRecords = getFilteredSanitaryRecords(farm).map((r) => ({ ...r, _farmId: farm.id, _farmName: farm.name }));
   }
   allRecords = allRecords.sort((a, b) => new Date(b.date) - new Date(a.date));
+  syncSanitaryHistoryFilters(allRecords, farm, isTotalView);
+
+  const structurallyFiltered = allRecords.filter((record) => {
+    const matchesFarm = runtime.sanitaryFarmFilter === "all" || (record._farmName || "") === runtime.sanitaryFarmFilter;
+    const matchesDate = !runtime.sanitaryDateFilter || record.date === runtime.sanitaryDateFilter;
+    const matchesPotrero = runtime.sanitaryPotreroFilter === "all" || (record.potreiro || "Sem potreiro") === runtime.sanitaryPotreroFilter;
+    const matchesCategory = runtime.sanitaryCategoryFilter === "all" || (record.categoryName || "") === runtime.sanitaryCategoryFilter;
+    const matchesProduct = runtime.sanitaryProductFilter === "all" || (record.product || "") === runtime.sanitaryProductFilter;
+    return matchesFarm && matchesDate && matchesPotrero && matchesCategory && matchesProduct;
+  });
 
   // Search filter
   const query = runtime.sanitarySearch.trim().toLowerCase();
   const filtered = query
-    ? allRecords.filter((r) =>
+    ? structurallyFiltered.filter((r) =>
         (r.code || "").toLowerCase().includes(query) ||
         (r.product || "").toLowerCase().includes(query) ||
         (r.categoryName || "").toLowerCase().includes(query) ||
@@ -4959,7 +5077,7 @@ function renderSanitaryTable(farm) {
         (r.notes || "").toLowerCase().includes(query) ||
         (r._farmName || "").toLowerCase().includes(query)
       )
-    : allRecords;
+    : structurallyFiltered;
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / SANITARY_PAGE_SIZE));
   if (runtime.sanitaryPage >= totalPages) runtime.sanitaryPage = totalPages - 1;
@@ -4993,7 +5111,12 @@ function renderSanitaryTable(farm) {
   }
 
   if (!records.length) {
-    elements.sanitaryTableBody.innerHTML = `<tr><td colspan="9" class="table-empty-cell">${query ? "Nenhum registro encontrado." : "Nenhum registro sanitário no período."}</td></tr>`;
+    const hasStructuredFilters = runtime.sanitaryFarmFilter !== "all"
+      || Boolean(runtime.sanitaryDateFilter)
+      || runtime.sanitaryPotreroFilter !== "all"
+      || runtime.sanitaryCategoryFilter !== "all"
+      || runtime.sanitaryProductFilter !== "all";
+    elements.sanitaryTableBody.innerHTML = `<tr><td colspan="9" class="table-empty-cell">${query || hasStructuredFilters ? "Nenhum registro encontrado com os filtros aplicados." : "Nenhum registro sanitário no período."}</td></tr>`;
     return;
   }
 
@@ -5044,6 +5167,7 @@ function renderSanitaryFarmSwitch() {
     button.addEventListener("click", () => {
       state.data.selectedFarmId = item.id;
       state.activeView = "sanitary";
+      runtime.sanitaryPage = 0;
       saveData();
       render();
     });

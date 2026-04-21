@@ -491,6 +491,14 @@
             </div>
             <div class="san-history-toolbar">
               <input type="search" id="sanitaryHistorySearch" class="movements-search-input" placeholder="Buscar por código, produto, categoria…">
+              <div class="movements-filter-group san-history-filters">
+                <select id="sanitaryFilterFarm" class="movements-filter-select" aria-label="Filtrar por fazenda"></select>
+                <input type="date" id="sanitaryFilterDate" class="movements-filter-select san-history-date" aria-label="Filtrar por data">
+                <select id="sanitaryFilterPotrero" class="movements-filter-select" aria-label="Filtrar por potreiro"></select>
+                <select id="sanitaryFilterCategory" class="movements-filter-select" aria-label="Filtrar por categoria"></select>
+                <select id="sanitaryFilterProduct" class="movements-filter-select" aria-label="Filtrar por produto"></select>
+                <button type="button" class="ghost-btn san-history-clear-btn" id="clearSanitaryFiltersButton">Limpar filtros</button>
+              </div>
               <div class="movements-pagination" id="sanitaryHistoryPagination"></div>
             </div>
             <div class="table-wrap">

@@ -5001,6 +5001,31 @@ th {
   min-width: 200px;
 }
 
+.san-history-filters {
+  flex: 1 1 100%;
+}
+
+.san-history-filters .movements-filter-select,
+.san-history-filters .san-history-date,
+.san-history-clear-btn {
+  min-width: 150px;
+}
+
+.san-history-date {
+  min-height: 38px;
+  padding: 0 12px;
+  font-size: 0.86rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text);
+}
+
+.san-history-clear-btn {
+  min-height: 38px;
+  padding: 0 14px;
+}
+
 .san-code {
   color: #2d5c3f;
   background: rgba(55, 91, 67, 0.1);
