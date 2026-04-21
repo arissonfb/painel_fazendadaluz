@@ -259,6 +259,9 @@
         <section class="financial-panel" id="financialPanel"></section>
       </section>
 
+        <!-- Cards de seção: Reprodução, Sanitário, Movimentações -->
+        <section class="section-module-cards" id="dashboardSectionCards"></section>
+
         <section class="summary-grid" id="summaryGrid"></section>
 
         <section class="visual-herd-grid" id="visualHerdGrid"></section>
@@ -437,17 +440,9 @@
                   Produto utilizado
                   <select id="sanitaryProduct" required></select>
                 </label>
-                <label>
-                  Potreiro de destino
-                  <select id="sanitaryPotrero" required></select>
-                </label>
                 <label id="newProductWrap" hidden>
                   Descreva o produto
                   <input type="text" id="newProductName" maxlength="80" placeholder="Ex.: Vacina aftosa, Ivermectina 1%, Carrapaticida">
-                </label>
-                <label id="newPotreroWrap" hidden>
-                  Novo potreiro
-                  <input type="text" id="newPotreroName" maxlength="80" placeholder="Ex.: Potreiro Norte">
                 </label>
                 <label class="form-span-2">
                   Observações
@@ -528,10 +523,6 @@
               <p class="panel-kicker">Programa reprodutivo</p>
               <h2>Controle de Reprodução do Rebanho</h2>
             </div>
-            <button type="button" class="register-gold-btn" id="repRegisterBtn">
-              <span class="register-gold-plus">+</span>
-              Registrar Evento
-            </button>
           </div>
           <div class="farm-switch rep-farm-switch" id="repFarmSwitch"></div>
         </section>
@@ -569,13 +560,17 @@
                 <p class="panel-kicker">Histórico de eventos reprodutivos</p>
                 <h2>Registros de Reprodução</h2>
               </div>
+              <button type="button" class="register-gold-btn" id="repRegisterBtn">
+                <span class="register-gold-plus">+</span>
+                Novo Evento
+              </button>
             </div>
             <div class="san-history-toolbar">
-              <input type="search" id="repHistorySearch" class="movements-search-input" placeholder="Buscar por código, fazenda, categoria, potreiro…">
+              <input type="search" id="repHistorySearch" class="movements-search-input" placeholder="Buscar por código, fazenda, categoria…">
               <div class="movements-pagination" id="repHistoryPagination"></div>
             </div>
             <div class="table-wrap">
-              <table class="sanitary-table">
+              <table class="sanitary-table rep-table-premium">
                 <thead>
                   <tr>
                     <th>Código</th>
@@ -584,11 +579,9 @@
                     <th>Data Evento</th>
                     <th>Categoria</th>
                     <th>Qtd.</th>
-                    <th>Potreiro</th>
-                    <th>Data Verif.</th>
+                    <th>Verificação</th>
                     <th>Prenha</th>
                     <th>Falhada</th>
-                    <th>% Prenhez</th>
                     <th>Obs.</th>
                     <th>Ações</th>
                   </tr>
@@ -635,7 +628,7 @@
           Quantidade
           <input type="number" id="movementQuantity" min="1" step="1" required>
         </label>
-        <label id="movementPotreiroWrap">
+        <label id="movementPotreiroWrap" hidden>
           <span id="movementPotreiroLabel">Potreiro de destino</span>
           <select id="movementPotreiro"></select>
         </label>
@@ -643,6 +636,9 @@
           Potreiro de destino
           <select id="movementPotreiroDest"></select>
         </label>
+        <div class="form-span-2" id="movCategoryTotalWrap" hidden>
+          <p class="category-total-hint" id="movCategoryTotalHint"></p>
+        </div>
         <label id="adjustDirectionWrap" hidden>
           Direção do ajuste
           <select id="adjustDirection">
@@ -1330,10 +1326,6 @@
         <label>
           Categoria dos animais
           <select id="repCategory" required></select>
-        </label>
-        <label>
-          Potreiro
-          <select id="repPotreiro" required></select>
         </label>
         <label>
           Quantidade de animais

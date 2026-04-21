@@ -2939,9 +2939,11 @@ function bindEvents() {
     syncMovementCategoryOptionsForFarm(getMovementDialogFarm());
     syncMovementPotreirosOptions();
     updateSaleFieldVisibility();
+    updateMovementCategoryTotal();
   });
   elements.movementCategory.addEventListener("change", () => {
     syncMovementPotreirosOptions();
+    updateMovementCategoryTotal();
   });
 
   elements.movementType.addEventListener("change", () => {
@@ -2986,7 +2988,7 @@ function bindEvents() {
     updateSanitaryProductMode();
   });
 
-  elements.sanitaryPotrero.addEventListener("change", () => {
+  elements.sanitaryPotrero?.addEventListener("change", () => {
     updateSanitaryPotreroMode();
   });
 
@@ -3172,6 +3174,7 @@ function render() {
   renderHero(farm);
   renderHeadlineMetrics(farm);
   renderPrimarySummaryCards(farm);
+  renderDashboardSectionCards(farm);
   renderDashboardVisualHerdGrid(farm);
   renderPeriodSummary(farm);
   renderSalesAnalysis(farm);
@@ -3486,6 +3489,107 @@ function renderPrimarySummaryCards(farm) {
       </article>
     `;
   }).join("");
+}
+
+function renderDashboardSectionCards(farm) {
+  const el = document.getElementById("dashboardSectionCards");
+  if (!el) return;
+
+  const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
+  const farms = isTotalView ? getAllFarms() : [farm].filter(Boolean);
+
+  // Sanitário stats
+  let sanTotal = 0;
+  let sanLastDate = null;
+  let sanLastProduct = "—";
+  farms.forEach((f) => {
+    const recs = getFilteredSanitaryRecords(f);
+    sanTotal += recs.length;
+    recs.forEach((r) => {
+      if (!sanLastDate || r.date > sanLastDate) { sanLastDate = r.date; sanLastProduct = r.product; }
+    });
+  });
+
+  // Reprodução stats
+  let repTotal = 0;
+  let repPendentes = 0;
+  let repLastDate = null;
+  farms.forEach((f) => {
+    const recs = (f.reproductionRecords || []);
+    repTotal += recs.length;
+    repPendentes += recs.filter((r) => !r.verificationDate).length;
+    recs.forEach((r) => {
+      if (!repLastDate || r.date > repLastDate) repLastDate = r.date;
+    });
+  });
+
+  // Movimentações stats
+  let movTotal = 0;
+  let movLastDate = null;
+  farms.forEach((f) => {
+    const summary = summarizePeriod(f, state.filters.year, state.filters.month);
+    const allMov = f.movements || [];
+    const filtered = allMov.filter((m) => {
+      const yr = (m.date || "").slice(0, 4);
+      const mo = (m.date || "").slice(5, 7);
+      if (state.filters.year !== "all" && yr !== String(state.filters.year)) return false;
+      if (state.filters.month !== "all" && mo !== String(state.filters.month).padStart(2, "0")) return false;
+      return true;
+    });
+    movTotal += filtered.length;
+    filtered.forEach((r) => {
+      if (!movLastDate || r.date > movLastDate) movLastDate = r.date;
+    });
+  });
+
+  el.innerHTML = `
+    <div class="section-module-grid">
+      <article class="section-module-card section-card-sanitary" role="button" tabindex="0" data-nav-view="sanitary">
+        <div class="smc-icon">🩺</div>
+        <div class="smc-body">
+          <p class="smc-kicker">Manejo Sanitário</p>
+          <strong class="smc-value">${formatInteger(sanTotal)}</strong>
+          <p class="smc-detail">registros no período</p>
+          ${sanLastDate ? `<span class="smc-last">Último: ${formatDate(sanLastDate)} · ${escapeHtml(sanLastProduct)}</span>` : `<span class="smc-last">Sem registros no período</span>`}
+        </div>
+        <span class="smc-arrow">→</span>
+      </article>
+
+      <article class="section-module-card section-card-reproducao" role="button" tabindex="0" data-nav-view="reproducao">
+        <div class="smc-icon">🐄</div>
+        <div class="smc-body">
+          <p class="smc-kicker">Reprodução</p>
+          <strong class="smc-value">${formatInteger(repTotal)}</strong>
+          <p class="smc-detail">eventos reprodutivos</p>
+          ${repPendentes > 0
+            ? `<span class="smc-last smc-alert">${formatInteger(repPendentes)} aguardando verificação</span>`
+            : `<span class="smc-last">${repLastDate ? "Último: " + formatDate(repLastDate) : "Sem eventos"}</span>`}
+        </div>
+        <span class="smc-arrow">→</span>
+      </article>
+
+      <article class="section-module-card section-card-movimentacoes" role="button" tabindex="0" data-nav-view="dashboard">
+        <div class="smc-icon">🔄</div>
+        <div class="smc-body">
+          <p class="smc-kicker">Movimentações</p>
+          <strong class="smc-value">${formatInteger(movTotal)}</strong>
+          <p class="smc-detail">lançamentos no período</p>
+          ${movLastDate ? `<span class="smc-last">Último: ${formatDate(movLastDate)}</span>` : `<span class="smc-last">Sem movimentações no período</span>`}
+        </div>
+        <span class="smc-arrow">→</span>
+      </article>
+    </div>
+  `;
+
+  el.querySelectorAll("[data-nav-view]").forEach((card) => {
+    const navigate = () => {
+      const view = card.dataset.navView;
+      state.activeView = view;
+      render();
+    };
+    card.addEventListener("click", navigate);
+    card.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") navigate(); });
+  });
 }
 
 function renderDashboardVisualHerdGrid(farm) {
@@ -4792,10 +4896,9 @@ function renderSanitarySummary(farm) {
     { title: "Aplicações no período", value: formatInteger(totalApplications), detail: "registros sanitários no filtro ativo" },
     { title: "Animais tratados", value: formatInteger(treatedAnimals), detail: "cabeças somadas nos registros" },
     { title: "Produtos distintos", value: formatInteger(uniqueProducts), detail: "variedade de produtos aplicados" },
-    { title: "Potreiros atendidos", value: formatInteger(uniquePotreiros), detail: "campos com manejo registrado" },
     { title: "Produto mais usado", value: topProduct ? escapeHtml(topProduct[0]) : "—", detail: topProduct ? `${topProduct[1]} aplicação(ões)` : "sem registros no período" },
     { title: "Categoria mais tratada", value: topCat ? escapeHtml(topCat[0]) : "—", detail: topCat ? `${formatInteger(topCat[1])} cabeças no período` : "sem registros no período" },
-    { title: "Último manejo", value: latestRecord ? formatDate(latestRecord.date) : "—", detail: latestRecord ? `${latestRecord.product} · ${latestRecord.potreiro || "sem potreiro"}` : "nenhum registro disponível" }
+    { title: "Último manejo", value: latestRecord ? formatDate(latestRecord.date) : "—", detail: latestRecord ? latestRecord.product : "nenhum registro disponível" }
   ];
 
   elements.sanitarySummary.innerHTML = cards.map((card) => `
@@ -7348,18 +7451,15 @@ function openSanitaryEditor(recordId) {
   syncSanitaryFormOptions();
   ensureSanitaryCategoryOption(record.categoryId, record.categoryName);
   ensureSelectOption(elements.sanitaryProduct, record.product, record.product);
-  ensureSelectOption(elements.sanitaryPotrero, record.potreiro || "Sem potreiro", record.potreiro || "Sem potreiro");
 
   elements.sanitaryEditingId.value = record.id || record.sourceId;
   elements.sanitaryDate.value = record.date;
   elements.sanitaryQuantity.value = Number.isFinite(record.quantity) ? String(record.quantity) : "";
   elements.sanitaryCategory.value = record.categoryId;
   elements.sanitaryProduct.value = record.product;
-  elements.sanitaryPotrero.value = record.potreiro || "Sem potreiro";
   elements.sanitaryNotes.value = record.notes || "";
   elements.sanitarySubmitButton.textContent = "Atualizar registro sanitário";
   updateSanitaryProductMode();
-  updateSanitaryPotreroMode();
   elements.sanitaryForm.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
@@ -7493,12 +7593,30 @@ function syncMovementCategoryOptionsForFarm(farm) {
     elements.movementCategory.innerHTML = '<option value="">Selecione uma fazenda primeiro</option>';
     elements.movementCategory.value = "";
     syncMovementPotreirosOptions();
+    updateMovementCategoryTotal();
     return;
   }
   elements.movementCategory.innerHTML = farm.categories.map((category) => `
-    <option value="${category.id}">${escapeHtml(category.name)}</option>
+    <option value="${category.id}">${escapeHtml(category.name)} — ${formatInteger(category.quantity)} cab.</option>
   `).join("");
   syncMovementPotreirosOptions();
+  updateMovementCategoryTotal();
+}
+
+function updateMovementCategoryTotal() {
+  const wrapEl = document.getElementById("movCategoryTotalWrap");
+  const hintEl = document.getElementById("movCategoryTotalHint");
+  if (!wrapEl || !hintEl) return;
+  const farm = getMovementDialogFarm();
+  const catId = elements.movementCategory?.value;
+  if (!farm || !catId) {
+    wrapEl.hidden = true;
+    return;
+  }
+  const cat = farm.categories.find((c) => c.id === catId);
+  if (!cat) { wrapEl.hidden = true; return; }
+  hintEl.innerHTML = `<span class="cat-total-icon">🐄</span> <strong>${escapeHtml(cat.name)}</strong> — estoque atual: <strong>${formatInteger(cat.quantity)} cabeças</strong> em ${escapeHtml(farm.name)}`;
+  wrapEl.hidden = false;
 }
 
 function syncCategoryOptions() {
@@ -7579,7 +7697,6 @@ function updatePotreroQuantitiesFromAllocation(farm) {
 function syncSanitaryFormOptions() {
   const farm = getFarm();
   const selectedProduct = elements.sanitaryProduct.value;
-  const selectedPotrero = elements.sanitaryPotrero.value;
   elements.sanitaryCategory.innerHTML = getSanitaryCategoryOptions(farm).map((category) => `
     <option value="${category.id}">${escapeHtml(category.name)}</option>
   `).join("");
@@ -7594,21 +7711,10 @@ function syncSanitaryFormOptions() {
     elements.sanitaryProduct.value = farm.sanitaryProducts[0];
   }
 
-  const potreroOptions = getPotreroEntries(farm).map((potreiro) => `
-    <option value="${escapeHtml(potreiro.name)}" ${potreiro.name === selectedPotrero ? "selected" : ""}>${escapeHtml(potreiro.name)}</option>
-  `);
-  potreroOptions.push(`<option value="__new__" ${selectedPotrero === "__new__" ? "selected" : ""}>Adicionar novo potreiro</option>`);
-  elements.sanitaryPotrero.innerHTML = potreroOptions.join("");
-  if (!elements.sanitaryPotrero.value) {
-    const firstPotrero = getPotreroEntries(farm)[0];
-    elements.sanitaryPotrero.value = firstPotrero ? firstPotrero.name : "__new__";
-  }
-
   if (!elements.sanitaryDate.value) {
     elements.sanitaryDate.value = new Date().toISOString().slice(0, 10);
   }
   updateSanitaryProductMode();
-  updateSanitaryPotreroMode();
 }
 
 function getSanitaryCategoryOptions(farm) {
@@ -7647,12 +7753,7 @@ function updateSanitaryProductMode() {
 }
 
 function updateSanitaryPotreroMode() {
-  const isNewPotrero = elements.sanitaryPotrero.value === "__new__";
-  elements.newPotreroWrap.hidden = !isNewPotrero;
-  elements.newPotreroName.required = isNewPotrero;
-  if (!isNewPotrero) {
-    elements.newPotreroName.value = "";
-  }
+  // Potreiro removido da interface — função mantida para compatibilidade
 }
 
 async function handleMovementSubmit(event) {
@@ -7946,26 +8047,15 @@ function handleSanitarySubmit(event) {
   const selectedProduct = elements.sanitaryProduct.value;
   const newProductName = elements.newProductName.value.trim();
   const product = selectedProduct === "__new__" ? newProductName : selectedProduct;
-  const selectedPotrero = elements.sanitaryPotrero.value;
-  const newPotreroName = elements.newPotreroName.value.trim();
-  const potreiro = selectedPotrero === "__new__" ? newPotreroName : selectedPotrero;
   const notes = elements.sanitaryNotes.value.trim();
   const isEditingSanitary = Boolean(editingId);
 
-  if (!date || !categoryId || !Number.isFinite(quantity) || quantity < 1 || !product || !potreiro) {
+  if (!date || !categoryId || !Number.isFinite(quantity) || quantity < 1 || !product) {
     return;
   }
 
   if (selectedProduct === "__new__" && !farm.sanitaryProducts.includes(product)) {
     farm.sanitaryProducts.push(product);
-  }
-  const hasPotrero = getPotreroEntries(farm).some((item) => normalizeText(item.name) === normalizeText(potreiro));
-  if (selectedPotrero === "__new__" && !hasPotrero) {
-    farm.potreiros.push({
-      id: createPotreroId(potreiro),
-      name: potreiro,
-      quantity: 0
-    });
   }
 
   const recordPayload = {
@@ -7973,7 +8063,6 @@ function handleSanitarySubmit(event) {
     quantity,
     categoryId,
     categoryName: categoryLabel,
-    potreiro,
     product,
     notes
   };
@@ -8006,10 +8095,8 @@ function handleSanitarySubmit(event) {
   elements.sanitaryQuantity.value = "";
   elements.sanitaryNotes.value = "";
   elements.sanitaryProduct.value = farm.sanitaryProducts[0] || "__new__";
-  elements.sanitaryPotrero.value = getPotreroEntries(farm)[0]?.name || "__new__";
   elements.sanitarySubmitButton.textContent = "Salvar registro sanitário";
   updateSanitaryProductMode();
-  updateSanitaryPotreroMode();
   render();
 }
 
@@ -10506,38 +10593,43 @@ function renderRepHistoryTable() {
     const taxa = rec.verificationDate && rec.quantityPegou != null && qty > 0
       ? `${((Number(rec.quantityPegou) / qty) * 100).toFixed(1)}%`
       : "—";
-    const verifDate = rec.verificationDate
-      ? formatDate(rec.verificationDate)
-      : `<button type="button" class="ghost-btn rep-verif-btn" data-rep-verif-id="${escapeHtml(rec.id)}" data-farm-id="${escapeHtml(farmId)}">Registrar</button>`;
+    const verifCell = rec.verificationDate
+      ? `<div class="rep-verif-result">
+           <span class="rep-verif-date">${formatDate(rec.verificationDate)}</span>
+           <span class="rep-verif-taxa ${rec.quantityPegou != null && qty > 0 ? ((Number(rec.quantityPegou)/qty) >= 0.7 ? "taxa-ok" : "taxa-low") : ""}">${taxa !== "—" ? taxa + " prenhez" : ""}</span>
+         </div>`
+      : `<span class="rep-pendente-badge">Aguardando</span>`;
     const typeTag = rec.type === "inseminacao"
       ? `<span class="rep-tag rep-tag-insem">Inseminação</span>`
       : `<span class="rep-tag rep-tag-entour">Entourada</span>`;
     const farmLabel = rec.farmName || farmId;
+    const registrarBtn = !rec.verificationDate
+      ? `<button type="button" class="action-row-btn btn-registrar" data-rep-verif-id="${escapeHtml(rec.id)}" data-farm-id="${escapeHtml(farmId)}" title="Registrar resultado">Registrar</button>`
+      : "";
 
     return `
-      <tr>
-        <td><code>${escapeHtml(rec.code || "—")}</code></td>
+      <tr class="${rec.verificationDate ? "rep-row-done" : "rep-row-pending"}">
+        <td><code class="movement-code">${escapeHtml(rec.code || "—")}</code></td>
         <td>${escapeHtml(farmLabel)}</td>
         <td>${typeTag}</td>
         <td>${formatDate(rec.date)}</td>
-        <td>${escapeHtml(rec.categoryName || rec.categoryId || "—")}</td>
+        <td><strong>${escapeHtml(rec.categoryName || rec.categoryId || "—")}</strong></td>
         <td>${formatInteger(qty)}</td>
-        <td>${escapeHtml(rec.potreiro || "—")}</td>
-        <td>${verifDate}</td>
-        <td><strong style="color:var(--green)">${pegou}</strong></td>
-        <td><strong style="color:var(--red)">${falhou}</strong></td>
-        <td>${taxa}</td>
-        <td title="${escapeHtml(rec.notes || "")}">${escapeHtml((rec.notes || "").slice(0, 30) + (rec.notes?.length > 30 ? "…" : ""))}</td>
-        <td>
-          <button type="button" class="ghost-btn" data-rep-edit-id="${escapeHtml(rec.id)}" data-farm-id="${escapeHtml(farmId)}">Editar</button>
-          <button type="button" class="ghost-btn rep-del-btn" data-rep-del-id="${escapeHtml(rec.id)}" data-farm-id="${escapeHtml(farmId)}">Excluir</button>
+        <td>${verifCell}</td>
+        <td><strong class="rep-num-ok">${pegou}</strong></td>
+        <td><strong class="rep-num-fail">${falhou}</strong></td>
+        <td title="${escapeHtml(rec.notes || "")}">${escapeHtml((rec.notes || "").slice(0, 25) + (rec.notes?.length > 25 ? "…" : ""))}</td>
+        <td class="rep-actions-cell">
+          <button type="button" class="action-row-btn btn-edit" data-rep-edit-id="${escapeHtml(rec.id)}" data-farm-id="${escapeHtml(farmId)}" title="Editar">Editar</button>
+          ${registrarBtn}
+          <button type="button" class="action-row-btn btn-delete" data-rep-del-id="${escapeHtml(rec.id)}" data-farm-id="${escapeHtml(farmId)}" title="Excluir">Excluir</button>
         </td>
       </tr>
     `;
   }).join("");
 
   if (!pageRecords.length) {
-    elements.repTableBody.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:32px;color:var(--muted)">Nenhum registro encontrado${search ? " para a busca realizada" : ". Clique em + Registrar Evento para começar"}.</td></tr>`;
+    elements.repTableBody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--muted)">Nenhum registro encontrado${search ? " para a busca realizada" : ". Use o botão Editar em uma linha para criar o primeiro evento"}.</td></tr>`;
   }
 
   // Pagination
@@ -10588,7 +10680,6 @@ function openRepDialog(editingId = null, editingFarmId = null) {
   const typeEl = document.getElementById("repType");
   const dateEl = document.getElementById("repDate");
   const catEl = document.getElementById("repCategory");
-  const potrEl = document.getElementById("repPotreiro");
   const qtyEl = document.getElementById("repQuantity");
   const bullEl = document.getElementById("repBullInfo");
   const techEl = document.getElementById("repTechInfo");
@@ -10613,10 +10704,8 @@ function openRepDialog(editingId = null, editingFarmId = null) {
     techEl.value = rec.techInfo || "";
     notesEl.value = rec.notes || "";
     syncRepFarmFields();
-    // Restore category/potreiro after sync
     setTimeout(() => {
       catEl.value = rec.categoryId || "";
-      potrEl.value = rec.potreiro || "";
     }, 0);
   } else {
     titleEl.textContent = "Novo Evento Reprodutivo";
@@ -10639,19 +10728,12 @@ function openRepDialog(editingId = null, editingFarmId = null) {
 function syncRepFarmFields() {
   const farmEl = document.getElementById("repFarm");
   const catEl = document.getElementById("repCategory");
-  const potrEl = document.getElementById("repPotreiro");
-  if (!farmEl || !catEl || !potrEl) return;
+  if (!farmEl || !catEl) return;
 
   const farm = state.data.farms[farmEl.value];
   if (!farm) return;
 
   catEl.innerHTML = farm.categories.map((c) => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join("");
-
-  const potreiros = getPotreroEntries(farm).map((p) => p.name);
-  potrEl.innerHTML = [
-    `<option value="">Sem potreiro</option>`,
-    ...potreiros.map((p) => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`)
-  ].join("");
 }
 
 function syncRepTypeFields() {
@@ -10669,7 +10751,6 @@ function handleRepFormSubmit() {
   const typeEl = document.getElementById("repType");
   const dateEl = document.getElementById("repDate");
   const catEl = document.getElementById("repCategory");
-  const potrEl = document.getElementById("repPotreiro");
   const qtyEl = document.getElementById("repQuantity");
   const bullEl = document.getElementById("repBullInfo");
   const techEl = document.getElementById("repTechInfo");
@@ -10702,7 +10783,6 @@ function handleRepFormSubmit() {
         date,
         categoryId: catId,
         categoryName: catName,
-        potreiro: potrEl?.value || "",
         quantity: qty,
         bullInfo: bullEl?.value || "",
         techInfo: techEl?.value || "",
@@ -10719,7 +10799,6 @@ function handleRepFormSubmit() {
       date,
       categoryId: catId,
       categoryName: catName,
-      potreiro: potrEl?.value || "",
       quantity: qty,
       bullInfo: bullEl?.value || "",
       techInfo: techEl?.value || "",
