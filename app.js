@@ -180,7 +180,7 @@ const ARAPEY_PRIMARY_GEO_KEYS = new Set([
 ]);
 const PDF_LOGO_PATH = "./assets/logo-da-luz-transp.png";
 const TECHNICAL_MANAGER_NAME = "Hugo Fabricio Fernandes Balbuena";
-const MOVEMENT_PHOTO_TYPES = new Set(["compra", "venda", "morte"]);
+const MOVEMENT_PHOTO_TYPES = new Set(["compra", "venda", "morte", "consumo", "nascimento", "transferencia", "ajuste"]);
 const MAX_MOVEMENT_PHOTOS = 6;
 const MOVEMENT_PHOTO_MAX_DIMENSION = 1280;
 const MOVEMENT_PHOTO_QUALITY = 0.82;
@@ -2870,6 +2870,7 @@ function bindEvents() {
   document.getElementById("closeRepDlg")?.addEventListener("click", () => elements.reproducaoDlg.close());
   document.getElementById("closeRepVerifDlg")?.addEventListener("click", () => elements.repVerifDlg.close());
   document.getElementById("repRegisterBtn")?.addEventListener("click", () => openRepDialog());
+  document.getElementById("exportRepPdfBtn")?.addEventListener("click", exportReproducaoPdf);
   document.getElementById("repFormSubmit")?.addEventListener("click", handleRepFormSubmit);
   document.getElementById("repVerifSubmit")?.addEventListener("click", handleRepVerifSubmit);
   document.getElementById("repType")?.addEventListener("change", syncRepTypeFields);
@@ -8750,7 +8751,6 @@ function appendSanitarySummaryPdfTable(doc, sanitarySummary) {
       ["Aplicações no período", formatInteger(sanitarySummary.totalApplications)],
       ["Animais tratados", formatInteger(sanitarySummary.treatedAnimals)],
       ["Produtos utilizados", formatInteger(sanitarySummary.uniqueProducts)],
-      ["Potreiros utilizados", formatInteger(sanitarySummary.uniquePotreiros)],
       ["Último manejo", sanitarySummary.latestRecord ? `${formatDate(sanitarySummary.latestRecord.date)} - ${sanitarySummary.latestRecord.product}` : "Sem registro"]
     ],
     theme: "striped",
@@ -8761,17 +8761,16 @@ function appendSanitarySummaryPdfTable(doc, sanitarySummary) {
 function appendSanitaryDetailsPdfTable(doc, sanitaryRecords) {
   doc.autoTable({
     startY: doc.lastAutoTable.finalY + 10,
-    head: [["Data", "Categoria", "Qtd.", "Potreiro", "Produto", "Observações"]],
+    head: [["Data", "Categoria", "Qtd.", "Produto", "Observações"]],
     body: sanitaryRecords.length
       ? sanitaryRecords.map((record) => [
         formatDate(record.date),
         record.categoryName,
         formatMaybeQuantity(record.quantity),
-        record.potreiro || "-",
         record.product,
         record.notes || "-"
       ])
-      : [["-", "-", "-", "-", "Sem registros sanitários no período", "-"]],
+      : [["-", "-", "-", "Sem registros sanitários no período", "-"]],
     theme: "striped",
     headStyles: { fillColor: [55, 91, 67] }
   });
@@ -8828,53 +8827,79 @@ function appendUnifiedHistoryPdfTable(doc, records) {
 
 async function appendMovementPhotoPages(doc, farm, year, month) {
   const photoEntries = getMovementPhotoEntries(farm, year, month);
-  if (!photoEntries.length) {
-    return;
-  }
+  if (!photoEntries.length) return;
 
-  const chunkSize = 3;
-  for (let index = 0; index < photoEntries.length; index += chunkSize) {
-    const chunk = photoEntries.slice(index, index + chunkSize);
+  const pageW = 210;
+  const pageH = 297;
+  const margin = 14;
+  const gap = 6;
+  const photosPerRow = 2;
+  const rowsPerPage = 3;
+  const photosPerPage = photosPerRow * rowsPerPage;
+
+  const boxW = (pageW - margin * 2 - gap) / photosPerRow;
+  const boxH = 72;
+  const imgH = 52;
+  const headerH = 26;
+
+  for (let pageStart = 0; pageStart < photoEntries.length; pageStart += photosPerPage) {
+    const pageEntries = photoEntries.slice(pageStart, pageStart + photosPerPage);
     doc.addPage();
 
     doc.setFillColor(248, 244, 236);
-    doc.rect(0, 0, 210, 297, "F");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(16);
-    doc.setTextColor(45, 35, 25);
-    doc.text(`Anexos fotográficos - ${farm.name}`, 105, 18, { align: "center" });
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10.5);
-    doc.setTextColor(112, 94, 76);
-    doc.text("Até 3 fotos por página, centralizadas para leitura e impressão.", 105, 25, { align: "center" });
+    doc.rect(0, 0, pageW, pageH, "F");
 
-    for (let chunkIndex = 0; chunkIndex < chunk.length; chunkIndex++) {
-      const entry = chunk[chunkIndex];
-      const boxX = 22;
-      const boxY = 34 + (chunkIndex * 80);
-      const boxWidth = 166;
-      const boxHeight = 68;
+    doc.setFillColor(37, 88, 58);
+    doc.rect(0, 0, pageW, headerH, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.setTextColor(248, 244, 236);
+    doc.text(`Anexos Fotográficos — ${farm.name}`, pageW / 2, 11, { align: "center" });
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(200, 225, 205);
+    doc.text(`Registros com foto do período · ${photosPerRow} por linha`, pageW / 2, 19, { align: "center" });
+
+    for (let i = 0; i < pageEntries.length; i++) {
+      const entry = pageEntries[i];
+      const col = i % photosPerRow;
+      const row = Math.floor(i / photosPerRow);
+      const boxX = margin + col * (boxW + gap);
+      const boxY = headerH + 6 + row * (boxH + gap);
 
       doc.setFillColor(255, 252, 247);
-      doc.roundedRect(boxX, boxY, boxWidth, boxHeight, 5, 5, "F");
-      doc.setDrawColor(219, 209, 191);
-      doc.roundedRect(boxX, boxY, boxWidth, boxHeight, 5, 5, "S");
+      doc.roundedRect(boxX, boxY, boxW, boxH, 4, 4, "F");
+      doc.setDrawColor(210, 200, 182);
+      doc.roundedRect(boxX, boxY, boxW, boxH, 4, 4, "S");
+
+      const typeLabel = capitalize(entry.movement.type || "");
+      const dateLabel = formatDate(entry.movement.date);
+      const catLabel = entry.movement.categoryName || "";
+      const headerText = `${typeLabel} · ${dateLabel} · ${catLabel}`;
 
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
-      doc.setTextColor(50, 74, 55);
-      doc.text(`${capitalize(entry.movement.type)} | ${formatDate(entry.movement.date)} | ${entry.movement.categoryName}`, 105, boxY + 10, { align: "center" });
+      doc.setFontSize(7.5);
+      doc.setTextColor(37, 88, 58);
+      doc.text(doc.splitTextToSize(headerText, boxW - 4)[0], boxX + 3, boxY + 6);
 
       const imageData = await fetchPhotoForPdf(entry.photo);
       if (imageData) {
-        drawPdfMovementPhoto(doc, imageData, boxX + 8, boxY + 14, boxWidth - 16, 40);
+        drawPdfMovementPhoto(doc, imageData, boxX + 3, boxY + 9, boxW - 6, imgH - 8);
+      } else {
+        doc.setFillColor(240, 235, 225);
+        doc.roundedRect(boxX + 3, boxY + 9, boxW - 6, imgH - 8, 2, 2, "F");
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(150, 130, 100);
+        doc.text("Imagem indisponível", boxX + boxW / 2, boxY + 9 + (imgH - 8) / 2, { align: "center" });
       }
 
+      const obs = getMovementNotes(entry.movement) || "";
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(9.5);
+      doc.setFontSize(7);
       doc.setTextColor(112, 94, 76);
-      doc.text(trimLabel(entry.photo.name || `Foto ${index + chunkIndex + 1}`, 44), 105, boxY + 60, { align: "center" });
-      doc.text(trimLabel(getMovementNotes(entry.movement) || "Sem observação", 74), 105, boxY + 65, { align: "center" });
+      const obsText = obs ? doc.splitTextToSize(obs, boxW - 6)[0] : "";
+      doc.text(obsText, boxX + 3, boxY + boxH - 4);
     }
   }
 }
@@ -9216,6 +9241,253 @@ async function appendFarmPdfSection(doc, farm, periodLabel, year, month) {
 
   appendPdfSectionTitle(doc, `Evolução Cronológica – ${year}`);
   appendChronologicalEvolutionPdfTable(doc, farm, year);
+
+  // ── Sanitário ──────────────────────────────────────────
+  const sanitarySummary = getSanitarySummary(farm, year, month);
+  const sanitaryRecords = getFilteredSanitaryRecords(farm, year, month)
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  appendPdfSectionTitle(doc, "Manejo Sanitário — Resumo do Período");
+  doc.autoTable({
+    startY: doc.lastAutoTable.finalY + 2,
+    head: [["Indicador", "Valor"]],
+    body: [
+      ["Aplicações registradas", formatInteger(sanitarySummary.totalApplications)],
+      ["Animais tratados (soma)", formatInteger(sanitarySummary.treatedAnimals)],
+      ["Produtos distintos utilizados", formatInteger(sanitarySummary.uniqueProducts)],
+      ["Último manejo", sanitarySummary.latestRecord
+        ? `${formatDate(sanitarySummary.latestRecord.date)} · ${sanitarySummary.latestRecord.product}`
+        : "Sem registro no período"]
+    ],
+    theme: "striped",
+    headStyles: { fillColor: [55, 91, 67] },
+    styles: { fontSize: 9, cellPadding: 3 },
+    margin: { left: 14, right: 14 }
+  });
+
+  appendPdfSectionTitle(doc, "Manejo Sanitário — Detalhamento");
+  appendSanitaryByProductPdfTable(doc, sanitaryRecords);
+
+  doc.autoTable({
+    startY: doc.lastAutoTable.finalY + 2,
+    head: [["Código", "Data", "Categoria", "Qtd.", "Produto", "Obs."]],
+    body: sanitaryRecords.length
+      ? sanitaryRecords.map((r) => [
+        r.code || "—",
+        formatDate(r.date),
+        r.categoryName || "—",
+        formatInteger(r.quantity || 0),
+        r.product || "—",
+        r.notes || "—"
+      ])
+      : [["—", "—", "—", "—", "Sem registros no período", "—"]],
+    theme: "striped",
+    headStyles: { fillColor: [55, 91, 67] },
+    styles: { fontSize: 8.5, cellPadding: 2.5 },
+    alternateRowStyles: { fillColor: [245, 250, 246] },
+    margin: { left: 14, right: 14 }
+  });
+
+  // ── Reprodução ─────────────────────────────────────────
+  const repRecords = (farm.reproductionRecords || [])
+    .filter((r) => {
+      const d = r.date || "";
+      if (year !== "all" && !d.startsWith(year)) return false;
+      if (month !== "all" && d.slice(5, 7) !== String(month).padStart(2, "0")) return false;
+      return true;
+    })
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  const repStats = calcReproductionStats(repRecords);
+  const repPendentes = repRecords.filter((r) => !r.verificationDate).length;
+
+  appendPdfSectionTitle(doc, "Reprodução — Resumo do Período");
+  doc.autoTable({
+    startY: doc.lastAutoTable.finalY + 2,
+    head: [["Indicador reprodutivo", "Valor"]],
+    body: [
+      ["Total de eventos", formatInteger(repRecords.length)],
+      ["Inseminações", formatInteger(repStats.totalInseminacoes)],
+      ["Entouradas", formatInteger(repStats.totalEntouradas)],
+      ["Prenhes confirmadas", formatInteger(repStats.totalPegou)],
+      ["Falhadas", formatInteger(repStats.totalFalhou)],
+      ["Taxa de prenhez", repStats.taxaSucesso != null ? `${repStats.taxaSucesso.toFixed(1)}%` : "Aguardando verificação"],
+      ["Aguardando verificação", formatInteger(repPendentes)]
+    ],
+    theme: "striped",
+    headStyles: { fillColor: [140, 80, 45] },
+    styles: { fontSize: 9, cellPadding: 3 },
+    margin: { left: 14, right: 14 }
+  });
+
+  if (repRecords.length) {
+    appendPdfSectionTitle(doc, "Reprodução — Histórico de Eventos");
+    doc.autoTable({
+      startY: doc.lastAutoTable.finalY + 2,
+      head: [["Código", "Data", "Tipo", "Categoria", "Qtd.", "Data Verif.", "Prenha", "Falhada", "% Prenhez"]],
+      body: repRecords.map((r) => {
+        const qty = Number(r.quantity || 0);
+        const pegou = r.quantityPegou != null ? formatInteger(r.quantityPegou) : "—";
+        const falhou = r.verificationDate && r.quantityPegou != null
+          ? formatInteger(Math.max(0, qty - Number(r.quantityPegou)))
+          : "—";
+        const taxa = r.verificationDate && r.quantityPegou != null && qty > 0
+          ? `${((Number(r.quantityPegou) / qty) * 100).toFixed(1)}%`
+          : "Aguardando";
+        return [
+          r.code || "—",
+          formatDate(r.date),
+          r.type === "inseminacao" ? "Inseminação" : "Entourada",
+          r.categoryName || "—",
+          formatInteger(qty),
+          r.verificationDate ? formatDate(r.verificationDate) : "Pendente",
+          pegou,
+          falhou,
+          taxa
+        ];
+      }),
+      theme: "striped",
+      headStyles: { fillColor: [140, 80, 45] },
+      styles: { fontSize: 8, cellPadding: 2 },
+      alternateRowStyles: { fillColor: [255, 247, 237] },
+      margin: { left: 14, right: 14 }
+    });
+  }
+}
+
+async function exportReproducaoPdf() {
+  if (!window.jspdf || typeof window.jspdf.jsPDF !== "function") {
+    alert("A biblioteca de PDF não foi carregada. Verifique sua conexão e tente novamente.");
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
+  const farms = isTotalView ? getAllFarms() : [getFarm()].filter(Boolean);
+  if (!farms.length) { alert("Nenhuma fazenda encontrada."); return; }
+
+  const year = String(state.filters.year);
+  const month = state.filters.month;
+  const periodLabel = month === "all" ? `Ano ${year}` : `${MONTH_NAMES[Number(month) - 1]}/${year}`;
+
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const margin = 14;
+  let firstPage = true;
+
+  for (const farm of farms) {
+    if (!firstPage) doc.addPage();
+    firstPage = false;
+
+    // Header
+    try {
+      const logoData = await loadLogoForPdf("#ffffff");
+      doc.addImage(logoData, "JPEG", margin, 8, 18, 18);
+    } catch (e) { /* ignore */ }
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.setTextColor(45, 35, 25);
+    doc.text("Relatório de Reprodução", margin + 22, 14);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10.5);
+    doc.setTextColor(87, 69, 52);
+    doc.text(`Fazenda: ${farm.name}   Período: ${periodLabel}   Responsável: ${TECHNICAL_MANAGER_NAME}`, margin + 22, 22);
+
+    doc.setDrawColor(140, 80, 45);
+    doc.setLineWidth(0.6);
+    doc.line(margin, 27, pageW - margin, 27);
+
+    const repRecords = (farm.reproductionRecords || [])
+      .filter((r) => {
+        const d = r.date || "";
+        if (year !== "all" && !d.startsWith(year)) return false;
+        if (month !== "all" && d.slice(5, 7) !== String(month).padStart(2, "0")) return false;
+        return true;
+      })
+      .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    const stats = calcReproductionStats(repRecords);
+    const pendentes = repRecords.filter((r) => !r.verificationDate).length;
+    const taxaStr = stats.taxaSucesso != null ? `${stats.taxaSucesso.toFixed(1)}%` : "—";
+
+    // KPI row
+    const kpis = [
+      { label: "Total eventos", value: formatInteger(repRecords.length) },
+      { label: "Inseminações", value: formatInteger(stats.totalInseminacoes) },
+      { label: "Entouradas", value: formatInteger(stats.totalEntouradas) },
+      { label: "Prenhes", value: formatInteger(stats.totalPegou) },
+      { label: "Falhadas", value: formatInteger(stats.totalFalhou) },
+      { label: "Taxa prenhez", value: taxaStr },
+      { label: "Aguardando", value: formatInteger(pendentes) }
+    ];
+
+    const kpiW = (pageW - margin * 2 - 6 * kpis.length) / kpis.length;
+    kpis.forEach((kpi, i) => {
+      const x = margin + i * (kpiW + 6);
+      const y = 30;
+      doc.setFillColor(37, 88, 58);
+      doc.roundedRect(x, y, kpiW, 18, 2, 2, "F");
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(6.5);
+      doc.setTextColor(180, 210, 185);
+      doc.text(kpi.label, x + kpiW / 2, y + 5, { align: "center" });
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(248, 244, 236);
+      doc.text(kpi.value, x + kpiW / 2, y + 13, { align: "center" });
+    });
+
+    // Events table
+    doc.autoTable({
+      startY: 52,
+      head: [["Código", "Data", "Tipo", "Categoria", "Qtd.", "Data Verif.", "Prenha", "Falhada", "% Prenhez", "Obs."]],
+      body: repRecords.length
+        ? repRecords.map((r) => {
+          const qty = Number(r.quantity || 0);
+          const pegou = r.quantityPegou != null ? formatInteger(r.quantityPegou) : "—";
+          const falhou = r.verificationDate && r.quantityPegou != null
+            ? formatInteger(Math.max(0, qty - Number(r.quantityPegou)))
+            : "—";
+          const taxa = r.verificationDate && r.quantityPegou != null && qty > 0
+            ? `${((Number(r.quantityPegou) / qty) * 100).toFixed(1)}%`
+            : "Aguardando";
+          return [
+            r.code || "—",
+            formatDate(r.date),
+            r.type === "inseminacao" ? "Inseminação" : "Entourada",
+            r.categoryName || "—",
+            formatInteger(qty),
+            r.verificationDate ? formatDate(r.verificationDate) : "Pendente",
+            pegou,
+            falhou,
+            taxa,
+            (r.notes || "").slice(0, 30)
+          ];
+        })
+        : [["—", "—", "—", "—", "—", "—", "—", "—", "Sem eventos no período", ""]],
+      theme: "striped",
+      headStyles: { fillColor: [140, 80, 45], fontSize: 8 },
+      styles: { fontSize: 8, cellPadding: 2 },
+      alternateRowStyles: { fillColor: [255, 247, 237] },
+      margin: { left: margin, right: margin }
+    });
+
+    // Footer
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(7.5);
+      doc.setTextColor(150, 130, 100);
+      doc.text(`Página ${i} de ${pageCount}`, pageW - margin, pageH - 6, { align: "right" });
+      doc.text(`Estabelecimentos Da Luz · Reprodução · ${periodLabel}`, margin, pageH - 6);
+    }
+  }
+
+  const periodSuffix = month === "all" ? year : `${year}-${month}`;
+  const farmSuffix = isTotalView ? "todas-fazendas" : slugify(farms[0]?.name || "");
+  doc.save(`reproducao-${farmSuffix}-${periodSuffix}.pdf`);
 }
 
 async function exportSanitaryPdfReport() {
@@ -9289,15 +9561,14 @@ async function appendSanitaryPdfReport(doc, farm) {
   // Table
   let y = 44;
   const colW = [
-    (pageW - 2 * margin) * 0.09,
-    (pageW - 2 * margin) * 0.07,
-    (pageW - 2 * margin) * 0.14,
-    (pageW - 2 * margin) * 0.06,
+    (pageW - 2 * margin) * 0.10,
+    (pageW - 2 * margin) * 0.08,
     (pageW - 2 * margin) * 0.17,
-    (pageW - 2 * margin) * 0.14,
-    (pageW - 2 * margin) * 0.33
+    (pageW - 2 * margin) * 0.07,
+    (pageW - 2 * margin) * 0.22,
+    (pageW - 2 * margin) * 0.36
   ];
-  const headers = ["Código", "Data", "Categoria", "Qtd.", "Produto", "Potreiro", "Observações"];
+  const headers = ["Código", "Data", "Categoria", "Qtd.", "Produto", "Observações"];
   const rowH = 8;
 
   // Table header
@@ -9343,7 +9614,6 @@ async function appendSanitaryPdfReport(doc, farm) {
       record.categoryName || "—",
       String(record.quantity || "—"),
       record.product || "—",
-      record.potreiro || "—",
       record.notes || ""
     ];
 
@@ -9416,6 +9686,7 @@ async function exportPdfReport(farmIds = [state.data.selectedFarmId], period = {
     appendFarmDividerPage(doc, farm, periodLabel, year, month, index + 1, farms.length);
     doc.addPage();
     await appendFarmPdfSection(doc, farm, periodLabel, year, month);
+    await appendMovementPhotoPages(doc, farm, year, month);
   }
 
   addPdfFooters(doc, { coverPage: true });
