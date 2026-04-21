@@ -24,6 +24,14 @@
       "package": "com.fazendadaluz.painel",
       "versionCode": 2
     },
+    "updates": {
+      "url": "https://u.expo.dev/aa40ac57-c264-4e7d-8521-530fd9a9ebeb",
+      "enabled": true,
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "newArchEnabled": false,
     "plugins": [
       [
