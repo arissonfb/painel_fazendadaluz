@@ -32,7 +32,7 @@ export default function PerfilScreen() {
   const reproStats = calcReproStats(farms.flatMap((farm) => farm.reproductionRecords || []));
 
   function confirmLogout() {
-    Alert.alert("Sair", "Deseja encerrar a sessao?", [
+    Alert.alert("Sair", "Deseja encerrar a sessão?", [
       { text: "Cancelar", style: "cancel" },
       {
         text: "Sair",
@@ -51,7 +51,7 @@ export default function PerfilScreen() {
       await pull();
       Alert.alert("Sincronizado", "Dados atualizados com sucesso.");
     } catch (error) {
-      Alert.alert("Erro", error.message || "Nao foi possivel sincronizar.");
+      Alert.alert("Erro", error.message || "Não foi possível sincronizar.");
     } finally {
       setSyncingNow(false);
     }

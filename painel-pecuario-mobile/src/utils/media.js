@@ -7,7 +7,7 @@ const CLOUDINARY_UPLOAD_PRESET = "m6pymz4w";
 export async function requestMediaPermissions() {
   const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (status !== "granted") {
-    throw new Error("Permissao de fotos e videos negada.");
+    throw new Error("Permissão de fotos e vídeos negada.");
   }
 }
 
@@ -43,7 +43,7 @@ export async function uploadAssetToCloudinary(asset) {
 
   if (!response.ok) {
     const message = await response.text();
-    throw new Error(message || "Falha ao enviar midia.");
+    throw new Error(message || "Falha ao enviar mídia.");
   }
 
   const payload = await response.json();

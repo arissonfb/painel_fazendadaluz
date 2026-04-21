@@ -33,6 +33,7 @@ export default function MovimentacaoFormScreen({ route, navigation }) {
   const [date, setDate] = useState(editRecord?.date || todayISO());
   const [categoryName, setCategoryName] = useState(editRecord?.categoryName || "");
   const [quantity, setQuantity] = useState(String(editRecord?.quantity || ""));
+  const [destinationFarmId, setDestinationFarmId] = useState(editRecord?.transferDetails?.destinationFarmId || "");
   const [origin, setOrigin] = useState(editRecord?.purchaseDetails?.origin || "");
   const [supplier, setSupplier] = useState(editRecord?.purchaseDetails?.supplier || "");
   const [buyer, setBuyer] = useState(editRecord?.saleDetails?.buyer || "");
@@ -47,10 +48,26 @@ export default function MovimentacaoFormScreen({ route, navigation }) {
   const [uploading, setUploading] = useState(false);
 
   const selectedFarm = farms.find((farm) => farm.id === farmId);
+  const destinationFarm = farms.find((farm) => farm.id === destinationFarmId);
   const preset = MOVEMENT_REFERENCE_PRESETS[type] || MOVEMENT_REFERENCE_PRESETS.compra;
   const rawCategoryOptions = getFarmCategoryOptions(selectedFarm, preset.categories);
-  const categoryPickerOptions = rawCategoryOptions.map((o) => ({ value: o.label, label: o.label }));
+  const categoryPickerOptions = rawCategoryOptions.map((o) => ({
+    value: o.label,
+    label: o.label,
+    hint: o.quantity > 0 ? `${o.quantity} animais` : undefined,
+  }));
   const movementTypeOptions = MOVEMENT_TYPES.map((item) => ({ value: item.value, label: item.label }));
+
+  const selectedCategoryStock = useMemo(() => {
+    if (type !== "transferencia" || !categoryName || !selectedFarm) return null;
+    const cat = (selectedFarm.categories || []).find(
+      (c) => String(c.name || "").trim().toLowerCase() === categoryName.toLowerCase(),
+    );
+    return cat ? cat.quantity : null;
+  }, [type, categoryName, selectedFarm]);
+
+  const farmOptions = farms.map((farm) => ({ value: farm.id, label: farm.name }));
+  const destFarmOptions = farmOptions.filter((f) => f.value !== farmId);
 
   const quantityNumber = Number(quantity || 0);
   const weightNumber = Number(weight || 0);
@@ -64,7 +81,7 @@ export default function MovimentacaoFormScreen({ route, navigation }) {
 
   async function handleAddAttachment() {
     if (!MEDIA_SUPPORTED_MOVEMENT_TYPES.has(type)) {
-      Alert.alert("Anexos", "Esse tipo de movimentacao nao exige anexo de foto ou video.");
+      Alert.alert("Anexos", "Esse tipo de movimentação não suporta anexos de foto ou vídeo.");
       return;
     }
 
@@ -79,24 +96,30 @@ export default function MovimentacaoFormScreen({ route, navigation }) {
       }
       setAttachments((current) => current.concat(uploaded));
     } catch (error) {
-      Alert.alert("Erro", error.message || "Nao foi possivel anexar a midia.");
+      Alert.alert("Erro", error.message || "Não foi possível anexar a mídia.");
     } finally {
       setUploading(false);
     }
   }
 
   async function handleSave() {
-    if (!farmId) return Alert.alert("Atencao", "Selecione a fazenda.");
-    if (!type) return Alert.alert("Atencao", "Selecione o tipo.");
-    if (!date) return Alert.alert("Atencao", "Informe a data.");
-    if (!quantityNumber || quantityNumber < 1) return Alert.alert("Atencao", "Informe uma quantidade valida.");
-    if (!categoryName.trim()) return Alert.alert("Atencao", "Selecione ou informe a categoria.");
+    if (!farmId) return Alert.alert("Atenção", "Selecione a fazenda de origem.");
+    if (!type) return Alert.alert("Atenção", "Selecione o tipo de movimentação.");
+    if (!date) return Alert.alert("Atenção", "Informe a data.");
+    if (!quantityNumber || quantityNumber < 1) return Alert.alert("Atenção", "Informe uma quantidade válida.");
+    if (!categoryName.trim()) return Alert.alert("Atenção", "Selecione ou informe a categoria.");
+    if (type === "transferencia" && !destinationFarmId) {
+      return Alert.alert("Atenção", "Selecione a fazenda de destino para a transferência.");
+    }
+    if (type === "transferencia" && destinationFarmId === farmId) {
+      return Alert.alert("Atenção", "A fazenda de destino deve ser diferente da fazenda de origem.");
+    }
 
     setSaving(true);
     try {
       const next = JSON.parse(JSON.stringify(data));
       const farm = next.farms.find((item) => item.id === farmId);
-      if (!farm) throw new Error("Fazenda nao encontrada.");
+      if (!farm) throw new Error("Fazenda não encontrada.");
 
       const record = {
         id: editRecord?.id || createUUID(),
@@ -120,6 +143,10 @@ export default function MovimentacaoFormScreen({ route, navigation }) {
           buyer: buyer.trim(),
           destination: destination.trim(),
         } : null,
+        transferDetails: type === "transferencia" ? {
+          destinationFarmId,
+          destinationFarmName: destinationFarm?.name || "",
+        } : null,
         attachments,
         createdAt: editRecord?.createdAt || new Date().toISOString(),
       };
@@ -132,11 +159,14 @@ export default function MovimentacaoFormScreen({ route, navigation }) {
       await save(next);
       navigation.goBack();
     } catch (error) {
-      Alert.alert("Erro", error.message || "Nao foi possivel salvar a movimentacao.");
+      Alert.alert("Erro", error.message || "Não foi possível salvar a movimentação.");
     } finally {
       setSaving(false);
     }
   }
+
+  const isTransfer = type === "transferencia";
+  const showFinancial = type === "compra" || type === "venda";
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -145,7 +175,7 @@ export default function MovimentacaoFormScreen({ route, navigation }) {
           <Ionicons name="close" size={24} color={colors.text} />
         </TouchableOpacity>
         <View style={styles.headerTitleWrap}>
-          <Text style={styles.headerEyebrow}>{isEdit ? "EDITAR MOVIMENTACAO" : "NOVO LANCAMENTO"}</Text>
+          <Text style={styles.headerEyebrow}>{isEdit ? "EDITAR MOVIMENTAÇÃO" : "NOVO LANÇAMENTO"}</Text>
           <Text style={styles.title}>{preset.title}</Text>
         </View>
         <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving || uploading}>
@@ -155,23 +185,23 @@ export default function MovimentacaoFormScreen({ route, navigation }) {
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <FarmSelectorCard
-          title="Fazenda do registro"
+          title={isTransfer ? "Fazenda de Origem" : "Fazenda do registro"}
           value={selectedFarm?.name || "Selecione uma fazenda"}
           helper={selectedFarm ? `${selectedFarm.categories?.length || 0} categorias` : "Escolha a unidade"}
-          options={farms.map((farm) => ({ value: farm.id, label: farm.name }))}
+          options={farmOptions}
           selected={farmId}
-          onSelect={setFarmId}
+          onSelect={(id) => { setFarmId(id); setCategoryName(""); }}
           tone="accent"
         />
 
         <Section title="Evento" subtitle={preset.detailTitle}>
           <Field label="Tipo">
-            <OptionRow options={movementTypeOptions} selected={type} onSelect={setType} tone="accent" />
+            <OptionRow options={movementTypeOptions} selected={type} onSelect={(t) => { setType(t); setCategoryName(""); setDestinationFarmId(""); }} tone="accent" />
           </Field>
           <Field label="Data">
-            <StyledInput value={date} onChangeText={setDate} placeholder="AAAA-MM-DD" keyboardType="numeric" />
+            <StyledInput value={date} onChangeText={setDate} placeholder="DD/MM/AAAA" keyboardType="numeric" />
           </Field>
-          <Field label="Categoria">
+          <Field label="Categoria" hint={selectedCategoryStock !== null ? `Estoque atual: ${selectedCategoryStock} animais` : undefined}>
             <ModalPicker
               options={categoryPickerOptions}
               value={categoryName}
@@ -186,28 +216,53 @@ export default function MovimentacaoFormScreen({ route, navigation }) {
           </Field>
         </Section>
 
-        {(type === "compra" || type === "venda") ? (
+        {isTransfer ? (
+          <Section title="Fazenda de Destino" subtitle="O estoque será ajustado automaticamente nas duas fazendas">
+            <Field label="Destino">
+              <ModalPicker
+                options={destFarmOptions}
+                value={destinationFarmId}
+                onChange={setDestinationFarmId}
+                placeholder="Selecione a fazenda de destino"
+                tone="accent"
+              />
+            </Field>
+            {destinationFarm ? (
+              <View style={styles.transferInfo}>
+                <Ionicons name="swap-horizontal" size={16} color={colors.accent} />
+                <Text style={styles.transferInfoText}>
+                  <Text style={{ fontWeight: "700" }}>{selectedFarm?.name || "Origem"}</Text>
+                  {" → "}
+                  <Text style={{ fontWeight: "700" }}>{destinationFarm.name}</Text>
+                  {quantityNumber > 0 ? `  ·  ${quantityNumber} animais` : ""}
+                </Text>
+              </View>
+            ) : null}
+          </Section>
+        ) : null}
+
+        {showFinancial ? (
           <Section title={type === "compra" ? "Detalhes comerciais" : "Detalhes da venda"}>
             {type === "compra" ? (
               <>
                 <Field label="Propriedade / origem">
-                  <StyledInput value={origin} onChangeText={setOrigin} placeholder="Ex.: Estancia Santa Rosa" />
+                  <StyledInput value={origin} onChangeText={setOrigin} placeholder="Ex.: Estância Santa Rosa" />
                 </Field>
                 <Field label="Fornecedor">
-                  <StyledInput value={supplier} onChangeText={setSupplier} placeholder="Nome do vendedor ou leilao" />
+                  <StyledInput value={supplier} onChangeText={setSupplier} placeholder="Nome do vendedor ou leilão" />
                 </Field>
               </>
             ) : (
               <>
                 <Field label="Comprador">
-                  <StyledInput value={buyer} onChangeText={setBuyer} placeholder="Frigorifico, cliente, corretor..." />
+                  <StyledInput value={buyer} onChangeText={setBuyer} placeholder="Frigorífico, cliente, corretor..." />
                 </Field>
                 <Field label="Destino">
                   <StyledInput value={destination} onChangeText={setDestination} placeholder="Destino da carga" />
                 </Field>
               </>
             )}
-            <Field label="Peso total (kg)" hint={unitWeight ? `${unitWeight} kg/cabeca` : "opcional"}>
+            <Field label="Peso total (kg)" hint={unitWeight ? `${unitWeight} kg/cabeça` : "opcional"}>
               <StyledInput value={weight} onChangeText={setWeight} placeholder="0" keyboardType="decimal-pad" />
             </Field>
             <Field label="Valor por kg">
@@ -222,14 +277,18 @@ export default function MovimentacaoFormScreen({ route, navigation }) {
           </Section>
         ) : null}
 
-        <Section title="Observacoes e anexos" subtitle={getAttachmentLabelCount(attachments)}>
-          <Field label="Observacoes">
-            <StyledInput value={notes} onChangeText={setNotes} placeholder="Detalhes do manejo, lote, conferencias..." multiline numberOfLines={4} />
+        <Section title="Observações e Anexos" subtitle={getAttachmentLabelCount(attachments)}>
+          <Field label="Observações">
+            <StyledInput value={notes} onChangeText={setNotes} placeholder="Detalhes do manejo, lote, conferências..." multiline numberOfLines={4} />
           </Field>
 
-          <TouchableOpacity style={styles.attachmentBtn} onPress={handleAddAttachment} disabled={uploading}>
-            {uploading ? <ActivityIndicator size="small" color={colors.accent} /> : <Ionicons name="attach" size={18} color={colors.accent} />}
-            <Text style={styles.attachmentBtnText}>{uploading ? "Enviando midia..." : "Adicionar foto ou video"}</Text>
+          <TouchableOpacity style={styles.attachmentBtn} onPress={handleAddAttachment} disabled={uploading} activeOpacity={0.75}>
+            <View style={styles.attachmentBtnInner}>
+              {uploading
+                ? <ActivityIndicator size="small" color={colors.textInverse} />
+                : <Ionicons name="camera" size={22} color={colors.textInverse} />}
+              <Text style={styles.attachmentBtnText}>{uploading ? "Enviando mídia..." : "Adicionar foto ou vídeo"}</Text>
+            </View>
           </TouchableOpacity>
 
           {attachments.length ? (
@@ -266,7 +325,7 @@ const styles = StyleSheet.create({
   closeBtn: { padding: 4 },
   headerTitleWrap: { flex: 1, paddingHorizontal: spacing.sm },
   headerEyebrow: { fontSize: 11, fontWeight: "700", color: colors.textSecondary, letterSpacing: 0.7 },
-  title: { fontSize: 26, fontWeight: "800", color: colors.text, marginTop: 2 },
+  title: { fontSize: 22, fontWeight: "800", color: colors.text, marginTop: 2 },
   saveBtn: {
     backgroundColor: colors.accent,
     paddingHorizontal: 16,
@@ -278,18 +337,31 @@ const styles = StyleSheet.create({
   saveBtnText: { color: colors.textInverse, fontWeight: "700", fontSize: 14 },
   scroll: { flex: 1 },
   content: { padding: spacing.md, paddingBottom: spacing.xxl, gap: spacing.md },
+  transferInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: `${colors.accent}18`,
+    borderRadius: radius.md,
+    padding: spacing.sm,
+    borderWidth: 1,
+    borderColor: `${colors.accent}44`,
+  },
+  transferInfoText: { fontSize: 13, color: colors.text, flex: 1 },
   attachmentBtn: {
+    borderRadius: radius.md,
+    overflow: "hidden",
+  },
+  attachmentBtnInner: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    minHeight: 44,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.accent,
-    backgroundColor: colors.accentFaded,
+    gap: 10,
+    paddingVertical: 14,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.primary,
   },
-  attachmentBtnText: { color: colors.accent, fontWeight: "700" },
+  attachmentBtnText: { color: colors.textInverse, fontWeight: "700", fontSize: 15 },
   attachmentList: { gap: spacing.sm },
   attachmentItem: {
     flexDirection: "row",

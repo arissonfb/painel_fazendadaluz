@@ -107,7 +107,7 @@ export default function MovimentacoesScreen({ navigation }) {
         ListHeaderComponent={(
           <View style={styles.listHeader}>
             <ScreenHeader
-              title="Movimentacoes"
+              title="Movimentações"
               actionLabel="Registrar"
               actionIcon="add"
               onAction={() => navigation.navigate("MovimentacaoForm", { editRecord: null, farms, selectedFarmId: activeFarm?.id || farms[0]?.id || "" })}
@@ -115,7 +115,7 @@ export default function MovimentacoesScreen({ navigation }) {
             />
 
             <FarmSelectorCard
-              title="Fazenda do manejo"
+              title="Movimentações da Fazenda"
               value={activeFarm?.name || "Todas as fazendas"}
               helper={activeFarm ? `${activeFarm.movements?.length || 0} registros` : `${farms.length} fazendas`}
               options={selectorOptions}
@@ -125,17 +125,25 @@ export default function MovimentacoesScreen({ navigation }) {
             />
 
             <View style={styles.summaryGrid}>
-              <SummaryCard title="Compras" value={summary.compra} helper="entradas" icon="arrow-down-circle" tone="primary" />
-              <SummaryCard title="Vendas" value={summary.venda} helper="saidas" icon="arrow-up-circle" tone="danger" />
-              <SummaryCard title="Nascimentos" value={summary.nascimento} helper="novos animais" icon="heart" tone="accent" />
-              <SummaryCard title="Saldo" value={summary.saldo} helper="impacto no estoque" icon="analytics" tone="blue" />
+              <View style={styles.summaryCol}>
+                <SummaryCard title="Compras" value={summary.compra} helper="entradas" icon="arrow-down-circle" tone="primary" />
+              </View>
+              <View style={styles.summaryCol}>
+                <SummaryCard title="Vendas" value={summary.venda} helper="saídas" icon="arrow-up-circle" tone="danger" />
+              </View>
+              <View style={styles.summaryCol}>
+                <SummaryCard title="Nascimentos" value={summary.nascimento} helper="novos animais" icon="heart" tone="accent" />
+              </View>
+              <View style={styles.summaryCol}>
+                <SummaryCard title="Saldo líquido" value={summary.saldo} helper="impacto no estoque" icon="analytics" tone="blue" />
+              </View>
             </View>
 
             <View style={styles.searchRow}>
               <Ionicons name="search" size={16} color={colors.textLight} style={{ marginRight: 6 }} />
               <TextInput
                 style={styles.searchInput}
-                placeholder="Buscar codigo, fazenda, categoria, origem..."
+                placeholder="Buscar código, fazenda, categoria, origem..."
                 placeholderTextColor={colors.textLight}
                 value={search}
                 onChangeText={setSearch}
@@ -223,8 +231,8 @@ function EmptyState({ search }) {
   return (
     <View style={styles.empty}>
       <Ionicons name="swap-horizontal-outline" size={48} color={colors.textLight} />
-      <Text style={styles.emptyTitle}>{search ? "Nenhuma movimentacao encontrada" : "Nenhuma movimentacao registrada"}</Text>
-      <Text style={styles.emptyText}>{search ? "Tente outros termos." : "Use o botao Registrar para lancar compras, vendas, nascimentos, mortes e ajustes."}</Text>
+      <Text style={styles.emptyTitle}>{search ? "Nenhuma movimentação encontrada" : "Nenhuma movimentação registrada"}</Text>
+      <Text style={styles.emptyText}>{search ? "Tente outros termos." : "Use o botão Registrar para lançar compras, vendas, nascimentos, mortes e ajustes."}</Text>
     </View>
   );
 }
@@ -235,6 +243,7 @@ const styles = StyleSheet.create({
   content: { padding: spacing.md, paddingBottom: spacing.xxl },
   listHeader: { gap: spacing.md, marginBottom: spacing.md },
   summaryGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  summaryCol: { width: "48.5%" },
   searchRow: {
     flexDirection: "row",
     alignItems: "center",

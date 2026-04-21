@@ -45,16 +45,16 @@ export default function ReproducaoFormScreen({ route, navigation }) {
   const quantityFalhou = verificationOnly ? Math.max(0, quantityNum - quantityPrenhaNum) : 0;
 
   async function handleSave() {
-    if (!farmId) return Alert.alert("Atencao", "Selecione a fazenda.");
-    if (!verificationOnly && !date) return Alert.alert("Atencao", "Informe a data.");
-    if (!verificationOnly && (!quantityNum || quantityNum <= 0)) return Alert.alert("Atencao", "Informe a quantidade (> 0).");
-    if (verificationOnly && !verifDate) return Alert.alert("Atencao", "Informe a data da verificação.");
+    if (!farmId) return Alert.alert("Atenção", "Selecione a fazenda.");
+    if (!verificationOnly && !date) return Alert.alert("Atenção", "Informe a data.");
+    if (!verificationOnly && (!quantityNum || quantityNum <= 0)) return Alert.alert("Atenção", "Informe a quantidade (> 0).");
+    if (verificationOnly && !verifDate) return Alert.alert("Atenção", "Informe a data da verificação.");
 
     setSaving(true);
     try {
       const next = JSON.parse(JSON.stringify(data));
       const farm = next.farms.find((item) => item.id === farmId);
-      if (!farm) throw new Error("Fazenda nao encontrada.");
+      if (!farm) throw new Error("Fazenda não encontrada.");
       if (!Array.isArray(farm.reproductionRecords)) farm.reproductionRecords = [];
 
       const record = {
@@ -89,7 +89,7 @@ export default function ReproducaoFormScreen({ route, navigation }) {
       await save(next);
       navigation.goBack();
     } catch (error) {
-      Alert.alert("Erro", error.message || "Nao foi possivel salvar.");
+      Alert.alert("Erro", error.message || "Não foi possível salvar.");
     } finally {
       setSaving(false);
     }

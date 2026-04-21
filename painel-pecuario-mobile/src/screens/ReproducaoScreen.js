@@ -102,7 +102,7 @@ export default function ReproducaoScreen({ navigation }) {
         ListHeaderComponent={(
           <View style={styles.listHeader}>
             <ScreenHeader
-              title="Reproducao"
+              title="Reprodução"
               actionLabel="Registrar"
               actionIcon="add"
               onAction={() => navigation.navigate("ReproducaoForm", { editRecord: null, farms, selectedFarmId: activeFarm?.id || farms[0]?.id || "" })}
@@ -110,7 +110,7 @@ export default function ReproducaoScreen({ navigation }) {
             />
 
             <FarmSelectorCard
-              title="Fazenda da reproducao"
+              title="Fazenda da Reprodução"
               value={activeFarm?.name || "Todas as fazendas"}
               helper={activeFarm ? `${activeFarm.reproductionRecords?.length || 0} registros` : `${farms.length} fazendas`}
               options={[{ value: "__ALL__", label: "Todas as fazendas" }, ...farms.map((farm) => ({ value: farm.id, label: farm.name }))]}
@@ -120,17 +120,17 @@ export default function ReproducaoScreen({ navigation }) {
             />
 
             <View style={styles.summaryGrid}>
-              <SummaryCard title="Inseminacoes" value={stats.totalInsem} helper="lancamentos" icon="heart" tone="primary" />
-              <SummaryCard title="Entouradas" value={stats.totalEntour} helper="lancamentos" icon="ellipse" tone="accent" />
+              <SummaryCard title="Inseminações" value={stats.totalInsem} helper="lançamentos" icon="heart" tone="primary" />
+              <SummaryCard title="Entouradas" value={stats.totalEntour} helper="lançamentos" icon="ellipse" tone="accent" />
               <SummaryCard title="Prenhas" value={stats.totalPrenha} helper="confirmadas" icon="checkmark-circle" tone="blue" />
-              <SummaryCard title="Taxa" value={`${stats.taxa}%`} helper="indice atual" icon="analytics" tone="danger" />
+              <SummaryCard title="Taxa" value={`${stats.taxa}%`} helper="índice atual" icon="analytics" tone="danger" />
             </View>
 
             <View style={styles.searchRow}>
               <Ionicons name="search" size={16} color={colors.textLight} style={{ marginRight: 6 }} />
               <TextInput
                 style={styles.searchInput}
-                placeholder="Buscar codigo, fazenda, categoria, potreiro..."
+                placeholder="Buscar código, fazenda, categoria, potreiro..."
                 placeholderTextColor={colors.textLight}
                 value={search}
                 onChangeText={setSearch}
@@ -169,7 +169,7 @@ function ReproCard({ record, onEdit, onRegisterResult, onDelete }) {
   const isAguardando = !record.verificationDate;
   const statusColor = isAguardando ? colors.accent : isPrenha ? colors.primary : colors.danger;
   const statusLabel = isAguardando ? "Aguardando" : isPrenha ? "Prenha" : "Falhada";
-  const typeLabel = record.type === "inseminacao" ? "Inseminacao" : "Entourada";
+  const typeLabel = record.type === "inseminacao" ? "Inseminação" : "Entourada";
   const typeColor = record.type === "inseminacao" ? colors.primary : colors.accent;
   const taxa = record.verificationDate && record.quantity > 0
     ? `${(((Number(record.quantityPegou || 0) / Number(record.quantity || 1)) * 100)).toFixed(1)}%`
@@ -217,7 +217,7 @@ function ReproCard({ record, onEdit, onRegisterResult, onDelete }) {
 
       {!record.verificationDate ? (
         <View style={styles.pendingInline}>
-          <Text style={styles.pendingInlineText}>Diagnostico pendente para este evento</Text>
+          <Text style={styles.pendingInlineText}>Diagnóstico pendente para este evento</Text>
         </View>
       ) : null}
 
@@ -255,7 +255,7 @@ function EmptyState({ search }) {
   return (
     <View style={styles.empty}>
       <Ionicons name="heart-circle-outline" size={48} color={colors.textLight} />
-      <Text style={styles.emptyTitle}>{search ? "Nenhum registro encontrado" : "Nenhum registro de reproducao"}</Text>
+      <Text style={styles.emptyTitle}>{search ? "Nenhum registro encontrado" : "Nenhum registro de reprodução"}</Text>
       <Text style={styles.emptyText}>{search ? "Tente outros termos." : "Toque em Registrar para adicionar o primeiro manejo."}</Text>
     </View>
   );

@@ -55,28 +55,28 @@ export default function SanitarioFormScreen({ route, navigation }) {
       }
       setAttachments((current) => current.concat(uploaded));
     } catch (error) {
-      Alert.alert("Erro", error.message || "Nao foi possivel anexar a midia.");
+      Alert.alert("Erro", error.message || "Não foi possível anexar a mídia.");
     } finally {
       setUploading(false);
     }
   }
 
   async function handleSave() {
-    if (!farmId) return Alert.alert("Atencao", "Selecione a fazenda.");
-    if (!date) return Alert.alert("Atencao", "Informe a data.");
+    if (!farmId) return Alert.alert("Atenção", "Selecione a fazenda.");
+    if (!date) return Alert.alert("Atenção", "Informe a data.");
 
     setSaving(true);
     try {
       const next = JSON.parse(JSON.stringify(data));
       const farm = next.farms.find((item) => item.id === farmId);
-      if (!farm) throw new Error("Fazenda nao encontrada.");
+      if (!farm) throw new Error("Fazenda não encontrada.");
 
       const record = {
         id: editRecord?.id || createUUID(),
         code: editRecord?.code || generateSanCode(farm),
         farmId,
         date,
-        name: name.trim() || product.trim() || "Manejo sanitario",
+        name: name.trim() || product.trim() || "Manejo sanitário",
         categoryName: categoryName.trim(),
         categoryId: categoryName.trim(),
         potreiro: potreiro.trim(),
@@ -105,7 +105,7 @@ export default function SanitarioFormScreen({ route, navigation }) {
       await save(next);
       navigation.goBack();
     } catch (error) {
-      Alert.alert("Erro", error.message || "Nao foi possivel salvar.");
+      Alert.alert("Erro", error.message || "Não foi possível salvar.");
     } finally {
       setSaving(false);
     }
@@ -118,8 +118,8 @@ export default function SanitarioFormScreen({ route, navigation }) {
           <Ionicons name="close" size={24} color={colors.text} />
         </TouchableOpacity>
         <View style={styles.headerTitleWrap}>
-          <Text style={styles.headerEyebrow}>MANEJO SANITARIO</Text>
-          <Text style={styles.title}>{isEdit ? "Atualizar registro sanitario" : "Novo registro sanitario"}</Text>
+          <Text style={styles.headerEyebrow}>MANEJO SANITÁRIO</Text>
+          <Text style={styles.title}>{isEdit ? "Atualizar registro sanitário" : "Novo registro sanitário"}</Text>
         </View>
         <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving || uploading}>
           {saving ? <ActivityIndicator size="small" color={colors.textInverse} /> : <Text style={styles.saveBtnText}>Salvar registro</Text>}
@@ -127,7 +127,7 @@ export default function SanitarioFormScreen({ route, navigation }) {
       </View>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Section title="Manejo sanitario" subtitle="Fluxo direto por fazenda, categoria e produto">
+        <Section title="Manejo sanitário" subtitle="Fluxo direto por fazenda, categoria e produto">
           <View style={styles.row}>
             <View style={styles.col}>
               <Field label="Fazenda">
@@ -141,7 +141,7 @@ export default function SanitarioFormScreen({ route, navigation }) {
             </View>
             <View style={styles.col}>
               <Field label="Data">
-                <StyledInput value={date} onChangeText={setDate} placeholder="AAAA-MM-DD" keyboardType="numeric" />
+                <StyledInput value={date} onChangeText={setDate} placeholder="DD/MM/AAAA" keyboardType="numeric" />
               </Field>
             </View>
           </View>
@@ -200,12 +200,12 @@ export default function SanitarioFormScreen({ route, navigation }) {
             </View>
           </View>
 
-          <Field label="Observacoes">
-            <StyledInput value={notes} onChangeText={setNotes} placeholder="Ex.: lote revisado apos manejo" multiline numberOfLines={3} />
+          <Field label="Observações">
+            <StyledInput value={notes} onChangeText={setNotes} placeholder="Ex.: lote revisado após manejo" multiline numberOfLines={3} />
           </Field>
 
           <Field label="Nome do procedimento (opcional)">
-            <StyledInput value={name} onChangeText={setName} placeholder="Ex.: vacinacao, vermifugacao..." />
+            <StyledInput value={name} onChangeText={setName} placeholder="Ex.: vacinação, vermifugação..." />
           </Field>
 
           <View style={styles.row}>
@@ -215,8 +215,8 @@ export default function SanitarioFormScreen({ route, navigation }) {
               </Field>
             </View>
             <View style={styles.col}>
-              <Field label="Responsavel (opcional)">
-                <StyledInput value={responsible} onChangeText={setResponsible} placeholder="Tecnico / operador" />
+              <Field label="Responsável (opcional)">
+                <StyledInput value={responsible} onChangeText={setResponsible} placeholder="Técnico / operador" />
               </Field>
             </View>
           </View>
@@ -227,9 +227,11 @@ export default function SanitarioFormScreen({ route, navigation }) {
         </Section>
 
         <Section title="Anexos" subtitle={getAttachmentLabelCount(attachments)}>
-          <TouchableOpacity style={styles.attachmentBtn} onPress={handleAddAttachment} disabled={uploading}>
-            {uploading ? <ActivityIndicator size="small" color={colors.blue} /> : <Ionicons name="attach" size={18} color={colors.blue} />}
-            <Text style={styles.attachmentBtnText}>{uploading ? "Enviando midia..." : "Adicionar foto ou video"}</Text>
+          <TouchableOpacity style={styles.attachmentBtn} onPress={handleAddAttachment} disabled={uploading} activeOpacity={0.75}>
+            <View style={styles.attachmentBtnInner}>
+              {uploading ? <ActivityIndicator size="small" color={colors.textInverse} /> : <Ionicons name="camera" size={22} color={colors.textInverse} />}
+              <Text style={styles.attachmentBtnText}>{uploading ? "Enviando mídia..." : "Adicionar foto ou vídeo"}</Text>
+            </View>
           </TouchableOpacity>
 
           {attachments.length ? (
@@ -281,17 +283,19 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", gap: spacing.sm },
   col: { flex: 1 },
   attachmentBtn: {
+    borderRadius: radius.md,
+    overflow: "hidden",
+  },
+  attachmentBtnInner: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    minHeight: 44,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.blue,
-    backgroundColor: colors.blueFaded,
+    gap: 10,
+    paddingVertical: 14,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.blue,
   },
-  attachmentBtnText: { color: colors.blue, fontWeight: "700" },
+  attachmentBtnText: { color: colors.textInverse, fontWeight: "700", fontSize: 15 },
   attachmentList: { gap: spacing.sm },
   attachmentItem: {
     flexDirection: "row",

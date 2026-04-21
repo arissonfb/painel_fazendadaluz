@@ -1,7 +1,7 @@
 const STANDARD_FARM_CATEGORIES = [
   { id: "vacas-cria", name: "Vacas de cria" },
   { id: "terneiros-machos", name: "Terneiros 1 a 2 anos - machos" },
-  { id: "terneiros-femeas", name: "Terneiros 1 a 2 anos - femeas" },
+  { id: "terneiros-femeas", name: "Terneiros 1 a 2 anos - fêmeas" },
   { id: "bois-abate", name: "Bois de abate" },
   { id: "novilhas-entouradas", name: "Novilhas entouradas" },
   { id: "touros", name: "Touros" },
@@ -17,8 +17,8 @@ const DEFAULT_SANITARY_PRODUCTS = [
   "Botulismo",
   "Leptospirose",
   "IBR/BVD",
-  "Carbunculo",
-  "Vermifugo",
+  "Carbúnculo",
+  "Vermífugo",
   "Ivermectina",
   "Abamectina",
   "Moxidectina",
@@ -40,16 +40,16 @@ export const MOVEMENT_TYPES = [
   { value: "venda", label: "Venda", direction: -1, accent: "#8c4b38" },
   { value: "consumo", label: "Consumo", direction: -1, accent: "#c98c4f" },
   { value: "nascimento", label: "Nascimento", direction: 1, accent: "#4CAF50" },
-  { value: "morte", label: "Morte", direction: -1, accent: "#795548" },
+  { value: "morte", label: "Morte / Abate", direction: -1, accent: "#795548" },
   { value: "ajuste", label: "Ajuste manual", direction: 0, accent: "#5b8db8" },
-  { value: "transferencia", label: "Transferencia entre potreiros", direction: 0, accent: "#9C27B0" },
+  { value: "transferencia", label: "Transferências entre Fazendas", direction: 0, accent: "#9C27B0" },
 ];
 
 export const MOVEMENT_REFERENCE_PRESETS = {
   compra: {
     title: "Registrar compra",
     detailTitle: "Detalhes da compra",
-    categories: ["Reposicao", "Bois de abate", "Novilhas", "Terneiros", "Touros", "Vacas"],
+    categories: ["Reposição", "Bois de abate", "Novilhas", "Terneiros", "Touros", "Vacas"],
   },
   venda: {
     title: "Registrar venda",
@@ -59,27 +59,27 @@ export const MOVEMENT_REFERENCE_PRESETS = {
   nascimento: {
     title: "Registrar nascimento",
     detailTitle: "Detalhes do nascimento",
-    categories: ["Terneiros machos", "Terneiros femeas"],
+    categories: ["Terneiros machos", "Terneiros fêmeas"],
   },
   morte: {
-    title: "Registrar morte",
-    detailTitle: "Detalhes da morte",
+    title: "Registrar morte / abate",
+    detailTitle: "Detalhes da ocorrência",
     categories: ["Vacas", "Terneiros", "Touros", "Novilhas", "Bois"],
   },
   consumo: {
     title: "Registrar consumo",
     detailTitle: "Detalhes do consumo",
-    categories: ["Consumo interno", "Abate proprio", "Transferencia externa"],
+    categories: ["Consumo interno", "Abate próprio", "Transferência externa"],
   },
   ajuste: {
     title: "Registrar ajuste",
     detailTitle: "Detalhes do ajuste",
-    categories: ["Correcao inventario", "Recontagem", "Baixa administrativa"],
+    categories: ["Correção de inventário", "Recontagem", "Baixa administrativa"],
   },
   transferencia: {
-    title: "Registrar transferencia",
-    detailTitle: "Detalhes da transferencia",
-    categories: ["Transferencia de lote"],
+    title: "Transferência entre Fazendas",
+    detailTitle: "Selecione origem, categoria e destino",
+    categories: [],
   },
 };
 
@@ -93,10 +93,10 @@ export const REPRODUCTION_CATEGORIES = [
 ];
 
 export const SANITARY_VIAS = [
-  "Subcutanea",
+  "Subcutânea",
   "Intramuscular",
   "Oral",
-  "Topica",
+  "Tópica",
   "Intravenosa",
   "Pour-on",
   "Outra",
@@ -201,7 +201,7 @@ export function getFarmCategoryOptions(farm, extraLabels = []) {
     const key = name.toLowerCase();
     if (seen.has(key)) return;
     seen.add(key);
-    items.push({ value: category.id || slugify(name), label: name, source: "farm" });
+    items.push({ value: category.id || slugify(name), label: name, source: "farm", quantity: category.quantity || 0 });
   });
 
   extraLabels.forEach((label) => {
@@ -210,7 +210,7 @@ export function getFarmCategoryOptions(farm, extraLabels = []) {
     const key = name.toLowerCase();
     if (seen.has(key)) return;
     seen.add(key);
-    items.push({ value: slugify(name), label: name, source: "preset" });
+    items.push({ value: slugify(name), label: name, source: "preset", quantity: 0 });
   });
 
   return items;
@@ -265,14 +265,24 @@ export function upsertMovementInData(payload, nextRecord, previousRecord = null)
   const farms = payload?.farms || [];
   const nextFarm = farms.find((farm) => farm.id === nextRecord.farmId);
   if (!nextFarm) {
-    throw new Error("Fazenda nao encontrada para salvar a movimentacao.");
+    throw new Error("Fazenda não encontrada para salvar a movimentação.");
   }
 
   if (previousRecord) {
     const previousFarm = farms.find((farm) => farm.id === previousRecord.farmId);
     if (previousFarm) {
       previousFarm.movements = (previousFarm.movements || []).filter((item) => item.id !== previousRecord.id);
-      applyMovementToFarm(previousFarm, previousRecord, -1);
+      if (previousRecord.type === "transferencia" && previousRecord.transferDetails?.destinationFarmId) {
+        const prevOriginCat = ensureCategoryRecord(previousFarm, previousRecord.categoryName, previousRecord.categoryId);
+        if (prevOriginCat) prevOriginCat.quantity = Math.max(0, prevOriginCat.quantity + Number(previousRecord.quantity || 0));
+        const prevDestFarm = farms.find((f) => f.id === previousRecord.transferDetails.destinationFarmId);
+        if (prevDestFarm) {
+          const prevDestCat = ensureCategoryRecord(prevDestFarm, previousRecord.categoryName, previousRecord.categoryId);
+          if (prevDestCat) prevDestCat.quantity = Math.max(0, prevDestCat.quantity - Number(previousRecord.quantity || 0));
+        }
+      } else {
+        applyMovementToFarm(previousFarm, previousRecord, -1);
+      }
     }
   }
 
@@ -283,18 +293,39 @@ export function upsertMovementInData(payload, nextRecord, previousRecord = null)
   } else {
     nextFarm.movements.push(nextRecord);
   }
-  applyMovementToFarm(nextFarm, nextRecord, 1);
+
+  if (nextRecord.type === "transferencia" && nextRecord.transferDetails?.destinationFarmId) {
+    const originCat = ensureCategoryRecord(nextFarm, nextRecord.categoryName, nextRecord.categoryId);
+    if (originCat) originCat.quantity = Math.max(0, originCat.quantity - Number(nextRecord.quantity || 0));
+    const destFarm = farms.find((f) => f.id === nextRecord.transferDetails.destinationFarmId);
+    if (destFarm) {
+      const destCat = ensureCategoryRecord(destFarm, nextRecord.categoryName, nextRecord.categoryId);
+      if (destCat) destCat.quantity = Math.max(0, destCat.quantity + Number(nextRecord.quantity || 0));
+    }
+  } else {
+    applyMovementToFarm(nextFarm, nextRecord, 1);
+  }
 }
 
 export function deleteMovementFromData(payload, record) {
   const farm = payload?.farms?.find((item) => item.id === record?.farmId);
   if (!farm) return;
   farm.movements = (farm.movements || []).filter((item) => item.id !== record.id);
-  applyMovementToFarm(farm, record, -1);
+  if (record.type === "transferencia" && record.transferDetails?.destinationFarmId) {
+    const originCat = ensureCategoryRecord(farm, record.categoryName, record.categoryId);
+    if (originCat) originCat.quantity = Math.max(0, originCat.quantity + Number(record.quantity || 0));
+    const destFarm = payload?.farms?.find((f) => f.id === record.transferDetails.destinationFarmId);
+    if (destFarm) {
+      const destCat = ensureCategoryRecord(destFarm, record.categoryName, record.categoryId);
+      if (destCat) destCat.quantity = Math.max(0, destCat.quantity - Number(record.quantity || 0));
+    }
+  } else {
+    applyMovementToFarm(farm, record, -1);
+  }
 }
 
 export function formatMovementTypeLabel(type) {
-  return MOVEMENT_TYPES.find((item) => item.value === type)?.label || type || "Movimentacao";
+  return MOVEMENT_TYPES.find((item) => item.value === type)?.label || type || "Movimentação";
 }
 
 export function getMovementSummary(records) {

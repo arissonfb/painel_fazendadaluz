@@ -98,7 +98,7 @@ export default function SanitarioScreen({ navigation }) {
         ListHeaderComponent={(
           <View style={styles.listHeader}>
             <ScreenHeader
-              title="Sanitario"
+              title="Sanitário"
               actionLabel="Registrar"
               actionIcon="add"
               onAction={() => navigation.navigate("SanitarioForm", { editRecord: null, farms, selectedFarmId: activeFarm?.id || farms[0]?.id || "" })}
@@ -116,8 +116,8 @@ export default function SanitarioScreen({ navigation }) {
             />
 
             <View style={styles.summaryGrid}>
-              <SummaryCard title="Aplicacoes" value={records.length} helper="total" icon="medkit" tone="blue" />
-              <SummaryCard title="Este mes" value={summaryMonth} helper="periodo atual" icon="calendar" tone="primary" />
+              <SummaryCard title="Aplicações" value={records.length} helper="total" icon="medkit" tone="blue" />
+              <SummaryCard title="Este mês" value={summaryMonth} helper="período atual" icon="calendar" tone="primary" />
               <SummaryCard title="Produtos" value={uniqueProducts} helper="diferentes" icon="flask" tone="accent" />
             </View>
 
@@ -158,7 +158,7 @@ function SanitaryCard({ record, onEdit, onDelete }) {
       <View style={styles.cardHeader}>
         <View style={styles.cardHeadText}>
           <Text style={styles.cardCode}>{record.code || "-"}</Text>
-          <Text style={styles.cardTitle}>{record.name || record.product || "Manejo sanitario"}</Text>
+          <Text style={styles.cardTitle}>{record.name || record.product || "Manejo sanitário"}</Text>
           <Text style={styles.cardFarm}>{record.farmName}</Text>
         </View>
         <View style={styles.dateBadge}>
@@ -201,7 +201,7 @@ function EmptyState({ search }) {
   return (
     <View style={styles.empty}>
       <Ionicons name="medkit-outline" size={48} color={colors.textLight} />
-      <Text style={styles.emptyTitle}>{search ? "Nenhum registro encontrado" : "Nenhum registro sanitario"}</Text>
+      <Text style={styles.emptyTitle}>{search ? "Nenhum registro encontrado" : "Nenhum registro sanitário"}</Text>
       <Text style={styles.emptyText}>{search ? "Tente outros termos." : "Registre vacinas, medicamentos e manejos da fazenda por aqui."}</Text>
     </View>
   );
