@@ -14,7 +14,7 @@ import { useAuth } from "../context/AuthContext";
 import { useData } from "../context/DataContext";
 import { colors, spacing, radius, shadow } from "../theme";
 import { calcReproStats, calcStockTotal } from "../utils/farmUtils";
-import { shareFarmReport } from "../utils/reports";
+import { shareFarmReport, shareSanitaryReport } from "../utils/reports";
 import { SummaryCard } from "../components/MobileUI";
 
 export default function PerfilScreen() {
@@ -23,6 +23,7 @@ export default function PerfilScreen() {
   const [loggingOut, setLoggingOut] = useState(false);
   const [syncingNow, setSyncingNow] = useState(false);
   const [reporting, setReporting] = useState(false);
+  const [reportingSanitary, setReportingSanitary] = useState(false);
 
   const farms = useMemo(() => (data?.farms || []).filter((farm) => farm.id !== "__TOTAL__"), [data]);
   const totalAnimals = farms.reduce((sum, farm) => sum + calcStockTotal(farm), 0);
@@ -61,7 +62,6 @@ export default function PerfilScreen() {
       Alert.alert("Relatorio", "Nenhuma fazenda disponivel para gerar o PDF.");
       return;
     }
-
     setReporting(true);
     try {
       await shareFarmReport(farms[0]);
@@ -69,6 +69,21 @@ export default function PerfilScreen() {
       Alert.alert("Erro", error.message || "Nao foi possivel gerar o relatorio.");
     } finally {
       setReporting(false);
+    }
+  }
+
+  async function handleSanitaryReport() {
+    if (!farms.length) {
+      Alert.alert("Relatorio", "Nenhuma fazenda disponivel para gerar o PDF.");
+      return;
+    }
+    setReportingSanitary(true);
+    try {
+      await shareSanitaryReport(farms[0]);
+    } catch (error) {
+      Alert.alert("Erro", error.message || "Nao foi possivel gerar o relatorio sanitario.");
+    } finally {
+      setReportingSanitary(false);
     }
   }
 
@@ -115,11 +130,20 @@ export default function PerfilScreen() {
           <Divider />
           <ActionRow
             icon="document-text-outline"
-            label="Gerar relatorio PDF"
-            helper="Inclui links dos anexos de foto e video"
+            label="Relatorio geral PDF"
+            helper="Movimentacoes, reproducao e estoque"
             color={colors.blue}
             loading={reporting}
             onPress={handleReport}
+          />
+          <Divider />
+          <ActionRow
+            icon="medkit-outline"
+            label="Relatorio sanitario PDF"
+            helper="Todos os registros de manejo sanitario"
+            color={colors.accent}
+            loading={reportingSanitary}
+            onPress={handleSanitaryReport}
           />
           <Divider />
           <ActionRow

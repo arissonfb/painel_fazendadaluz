@@ -10,58 +10,72 @@ function esc(value) {
     .replace(/\"/g, "&quot;");
 }
 
+const BASE_STYLE = `
+  body { font-family: Arial, sans-serif; color: #1a2e1f; padding: 24px; }
+  h1 { margin-bottom: 4px; color: #375b43; }
+  h2 { margin-top: 28px; color: #375b43; border-bottom: 2px solid #dae6dd; padding-bottom: 6px; }
+  .muted { color: #56705c; margin-bottom: 18px; font-size: 13px; }
+  .grid { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 8px; }
+  .card { border: 1px solid #dae6dd; border-radius: 12px; padding: 12px 16px; min-width: 140px; }
+  .card strong { font-size: 22px; display: block; margin-bottom: 4px; color: #1a2e1f; }
+  .card span { font-size: 12px; color: #56705c; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+  th, td { border-bottom: 1px solid #eaf2eb; padding: 8px 6px; text-align: left; vertical-align: top; }
+  th { background: #f2f5f2; font-weight: 700; color: #375b43; }
+  tr:nth-child(even) td { background: #f9fbf9; }
+  .attachments a { display: block; color: #375b43; text-decoration: none; margin-bottom: 4px; font-size: 12px; }
+  .footer { margin-top: 32px; font-size: 11px; color: #aaa; border-top: 1px solid #eee; padding-top: 8px; }
+`;
+
 export async function shareFarmReport(farm) {
   const movementSummary = getMovementSummary(farm?.movements || []);
   const reproductionSummary = calcReproStats(farm?.reproductionRecords || []);
   const totalAnimals = calcStockTotal(farm);
   const recentMovements = [...(farm?.movements || [])]
     .sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")))
-    .slice(0, 10);
-  const recentSanitary = [...(farm?.sanitaryRecords || [])]
-    .sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")))
-    .slice(0, 10);
+    .slice(0, 15);
 
   const html = `
     <html>
       <head>
         <meta charset="utf-8" />
-        <style>
-          body { font-family: Arial, sans-serif; color: #1a2e1f; padding: 24px; }
-          h1 { margin-bottom: 4px; color: #375b43; }
-          h2 { margin-top: 28px; color: #375b43; }
-          .muted { color: #56705c; margin-bottom: 18px; }
-          .grid { display: flex; flex-wrap: wrap; gap: 12px; }
-          .card { border: 1px solid #dae6dd; border-radius: 12px; padding: 12px; min-width: 160px; }
-          .card strong { font-size: 20px; display: block; margin-bottom: 4px; }
-          table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-          th, td { border-bottom: 1px solid #eaf2eb; padding: 8px; text-align: left; vertical-align: top; }
-          th { background: #f2f5f2; }
-          .attachments a { display: block; color: #375b43; text-decoration: none; margin-bottom: 4px; }
-        </style>
+        <style>${BASE_STYLE}</style>
       </head>
       <body>
         <h1>${esc(farm?.name || "Fazenda")}</h1>
-        <div class="muted">Relatorio mobile gerado em ${esc(new Date().toLocaleString("pt-BR"))}</div>
+        <div class="muted">Relatório pecuário gerado em ${esc(new Date().toLocaleString("pt-BR"))}</div>
+
         <div class="grid">
-          <div class="card"><strong>${esc(totalAnimals)}</strong>Animais no estoque</div>
-          <div class="card"><strong>${esc((farm?.movements || []).length)}</strong>Movimentacoes</div>
-          <div class="card"><strong>${esc((farm?.sanitaryRecords || []).length)}</strong>Registros sanitarios</div>
-          <div class="card"><strong>${esc(reproductionSummary.taxa)}%</strong>Taxa de prenhez</div>
+          <div class="card"><strong>${esc(totalAnimals)}</strong><span>Animais no estoque</span></div>
+          <div class="card"><strong>${esc((farm?.movements || []).length)}</strong><span>Movimentações</span></div>
+          <div class="card"><strong>${esc((farm?.sanitaryRecords || []).length)}</strong><span>Registros sanitários</span></div>
+          <div class="card"><strong>${esc(reproductionSummary.taxa)}%</strong><span>Taxa de prenhez</span></div>
         </div>
-        <h2>Resumo de movimentacoes</h2>
+
+        <h2>Resumo de movimentações</h2>
         <div class="grid">
-          <div class="card"><strong>${esc(movementSummary.compra)}</strong>Compras</div>
-          <div class="card"><strong>${esc(movementSummary.venda)}</strong>Vendas</div>
-          <div class="card"><strong>${esc(movementSummary.nascimento)}</strong>Nascimentos</div>
-          <div class="card"><strong>${esc(movementSummary.morte)}</strong>Mortes</div>
-          <div class="card"><strong>${esc(movementSummary.saldo)}</strong>Saldo liquido</div>
+          <div class="card"><strong>${esc(movementSummary.compra)}</strong><span>Compras</span></div>
+          <div class="card"><strong>${esc(movementSummary.venda)}</strong><span>Vendas</span></div>
+          <div class="card"><strong>${esc(movementSummary.nascimento)}</strong><span>Nascimentos</span></div>
+          <div class="card"><strong>${esc(movementSummary.morte)}</strong><span>Mortes</span></div>
+          <div class="card"><strong>${esc(movementSummary.saldo)}</strong><span>Saldo líquido</span></div>
         </div>
-        <h2>Movimentacoes recentes</h2>
+
+        <h2>Reprodução</h2>
+        <div class="grid">
+          <div class="card"><strong>${esc(reproductionSummary.totalInsem)}</strong><span>Inseminações</span></div>
+          <div class="card"><strong>${esc(reproductionSummary.totalEntour)}</strong><span>Entouradas</span></div>
+          <div class="card"><strong>${esc(reproductionSummary.totalPrenha)}</strong><span>Prenhas</span></div>
+          <div class="card"><strong>${esc(reproductionSummary.totalFalhada)}</strong><span>Falhadas</span></div>
+          <div class="card"><strong>${esc(reproductionSummary.aguardando)}</strong><span>Aguardando</span></div>
+        </div>
+
+        <h2>Movimentações recentes</h2>
         <table>
           <thead>
             <tr>
               <th>Data</th>
-              <th>Codigo</th>
+              <th>Código</th>
               <th>Tipo</th>
               <th>Categoria</th>
               <th>Quantidade</th>
@@ -78,42 +92,81 @@ export async function shareFarmReport(farm) {
                 <td>${esc(record.quantity || 0)}</td>
                 <td class="attachments">
                   ${Array.isArray(record.attachments) && record.attachments.length
-                    ? record.attachments.map((attachment) => `<a href="${esc(attachment.url)}">${esc(attachment.name || attachment.url)}</a>`).join("")
+                    ? record.attachments.map((a) => `<a href="${esc(a.url)}">${esc(a.name || a.url)}</a>`).join("")
                     : "-"}
                 </td>
               </tr>
-            `).join("") : `<tr><td colspan="6">Sem movimentacoes registradas.</td></tr>`}
+            `).join("") : `<tr><td colspan="6">Sem movimentações registradas.</td></tr>`}
           </tbody>
         </table>
-        <h2>Sanitario recente</h2>
+
+        <div class="footer">Estabelecimentos Da Luz · Relatório Pecuário · ${esc(farm?.name || "")}</div>
+      </body>
+    </html>
+  `;
+
+  await Print.printAsync({ html });
+  return null;
+}
+
+export async function shareSanitaryReport(farm) {
+  const records = [...(farm?.sanitaryRecords || [])]
+    .sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+
+  const totalApplications = records.length;
+  const treatedAnimals = records.reduce((sum, r) => sum + (Number(r.quantity) || 0), 0);
+  const uniqueProducts = new Set(records.map((r) => r.product).filter(Boolean)).size;
+
+  const html = `
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <style>${BASE_STYLE}</style>
+      </head>
+      <body>
+        <h1>Relatório de Manejo Sanitário</h1>
+        <div class="muted">
+          Fazenda: <strong>${esc(farm?.name || "-")}</strong> &nbsp;·&nbsp;
+          Gerado em ${esc(new Date().toLocaleString("pt-BR"))}
+        </div>
+
+        <div class="grid">
+          <div class="card"><strong>${esc(totalApplications)}</strong><span>Aplicações</span></div>
+          <div class="card"><strong>${esc(treatedAnimals)}</strong><span>Animais tratados</span></div>
+          <div class="card"><strong>${esc(uniqueProducts)}</strong><span>Produtos distintos</span></div>
+        </div>
+
+        <h2>Registros sanitários</h2>
         <table>
           <thead>
             <tr>
               <th>Data</th>
-              <th>Codigo</th>
-              <th>Produto</th>
+              <th>Código</th>
               <th>Categoria</th>
               <th>Qtd.</th>
-              <th>Anexos</th>
+              <th>Produto</th>
+              <th>Via</th>
+              <th>Responsável</th>
+              <th>Observações</th>
             </tr>
           </thead>
           <tbody>
-            ${recentSanitary.length ? recentSanitary.map((record) => `
+            ${records.length ? records.map((record) => `
               <tr>
                 <td>${esc(fmtDate(record.date))}</td>
                 <td>${esc(record.code || "-")}</td>
-                <td>${esc(record.product || record.name || "-")}</td>
                 <td>${esc(record.categoryName || "-")}</td>
                 <td>${esc(record.quantity || 0)}</td>
-                <td class="attachments">
-                  ${Array.isArray(record.attachments) && record.attachments.length
-                    ? record.attachments.map((attachment) => `<a href="${esc(attachment.url)}">${esc(attachment.name || attachment.url)}</a>`).join("")
-                    : "-"}
-                </td>
+                <td>${esc(record.product || record.name || "-")}</td>
+                <td>${esc(record.via || "-")}</td>
+                <td>${esc(record.responsible || "-")}</td>
+                <td>${esc(record.notes || "")}</td>
               </tr>
-            `).join("") : `<tr><td colspan="6">Sem registros sanitarios.</td></tr>`}
+            `).join("") : `<tr><td colspan="8">Sem registros sanitários.</td></tr>`}
           </tbody>
         </table>
+
+        <div class="footer">Estabelecimentos Da Luz · Manejo Sanitário · ${esc(farm?.name || "")}</div>
       </body>
     </html>
   `;
