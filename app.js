@@ -959,7 +959,12 @@ const elements = {
   categoryName: document.getElementById("categoryName"),
   categoryInitialQuantity: document.getElementById("categoryInitialQuantity"),
   sanitaryForm: document.getElementById("sanitaryForm"),
+  sanitaryDialog: document.getElementById("sanitaryDialog"),
+  sanitaryDialogTitle: document.getElementById("sanitaryDialogTitle"),
+  openSanitaryDialogButton: document.getElementById("openSanitaryDialogButton"),
+  closeSanitaryDialog: document.getElementById("closeSanitaryDialog"),
   sanitaryEditingId: document.getElementById("sanitaryEditingId"),
+  sanitaryFarm: document.getElementById("sanitaryFarm"),
   sanitaryDate: document.getElementById("sanitaryDate"),
   sanitaryQuantity: document.getElementById("sanitaryQuantity"),
   sanitaryCategory: document.getElementById("sanitaryCategory"),
@@ -975,7 +980,6 @@ const elements = {
   sanitaryTableBody: document.getElementById("sanitaryTableBody"),
   sanitaryFarmSwitch: document.getElementById("sanitaryFarmSwitch"),
   sanitaryViewNote: document.getElementById("sanitaryViewNote"),
-  sanitaryFormPanel: document.getElementById("sanitaryFormPanel"),
   potreirosShortcut: document.getElementById("potreirosShortcut"),
   potreirosView: document.getElementById("potreirosView"),
   potreirosAccordion: document.getElementById("potreirosAccordion"),
@@ -2989,18 +2993,35 @@ function bindEvents() {
     updateSanitaryProductMode();
   });
 
+  elements.sanitaryFarm?.addEventListener("change", () => {
+    if (!elements.sanitaryFarm.value || !state.data.farms[elements.sanitaryFarm.value]) {
+      return;
+    }
+    state.data.selectedFarmId = elements.sanitaryFarm.value;
+    saveData();
+    syncSanitaryFormOptions();
+    renderSanitaryFarmSwitch();
+    renderSanitaryComposerState(getFarm());
+  });
+
   elements.sanitaryPotrero?.addEventListener("change", () => {
     updateSanitaryPotreroMode();
   });
 
   elements.sanitaryTableBody.addEventListener("click", (event) => {
-    const trigger = event.target.closest("[data-edit-sanitary-id]");
-    if (!trigger) {
+    const editTrigger = event.target.closest("[data-edit-sanitary-id]");
+    if (editTrigger) {
+      openSanitaryEditor(editTrigger.dataset.editSanitaryId);
       return;
     }
-
-    openSanitaryEditor(trigger.dataset.editSanitaryId);
+    const deleteTrigger = event.target.closest("[data-delete-sanitary-id]");
+    if (deleteTrigger) {
+      deleteSanitaryRecord(deleteTrigger.dataset.deleteSanitaryId);
+    }
   });
+  elements.openSanitaryDialogButton?.addEventListener("click", () => openSanitaryDialog());
+  elements.closeSanitaryDialog?.addEventListener("click", () => closeSanitaryDialog());
+  elements.sanitaryDialog?.addEventListener("close", () => resetSanitaryForm());
 
   // Gold register button — toggle menu
   elements.registerGoldBtn.addEventListener("click", (e) => {
@@ -4972,7 +4993,7 @@ function renderSanitaryTable(farm) {
   }
 
   if (!records.length) {
-    elements.sanitaryTableBody.innerHTML = `<tr><td colspan="8" class="table-empty-cell">${query ? "Nenhum registro encontrado." : "Nenhum registro sanitário no período."}</td></tr>`;
+    elements.sanitaryTableBody.innerHTML = `<tr><td colspan="9" class="table-empty-cell">${query ? "Nenhum registro encontrado." : "Nenhum registro sanitário no período."}</td></tr>`;
     return;
   }
 
@@ -4995,9 +5016,11 @@ function renderSanitaryTable(farm) {
             <span class="san-product-badge">${escapeHtml(record.product)}</span>
           </div>
         </td>
+        <td data-label="Potreiros">${escapeHtml(record.potreiro || "Sem potreiro")}</td>
         <td data-label="Obs.">${escapeHtml(record.notes || "—")}</td>
         <td data-label="Ações">
           <button type="button" class="table-action-btn" data-edit-sanitary-id="${escapeHtml(editId)}">Editar</button>
+          <button type="button" class="table-action-btn table-action-btn-danger" data-delete-sanitary-id="${escapeHtml(editId)}">Excluir</button>
         </td>
       </tr>
     `;
@@ -5029,17 +5052,17 @@ function renderSanitaryFarmSwitch() {
 }
 
 function renderSanitaryComposerState(farm) {
-  if (!elements.sanitaryViewNote || !elements.sanitaryFormPanel) {
+  if (!elements.sanitaryViewNote || !elements.openSanitaryDialogButton) {
     return;
   }
 
   if (state.data.selectedFarmId === TOTAL_FARM_ID) {
-    elements.sanitaryFormPanel.hidden = true;
+    elements.openSanitaryDialogButton.disabled = true;
     elements.sanitaryViewNote.textContent = "No consolidado total, os registros sanitários aparecem agrupados. Selecione uma fazenda para lançar ou editar um manejo.";
     return;
   }
 
-  elements.sanitaryFormPanel.hidden = false;
+  elements.openSanitaryDialogButton.disabled = false;
   elements.sanitaryViewNote.textContent = `Manejo sanitário ativo para ${farm.name}. Os dados abaixo consideram apenas a fazenda selecionada.`;
 }
 
@@ -7427,6 +7450,72 @@ function handleSaveStockEdit() {
   render();
 }
 
+function getSanitaryDialogFarm() {
+  const farmId = elements.sanitaryFarm?.value;
+  if (farmId && state.data.farms[farmId]) {
+    return state.data.farms[farmId];
+  }
+  return getFarm();
+}
+
+function resetSanitaryForm() {
+  elements.sanitaryEditingId.value = "";
+  elements.sanitaryQuantity.value = "";
+  elements.sanitaryNotes.value = "";
+  elements.newProductName.value = "";
+  elements.newPotreroName.value = "";
+  if (elements.sanitaryDialogTitle) {
+    elements.sanitaryDialogTitle.textContent = "Registro Sanitário";
+  }
+  elements.sanitarySubmitButton.textContent = "Salvar registro sanitário";
+  syncSanitaryFormOptions();
+  updateSanitaryProductMode();
+  updateSanitaryPotreroMode();
+}
+
+function openSanitaryDialog() {
+  if (state.data.selectedFarmId === TOTAL_FARM_ID) {
+    alert("Selecione uma fazenda específica para registrar o manejo sanitário.");
+    return;
+  }
+  resetSanitaryForm();
+  elements.sanitaryDialog?.showModal();
+}
+
+function closeSanitaryDialog() {
+  elements.sanitaryDialog?.close();
+}
+
+function deleteSanitaryRecord(recordId) {
+  const aggregateRecord = getAggregateFarm().sanitaryRecords.find((item) => item.id === recordId || item.sourceId === recordId);
+  const ownerFarmId = aggregateRecord?.farmId || aggregateRecord?._farmId;
+  const farm = ownerFarmId
+    ? state.data.farms[ownerFarmId]
+    : getAllFarms().find((item) => item.sanitaryRecords.some((record) => record.id === recordId || record.sourceId === recordId));
+  if (!farm) {
+    return;
+  }
+
+  const record = farm.sanitaryRecords.find((item) => item.id === recordId || item.sourceId === recordId);
+  if (!record) {
+    return;
+  }
+
+  if (!confirm(`Excluir o registro sanitário ${record.code || ""}?\n\nEsta ação não pode ser desfeita.`)) {
+    return;
+  }
+
+  farm.sanitaryRecords = farm.sanitaryRecords.filter((item) => item.id !== recordId && item.sourceId !== recordId);
+  logAuditEvent("Exclusão", "sanitário", `${record.product} - ${record.categoryName}`, {
+    farmId: farm.id,
+    farmName: farm.name,
+    recordCode: record.code || ""
+  });
+  saveData();
+  populateYearFilter();
+  render();
+}
+
 function openSanitaryEditor(recordId) {
   if (state.data.selectedFarmId === TOTAL_FARM_ID) {
     const aggregateFarm = getAggregateFarm();
@@ -7451,16 +7540,23 @@ function openSanitaryEditor(recordId) {
   syncSanitaryFormOptions();
   ensureSanitaryCategoryOption(record.categoryId, record.categoryName);
   ensureSelectOption(elements.sanitaryProduct, record.product, record.product);
+  ensureSelectOption(elements.sanitaryPotrero, record.potreiro || "Sem potreiro", record.potreiro || "Sem potreiro");
 
   elements.sanitaryEditingId.value = record.id || record.sourceId;
+  elements.sanitaryFarm.value = farm.id;
   elements.sanitaryDate.value = record.date;
   elements.sanitaryQuantity.value = Number.isFinite(record.quantity) ? String(record.quantity) : "";
   elements.sanitaryCategory.value = record.categoryId;
   elements.sanitaryProduct.value = record.product;
+  elements.sanitaryPotrero.value = record.potreiro || "Sem potreiro";
   elements.sanitaryNotes.value = record.notes || "";
+  if (elements.sanitaryDialogTitle) {
+    elements.sanitaryDialogTitle.textContent = "Editar Registro Sanitário";
+  }
   elements.sanitarySubmitButton.textContent = "Atualizar registro sanitário";
   updateSanitaryProductMode();
-  elements.sanitaryForm.scrollIntoView({ behavior: "smooth", block: "start" });
+  updateSanitaryPotreroMode();
+  elements.sanitaryDialog?.showModal();
 }
 
 function syncMovementTypeOptions(selectedType = elements.movementType.value || "compra") {
@@ -7695,10 +7791,25 @@ function updatePotreroQuantitiesFromAllocation(farm) {
 }
 
 function syncSanitaryFormOptions() {
-  const farm = getFarm();
+  const availableFarms = getAllFarms();
+  if (!availableFarms.length) {
+    return;
+  }
+
+  const currentFarmId = (elements.sanitaryFarm?.value && state.data.farms[elements.sanitaryFarm.value])
+    ? elements.sanitaryFarm.value
+    : (state.data.selectedFarmId !== TOTAL_FARM_ID ? state.data.selectedFarmId : availableFarms[0].id);
+  const farm = state.data.farms[currentFarmId] || availableFarms[0];
+  const selectedCategory = elements.sanitaryCategory.value;
   const selectedProduct = elements.sanitaryProduct.value;
+  const selectedPotrero = elements.sanitaryPotrero?.value || "";
+
+  elements.sanitaryFarm.innerHTML = availableFarms.map((item) => `
+    <option value="${item.id}" ${item.id === farm.id ? "selected" : ""}>${escapeHtml(item.name)}</option>
+  `).join("");
+
   elements.sanitaryCategory.innerHTML = getSanitaryCategoryOptions(farm).map((category) => `
-    <option value="${category.id}">${escapeHtml(category.name)}</option>
+    <option value="${category.id}" ${category.id === selectedCategory ? "selected" : ""}>${escapeHtml(category.name)}</option>
   `).join("");
 
   const productOptions = farm.sanitaryProducts.map((product) => `
@@ -7711,10 +7822,23 @@ function syncSanitaryFormOptions() {
     elements.sanitaryProduct.value = farm.sanitaryProducts[0];
   }
 
+  const potreroOptions = [
+    '<option value="Sem potreiro">Sem potreiro</option>',
+    ...getPotreroEntries(farm).map((potrero) => `
+      <option value="${escapeHtml(potrero.name)}" ${potrero.name === selectedPotrero ? "selected" : ""}>${escapeHtml(potrero.name)}</option>
+    `),
+    `<option value="__new__" ${selectedPotrero === "__new__" ? "selected" : ""}>Outro potreiro</option>`
+  ];
+  elements.sanitaryPotrero.innerHTML = potreroOptions.join("");
+  if (!elements.sanitaryPotrero.value) {
+    elements.sanitaryPotrero.value = "Sem potreiro";
+  }
+
   if (!elements.sanitaryDate.value) {
     elements.sanitaryDate.value = new Date().toISOString().slice(0, 10);
   }
   updateSanitaryProductMode();
+  updateSanitaryPotreroMode();
 }
 
 function getSanitaryCategoryOptions(farm) {
@@ -7753,7 +7877,12 @@ function updateSanitaryProductMode() {
 }
 
 function updateSanitaryPotreroMode() {
-  // Potreiro removido da interface — função mantida para compatibilidade
+  const isNewPotrero = elements.sanitaryPotrero?.value === "__new__";
+  elements.newPotreroWrap.hidden = !isNewPotrero;
+  elements.newPotreroName.required = isNewPotrero;
+  if (!isNewPotrero) {
+    elements.newPotreroName.value = "";
+  }
 }
 
 async function handleMovementSubmit(event) {
@@ -8033,12 +8162,12 @@ function handleMonthlyDataSubmit(event) {
 
 function handleSanitarySubmit(event) {
   event.preventDefault();
-  if (state.data.selectedFarmId === TOTAL_FARM_ID) {
+  const farm = getSanitaryDialogFarm();
+  if (!farm || farm.id === TOTAL_FARM_ID) {
     alert("Selecione uma fazenda específica para registrar ou editar o manejo sanitário.");
     return;
   }
 
-  const farm = getFarm();
   const editingId = elements.sanitaryEditingId.value;
   const date = elements.sanitaryDate.value;
   const quantity = Number(elements.sanitaryQuantity.value);
@@ -8047,30 +8176,49 @@ function handleSanitarySubmit(event) {
   const selectedProduct = elements.sanitaryProduct.value;
   const newProductName = elements.newProductName.value.trim();
   const product = selectedProduct === "__new__" ? newProductName : selectedProduct;
+  const selectedPotrero = elements.sanitaryPotrero.value;
+  const newPotreroName = elements.newPotreroName.value.trim();
+  const potreiro = selectedPotrero === "__new__" ? newPotreroName : selectedPotrero;
   const notes = elements.sanitaryNotes.value.trim();
   const isEditingSanitary = Boolean(editingId);
 
-  if (!date || !categoryId || !Number.isFinite(quantity) || quantity < 1 || !product) {
+  if (!date || !categoryId || !Number.isFinite(quantity) || quantity < 1 || !product || !potreiro) {
     return;
   }
 
   if (selectedProduct === "__new__" && !farm.sanitaryProducts.includes(product)) {
     farm.sanitaryProducts.push(product);
   }
+  if (selectedPotrero === "__new__" && !getPotreroEntries(farm).some((item) => normalizeText(item.name) === normalizeText(potreiro))) {
+    farm.potreiros.push({
+      id: createPotreroId(potreiro),
+      name: potreiro,
+      quantity: 0
+    });
+  }
 
   const recordPayload = {
     date,
+    farmId: farm.id,
     quantity,
     categoryId,
     categoryName: categoryLabel,
     product,
+    potreiro,
     notes
   };
 
   if (editingId) {
-    const existingRecord = farm.sanitaryRecords.find((item) => item.id === editingId || item.sourceId === editingId);
-    if (existingRecord) {
+    const ownerFarm = getAllFarms().find((item) => item.sanitaryRecords.some((record) => record.id === editingId || record.sourceId === editingId));
+    const existingRecord = ownerFarm?.sanitaryRecords.find((item) => item.id === editingId || item.sourceId === editingId);
+    if (existingRecord && ownerFarm?.id === farm.id) {
       Object.assign(existingRecord, recordPayload);
+    } else if (existingRecord) {
+      ownerFarm.sanitaryRecords = ownerFarm.sanitaryRecords.filter((item) => item.id !== editingId && item.sourceId !== editingId);
+      farm.sanitaryRecords.push({
+        ...existingRecord,
+        ...recordPayload
+      });
     }
   } else {
     farm.sanitaryRecords.push({
@@ -8084,6 +8232,7 @@ function handleSanitarySubmit(event) {
   const savedSanitaryRecord = editingId
     ? farm.sanitaryRecords.find((item) => item.id === editingId || item.sourceId === editingId)
     : farm.sanitaryRecords[farm.sanitaryRecords.length - 1];
+  state.data.selectedFarmId = farm.id;
   logAuditEvent(isEditingSanitary ? "Edição" : "Adição", "sanitário", `${product} em ${potreiro}`, {
     farmId: farm.id,
     farmName: farm.name,
@@ -8091,12 +8240,7 @@ function handleSanitarySubmit(event) {
   });
   saveData();
   populateYearFilter();
-  elements.sanitaryEditingId.value = "";
-  elements.sanitaryQuantity.value = "";
-  elements.sanitaryNotes.value = "";
-  elements.sanitaryProduct.value = farm.sanitaryProducts[0] || "__new__";
-  elements.sanitarySubmitButton.textContent = "Salvar registro sanitário";
-  updateSanitaryProductMode();
+  closeSanitaryDialog();
   render();
 }
 

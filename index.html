@@ -411,17 +411,21 @@
         </section>
 
         <section class="content-grid sanitary-layout">
-          <article class="panel sanitary-form-panel" id="sanitaryFormPanel">
-            <div class="panel-header">
+          <dialog id="sanitaryDialog" class="modal">
+            <form id="sanitaryForm" class="modal-card sanitary-modal-card">
+              <div class="modal-header">
               <div>
                 <p class="panel-kicker">Manejo sanitário</p>
-                <h2>Novo registro sanitário</h2>
+                <h2 id="sanitaryDialogTitle">Registro Sanitário</h2>
               </div>
+              <button type="button" class="ghost-btn" id="closeSanitaryDialog">Fechar</button>
             </div>
-
-            <form id="sanitaryForm" class="sanitary-form">
               <input type="hidden" id="sanitaryEditingId">
               <div class="form-grid">
+                <label>
+                  Fazenda
+                  <select id="sanitaryFarm" required></select>
+                </label>
                 <label>
                   Data
                   <input type="date" id="sanitaryDate" required>
@@ -442,6 +446,14 @@
                   Descreva o produto
                   <input type="text" id="newProductName" maxlength="80" placeholder="Ex.: Vacina aftosa, Ivermectina 1%, Carrapaticida">
                 </label>
+                <label>
+                  Potreiros
+                  <select id="sanitaryPotrero" required></select>
+                </label>
+                <label id="newPotreroWrap" hidden>
+                  Novo potreiro
+                  <input type="text" id="newPotreroName" maxlength="80" placeholder="Ex.: Campo 3, Costa, Cerrillada">
+                </label>
                 <label class="form-span-2">
                   Observações
                   <input type="text" id="sanitaryNotes" maxlength="160" placeholder="Ex.: lote revisado após manejo">
@@ -452,7 +464,7 @@
                 <button type="submit" class="action-btn purchase" id="sanitarySubmitButton">Salvar registro sanitário</button>
               </div>
             </form>
-          </article>
+          </dialog>
 
           <article class="panel sanitary-summary-panel">
             <div class="panel-header">
@@ -472,7 +484,10 @@
                 <p class="panel-kicker">Histórico de aplicações</p>
                 <h2>Manejo Sanitário registrado</h2>
               </div>
-              <button type="button" class="action-btn secondary" id="exportSanitaryPdfBtn">Relatório Sanitário PDF</button>
+              <div class="sanitary-header-actions">
+                <button type="button" class="action-btn purchase" id="openSanitaryDialogButton">Registro Sanitário</button>
+                <button type="button" class="action-btn secondary" id="exportSanitaryPdfBtn">Relatório Sanitário PDF</button>
+              </div>
             </div>
             <div class="san-history-toolbar">
               <input type="search" id="sanitaryHistorySearch" class="movements-search-input" placeholder="Buscar por código, produto, categoria…">
@@ -488,6 +503,7 @@
                     <th>Categoria</th>
                     <th>Qtd.</th>
                     <th>Produto</th>
+                    <th>Potreiros</th>
                     <th>Obs.</th>
                     <th>Ações</th>
                   </tr>

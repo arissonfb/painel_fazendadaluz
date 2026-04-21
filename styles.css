@@ -1351,6 +1351,18 @@ input {
   justify-content: flex-start;
 }
 
+.sanitary-header-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sanitary-modal-card {
+  display: grid;
+  gap: 18px;
+  width: min(760px, calc(100vw - 24px));
+}
+
 .sanitary-summary-panel .analytics-cards {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -1412,6 +1424,16 @@ input {
 .table-action-btn:hover {
   transform: translateY(-1px);
   background: rgba(244, 225, 202, 0.92);
+}
+
+.table-action-btn-danger {
+  color: #9c3f2d;
+  border-color: rgba(156, 63, 45, 0.16);
+}
+
+.table-action-btn-danger:hover {
+  background: rgba(230, 196, 184, 0.4);
+  border-color: rgba(156, 63, 45, 0.24);
 }
 
 .table-empty-cell {
