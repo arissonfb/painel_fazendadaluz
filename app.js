@@ -92,7 +92,7 @@ const MOVEMENT_TYPES = [
   { value: "nascimento", label: "Nascimento", direction: 1 },
   { value: "morte", label: "Morte", direction: -1 },
   { value: "ajuste", label: "Ajuste manual", direction: 0 },
-  { value: "transferencia", label: "Transferência entre potreiros", direction: 0 }
+  { value: "transferencia", label: "Transferência", direction: 0 }
 ];
 
 const MONTH_NAMES = [
@@ -4972,7 +4972,7 @@ function renderSanitaryTable(farm) {
   }
 
   if (!records.length) {
-    elements.sanitaryTableBody.innerHTML = `<tr><td colspan="9" class="table-empty-cell">${query ? "Nenhum registro encontrado." : "Nenhum registro sanitário no período."}</td></tr>`;
+    elements.sanitaryTableBody.innerHTML = `<tr><td colspan="8" class="table-empty-cell">${query ? "Nenhum registro encontrado." : "Nenhum registro sanitário no período."}</td></tr>`;
     return;
   }
 
@@ -4995,7 +4995,6 @@ function renderSanitaryTable(farm) {
             <span class="san-product-badge">${escapeHtml(record.product)}</span>
           </div>
         </td>
-        <td data-label="Potreiro">${escapeHtml(record.potreiro || "—")}</td>
         <td data-label="Obs.">${escapeHtml(record.notes || "—")}</td>
         <td data-label="Ações">
           <button type="button" class="table-action-btn" data-edit-sanitary-id="${escapeHtml(editId)}">Editar</button>
