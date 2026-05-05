@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
@@ -11,38 +11,52 @@
 </head>
 <body class="login-mode">
   <section class="splash-shell" id="splashShell" aria-label="Tela de abertura">
-    <div class="splash-landscape">
-      <div class="splash-card">
-        <img src="./assets/logo-da-luz.jpg" alt="Logo Da Luz" class="splash-logo">
+    <div class="splash-bull-frame">
+      <img src="./assets/angus.jpg" alt="" class="splash-bull-img" aria-hidden="true">
+    </div>
+    <div class="splash-glow"></div>
+    <div class="splash-content">
+      <div class="splash-brand">
+        <div class="splash-logo-ring">
+          <img src="./assets/logo-da-luz.jpg" alt="Logo Da Luz" class="splash-logo">
+        </div>
         <span class="splash-kicker">Estabelecimentos Da Luz</span>
-        <strong class="splash-title">Painel Pecuário</strong>
-        <p class="splash-text">Clique ou toque na tela para continuar.</p>
+        <strong class="splash-title">Fazendas<br>Da Luz</strong>
+        <p class="splash-sub">Sistema de gestão pecuária</p>
       </div>
+      <p class="splash-cta">Clique ou toque na tela para continuar</p>
     </div>
   </section>
 
   <section class="auth-shell" id="authShell">
     <div class="auth-card">
+
+      <!-- Painel visual esquerdo: imagem + branding -->
       <div class="auth-visual-panel">
-        <div class="brand-badge">
-          <img src="./assets/logo-da-luz.jpg" alt="Logo Da Luz" class="brand-logo">
-          <div class="brand-copy">
-            <span>Estabelecimentos</span>
-            <strong>Da Luz</strong>
-          </div>
-        </div>
         <div class="auth-angus-frame">
-          <img src="./assets/angus-login.svg" alt="Rosto 3D de Angus em destaque" class="auth-angus-image">
+          <img src="./assets/angus.jpg" alt="Rebanho Fazendas Da Luz" class="auth-angus-image">
+        </div>
+        <div class="auth-visual-copy">
+          <div class="auth-brand-badge">
+            <img src="./assets/logo-da-luz.jpg" alt="Logo Da Luz" class="auth-brand-logo">
+            <div class="auth-brand-text">
+              <span>Estabelecimentos</span>
+              <strong>Da Luz</strong>
+            </div>
+          </div>
+          <p class="auth-visual-sub">Gestão profissional do rebanho</p>
         </div>
       </div>
 
+      <!-- Painel do formulário direito -->
       <div class="auth-copy-panel">
-        <p class="eyebrow">Acesso ao painel</p>
-        <h1>Entrar no sistema</h1>
-        <p class="hero-text auth-text">
-          Use seu login e senha para acessar o painel das fazendas. O acesso inicial já vem configurado para a equipe Da Luz.
-        </p>
-        <p class="hero-text auth-text">Perfis de Usuários e Administradores já podem ser gerenciados no sistema.</p>
+        <div class="auth-form-header-block">
+          <p class="eyebrow">Acesso ao painel</p>
+          <h1>Entrar no sistema</h1>
+          <p class="auth-text">
+            Use seu login e senha para acessar o painel das fazendas. O acesso inicial j? vem configurado para a equipe Da Luz.
+          </p>
+        </div>
 
         <form id="loginForm" class="auth-form">
           <div class="auth-role-switch" role="tablist" aria-label="Tipo de acesso">
@@ -56,16 +70,19 @@
           <p class="auth-role-hint" id="loginRoleHint">Acesso padrão para operação do sistema e consulta dos registros autorizados.</p>
           <label>
             Login
-            <input type="text" id="loginUsername" autocomplete="username" required>
+            <input type="text" id="loginUsername" autocomplete="username" required placeholder="Seu login">
           </label>
           <label>
             Senha
-            <input type="password" id="loginPassword" autocomplete="current-password" required>
+            <input type="password" id="loginPassword" autocomplete="current-password" required placeholder="Sua senha">
           </label>
           <p class="auth-feedback" id="loginFeedback" hidden></p>
-          <button type="submit" class="action-btn purchase auth-submit">Entrar</button>
+          <button type="submit" class="btn-login auth-submit">Entrar</button>
         </form>
+
+        <p class="auth-footer-note">Painel Pecuário ? Fazendas Da Luz</p>
       </div>
+
     </div>
   </section>
 
@@ -81,8 +98,7 @@
             </div>
           </div>
           <p class="eyebrow">Navegação</p>
-          <h2>Painel pecuário</h2>
-          <p class="sidebar-text">Acesse o consolidado total, entre em cada fazenda e navegue pelos registros com menos rolagem e mais contexto visual.</p>
+          <h2>Painel Pecuário</h2>
         </div>
 
         <div class="sidebar-section">
@@ -91,7 +107,7 @@
         </div>
 
         <div class="sidebar-section">
-          <span class="sidebar-label">Acesso rápido</span>
+          <span class="sidebar-label">Acesso r?pido</span>
           <button type="button" class="sidebar-shortcut" id="sanitaryShortcut">Manejo Sanitário</button>
           <button type="button" class="sidebar-shortcut" id="potreirosShortcut">Potreiros</button>
           <button type="button" class="sidebar-shortcut" id="reproducaoShortcut">Reprodução</button>
@@ -188,48 +204,48 @@
               <div class="register-menu-group">
                 <span class="register-menu-label">Entradas</span>
                 <button type="button" class="register-menu-item rmi-compra" data-mov="compra" role="menuitem">
-                  <span class="rmi-icon">🛒</span>
+                  <span class="rmi-icon">ðŸ›’</span>
                   <div class="rmi-text"><strong>Compra</strong><span>Entrada por aquisição</span></div>
                 </button>
                 <button type="button" class="register-menu-item rmi-nascimento" data-mov="nascimento" role="menuitem">
-                  <span class="rmi-icon">🐣</span>
+                  <span class="rmi-icon">ðŸ£</span>
                   <div class="rmi-text"><strong>Nascimento</strong><span>Cria nascida no campo</span></div>
                 </button>
               </div>
               <div class="register-menu-group">
                 <span class="register-menu-label">Saídas</span>
                 <button type="button" class="register-menu-item rmi-venda" data-mov="venda" role="menuitem">
-                  <span class="rmi-icon">💰</span>
-                  <div class="rmi-text"><strong>Venda</strong><span>Saída por venda comercial</span></div>
+                  <span class="rmi-icon">ðŸ’°</span>
+                  <div class="rmi-text"><strong>Venda</strong><span>Sa?da por venda comercial</span></div>
                 </button>
                 <button type="button" class="register-menu-item rmi-consumo" data-mov="consumo" role="menuitem">
-                  <span class="rmi-icon">🔪</span>
-                  <div class="rmi-text"><strong>Abate / Consumo</strong><span>Saída por abate ou consumo</span></div>
+                  <span class="rmi-icon">ðŸ”ª</span>
+                  <div class="rmi-text"><strong>Abate / Consumo</strong><span>Sa?da por abate ou consumo</span></div>
                 </button>
                 <button type="button" class="register-menu-item rmi-morte" data-mov="morte" role="menuitem">
-                  <span class="rmi-icon">📋</span>
-                  <div class="rmi-text"><strong>Morte</strong><span>Baixa por óbito</span></div>
+                  <span class="rmi-icon">ðŸ“‹</span>
+                  <div class="rmi-text"><strong>Morte</strong><span>Baixa por ?bito</span></div>
                 </button>
               </div>
               <div class="register-menu-group">
                 <span class="register-menu-label">Movimentação</span>
                 <button type="button" class="register-menu-item rmi-transferencia" data-mov="transferencia" role="menuitem">
-                  <span class="rmi-icon">🔄</span>
+                  <span class="rmi-icon">ðŸ”„</span>
                   <div class="rmi-text"><strong>Transferência</strong><span>Mover animais entre fazendas</span></div>
                 </button>
               </div>
               <div class="register-menu-group">
                 <span class="register-menu-label">Gestão</span>
                 <button type="button" class="register-menu-item rmi-dado-mensal" data-mov="dado-mensal" role="menuitem">
-                  <span class="rmi-icon">📊</span>
+                  <span class="rmi-icon">ðŸ“Š</span>
                   <div class="rmi-text"><strong>Dado mensal</strong><span>Registrar indicador</span></div>
                 </button>
                 <button type="button" class="register-menu-item rmi-ajuste" data-mov="ajuste" role="menuitem">
-                  <span class="rmi-icon">⚖️</span>
+                  <span class="rmi-icon">âš–ï¸</span>
                   <div class="rmi-text"><strong>Ajuste manual</strong><span>Correção de estoque</span></div>
                 </button>
                 <button type="button" class="register-menu-item rmi-categoria" data-mov="categoria" role="menuitem">
-                  <span class="rmi-icon">🏷️</span>
+                  <span class="rmi-icon">ðŸ·ï¸</span>
                   <div class="rmi-text"><strong>Nova categoria</strong><span>Adicionar tipo de animal</span></div>
                 </button>
               </div>
@@ -240,6 +256,7 @@
             <button type="button" class="action-btn secondary" id="georefButton" hidden>Georreferenciamento</button>
             <button type="button" class="action-btn pdf" id="exportPdfButton">Gerar PDF</button>
             <button type="button" class="action-btn secondary" id="exportSanitaryPdfMainBtn">PDF Sanitário</button>
+            <button type="button" class="action-btn secondary" id="exportRepPdfMainBtn">PDF Reprodução</button>
           </div>
         </section>
 
@@ -278,11 +295,11 @@
           <article class="panel chart-panel">
           <div class="panel-header">
             <div>
-              <p class="panel-kicker">Análise anual</p>
-              <h2>Entradas, saídas e saldo</h2>
+              <p class="panel-kicker">An?lise anual</p>
+              <h2>Entradas, sa?das e saldo</h2>
             </div>
           </div>
-          <canvas id="movementChart" aria-label="Gráfico de entradas, saídas e saldo"></canvas>
+          <canvas id="movementChart" aria-label="Gráfico de entradas, sa?das e saldo"></canvas>
           </article>
 
         </section>
@@ -291,7 +308,7 @@
           <article class="panel analytics-panel">
           <div class="panel-header">
             <div>
-              <p class="panel-kicker">Análise comercial</p>
+              <p class="panel-kicker">An?lise comercial</p>
               <h2>Vendas por kg e faturamento</h2>
             </div>
           </div>
@@ -303,7 +320,7 @@
           <article class="panel timeline-panel">
           <div class="panel-header">
             <div>
-              <p class="panel-kicker">Últimas vendas</p>
+              <p class="panel-kicker">Ãšltimas vendas</p>
               <h2>Leitura comercial do período</h2>
             </div>
           </div>
@@ -341,7 +358,7 @@
           <div class="panel-header">
             <div>
               <p class="panel-kicker">Leitura mensal</p>
-              <h2>Números e valores atribuídos</h2>
+              <h2>N?meros e valores atribu?dos</h2>
             </div>
           </div>
           <div class="analytics-cards" id="monthlySummaryGrid"></div>
@@ -351,7 +368,7 @@
           <div class="panel-header">
             <div>
               <p class="panel-kicker">Evolução anual</p>
-              <h2>Quantidade e valor por mês</h2>
+              <h2>Quantidade e valor por m?s</h2>
             </div>
           </div>
           <canvas id="monthlyEvolutionChart" aria-label="Gráfico de evolução mensal por quantidade e valor"></canvas>
@@ -490,7 +507,7 @@
               </div>
             </div>
             <div class="san-history-toolbar">
-              <input type="search" id="sanitaryHistorySearch" class="movements-search-input" placeholder="Buscar por código, produto, categoria…">
+              <input type="search" id="sanitaryHistorySearch" class="movements-search-input" placeholder="Buscar por código, produto, categoriaâ€¦">
               <div class="movements-filter-group san-history-filters">
                 <select id="sanitaryFilterFarm" class="movements-filter-select" aria-label="Filtrar por fazenda"></select>
                 <input type="date" id="sanitaryFilterDate" class="movements-filter-select san-history-date" aria-label="Filtrar por data">
@@ -505,7 +522,7 @@
               <table class="sanitary-table">
                 <thead id="sanitaryTableHead">
                   <tr>
-                    <th>Código</th>
+                    <th>C?digo</th>
                     <th>Data</th>
                     <th>Fazenda</th>
                     <th>Categoria</th>
@@ -565,7 +582,7 @@
             <div class="panel-header">
               <div>
                 <p class="panel-kicker">Taxa geral</p>
-                <h2>Prenha × Falhada</h2>
+                <h2>Prenha Ã— Falhada</h2>
               </div>
             </div>
             <div class="rep-donut-wrap">
@@ -588,14 +605,14 @@
               </button>
             </div>
             <div class="san-history-toolbar">
-              <input type="search" id="repHistorySearch" class="movements-search-input" placeholder="Buscar por código, fazenda, categoria…">
+              <input type="search" id="repHistorySearch" class="movements-search-input" placeholder="Buscar por código, fazenda, categoriaâ€¦">
               <div class="movements-pagination" id="repHistoryPagination"></div>
             </div>
             <div class="table-wrap">
               <table class="sanitary-table rep-table-premium">
                 <thead>
                   <tr>
-                    <th>Código</th>
+                    <th>C?digo</th>
                     <th>Fazenda</th>
                     <th>Tipo</th>
                     <th>Data Evento</th>
@@ -696,15 +713,15 @@
           </label>
         </div>
         <label class="form-span-2" id="movementSaleHint" hidden>
-          Análise da venda
-          <span class="field-note">O total será calculado automaticamente a partir do valor por kg e do peso informado.</span>
+          An?lise da venda
+          <span class="field-note">O total ser? calculado automaticamente a partir do valor por kg e do peso informado.</span>
         </label>
 
-        <!-- VENDA: frigorífico + rendimento -->
+        <!-- VENDA: frigor?fico + rendimento -->
         <div class="sale-input-group form-span-2" id="movSaleExtraWrap" hidden>
           <label>
-            Frigorífico / Comprador
-            <input type="text" id="movSaleBuyer" maxlength="80" placeholder="Ex.: Marfrig, Frigovale…">
+            Frigor?fico / Comprador
+            <input type="text" id="movSaleBuyer" maxlength="80" placeholder="Ex.: Marfrig, Frigovaleâ€¦">
           </label>
           <label>
             Rendimento (%)
@@ -718,10 +735,10 @@
           <div class="purchase-detail-grid">
             <label class="form-span-2">
               Propriedade / Origem
-              <input type="text" id="movPurchaseSource" maxlength="100" placeholder="Ex.: Estância Santa Rosa, Fazenda Modelo…">
+              <input type="text" id="movPurchaseSource" maxlength="100" placeholder="Ex.: Estância Santa Rosa, Fazenda Modeloâ€¦">
             </label>
             <label>
-              Peso médio (kg/cabeça)
+              Peso médio (kg/cabe?a)
               <input type="number" id="movPurchaseAvgWeight" min="0" step="0.1" placeholder="0,0">
             </label>
             <label>
@@ -755,7 +772,7 @@
         <div class="movement-photo-panel form-span-2" id="movementPhotoPanel" hidden>
           <div class="movement-photo-header">
             <div>
-              <p class="panel-kicker">Anexos fotográficos</p>
+              <p class="panel-kicker">Anexos fotogr?ficos</p>
               <strong id="movementPhotoCounter">Nenhuma foto anexada.</strong>
             </div>
           </div>
@@ -773,7 +790,7 @@
     <form method="dialog" id="categoryForm" class="modal-card">
       <div class="modal-header">
         <div>
-          <p class="panel-kicker">Estrutura flexível</p>
+          <p class="panel-kicker">Estrutura flex?vel</p>
           <h2>Adicionar nova categoria</h2>
         </div>
         <button type="button" class="ghost-btn" id="closeCategoryDialog">Fechar</button>
@@ -808,10 +825,10 @@
 
       <div class="stock-editor-tabs" role="tablist">
         <button type="button" class="stock-tab active" data-stock-tab="categorias" role="tab">
-          <span>🐄</span> Categorias
+          <span>ðŸ„</span> Categorias
         </button>
         <button type="button" class="stock-tab" data-stock-tab="potreiros" role="tab">
-          <span>🌿</span> Potreiros
+          <span>ðŸŒ¿</span> Potreiros
         </button>
       </div>
 
@@ -992,7 +1009,7 @@
           <input type="number" id="monthlyDataQuantity" min="0" step="1" placeholder="0">
         </label>
         <label>
-          Valor atribuído
+          Valor atribu?do
           <input type="number" id="monthlyDataValue" min="0" step="0.01" placeholder="0,00">
         </label>
         <label class="form-span-2">
@@ -1039,7 +1056,7 @@
     </div>
   </dialog>
 
-  <!-- ── Movement Type Records Dialog ────────────────────────────── -->
+  <!-- â”€â”€ Movement Type Records Dialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
   <dialog id="movTypeRecordsDlg" class="modal modal-commercial">
     <div class="modal-card mov-records-card commercial-records-card">
       <div class="modal-header">
@@ -1054,7 +1071,7 @@
       </div>
       <div id="movCommercialDashboard" class="commercial-dashboard" hidden></div>
       <div class="mov-records-toolbar">
-        <input type="search" id="movTypeRecordsSearch" class="movements-search-input" placeholder="Buscar por código, categoria, fazenda…">
+        <input type="search" id="movTypeRecordsSearch" class="movements-search-input" placeholder="Buscar por código, categoria, fazendaâ€¦">
         <button type="button" class="btn-primary-sm" id="movTypeRecordsNewBtn">+ Novo Registro</button>
       </div>
       <div class="mov-records-table-wrap commercial-table-wrap">
@@ -1067,7 +1084,7 @@
     </div>
   </dialog>
 
-  <!-- ── Potreiro Management Dialog ───────────────────────────────── -->
+  <!-- â”€â”€ Potreiro Management Dialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
   <dialog id="potrManejoDlg" class="modal">
     <div class="modal-card potr-manej-card">
       <div class="modal-header">
@@ -1097,11 +1114,11 @@
       <!-- Action type tabs -->
       <div class="potr-action-tabs" id="potrActionTabs" hidden>
         <button type="button" class="potr-action-tab potr-tab-add active" data-manej="adicionar">+ Adicionar</button>
-        <button type="button" class="potr-action-tab potr-tab-transfer" data-manej="transferencia">⇄ Transferência</button>
-        <button type="button" class="potr-action-tab potr-tab-sale" data-manej="venda">💰 Venda</button>
-        <button type="button" class="potr-action-tab potr-tab-death" data-manej="morte">📋 Morte</button>
-        <button type="button" class="potr-action-tab potr-tab-consume" data-manej="consumo">🔪 Abate</button>
-        <button type="button" class="potr-action-tab potr-tab-retorno" data-manej="retorno">↩ Retorno ao Total</button>
+        <button type="button" class="potr-action-tab potr-tab-transfer" data-manej="transferencia">â‡„ Transferência</button>
+        <button type="button" class="potr-action-tab potr-tab-sale" data-manej="venda">ðŸ’° Venda</button>
+        <button type="button" class="potr-action-tab potr-tab-death" data-manej="morte">ðŸ“‹ Morte</button>
+        <button type="button" class="potr-action-tab potr-tab-consume" data-manej="consumo">ðŸ”ª Abate</button>
+        <button type="button" class="potr-action-tab potr-tab-retorno" data-manej="retorno">â†© Retorno ao Total</button>
       </div>
 
       <div class="potr-action-single">
@@ -1151,7 +1168,7 @@
           <!-- Notes (always) -->
           <label class="form-span-2">
             Observação
-            <input type="text" id="potrManejNotes" maxlength="160" placeholder="Ex.: lote revisado após manejo">
+            <input type="text" id="potrManejNotes" maxlength="160" placeholder="Ex.: lote revisado ap?s manejo">
           </label>
 
           <!-- Photo (morte only) -->
@@ -1192,23 +1209,23 @@
 
   <nav class="mobile-bottom-nav" id="mobileBottomNav" hidden>
     <button type="button" class="mobile-nav-btn active" id="mobileNavDashboard">
-      <span class="mobile-nav-icon">🏠</span>
+      <span class="mobile-nav-icon">ðŸ </span>
       <span>Painel</span>
     </button>
     <button type="button" class="mobile-nav-btn" id="mobileNavSanitary">
-      <span class="mobile-nav-icon">💉</span>
+      <span class="mobile-nav-icon">ðŸ’‰</span>
       <span>Sanitário</span>
     </button>
     <button type="button" class="mobile-nav-btn" id="mobileNavPotreiros">
-      <span class="mobile-nav-icon">🌿</span>
+      <span class="mobile-nav-icon">ðŸŒ¿</span>
       <span>Potreiros</span>
     </button>
     <button type="button" class="mobile-nav-btn" id="mobileNavReproducao">
-      <span class="mobile-nav-icon">🐂</span>
+      <span class="mobile-nav-icon">ðŸ‚</span>
       <span>Reprodução</span>
     </button>
     <button type="button" class="mobile-nav-btn" id="mobileNavFarms">
-      <span class="mobile-nav-icon">🐄</span>
+      <span class="mobile-nav-icon">ðŸ„</span>
       <span>Fazendas</span>
     </button>
   </nav>
@@ -1307,7 +1324,7 @@
               <th>IP</th>
               <th>Ação</th>
               <th>Fazenda</th>
-              <th>Referência</th>
+              <th>Refer?ncia</th>
               <th>Detalhes</th>
             </tr>
           </thead>
@@ -1357,7 +1374,7 @@
           <input type="text" id="repBullInfo" maxlength="80" placeholder="Ex.: Touro 01, Angus 457">
         </label>
         <label id="repTechInfoWrap" hidden>
-          Técnico responsável
+          Técnico respons?vel
           <input type="text" id="repTechInfo" maxlength="80" placeholder="Ex.: Dr. João Silva">
         </label>
         <label class="form-span-2">
@@ -1398,7 +1415,7 @@
         </label>
         <label class="form-span-2">
           Observações
-          <input type="text" id="repVerifNotes" maxlength="200" placeholder="Ex.: Diagnóstico por ultrassom, 30 dias pós evento">
+          <input type="text" id="repVerifNotes" maxlength="200" placeholder="Ex.: Diagnóstico por ultrassom, 30 dias p?s evento">
         </label>
       </div>
       <p class="auth-feedback" id="repVerifFeedback" hidden></p>

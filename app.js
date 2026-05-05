@@ -44,13 +44,13 @@ function extractMovementCodeSequence(code, farmId) {
   const prefix = getFarmCodePrefix(farmId);
   const normalized = code.trim().toUpperCase();
   const prefixMatch = normalized.startsWith(prefix)
-    ? normalized.slice(prefix.length).match(/(\d+)$/)
+    ?normalized.slice(prefix.length).match(/(\d+)$/)
     : null;
   if (prefixMatch) {
     return Number(prefixMatch[1] || 0);
   }
   const fallbackMatch = normalized.match(/(\d+)$/);
-  return fallbackMatch ? Number(fallbackMatch[1] || 0) : 0;
+  return fallbackMatch ?Number(fallbackMatch[1] || 0) : 0;
 }
 
 function compareMovementOrder(a, b) {
@@ -179,7 +179,9 @@ const ARAPEY_PRIMARY_GEO_KEYS = new Set([
   "prad 8"
 ]);
 const PDF_LOGO_PATH = "./assets/logo-da-luz-transp.png";
-const TECHNICAL_MANAGER_NAME = "Hugo Fabricio Fernandes Balbuena";
+const PDF_COVER_IMAGE_PATH = "./assets/angus.jpg";
+const ADMINISTRATOR_NAME = "Luiz Fernando da Luz";
+const TECHNICAL_MANAGER_NAME = "Hugo Fabrício Fernandes Balbuena";
 const MOVEMENT_PHOTO_TYPES = new Set(["compra", "venda", "morte", "consumo", "nascimento", "transferencia", "ajuste"]);
 const MAX_MOVEMENT_PHOTOS = 6;
 const MOVEMENT_PHOTO_MAX_DIMENSION = 1280;
@@ -1146,14 +1148,14 @@ function configureMobileAppLinks() {
   if (elements.mobileAndroidLink) {
     elements.mobileAndroidLink.href = androidUrl;
     elements.mobileAndroidLink.textContent = androidDirectUrl
-      ? "Baixar APK Android"
+      ?"Baixar APK Android"
       : "APK Android em breve";
   }
 
   if (elements.mobileIosLink) {
     elements.mobileIosLink.href = iosUrl;
     elements.mobileIosLink.textContent = iosDirectUrl
-      ? "Baixar app no iPhone"
+      ?"Baixar app no iPhone"
       : "iPhone em breve";
   }
 
@@ -1162,18 +1164,18 @@ function configureMobileAppLinks() {
   }
 
   if (elements.mobileAppStatusChip) {
-    elements.mobileAppStatusChip.textContent = usingDirectDownload ? "Download disponível" : "APK em preparação";
+    elements.mobileAppStatusChip.textContent = usingDirectDownload ?"Download disponível" : "APK em preparação";
   }
 
   if (elements.mobileAppIntro) {
     elements.mobileAppIntro.textContent = usingDirectDownload
-      ? "Baixe o app no celular e entre com o mesmo usuário do sistema web. Os dados continuam sincronizados entre app e site."
+      ?"Baixe o app no celular e entre com o mesmo usuário do sistema web. Os dados continuam sincronizados entre app e site."
       : "O app usará o mesmo banco do sistema web. Assim que o APK Android estiver publicado, o download será direto pelo sistema.";
   }
 
   if (elements.mobileAppHint) {
     elements.mobileAppHint.innerHTML = usingDirectDownload
-      ? "<strong>Dica:</strong> depois de publicar um novo APK, basta trocar a URL em <code>MOBILE_APP_CONFIG.androidDownloadUrl</code>."
+      ?"<strong>Dica:</strong> depois de publicar um novo APK, basta trocar a URL em <code>MOBILE_APP_CONFIG.androidDownloadUrl</code>."
       : "<strong>Dica:</strong> quando o APK Android estiver pronto, basta preencher <code>MOBILE_APP_CONFIG.androidDownloadUrl</code> no <code>app.js</code> para o botão baixar direto.";
   }
 }
@@ -1333,7 +1335,7 @@ function createAuditSessionId() {
 }
 
 function getAuditEntries() {
-  return Array.isArray(state.data.auth.auditLog) ? state.data.auth.auditLog : [];
+  return Array.isArray(state.data.auth.auditLog) ?state.data.auth.auditLog : [];
 }
 
 async function ensureAuditSessionIp() {
@@ -1379,7 +1381,7 @@ function logAuditEvent(action, entity, details, options = {}) {
     userId: actor?.id || "",
     userLogin: actor?.login || "Sistema",
     userRole: actor?.role || "system",
-    ip: runtime.auditSessionIpReady ? (runtime.auditSessionIp || "IP indisponível") : "IP pendente",
+    ip: runtime.auditSessionIpReady ?(runtime.auditSessionIp || "IP indisponível") : "IP pendente",
     action,
     entity,
     farmId: options.farmId || "",
@@ -1418,10 +1420,10 @@ function renderAuditTrailDialog() {
 
   elements.auditTrailSearch.value = runtime.auditSearch;
   elements.auditTrailBody.innerHTML = slice.length
-    ? slice.map((entry) => `
+    ?slice.map((entry) => `
         <tr>
           <td>${new Date(entry.timestamp).toLocaleString("pt-BR")}</td>
-          <td>${escapeHtml(entry.userLogin)}<br><span class="field-note">${escapeHtml(getRoleLabel(entry.userRole === "admin" ? "admin" : "usuario"))}</span></td>
+          <td>${escapeHtml(entry.userLogin)}<br><span class="field-note">${escapeHtml(getRoleLabel(entry.userRole === "admin" ?"admin" : "usuario"))}</span></td>
           <td>${escapeHtml(entry.ip || "IP indisponível")}</td>
           <td><span class="badge badge-neutral">${escapeHtml(entry.action)}</span></td>
           <td>${escapeHtml(entry.farmName || "—")}</td>
@@ -1429,14 +1431,14 @@ function renderAuditTrailDialog() {
           <td>${escapeHtml(entry.details || `${entry.entity}`)}</td>
         </tr>
       `).join("")
-    : `<tr><td colspan="7" class="table-empty-cell">${query ? "Nenhuma ação encontrada para a busca." : "Nenhuma ação auditada até o momento."}</td></tr>`;
+    : `<tr><td colspan="7" class="table-empty-cell">${query ?"Nenhuma ação encontrada para a busca." : "Nenhuma ação auditada até o momento."}</td></tr>`;
 
   elements.auditTrailFooter.innerHTML = `
-    <span class="movements-count">${entries.length} evento${entries.length !== 1 ? "s" : ""}</span>
-    ${totalPages > 1 ? `
-      <button class="mov-page-btn" data-audit-page="${page - 1}" ${page === 0 ? "disabled" : ""}>&#8249; Anterior</button>
+    <span class="movements-count">${entries.length} evento${entries.length !== 1 ?"s" : ""}</span>
+    ${totalPages > 1 ?`
+      <button class="mov-page-btn" data-audit-page="${page - 1}" ${page === 0 ?"disabled" : ""}>&#8249; Anterior</button>
       <span class="mov-page-info">Página ${page + 1} de ${totalPages}</span>
-      <button class="mov-page-btn" data-audit-page="${page + 1}" ${page >= totalPages - 1 ? "disabled" : ""}>Próxima &#8250;</button>
+      <button class="mov-page-btn" data-audit-page="${page + 1}" ${page >= totalPages - 1 ?"disabled" : ""}>Próxima &#8250;</button>
     ` : ""}
   `;
 
@@ -1515,7 +1517,7 @@ async function legacyCloudPullUnused() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function normalizeApiRole(role) {
-  return role === "admin" ? "admin" : "usuario";
+  return role === "admin" ?"admin" : "usuario";
 }
 
 function normalizeApiUser(user) {
@@ -1543,7 +1545,7 @@ async function apiRequest(path, options = {}) {
     payload = null;
   }
   if (!response.ok) {
-    const error = new Error(payload?.error || "Falha na requisiÃ§Ã£o.");
+    const error = new Error(payload?.error || "Falha na requisição.");
     error.status = response.status;
     error.payload = payload;
     throw error;
@@ -1554,7 +1556,7 @@ async function apiRequest(path, options = {}) {
 function upsertAuthUser(user) {
   const normalized = normalizeApiUser(user);
   if (!normalized) return null;
-  const nextUsers = Array.isArray(state.data.auth.users) ? [...state.data.auth.users] : [];
+  const nextUsers = Array.isArray(state.data.auth.users) ?[...state.data.auth.users] : [];
   const index = nextUsers.findIndex((item) => String(item.id) === String(normalized.id));
   if (index >= 0) nextUsers[index] = normalized;
   else nextUsers.push(normalized);
@@ -1563,7 +1565,7 @@ function upsertAuthUser(user) {
 }
 
 function replaceAuthUsers(users) {
-  state.data.auth.users = (Array.isArray(users) ? users : [])
+  state.data.auth.users = (Array.isArray(users) ?users : [])
     .map((user) => normalizeApiUser(user))
     .filter(Boolean);
 }
@@ -1611,7 +1613,7 @@ async function intermediateCloudPushUnused() {
       runtime.cloudToken = null;
     } else if (error.status === 409) {
       runtime.cloudConflict = true;
-      alert("Outra sessÃ£o salvou dados antes desta. Suas alteraÃ§Ãµes ficaram locais neste navegador. Recarregue os dados antes de continuar.");
+      alert("Outra sessão salvou dados antes desta. Suas alterações ficaram locais neste navegador. Recarregue os dados antes de continuar.");
     }
   } finally {
     runtime.cloudSyncing = false;
@@ -1630,7 +1632,7 @@ async function intermediateCloudPullUnused() {
     if (!response?.payload) return;
     const currentSessionUserId = state.data.auth.sessionUserId;
     const currentFarmId = state.data.selectedFarmId;
-    const currentUsers = Array.isArray(state.data.auth.users) ? [...state.data.auth.users] : [];
+    const currentUsers = Array.isArray(state.data.auth.users) ?[...state.data.auth.users] : [];
     const merged = ensureDataShape(response.payload, { preserveSnapshot: true });
     merged.selectedFarmId = currentFarmId || TOTAL_FARM_ID;
     merged.auth.sessionUserId = currentSessionUserId;
@@ -1689,7 +1691,7 @@ async function cloudPush() {
       runtime.cloudConflict = true;
       setApiNotice("Outra sessao salvou antes desta. Seus dados continuam locais neste navegador; recarregue a nuvem antes de seguir.", "warn");
     } else {
-      setApiNotice("Nao foi possivel sincronizar agora. O trabalho continua salvo localmente neste navegador.", "error");
+      setApiNotice("Não foi possível sincronizar agora. O trabalho continua salvo localmente neste navegador.", "error");
     }
   } finally {
     runtime.cloudSyncing = false;
@@ -1709,7 +1711,7 @@ async function cloudPull() {
     if (!response?.payload) return;
     const currentSessionUserId = state.data.auth.sessionUserId;
     const currentFarmId = state.data.selectedFarmId;
-    const currentUsers = Array.isArray(state.data.auth.users) ? [...state.data.auth.users] : [];
+    const currentUsers = Array.isArray(state.data.auth.users) ?[...state.data.auth.users] : [];
     const merged = ensureDataShape(response.payload, { preserveSnapshot: true });
     merged.selectedFarmId = currentFarmId || TOTAL_FARM_ID;
     merged.auth.sessionUserId = currentSessionUserId;
@@ -1728,7 +1730,7 @@ async function cloudPull() {
       runtime.cloudToken = null;
       setApiNotice("Sua sessao na nuvem expirou. Entre novamente para recarregar os dados.", "warn");
     } else {
-      setApiNotice("Nao foi possivel recarregar os dados da nuvem agora. Tentaremos novamente quando voce mandar salvar.", "error");
+      setApiNotice("Não foi possível recarregar os dados da nuvem agora. Tentaremos novamente quando voce mandar salvar.", "error");
     }
   } finally {
     runtime.cloudSyncing = false;
@@ -1742,7 +1744,7 @@ async function legacyHandleSyncRetryUnused() {
     await cloudPull();
     render();
   } catch (error) {
-    console.warn("NÃ£o foi possÃ­vel recarregar os dados da nuvem.", error);
+    console.warn("Não foi possível recarregar os dados da nuvem.", error);
   }
 }
 
@@ -1752,7 +1754,7 @@ async function handleSyncRetry() {
     await cloudPull();
     render();
   } catch (error) {
-    console.warn("Nao foi possivel recarregar os dados da nuvem.", error);
+    console.warn("Não foi possível recarregar os dados da nuvem.", error);
     setApiNotice("A recarga manual da nuvem falhou. Verifique a conexao e tente novamente.", "error");
   }
 }
@@ -1771,7 +1773,7 @@ function isAdmin() {
 }
 
 function getRoleLabel(role) {
-  return role === "admin" ? "Administrador" : "Usuário";
+  return role === "admin" ?"Administrador" : "Usuário";
 }
 
 function renderSyncStatus() {
@@ -1859,16 +1861,16 @@ function dismissSplash() {
 }
 
 function setAuthLoginMode(mode) {
-  runtime.authLoginMode = mode === "admin" ? "admin" : "usuario";
+  runtime.authLoginMode = mode === "admin" ?"admin" : "usuario";
   elements.loginRoleTabs.forEach((button) => {
     const isActive = button.dataset.authRole === runtime.authLoginMode;
     button.classList.toggle("active", isActive);
-    button.setAttribute("aria-selected", isActive ? "true" : "false");
+    button.setAttribute("aria-selected", isActive ?"true" : "false");
   });
 
   if (elements.loginRoleHint) {
     elements.loginRoleHint.textContent = runtime.authLoginMode === "admin"
-      ? "Acesso administrativo para auditoria, cadastro de usuários, redefinição de senhas e configurações sensíveis."
+      ?"Acesso administrativo para auditoria, cadastro de usuários, redefinição de senhas e configurações sensíveis."
       : "Acesso padrão para operação do sistema e consulta dos registros autorizados.";
   }
 }
@@ -1888,8 +1890,8 @@ function legacyHandleLoginSubmitUnused(event) {
   if ((user.role || "usuario") !== runtime.authLoginMode) {
     elements.loginFeedback.hidden = false;
     elements.loginFeedback.textContent = runtime.authLoginMode === "admin"
-      ? "Este login nÃ£o possui perfil de Administrador."
-      : "Este login nÃ£o possui perfil de UsuÃ¡rio padrÃ£o.";
+      ?"Este login não possui perfil de Administrador."
+      : "Este login não possui perfil de Usuário padrão.";
     return;
   }
 
@@ -1942,7 +1944,7 @@ function legacyRenderUserListUnused() {
         <div class="user-row-info">
           <div class="user-row-identity">
             <strong>${escapeHtml(user.login)}</strong>
-            ${isSelf ? `<span class="user-self-tag">você</span>` : ""}
+            ${isSelf ?`<span class="user-self-tag">você</span>` : ""}
           </div>
           <span class="role-badge role-${user.role || "usuario"}">${getRoleLabel(user.role)}</span>
         </div>
@@ -1950,8 +1952,8 @@ function legacyRenderUserListUnused() {
           <button type="button" class="user-action-btn" data-edit-user-id="${user.id}" title="Editar login e perfil">Editar</button>
           <button type="button" class="user-action-btn" data-reset-user-id="${user.id}" title="Redefinir senha">Resetar senha</button>
           ${canDelete
-            ? `<button type="button" class="user-action-btn user-action-danger" data-delete-user-id="${user.id}" title="Excluir usuário">Excluir</button>`
-            : `<button type="button" class="user-action-btn user-action-disabled" disabled title="${isSelf ? "Não é possível excluir sua própria conta" : "O sistema precisa de ao menos um administrador"}">${isSelf ? "—" : "Excluir"}</button>`
+            ?`<button type="button" class="user-action-btn user-action-danger" data-delete-user-id="${user.id}" title="Excluir usuário">Excluir</button>`
+            : `<button type="button" class="user-action-btn user-action-disabled" disabled title="${isSelf ?"Não é possível excluir sua própria conta" : "O sistema precisa de ao menos um administrador"}">${isSelf ?"—" : "Excluir"}</button>`
           }
         </div>
       </article>
@@ -1978,7 +1980,7 @@ function legacyHandleUserListInteractionUnused(event) {
     const userId = deleteTrigger.dataset.deleteUserId;
     const user = state.data.auth.users.find((u) => u.id === userId);
     if (!user) return;
-    if (!confirm(`Excluir o usuário "${user.login}"? Esta ação não pode ser desfeita.`)) return;
+    if (!confirm(`Excluir o usuário "${user.login}"?Esta ação não pode ser desfeita.`)) return;
     const adminCount = state.data.auth.users.filter((u) => u.role === "admin").length;
     if (user.role === "admin" && adminCount <= 1) {
       alert("Não é possível excluir o último administrador do sistema.");
@@ -2005,17 +2007,17 @@ function openUserEditor(userId, mode = "edit") {
 
   const isReset = mode === "reset";
   elements.userEditorPanel.hidden = false;
-  if (elements.userEditorKicker) elements.userEditorKicker.textContent = isReset ? "Redefinir senha" : "Editar usuário";
+  if (elements.userEditorKicker) elements.userEditorKicker.textContent = isReset ?"Redefinir senha" : "Editar usuário";
   elements.userEditorTitle.textContent = user.login;
 
   elements.editUserLogin.value = user.login;
   elements.editUserLogin.readOnly = isReset;
 
   elements.editUserPassword.value = "";
-  elements.editUserPassword.placeholder = isReset ? "Nova senha obrigatória" : "Deixe vazio para manter a senha atual";
+  elements.editUserPassword.placeholder = isReset ?"Nova senha obrigatória" : "Deixe vazio para manter a senha atual";
   elements.editUserPassword.required = isReset;
   if (elements.editUserPasswordLabel) {
-    elements.editUserPasswordLabel.textContent = isReset ? "Nova senha" : "Senha (deixe vazio para manter)";
+    elements.editUserPasswordLabel.textContent = isReset ?"Nova senha" : "Senha (deixe vazio para manter)";
   }
 
   if (elements.editUserRole) elements.editUserRole.value = user.role || "usuario";
@@ -2043,7 +2045,7 @@ function legacyHandleUserEditSaveUnused() {
   if (!user) return;
 
   const isReset = state.userEditingMode === "reset";
-  const nextLogin = isReset ? user.login : elements.editUserLogin.value.trim();
+  const nextLogin = isReset ?user.login : elements.editUserLogin.value.trim();
   const nextPassword = elements.editUserPassword.value;
 
   if (!nextLogin) {
@@ -2063,7 +2065,7 @@ function legacyHandleUserEditSaveUnused() {
 
   // Protect: can't downgrade the last admin
   if (!isReset) {
-    const newRole = elements.editUserRole ? elements.editUserRole.value : user.role;
+    const newRole = elements.editUserRole ?elements.editUserRole.value : user.role;
     const adminCount = state.data.auth.users.filter((u) => u.role === "admin").length;
     if (user.role === "admin" && newRole !== "admin" && adminCount <= 1) {
       alert("Não é possível rebaixar o último administrador do sistema.");
@@ -2078,9 +2080,9 @@ function legacyHandleUserEditSaveUnused() {
   }
 
   logAuditEvent(
-    isReset ? "Reset de senha" : "Edição",
+    isReset ?"Reset de senha" : "Edição",
     "usuário",
-    isReset ? `Senha redefinida para ${user.login}` : `Usuário atualizado: ${user.login}`
+    isReset ?`Senha redefinida para ${user.login}` : `Usuário atualizado: ${user.login}`
   );
   saveData();
   renderUserList();
@@ -2177,13 +2179,13 @@ async function legacyHandleLoginSubmitApiUnused(event) {
     });
     const user = upsertAuthUser(data.user);
     if (!user) {
-      throw new Error("Falha ao carregar usuÃ¡rio autenticado.");
+      throw new Error("Falha ao carregar usuário autenticado.");
     }
     if ((user.role || "usuario") !== runtime.authLoginMode) {
       elements.loginFeedback.hidden = false;
       elements.loginFeedback.textContent = runtime.authLoginMode === "admin"
-        ? "Este login nÃ£o possui perfil de Administrador."
-        : "Este login nÃ£o possui perfil de UsuÃ¡rio padrÃ£o.";
+        ?"Este login não possui perfil de Administrador."
+        : "Este login não possui perfil de Usuário padrão.";
       return;
     }
 
@@ -2204,18 +2206,18 @@ async function legacyHandleLoginSubmitApiUnused(event) {
       await refreshUsersFromApi();
       await cloudPull();
     } catch (syncError) {
-      console.warn("Login concluÃ­do, mas a sincronizaÃ§Ã£o inicial falhou.", syncError);
+      console.warn("Login concluído, mas a sincronização inicial falhou.", syncError);
     }
     render();
     checkBackupWarning();
   } catch (error) {
     elements.loginFeedback.hidden = false;
-    elements.loginFeedback.textContent = error.message || "NÃ£o foi possÃ­vel autenticar.";
+    elements.loginFeedback.textContent = error.message || "Não foi possível autenticar.";
   }
 }
 
 function legacyHandleLogoutApiUnused() {
-  logAuditEvent("Logout", "auth", "SaÃ­da do sistema");
+  logAuditEvent("Logout", "auth", "Sa?da do sistema");
   state.data.auth.sessionUserId = "";
   runtime.cloudToken = null;
   runtime.cloudRevision = 0;
@@ -2247,7 +2249,7 @@ async function handleLoginSubmit(event) {
     if ((user.role || "usuario") !== runtime.authLoginMode) {
       elements.loginFeedback.hidden = false;
       elements.loginFeedback.textContent = runtime.authLoginMode === "admin"
-        ? "Este login nao possui perfil de Administrador."
+        ?"Este login nao possui perfil de Administrador."
         : "Este login nao possui perfil de Usuario padrao.";
       return;
     }
@@ -2276,7 +2278,7 @@ async function handleLoginSubmit(event) {
     checkBackupWarning();
   } catch (error) {
     elements.loginFeedback.hidden = false;
-    elements.loginFeedback.textContent = error.message || "Nao foi possivel autenticar.";
+    elements.loginFeedback.textContent = error.message || "Não foi possível autenticar.";
   }
 }
 
@@ -2306,7 +2308,7 @@ async function openManageUsersDialog() {
   try {
     await refreshUsersFromApi();
   } catch (error) {
-    alert(error.message || "NÃ£o foi possÃ­vel carregar os usuÃ¡rios.");
+    alert(error.message || "Não foi possível carregar os usuários.");
     return;
   }
   renderUserList();
@@ -2329,7 +2331,7 @@ function renderUserList() {
         <div class="user-row-info">
           <div class="user-row-identity">
             <strong>${escapeHtml(user.login)}</strong>
-            ${isSelf ? `<span class="user-self-tag">vocÃª</span>` : ""}
+            ${isSelf ?`<span class="user-self-tag">você</span>` : ""}
           </div>
           <span class="role-badge role-${user.role || "usuario"}">${getRoleLabel(user.role)}</span>
         </div>
@@ -2337,8 +2339,8 @@ function renderUserList() {
           <button type="button" class="user-action-btn" data-edit-user-id="${user.id}" title="Editar login e perfil">Editar</button>
           <button type="button" class="user-action-btn" data-reset-user-id="${user.id}" title="Redefinir senha">Resetar senha</button>
           ${canDelete
-            ? `<button type="button" class="user-action-btn user-action-danger" data-delete-user-id="${user.id}" title="Excluir usuÃ¡rio">Excluir</button>`
-            : `<button type="button" class="user-action-btn user-action-disabled" disabled title="${isSelf ? "NÃ£o Ã© possÃ­vel excluir sua prÃ³pria conta" : "O sistema precisa de ao menos um administrador"}">${isSelf ? "â€”" : "Excluir"}</button>`
+            ?`<button type="button" class="user-action-btn user-action-danger" data-delete-user-id="${user.id}" title="Excluir usuário">Excluir</button>`
+            : `<button type="button" class="user-action-btn user-action-disabled" disabled title="${isSelf ?"Não  ? possível excluir sua própria conta" : "O sistema precisa de ao menos um administrador"}">${isSelf ?"â€”" : "Excluir"}</button>`
           }
         </div>
       </article>
@@ -2366,16 +2368,16 @@ async function handleUserListInteraction(event) {
   const userId = deleteTrigger.dataset.deleteUserId;
   const user = state.data.auth.users.find((u) => String(u.id) === String(userId));
   if (!user) return;
-  if (!confirm(`Excluir o usuÃ¡rio "${user.login}"? Esta aÃ§Ã£o nÃ£o pode ser desfeita.`)) return;
+  if (!confirm(`Excluir o usuário "${user.login}"?Esta ação não pode ser desfeita.`)) return;
 
   try {
     await apiRequest(`/api/users/${encodeURIComponent(userId)}`, { method: "DELETE" });
-    logAuditEvent("ExclusÃ£o", "usuÃ¡rio", `UsuÃ¡rio removido: ${user.login}`);
+    logAuditEvent("Exclusão", "usuário", `Usuário removido: ${user.login}`);
     state.data.auth.users = state.data.auth.users.filter((u) => String(u.id) !== String(userId));
     saveData();
     renderUserList();
   } catch (error) {
-    alert(error.message || "NÃ£o foi possÃ­vel excluir o usuÃ¡rio.");
+    alert(error.message || "Não foi possível excluir o usuário.");
   }
 }
 
@@ -2386,12 +2388,12 @@ async function handleUserEditSave() {
   if (!user) return;
 
   const isReset = state.userEditingMode === "reset";
-  const nextLogin = isReset ? user.login : elements.editUserLogin.value.trim();
+  const nextLogin = isReset ?user.login : elements.editUserLogin.value.trim();
   const nextPassword = elements.editUserPassword.value;
-  const nextRole = isReset ? user.role : (elements.editUserRole ? elements.editUserRole.value : user.role);
+  const nextRole = isReset ?user.role : (elements.editUserRole ?elements.editUserRole.value : user.role);
 
   if (!nextLogin) {
-    alert("O login nÃ£o pode ficar vazio.");
+    alert("O login não pode ficar vazio.");
     return;
   }
   if (isReset && !nextPassword) {
@@ -2412,9 +2414,9 @@ async function handleUserEditSave() {
     user.login = nextLogin;
     user.role = normalizeApiRole(nextRole);
     logAuditEvent(
-      isReset ? "Reset de senha" : "EdiÃ§Ã£o",
-      "usuÃ¡rio",
-      isReset ? `Senha redefinida para ${user.login}` : `UsuÃ¡rio atualizado: ${user.login}`
+      isReset ?"Reset de senha" : "Edição",
+      "usuário",
+      isReset ?`Senha redefinida para ${user.login}` : `Usuário atualizado: ${user.login}`
     );
     saveData();
     renderUserList();
@@ -2424,7 +2426,7 @@ async function handleUserEditSave() {
       alert(`Senha de "${user.login}" redefinida com sucesso.`);
     }
   } catch (error) {
-    alert(error.message || "NÃ£o foi possÃ­vel atualizar o usuÃ¡rio.");
+    alert(error.message || "Não foi possível atualizar o usuário.");
   }
 }
 
@@ -2447,13 +2449,13 @@ async function handleManageUsersSubmit(event) {
       body: JSON.stringify({ username: login, password, role })
     });
     upsertAuthUser(created);
-    logAuditEvent("AdiÃ§Ã£o", "usuÃ¡rio", `Novo usuÃ¡rio criado: ${login} (${getRoleLabel(role)})`);
+    logAuditEvent("Adição", "usuário", `Novo usuário criado: ${login} (${getRoleLabel(role)})`);
     saveData();
     elements.newUserLogin.value = "";
     elements.newUserPassword.value = "";
     renderUserList();
   } catch (error) {
-    alert(error.message || "NÃ£o foi possÃ­vel criar o usuÃ¡rio.");
+    alert(error.message || "Não foi possível criar o usuário.");
   }
 }
 
@@ -2471,7 +2473,7 @@ async function handleChangeMyPasswordSubmit(event) {
   }
   if (next !== confirm) {
     feedback.hidden = false;
-    feedback.textContent = "A confirmaÃ§Ã£o nÃ£o confere com a nova senha.";
+    feedback.textContent = "A confirmação não confere com a nova senha.";
     return;
   }
 
@@ -2486,7 +2488,7 @@ async function handleChangeMyPasswordSubmit(event) {
     alert("Senha alterada com sucesso!");
   } catch (error) {
     feedback.hidden = false;
-    feedback.textContent = error.message || "NÃ£o foi possÃ­vel alterar a senha.";
+    feedback.textContent = error.message || "Não foi possível alterar a senha.";
   }
 }
 
@@ -2582,23 +2584,23 @@ function normalizePotreroQuantity(value) {
 }
 
 function getPotreroEntries(farm) {
-  return Array.isArray(farm?.potreiros) ? farm.potreiros : [];
+  return Array.isArray(farm?.potreiros) ?farm.potreiros : [];
 }
 
 function normalizePotreroEntries(entries, fallbackNames = []) {
   const normalizedEntries = Array.isArray(entries) && entries.length
-    ? entries
+    ?entries
     : fallbackNames.map((name) => ({ name, quantity: 0 }));
   const registry = new Map();
 
   normalizedEntries.forEach((entry) => {
-    const name = typeof entry === "string" ? entry.trim() : String(entry?.name || "").trim();
+    const name = typeof entry === "string" ?entry.trim() : String(entry?.name || "").trim();
     if (!name) {
       return;
     }
 
     const key = normalizeText(name);
-    const quantity = typeof entry === "string" ? 0 : normalizePotreroQuantity(entry.quantity);
+    const quantity = typeof entry === "string" ?0 : normalizePotreroQuantity(entry.quantity);
     const existing = registry.get(key);
     if (existing) {
       existing.quantity += quantity;
@@ -2606,7 +2608,7 @@ function normalizePotreroEntries(entries, fallbackNames = []) {
     }
 
     registry.set(key, {
-      id: typeof entry === "string" ? createPotreroId(name) : entry.id || createPotreroId(name),
+      id: typeof entry === "string" ?createPotreroId(name) : entry.id || createPotreroId(name),
       name,
       quantity
     });
@@ -2674,7 +2676,7 @@ function getPotreroBalance(farm) {
 }
 
 function getMonthlyRecords(farm) {
-  return Array.isArray(farm?.monthlyRecords) ? farm.monthlyRecords : [];
+  return Array.isArray(farm?.monthlyRecords) ?farm.monthlyRecords : [];
 }
 
 function getMonthlyCategoryLabel(value) {
@@ -2751,7 +2753,7 @@ function getDiscrepancy(farm) {
 function getPreferredYearForFarm(farm) {
   const years = [...getAvailableYearsForFarm(farm)];
 
-  return years.length ? Math.max(...years) : today.getFullYear();
+  return years.length ?Math.max(...years) : today.getFullYear();
 }
 
 function getAvailableYearsForFarm(farm) {
@@ -2782,7 +2784,7 @@ function getFarmCurrency(farmId) {
 }
 
 function getFarmCurrencySymbol(farmId) {
-  return getFarmCurrency(farmId) === "USD" ? "US$" : "R$";
+  return getFarmCurrency(farmId) === "USD" ?"US$" : "R$";
 }
 
 function formatFarmCurrencyValue(value, farmId) {
@@ -2870,6 +2872,7 @@ function bindEvents() {
 
   document.getElementById("exportSanitaryPdfBtn")?.addEventListener("click", exportSanitaryPdfReport);
   document.getElementById("exportSanitaryPdfMainBtn")?.addEventListener("click", exportSanitaryPdfReport);
+  document.getElementById("exportRepPdfMainBtn")?.addEventListener("click", exportReproducaoPdf);
 
   elements.potreirosShortcut.addEventListener("click", () => {
     state.activeView = "potreiros";
@@ -3226,40 +3229,61 @@ function render() {
 
 function renderOverviewPanel() {
   const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
-  const farms = isTotalView ? getAllFarms() : [state.data.farms[state.data.selectedFarmId]].filter(Boolean);
+  const farms = isTotalView ?getAllFarms() : [state.data.farms[state.data.selectedFarmId]].filter(Boolean);
   const selectedFarm = farms[0];
   const totals = farms.reduce((accumulator, farm) => {
     accumulator.stock += getFarmTotal(farm);
     accumulator.declared += Number(farm.declaredTotal || 0);
-    accumulator.monthly += getFilteredMonthlyRecords(farm).length;
+    accumulator.potreiros += getPotreroEntries(farm).length;
+    accumulator.sanitary += getFilteredSanitaryRecords(farm).length;
     return accumulator;
-  }, { stock: 0, declared: 0, monthly: 0 });
-  const difference = totals.declared - totals.stock;
+  }, { stock: 0, declared: 0, potreiros: 0, sanitary: 0 });
+  const movementTotals = farms.reduce((accumulator, farm) => {
+    const monthly = summarizePeriod(farm, state.filters.year, state.filters.month);
+    const sales = summarizeSalePeriod(farm, state.filters.year, state.filters.month);
+    const purchases = summarizePurchasePeriod(farm, state.filters.year, state.filters.month);
+    accumulator.entries += monthly.byType.compra + monthly.byType.nascimento + monthly.adjustPositive;
+    accumulator.exits += monthly.byType.venda + monthly.byType.consumo + monthly.byType.morte + monthly.adjustNegative;
+    accumulator.saldo += monthly.saldo;
+    accumulator.salesValue += sales.totalValue;
+    accumulator.purchaseValue += purchases.totalValue;
+    accumulator.saleAnimals += sales.movements.reduce((sum, movement) => sum + Number(movement.quantity || 0), 0);
+    accumulator.purchaseAnimals += purchases.totalAnimals;
+    return accumulator;
+  }, { entries: 0, exits: 0, saldo: 0, salesValue: 0, purchaseValue: 0, saleAnimals: 0, purchaseAnimals: 0 });
+  const repRecords = farms.flatMap((farm) => getReproductionRecords(farm));
+  const repStats = calcReproductionStats(repRecords);
+  const pendingRep = repRecords.filter((record) => !record.verificationDate).length;
 
-  elements.globalPanelKicker.textContent = isTotalView ? "Painel inicial" : "Fazenda selecionada";
-  elements.globalPanelTitle.textContent = isTotalView ? "Consolidado das fazendas" : `Resumo de ${selectedFarm?.name || "fazenda"}`;
-  elements.globalPanelChip.textContent = isTotalView ? "Grupo Da Luz" : selectedFarm?.name || "Fazenda";
+  elements.globalPanelKicker.textContent = isTotalView ?"Operação consolidada" : "Operação da fazenda";
+  elements.globalPanelTitle.textContent = isTotalView ?"Manejo total das fazendas" : `Manejo de ${selectedFarm?.name || "fazenda"}`;
+  elements.globalPanelChip.textContent = isTotalView ?"Grupo Da Luz" : selectedFarm?.name || "Fazenda";
 
   const cards = [
     {
-      title: isTotalView ? "Estoque consolidado" : "Estoque atual",
+      title: "Manejo / estoque",
       value: formatInteger(totals.stock),
-      detail: isTotalView ? "rebanho somado das fazendas ativas" : `rebanho atual de ${selectedFarm?.name || "fazenda"}`
+      detail: `${formatInteger(totals.potreiros)} campos | saldo ${movementTotals.saldo >= 0 ?"+" : ""}${formatInteger(movementTotals.saldo)} cabe?as`
     },
     {
-      title: "Total declarado",
-      value: formatInteger(totals.declared),
-      detail: difference === 0 ? "estoque alinhado ao total declarado" : `${formatInteger(difference)} animais de diferenca`
+      title: "Receita de Vendas",
+      value: formatCurrency(movementTotals.salesValue),
+      detail: `${formatInteger(movementTotals.saleAnimals)} animais vendidos no período`
     },
     {
-      title: "Dados mensais",
-      value: formatInteger(totals.monthly),
-      detail: isTotalView ? "registros mensais do recorte filtrado" : `registros mensais de ${selectedFarm?.name || "fazenda"}`
+      title: "Sanitário",
+      value: formatInteger(totals.sanitary),
+      detail: "registros no período filtrado"
+    },
+    {
+      title: "Reprodução",
+      value: repStats.taxaSucesso != null ?`${repStats.taxaSucesso.toFixed(1)}%` : "-",
+      detail: `${formatInteger(repStats.totalPegou)} prenhas | ${formatInteger(pendingRep)} pendentes`
     }
   ];
 
   elements.globalSummaryGrid.innerHTML = cards.map((card) => `
-    <article class="summary-card">
+    <article class="summary-card ops-card">
       <p class="panel-kicker">${card.title}</p>
       <strong>${card.value}</strong>
       <p>${card.detail}</p>
@@ -3268,9 +3292,12 @@ function renderOverviewPanel() {
 
   elements.globalFarmBreakdown.innerHTML = farms.map((farm) => {
     const movements = summarizePeriod(farm, state.filters.year, state.filters.month);
+    const sales = summarizeSalePeriod(farm, state.filters.year, state.filters.month);
+    const purchases = summarizePurchasePeriod(farm, state.filters.year, state.filters.month);
+    const balance = sales.totalValue - purchases.totalValue;
     const total = getFarmTotal(farm);
     return `
-      <article class="global-farm-card">
+      <article class="global-farm-card ops-farm-card">
         <div class="farm-card-header">
           <div>
             <p class="panel-kicker">${escapeHtml(farm.name)}</p>
@@ -3280,6 +3307,12 @@ function renderOverviewPanel() {
             <span class="chip chip-entry">+${formatInteger(movements.byType.compra + movements.byType.nascimento)} ent.</span>
             <span class="chip chip-exit">-${formatInteger(movements.byType.venda + movements.byType.morte + movements.byType.consumo)} saí.</span>
           </div>
+        </div>
+        <div class="ops-farm-metrics">
+          <span>Venda<strong>${formatCurrency(sales.totalValue)}</strong></span>
+          <span>Compra<strong>${formatCurrency(purchases.totalValue)}</strong></span>
+          <span>Saldo<strong>${formatCurrency(balance)}</strong></span>
+          <span>Campos<strong>${formatInteger(getPotreroTotals(farm).totalPotreiros || 0)}</strong></span>
         </div>
       </article>
     `;
@@ -3335,7 +3368,7 @@ function renderConsolidatedCategories(farms, isTotalView) {
             <span>% do rebanho</span>
           </div>
           ${sorted.map((cat) => {
-            const pct = grandTotal > 0 ? (cat.quantity / grandTotal * 100) : 0;
+            const pct = grandTotal > 0 ?(cat.quantity / grandTotal * 100) : 0;
             return `
               <div class="cat-table-row">
                 <span class="cat-name">${escapeHtml(cat.name)}</span>
@@ -3358,7 +3391,7 @@ function renderConsolidatedCategories(farms, isTotalView) {
   btn.addEventListener("click", () => {
     const isOpen = !body.hidden;
     body.hidden = isOpen;
-    btn.textContent = isOpen ? "Expandir" : "Recolher";
+    btn.textContent = isOpen ?"Expandir" : "Recolher";
     btn.setAttribute("aria-expanded", String(!isOpen));
   });
 }
@@ -3396,32 +3429,32 @@ function renderFinancialPanel(farms, isTotalView) {
   const grandVendas = farmData.reduce((s, f) => s + f.totalVendas, 0);
   const grandCompras = farmData.reduce((s, f) => s + f.totalCompras, 0);
   const grandSaldo = grandVendas - grandCompras;
-  const periodLabel = month === "all" ? `Ano ${year}` : `${MONTH_NAMES[Number(month) - 1]}/${year}`;
+  const periodLabel = month === "all" ?`Ano ${year}` : `${MONTH_NAMES[Number(month) - 1]}/${year}`;
 
   const farmRows = farmData.map((f) => {
-    const saldoClass = f.saldo > 0 ? "fin-positive" : f.saldo < 0 ? "fin-negative" : "";
+    const saldoClass = f.saldo > 0 ?"fin-positive" : f.saldo < 0 ?"fin-negative" : "";
     return `
       <div class="fin-farm-row">
         <span class="fin-farm-name">${escapeHtml(f.name)}</span>
-        <span class="fin-cell">${f.qtdVendas > 0 ? `${formatInteger(f.qtdVendas)} cab` : "—"}</span>
-        <span class="fin-cell fin-vendas">${f.totalVendas > 0 ? formatCurrency(f.totalVendas) : "—"}</span>
-        <span class="fin-cell">${f.qtdCompras > 0 ? `${formatInteger(f.qtdCompras)} cab` : "—"}</span>
-        <span class="fin-cell fin-compras">${f.totalCompras > 0 ? formatCurrency(f.totalCompras) : "—"}</span>
-        <strong class="fin-cell fin-saldo ${saldoClass}">${f.saldo !== 0 ? (f.saldo > 0 ? "+" : "") + formatCurrency(f.saldo) : "—"}</strong>
+        <span class="fin-cell">${f.qtdVendas > 0 ?`${formatInteger(f.qtdVendas)} cab` : "—"}</span>
+        <span class="fin-cell fin-vendas">${f.totalVendas > 0 ?formatCurrency(f.totalVendas) : "—"}</span>
+        <span class="fin-cell">${f.qtdCompras > 0 ?`${formatInteger(f.qtdCompras)} cab` : "—"}</span>
+        <span class="fin-cell fin-compras">${f.totalCompras > 0 ?formatCurrency(f.totalCompras) : "—"}</span>
+        <strong class="fin-cell fin-saldo ${saldoClass}">${f.saldo !== 0 ?(f.saldo > 0 ?"+" : "") + formatCurrency(f.saldo) : "—"}</strong>
       </div>
     `;
   }).join("");
 
-  const saldoClass = grandSaldo > 0 ? "fin-positive" : grandSaldo < 0 ? "fin-negative" : "";
+  const saldoClass = grandSaldo > 0 ?"fin-positive" : grandSaldo < 0 ?"fin-negative" : "";
 
   container.innerHTML = `
     <div class="fin-panel-header">
       <div>
         <p class="panel-kicker">Financeiro — ${periodLabel}</p>
-        <h3>Compras e vendas${isTotalView ? " por fazenda" : ""}</h3>
+        <h3>Compras e vendas${isTotalView ?" por fazenda" : ""}</h3>
       </div>
-      <span class="chip ${grandSaldo > 0 ? "chip-success" : grandSaldo < 0 ? "chip-alert" : ""}">
-        Saldo ${grandSaldo > 0 ? "+" : ""}${formatCurrency(grandSaldo)}
+      <span class="chip ${grandSaldo > 0 ?"chip-success" : grandSaldo < 0 ?"chip-alert" : ""}">
+        Saldo ${grandSaldo > 0 ?"+" : ""}${formatCurrency(grandSaldo)}
       </span>
     </div>
     <div class="fin-table">
@@ -3434,14 +3467,14 @@ function renderFinancialPanel(farms, isTotalView) {
         <span>Saldo</span>
       </div>
       ${farmRows}
-      ${farmData.length > 1 ? `
+      ${farmData.length > 1 ?`
         <div class="fin-farm-row fin-total-row">
           <span class="fin-farm-name">Total</span>
           <span class="fin-cell">${formatInteger(farmData.reduce((s,f)=>s+f.qtdVendas,0))} cab</span>
           <span class="fin-cell fin-vendas">${formatCurrency(grandVendas)}</span>
           <span class="fin-cell">${formatInteger(farmData.reduce((s,f)=>s+f.qtdCompras,0))} cab</span>
           <span class="fin-cell fin-compras">${formatCurrency(grandCompras)}</span>
-          <strong class="fin-cell fin-saldo ${saldoClass}">${grandSaldo > 0 ? "+" : ""}${formatCurrency(grandSaldo)}</strong>
+          <strong class="fin-cell fin-saldo ${saldoClass}">${grandSaldo > 0 ?"+" : ""}${formatCurrency(grandSaldo)}</strong>
         </div>
       ` : ""}
     </div>
@@ -3455,19 +3488,19 @@ function renderHeadlineMetrics(farm) {
   const registeredAnimals = getRegisteredPotreroAnimals(farm);
   const metrics = [
     {
-      label: state.data.selectedFarmId === TOTAL_FARM_ID ? "Grupo" : "Rebanho",
+      label: state.data.selectedFarmId === TOTAL_FARM_ID ?"Grupo" : "Rebanho",
       value: formatInteger(totalAnimals),
-      text: state.data.selectedFarmId === TOTAL_FARM_ID ? "animais consolidados no grupo" : "animais no estoque atual"
+      text: state.data.selectedFarmId === TOTAL_FARM_ID ?"animais consolidados no grupo" : "animais no estoque atual"
     },
     {
       label: "Declarado",
       value: formatInteger(Number(farm.declaredTotal || 0)),
-      text: discrepancy === 0 ? "total conferido com o estoque" : `${formatInteger(discrepancy)} animais de diferenca`
+      text: discrepancy === 0 ?"total conferido com o estoque" : `${formatInteger(discrepancy)} animais de diferen?a`
     },
     {
       label: "Potreiros",
       value: formatInteger(registeredAnimals),
-      text: registeredAnimals === totalAnimals ? "alocacao completa nos campos" : `${formatInteger(Math.abs(totalAnimals - registeredAnimals))} ainda fora dos potreiros`
+      text: registeredAnimals === totalAnimals ?"alocação completa nos campos" : `${formatInteger(Math.abs(totalAnimals - registeredAnimals))} ainda fora dos potreiros`
     }
   ];
 
@@ -3487,35 +3520,35 @@ function renderPrimarySummaryCards(farm) {
   const monthlySummary = getMonthlySummary(farm);
   const cards = [
     {
-      title: isTotalView ? "Fazendas ativas" : "Movimentacoes no ano",
-      value: isTotalView ? formatInteger(getAllFarms().length) : formatInteger(annualData.totalMovements),
-      detail: isTotalView ? "fazendas somadas no consolidado" : `lancamentos registrados em ${state.filters.year}`
+      title: isTotalView ?"Fazendas ativas" : "Movimentações no ano",
+      value: isTotalView ?formatInteger(getAllFarms().length) : formatInteger(annualData.totalMovements),
+      detail: isTotalView ?"fazendas somadas no consolidado" : `lançamentos registrados em ${state.filters.year}`
     },
     {
-      title: "Entradas no periodo",
+      title: "Entradas no período",
       value: formatInteger(filteredData.byType.compra + filteredData.byType.nascimento + filteredData.adjustPositive),
       detail: "compras, nascimentos e ajustes positivos"
     },
     {
-      title: "Saidas no periodo",
+      title: "Saídas no período",
       value: formatInteger(filteredData.byType.venda + filteredData.byType.consumo + filteredData.byType.morte + filteredData.adjustNegative),
       detail: "vendas, consumo, mortes e ajustes negativos"
     },
     {
       title: "Saldo líquido do período",
       value: filteredData.saldo,
-      detail: filteredData.saldo > 0 ? "rebanho cresceu no período filtrado" : filteredData.saldo < 0 ? "rebanho reduziu no período filtrado" : "rebanho estável no período filtrado",
-      trend: filteredData.saldo > 0 ? "up" : filteredData.saldo < 0 ? "down" : "flat"
+      detail: filteredData.saldo > 0 ?"rebanho cresceu no período filtrado" : filteredData.saldo < 0 ?"rebanho reduziu no período filtrado" : "rebanho estável no período filtrado",
+      trend: filteredData.saldo > 0 ?"up" : filteredData.saldo < 0 ?"down" : "flat"
     }
   ];
 
   elements.summaryGrid.innerHTML = cards.map((card) => {
     const trendBadge = card.trend
-      ? `<span class="trend-badge trend-${card.trend}">${card.trend === "up" ? "▲" : card.trend === "down" ? "▼" : "—"} ${formatInteger(Math.abs(card.value))}</span>`
+      ?`<span class="trend-badge trend-${card.trend}">${card.trend === "up" ?"▲" : card.trend === "down" ?"▼" : "—"} ${formatInteger(Math.abs(card.value))}</span>`
       : "";
-    const displayValue = card.trend ? formatInteger(Math.abs(card.value)) : card.value;
+    const displayValue = card.trend ?formatInteger(Math.abs(card.value)) : card.value;
     return `
-      <article class="summary-card${card.trend ? ` summary-card-${card.trend}` : ""}">
+      <article class="summary-card${card.trend ?` summary-card-${card.trend}` : ""}">
         <p class="panel-kicker">${card.title}</p>
         <strong>${displayValue}${trendBadge}</strong>
         <p>${card.detail}</p>
@@ -3529,7 +3562,7 @@ function renderDashboardSectionCards(farm) {
   if (!el) return;
 
   const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
-  const farms = isTotalView ? getAllFarms() : [farm].filter(Boolean);
+  const farms = isTotalView ?getAllFarms() : [farm].filter(Boolean);
 
   // Sanitário stats
   let sanTotal = 0;
@@ -3583,7 +3616,7 @@ function renderDashboardSectionCards(farm) {
           <p class="smc-kicker">Manejo Sanitário</p>
           <strong class="smc-value">${formatInteger(sanTotal)}</strong>
           <p class="smc-detail">registros no período</p>
-          ${sanLastDate ? `<span class="smc-last">Último: ${formatDate(sanLastDate)} · ${escapeHtml(sanLastProduct)}</span>` : `<span class="smc-last">Sem registros no período</span>`}
+          ${sanLastDate ?`<span class="smc-last">Último: ${formatDate(sanLastDate)} · ${escapeHtml(sanLastProduct)}</span>` : `<span class="smc-last">Sem registros no período</span>`}
         </div>
         <span class="smc-arrow">→</span>
       </article>
@@ -3595,8 +3628,8 @@ function renderDashboardSectionCards(farm) {
           <strong class="smc-value">${formatInteger(repTotal)}</strong>
           <p class="smc-detail">eventos reprodutivos</p>
           ${repPendentes > 0
-            ? `<span class="smc-last smc-alert">${formatInteger(repPendentes)} aguardando verificação</span>`
-            : `<span class="smc-last">${repLastDate ? "Último: " + formatDate(repLastDate) : "Sem eventos"}</span>`}
+            ?`<span class="smc-last smc-alert">${formatInteger(repPendentes)} aguardando verificação</span>`
+            : `<span class="smc-last">${repLastDate ?"Último: " + formatDate(repLastDate) : "Sem eventos"}</span>`}
         </div>
         <span class="smc-arrow">→</span>
       </article>
@@ -3607,7 +3640,7 @@ function renderDashboardSectionCards(farm) {
           <p class="smc-kicker">Movimentações</p>
           <strong class="smc-value">${formatInteger(movTotal)}</strong>
           <p class="smc-detail">lançamentos no período</p>
-          ${movLastDate ? `<span class="smc-last">Último: ${formatDate(movLastDate)}</span>` : `<span class="smc-last">Sem movimentações no período</span>`}
+          ${movLastDate ?`<span class="smc-last">Último: ${formatDate(movLastDate)}</span>` : `<span class="smc-last">Sem movimentações no período</span>`}
         </div>
         <span class="smc-arrow">→</span>
       </article>
@@ -3627,11 +3660,14 @@ function renderDashboardSectionCards(farm) {
 
 function renderDashboardVisualHerdGrid(farm) {
   if (!elements.visualHerdGrid) return;
+  elements.visualHerdGrid.innerHTML = "";
+  elements.visualHerdGrid.hidden = true;
+  return;
 
   const monthly = summarizePeriod(farm, state.filters.year, state.filters.month);
   const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
   const periodLabel = state.filters.month === "all"
-    ? `Ano ${state.filters.year}`
+    ?`Ano ${state.filters.year}`
     : `${MONTH_NAMES[Number(state.filters.month) - 1]}/${state.filters.year}`;
 
   const stats = [
@@ -3643,7 +3679,7 @@ function renderDashboardVisualHerdGrid(farm) {
   ];
 
   elements.visualHerdGrid.innerHTML = stats.map((stat) => `
-    <button type="button" class="visual-card visual-card-action visual-card-button" data-mov="${stat.movType}" title="Registrar ${stat.label}" aria-label="Abrir registro de ${stat.label}${isTotalView ? " no total" : ` em ${escapeHtml(farm.name)}`}">
+    <button type="button" class="visual-card visual-card-action visual-card-button" data-mov="${stat.movType}" title="Registrar ${stat.label}" aria-label="Abrir registro de ${stat.label}${isTotalView ?" no total" : ` em ${escapeHtml(farm.name)}`}">
       <div class="visual-card-image">
         <img src="${stat.img}" alt="${escapeHtml(stat.label)}">
       </div>
@@ -3655,7 +3691,7 @@ function renderDashboardVisualHerdGrid(farm) {
           </div>
           <span class="visual-card-share visual-card-count">${formatInteger(stat.value)}</span>
         </div>
-        <p>${stat.value === 0 ? "Nenhum registro no período." : `${formatInteger(stat.value)} ${stat.detail}.`}</p>
+        <p>${stat.value === 0 ?"Nenhum registro no período." : `${formatInteger(stat.value)} ${stat.detail}.`}</p>
         <span class="visual-card-cta">Abrir registro</span>
       </div>
     </button>
@@ -3669,10 +3705,10 @@ const MOV_TYPE_RECORDS_PAGE = 50;
 function setMovTypeRecordsMaximized(isMaximized) {
   elements.movTypeRecordsDlg?.classList.toggle("is-maximized", Boolean(isMaximized));
   if (!elements.maximizeMovTypeRecordsDlg) return;
-  const label = isMaximized ? "Restaurar tamanho" : "Maximizar";
+  const label = isMaximized ?"Restaurar tamanho" : "Maximizar";
   elements.maximizeMovTypeRecordsDlg.setAttribute("aria-label", label);
   elements.maximizeMovTypeRecordsDlg.setAttribute("title", label);
-  elements.maximizeMovTypeRecordsDlg.innerHTML = isMaximized ? "&#x2752;" : "&#x26F6;";
+  elements.maximizeMovTypeRecordsDlg.innerHTML = isMaximized ?"&#x2752;" : "&#x26F6;";
 }
 
 function toggleMovTypeRecordsMaximize() {
@@ -3684,17 +3720,17 @@ function toggleMovTypeRecordsMaximize() {
 function openMovTypeRecordsDlg(movType, options = {}) {
   const typeMeta = MOVEMENT_TYPES.find((t) => t.value === movType);
   const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
-  const farm = isTotalView ? null : getFarm();
-  const farmLabel = isTotalView ? "Todas as fazendas" : farm?.name || "";
-  const searchValue = typeof options.search === "string" ? options.search : "";
-  const page = Number.isInteger(options.page) ? options.page : 0;
+  const farm = isTotalView ?null : getFarm();
+  const farmLabel = isTotalView ?"Todas as fazendas" : farm?.name || "";
+  const searchValue = typeof options.search === "string" ?options.search : "";
+  const page = Number.isInteger(options.page) ?options.page : 0;
   const maximized = Boolean(options.maximized);
 
   elements.movTypeRecordsKicker.textContent = farmLabel;
-  elements.movTypeRecordsTitle.textContent = typeMeta ? typeMeta.label : capitalize(movType);
+  elements.movTypeRecordsTitle.textContent = typeMeta ?typeMeta.label : capitalize(movType);
   elements.movTypeRecordsSearch.value = searchValue;
-  elements.movTypeRecordsNewBtn.textContent = `+ Novo ${typeMeta ? typeMeta.label : capitalize(movType)}`;
-  elements.movTypeRecordsNewBtn.setAttribute("aria-label", `Abrir formulário de novo ${typeMeta ? typeMeta.label.toLowerCase() : movType}`);
+  elements.movTypeRecordsNewBtn.textContent = `+ Novo ${typeMeta ?typeMeta.label : capitalize(movType)}`;
+  elements.movTypeRecordsNewBtn.setAttribute("aria-label", `Abrir formulário de novo ${typeMeta ?typeMeta.label.toLowerCase() : movType}`);
   elements.movTypeRecordsNewBtn.onclick = () => {
     runtime.returnToMovTypeRecords = null;
     elements.movTypeRecordsDlg.close();
@@ -3741,8 +3777,8 @@ function renderMovTypeRecordsBody(movType, page) {
   if (query) {
     filtered = filtered.filter((m) => {
       const base = [m.code, m.categoryName, m.notes, m._farmName].join(" ").toLowerCase();
-      const pDetail = isCompra ? (m.purchaseDetails?.sourceProperty || "") : "";
-      const vDetail = isVenda ? (m.saleDetails?.buyer || "") : "";
+      const pDetail = isCompra ?(m.purchaseDetails?.sourceProperty || "") : "";
+      const vDetail = isVenda ?(m.saleDetails?.buyer || "") : "";
       return base.includes(query) || pDetail.toLowerCase().includes(query) || vDetail.toLowerCase().includes(query);
     });
   }
@@ -3755,7 +3791,7 @@ function renderMovTypeRecordsBody(movType, page) {
   if (isCompra) {
     elements.movTypeRecordsHead.innerHTML = `<tr>
       <th>Código</th>
-      ${isTotalView ? "<th>Fazenda</th>" : ""}
+      ${isTotalView ?"<th>Fazenda</th>" : ""}
       <th>Data</th>
       <th>Categoria</th>
       <th class="num-col">Cabeças</th>
@@ -3766,7 +3802,7 @@ function renderMovTypeRecordsBody(movType, page) {
   } else if (isVenda) {
     elements.movTypeRecordsHead.innerHTML = `<tr>
       <th>Código</th>
-      ${isTotalView ? "<th>Fazenda</th>" : ""}
+      ${isTotalView ?"<th>Fazenda</th>" : ""}
       <th>Data</th>
       <th>Categoria</th>
       <th class="num-col">Cabeças</th>
@@ -3778,7 +3814,7 @@ function renderMovTypeRecordsBody(movType, page) {
   } else {
     elements.movTypeRecordsHead.innerHTML = `<tr>
       <th>Código</th>
-      ${isTotalView ? "<th>Fazenda</th>" : ""}
+      ${isTotalView ?"<th>Fazenda</th>" : ""}
       <th>Data</th>
       <th>Categoria</th>
       <th>Qtd.</th>
@@ -3788,23 +3824,23 @@ function renderMovTypeRecordsBody(movType, page) {
   }
 
   // Build body rows
-  const colCount = isCompra ? (isTotalView ? 8 : 7) : isVenda ? (isTotalView ? 9 : 8) : (isTotalView ? 7 : 6);
+  const colCount = isCompra ?(isTotalView ?8 : 7) : isVenda ?(isTotalView ?9 : 8) : (isTotalView ?7 : 6);
 
   if (!slice.length) {
-    elements.movTypeRecordsBody.innerHTML = `<tr><td colspan="${colCount}" class="table-empty-cell">${query ? "Nenhum registro encontrado." : "Nenhum lançamento deste tipo ainda."}</td></tr>`;
+    elements.movTypeRecordsBody.innerHTML = `<tr><td colspan="${colCount}" class="table-empty-cell">${query ?"Nenhum registro encontrado." : "Nenhum lançamento deste tipo ainda."}</td></tr>`;
   } else {
     elements.movTypeRecordsBody.innerHTML = slice.map((m) => {
       const code = m.code
-        ? `<span class="movement-code">${escapeHtml(m.code)}</span>`
+        ?`<span class="movement-code">${escapeHtml(m.code)}</span>`
         : `<span class="movement-code movement-code-legacy">—</span>`;
       const farmCell = isTotalView
-        ? `<td><div class="mov-records-main-cell"><strong>${escapeHtml(m._farmName)}</strong><span>Origem do registro</span></div></td>`
+        ?`<td><div class="mov-records-main-cell"><strong>${escapeHtml(m._farmName)}</strong><span>Origem do registro</span></div></td>`
         : "";
       const currency = m.currency || getFarmCurrency(m._farmId);
-      const sym = currency === "USD" ? "US$" : "R$";
-      const currencyBadge = `<span class="currency-badge ${currency === "USD" ? "usd" : "brl"}">${currency}</span>`;
-      const fmtVal = (v) => v > 0 ? `${sym} ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)}` : "—";
-      const fmtKg = (v) => v > 0 ? `${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(v)} kg` : "—";
+      const sym = currency === "USD" ?"US$" : "R$";
+      const currencyBadge = `<span class="currency-badge ${currency === "USD" ?"usd" : "brl"}">${currency}</span>`;
+      const fmtVal = (v) => v > 0 ?`${sym} ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)}` : "—";
+      const fmtKg = (v) => v > 0 ?`${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(v)} kg` : "—";
       const actionsCell = `<td class="movement-actions-cell">
         <button class="movement-action-btn edit-btn" title="Editar" data-farm-id="${escapeHtml(m._farmId)}" data-movement-id="${escapeHtml(m.id)}">Editar</button>
         <button class="movement-action-btn delete-btn" title="Excluir" data-farm-id="${escapeHtml(m._farmId)}" data-movement-id="${escapeHtml(m.id)}">Excluir</button>
@@ -3812,8 +3848,8 @@ function renderMovTypeRecordsBody(movType, page) {
 
       if (isCompra) {
         const p = m.purchaseDetails || {};
-        const origin = p.sourceProperty ? escapeHtml(p.sourceProperty) : `<span class="muted-cell">—</span>`;
-        const noteSpan = m.notes ? `<span>${escapeHtml(m.notes)}</span>` : "";
+        const origin = p.sourceProperty ?escapeHtml(p.sourceProperty) : `<span class="muted-cell">—</span>`;
+        const noteSpan = m.notes ?`<span>${escapeHtml(m.notes)}</span>` : "";
         return `<tr class="mov-record-row mov-record-row-compra">
           <td>${code}</td>
           ${farmCell}
@@ -3830,8 +3866,8 @@ function renderMovTypeRecordsBody(movType, page) {
         const d = m.saleDetails || {};
         const weightKg = d.weightKg || 0;
         const buyer = d.buyer || extractBuyerFromNotes(m.notes);
-        const buyerCell = buyer ? escapeHtml(buyer) : `<span class="muted-cell">—</span>`;
-        const noteSpan = m.notes ? `<span>${escapeHtml(m.notes)}</span>` : "";
+        const buyerCell = buyer ?escapeHtml(buyer) : `<span class="muted-cell">—</span>`;
+        const noteSpan = m.notes ?`<span>${escapeHtml(m.notes)}</span>` : "";
         return `<tr class="mov-record-row mov-record-row-venda">
           <td>${code}</td>
           ${farmCell}
@@ -3846,7 +3882,7 @@ function renderMovTypeRecordsBody(movType, page) {
       }
 
       // Generic types
-      const deltaSign = m.delta > 0 ? "+" : "";
+      const deltaSign = m.delta > 0 ?"+" : "";
       return `<tr>
         <td>${code}</td>
         ${farmCell}
@@ -3880,13 +3916,12 @@ function renderMovTypeRecordsBody(movType, page) {
     });
   }
 
-  // Footer
   elements.movTypeRecordsFooter.innerHTML = `
-    <span class="movements-count">${filtered.length} registro${filtered.length !== 1 ? "s" : ""}</span>
-    ${totalPages > 1 ? `
-      <button class="mov-page-btn" ${safePage === 0 ? "disabled" : ""} id="movRecPrev">&#8249; Anterior</button>
+    <span class="movements-count">${filtered.length} registro${filtered.length !== 1 ?"s" : ""}</span>
+    ${totalPages > 1 ?`
+      <button class="mov-page-btn" ${safePage === 0 ?"disabled" : ""} id="movRecPrev">&#8249; Anterior</button>
       <span class="mov-page-info">Página ${safePage + 1} de ${totalPages}</span>
-      <button class="mov-page-btn" ${safePage >= totalPages - 1 ? "disabled" : ""} id="movRecNext">Próxima &#8250;</button>
+      <button class="mov-page-btn" ${safePage >= totalPages - 1 ?"disabled" : ""} id="movRecNext">Próxima &#8250;</button>
     ` : ""}
   `;
   document.getElementById("movRecPrev")?.addEventListener("click", () => renderMovTypeRecordsBody(movType, safePage - 1));
@@ -3897,14 +3932,14 @@ function renderMovTypeRecordsBody(movType, page) {
 function extractBuyerFromNotes(notes) {
   if (!notes) return "";
   const m = String(notes).match(/^([A-ZÁÉÍÓÚ][A-Za-záéíóúÁÉÍÓÚÃÕ\s]+?)(?:\s*\|)/);
-  return m ? m[1].trim() : "";
+  return m ?m[1].trim() : "";
 }
 
 // Extrai rendimento % das notas legadas onde não foi salvo explicitamente
 function extractYieldFromNotes(notes) {
   if (!notes) return "—";
   const m = String(notes).match(/(\d+[,.]?\d*)\s*%/);
-  return m ? `${m[1].replace(",", ".")}%` : "—";
+  return m ?`${m[1].replace(",", ".")}%` : "—";
 }
 
 function renderCommercialDashboard(movType) {
@@ -3912,7 +3947,7 @@ function renderCommercialDashboard(movType) {
   if (!el) return;
 
   const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
-  const allFarms = isTotalView ? getAllFarms() : [getFarm()].filter(Boolean);
+  const allFarms = isTotalView ?getAllFarms() : [getFarm()].filter(Boolean);
   const isCompra = movType === "compra";
 
   const brlFarms = allFarms.filter((f) => getFarmCurrency(f.id) === "BRL");
@@ -3925,7 +3960,7 @@ function renderCommercialDashboard(movType) {
     const count = movs.length;
     const heads = movs.reduce((s, m) => s + Number(m.quantity || 0), 0);
     const totalValue = movs.reduce((s, m) => s + Number(m.value || 0), 0);
-    const avgPerHead = heads > 0 ? totalValue / heads : 0;
+    const avgPerHead = heads > 0 ?totalValue / heads : 0;
     const byFarm = farms.map((f) => {
       const fm = movs.filter((m) => m._farmId === f.id);
       return { name: f.name, heads: fm.reduce((s, m) => s + Number(m.quantity || 0), 0), value: fm.reduce((s, m) => s + Number(m.value || 0), 0) };
@@ -3937,17 +3972,17 @@ function renderCommercialDashboard(movType) {
     if (!farms.length) return "";
     const d = aggregate(farms);
     if (d.count === 0) return "";
-    const sym = currency === "USD" ? "US$" : "R$";
-    const fmt = (v) => v > 0 ? `${sym} ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)}` : "—";
+    const sym = currency === "USD" ?"US$" : "R$";
+    const fmt = (v) => v > 0 ?`${sym} ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)}` : "—";
     const farmNames = farms.map((f) => escapeHtml(f.name)).join(" · ");
-    const farmTags = d.byFarm.length > 1 ? `<div class="comm-farm-tags">${d.byFarm.map((x) =>
+    const farmTags = d.byFarm.length > 1 ?`<div class="comm-farm-tags">${d.byFarm.map((x) =>
       `<span class="comm-farm-tag"><strong>${escapeHtml(x.name)}</strong> ${formatInteger(x.heads)} cab. <span class="fin-value">${fmt(x.value)}</span></span>`
     ).join("")}</div>` : "";
 
     return `
       <div class="comm-summary-row">
         <div class="comm-row-meta">
-          <span class="currency-badge ${currency === "USD" ? "usd" : "brl"}">${currency}</span>
+          <span class="currency-badge ${currency === "USD" ?"usd" : "brl"}">${currency}</span>
           <span class="comm-row-farms">${farmNames}</span>
         </div>
         <div class="comm-row-stats">
@@ -3956,7 +3991,7 @@ function renderCommercialDashboard(movType) {
           <span class="comm-stat"><strong>${formatInteger(d.heads)}</strong> <span>cab.</span></span>
           <span class="comm-sep">·</span>
           <span class="comm-stat fin-value"><strong>${fmt(d.totalValue)}</strong></span>
-          ${d.avgPerHead > 0 ? `<span class="comm-sep">·</span><span class="comm-stat comm-avg">${fmt(d.avgPerHead)}/cab.</span>` : ""}
+          ${d.avgPerHead > 0 ?`<span class="comm-sep">·</span><span class="comm-stat comm-avg">${fmt(d.avgPerHead)}/cab.</span>` : ""}
         </div>
         ${farmTags}
       </div>
@@ -3993,7 +4028,7 @@ function handleRegisterAction(action) {
 function renderFarmSwitch() {
   elements.farmSwitch.innerHTML = "";
   const totalButton = document.createElement("button");
-  totalButton.className = `farm-btn ${TOTAL_FARM_ID === state.data.selectedFarmId ? "active" : ""}`;
+  totalButton.className = `farm-btn ${TOTAL_FARM_ID === state.data.selectedFarmId ?"active" : ""}`;
   totalButton.textContent = "Total";
   totalButton.addEventListener("click", () => {
     state.data.selectedFarmId = TOTAL_FARM_ID;
@@ -4005,7 +4040,7 @@ function renderFarmSwitch() {
 
   Object.values(state.data.farms).forEach((farm) => {
     const button = document.createElement("button");
-    button.className = `farm-btn ${farm.id === state.data.selectedFarmId ? "active" : ""}`;
+    button.className = `farm-btn ${farm.id === state.data.selectedFarmId ?"active" : ""}`;
     button.textContent = farm.name;
     button.addEventListener("click", () => {
       state.data.selectedFarmId = farm.id;
@@ -4024,7 +4059,7 @@ function renderFarmSwitch() {
 
 function renderGlobalSummary() {
   const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
-  const farms = isTotalView ? getAllFarms() : [state.data.farms[state.data.selectedFarmId]].filter(Boolean);
+  const farms = isTotalView ?getAllFarms() : [state.data.farms[state.data.selectedFarmId]].filter(Boolean);
   const totals = farms.reduce((accumulator, farm) => {
     const monthly = summarizePeriod(farm, state.filters.year, state.filters.month);
     accumulator.animais += getFarmTotal(farm);
@@ -4039,32 +4074,32 @@ function renderGlobalSummary() {
   const selectedFarm = farms[0];
   const allocationBalance = totals.animais - totals.allocatedAnimals;
 
-  elements.globalPanelKicker.textContent = isTotalView ? "Painel inicial" : "Fazenda selecionada";
-  elements.globalPanelTitle.textContent = isTotalView ? "Consolidado das fazendas" : `Resumo de ${selectedFarm?.name || "fazenda"}`;
-  elements.globalPanelChip.textContent = isTotalView ? "Grupo Da Luz" : selectedFarm?.name || "Fazenda";
+  elements.globalPanelKicker.textContent = isTotalView ?"Painel inicial" : "Fazenda selecionada";
+  elements.globalPanelTitle.textContent = isTotalView ?"Consolidado das fazendas" : `Resumo de ${selectedFarm?.name || "fazenda"}`;
+  elements.globalPanelChip.textContent = isTotalView ?"Grupo Da Luz" : selectedFarm?.name || "Fazenda";
 
   const cards = [
     {
-      title: isTotalView ? "Estoque consolidado" : "Estoque atual",
+      title: isTotalView ?"Estoque consolidado" : "Estoque atual",
       value: formatInteger(totals.animais),
-      detail: isTotalView ? "estoque consolidado do grupo" : `estoque atual de ${selectedFarm?.name || "fazenda"}`
+      detail: isTotalView ?"estoque consolidado do grupo" : `estoque atual de ${selectedFarm?.name || "fazenda"}`
     },
     {
-      title: isTotalView ? "Entradas consolidadas" : "Entradas no período",
+      title: isTotalView ?"Entradas consolidadas" : "Entradas no período",
       value: formatInteger(totals.declaredTotal),
       detail: totals.declaredTotal === totals.animais
-        ? "estoque alinhado ao total declarado"
-        : `${formatInteger(totals.declaredTotal - totals.animais)} animais de diferenca`
+        ?"estoque alinhado ao total declarado"
+        : `${formatInteger(totals.declaredTotal - totals.animais)} animais de diferen?a`
     },
     {
-      title: isTotalView ? "Saídas consolidadas" : "Saídas no período",
+      title: isTotalView ?"Saídas consolidadas" : "Saídas no período",
       value: formatInteger(totals.saidas),
-      detail: isTotalView ? "vendas, mortes, consumo e ajustes negativos" : "vendas, mortes, consumo e ajustes negativos"
+      detail: isTotalView ?"vendas, mortes, consumo e ajustes negativos" : "vendas, mortes, consumo e ajustes negativos"
     },
     {
       title: "Registros sanitários",
       value: formatInteger(totals.sanitario),
-      detail: isTotalView ? "manejos sanitários no período filtrado" : `manejos sanitários de ${selectedFarm?.name || "fazenda"}`
+      detail: isTotalView ?"manejos sanitários no período filtrado" : `manejos sanitários de ${selectedFarm?.name || "fazenda"}`
     }
   ];
 
@@ -4093,6 +4128,7 @@ function renderGlobalSummary() {
 
 function renderActiveView() {
   const view = state.activeView;
+  document.body.dataset.activeView = view;
   elements.dashboardView.hidden = view !== "dashboard";
   elements.sanitaryView.hidden = view !== "sanitary";
   elements.potreirosView.hidden = view !== "potreiros";
@@ -4124,7 +4160,7 @@ function renderMobileFarmDrawer() {
   if (!elements.mobileFarmSwitchList) return;
   const farms = [{ id: TOTAL_FARM_ID, name: "Total (todas as fazendas)" }, ...getAllFarms()];
   elements.mobileFarmSwitchList.innerHTML = farms.map((farm) => `
-    <button type="button" class="mobile-farm-option ${farm.id === state.data.selectedFarmId ? "active" : ""}" data-farm-id="${farm.id}">
+    <button type="button" class="mobile-farm-option ${farm.id === state.data.selectedFarmId ?"active" : ""}" data-farm-id="${farm.id}">
       ${escapeHtml(farm.name)}
     </button>
   `).join("");
@@ -4143,7 +4179,7 @@ function renderActionButtonsState() {
   const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
   elements.editStockButton.disabled = false;
   elements.editStockButton.title = isTotalView
-    ? "Na aba total, o editor abre em modo global para escolher a fazenda dentro do modal."
+    ?"Na aba total, o editor abre em modo global para escolher a fazenda dentro do modal."
     : "";
 }
 
@@ -4151,7 +4187,7 @@ function renderGeorefState(farm) {
   const isArapeyDashboard = farm.id === "arapey" && state.activeView === "dashboard";
   elements.georefButton.hidden = !isArapeyDashboard;
   elements.georefButton.disabled = !isArapeyDashboard;
-  elements.georefButton.title = isArapeyDashboard ? "" : "Disponível apenas na fazenda Arapey.";
+  elements.georefButton.title = isArapeyDashboard ?"" : "Disponível apenas na fazenda Arapey.";
 
   if (!isArapeyDashboard && elements.georefDialog.open) {
     clearGeorefDraft();
@@ -4167,7 +4203,7 @@ function renderGeorefState(farm) {
 function renderHero(farm) {
   const dominantCategory = getDominantCategory(farm);
   const dominantText = dominantCategory
-    ? `${dominantCategory.name} lidera o rebanho com ${formatInteger(dominantCategory.quantity)} animais.`
+    ?`${dominantCategory.name} lidera o rebanho com ${formatInteger(dominantCategory.quantity)} animais.`
     : "Estrutura pronta para acompanhar compras, vendas e manejo.";
 
   elements.heroFarmName.textContent = farm.name;
@@ -4176,7 +4212,7 @@ function renderHero(farm) {
   const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
   if (elements.dashboardFarmLabel) {
     elements.dashboardFarmLabel.textContent = isTotalView
-      ? "Painel de Controle de Todas as Fazendas"
+      ?"Painel de Controle de Todas as Fazendas"
       : `Painel de Controle — Fazenda ${farm.name}`;
   }
 }
@@ -4199,8 +4235,8 @@ function renderHeroMetrics(farm) {
     },
     {
       label: "Conferência",
-      value: discrepancy === 0 ? "OK" : `${discrepancy > 0 ? "+" : ""}${formatInteger(discrepancy)}`,
-      text: discrepancy === 0 ? "estoque alinhado ao total declarado" : "diferença entre estoque e total declarado"
+      value: discrepancy === 0 ?"OK" : `${discrepancy > 0 ?"+" : ""}${formatInteger(discrepancy)}`,
+      text: discrepancy === 0 ?"estoque alinhado ao total declarado" : "diferença entre estoque e total declarado"
     }
   ];
 
@@ -4267,10 +4303,10 @@ function renderVisualHerdGrid(farm) {
 function renderPeriodSummary(farm) {
   const monthly = summarizePeriod(farm, state.filters.year, state.filters.month);
   const annual = summarizePeriod(farm, state.filters.year, "all");
-  const valueText = annual.totalValue > 0 ? formatCurrency(annual.totalValue) : "Sem valor informado";
+  const valueText = annual.totalValue > 0 ?formatCurrency(annual.totalValue) : "Sem valor informado";
 
   const cards = [
-    { title: state.filters.month === "all" ? "Saldo anual" : "Saldo do mês", value: `${monthly.netChange > 0 ? "+" : ""}${formatInteger(monthly.netChange)}`, detail: "Variação líquida entre entradas e saídas" },
+    { title: state.filters.month === "all" ?"Saldo anual" : "Saldo do mês", value: `${monthly.netChange > 0 ?"+" : ""}${formatInteger(monthly.netChange)}`, detail: "Variação líquida entre entradas e saídas" },
     { title: "Compras", value: formatInteger(monthly.byType.compra), detail: "Animais comprados no recorte" },
     { title: "Nascimentos", value: formatInteger(monthly.byType.nascimento), detail: "Animais nascidos no recorte" },
     { title: "Valor movimentado", value: valueText, detail: "Soma dos valores registrados no ano" }
@@ -4292,7 +4328,7 @@ function renderSalesAnalysis(farm) {
   const isPremiumFarm = isPremiumSaleFarm(farm);
 
   const cards = isPremiumFarm
-    ? [
+    ?[
       { title: "Vendas registradas", value: formatInteger(summary.count), detail: "lançamentos comerciais no período" },
       { title: "Faturamento", value: formatCurrency(summary.totalValue), detail: "valor calculado das vendas" },
       { title: "Kg vivo", value: formatWeight(summary.liveKg), detail: "peso vivo negociado" },
@@ -4302,7 +4338,7 @@ function renderSalesAnalysis(farm) {
       { title: "Vendas registradas", value: formatInteger(summary.count), detail: "lançamentos comerciais no período" },
       { title: "Faturamento", value: formatCurrency(summary.totalValue), detail: "valor calculado das vendas" },
       { title: "Kg vivo", value: formatWeight(summary.liveKg), detail: "peso vivo negociado" },
-      { title: "Média R$/kg vivo", value: summary.liveKg > 0 ? formatCurrency(summary.totalValue / summary.liveKg) : formatCurrency(0), detail: "preço médio por kg vivo" }
+      { title: "Média R$/kg vivo", value: summary.liveKg > 0 ?formatCurrency(summary.totalValue / summary.liveKg) : formatCurrency(0), detail: "preço médio por kg vivo" }
     ];
 
   if (elements.salesSummary) {
@@ -4328,9 +4364,9 @@ function renderSalesAnalysis(farm) {
     <tr>
       <td data-label="Data">${formatDate(movement.date)}</td>
       <td data-label="Categoria">${escapeHtml(movement.categoryName)}${getMovementPhotoFlagMarkup(movement)}</td>
-      <td data-label="Base">${movement.saleDetails ? escapeHtml(getSaleModeLabel(movement.saleDetails.mode || "vivo")) : "Relatório mensal"}</td>
-      <td data-label="Kg">${movement.saleDetails ? formatWeight(movement.saleDetails.weightKg || 0) : "-"}</td>
-      <td data-label="R$/kg">${movement.saleDetails ? formatCurrency(movement.saleDetails.pricePerKg || 0) : "-"}</td>
+      <td data-label="Base">${movement.saleDetails ?escapeHtml(getSaleModeLabel(movement.saleDetails.mode || "vivo")) : "Relatório mensal"}</td>
+      <td data-label="Kg">${movement.saleDetails ?formatWeight(movement.saleDetails.weightKg || 0) : "-"}</td>
+      <td data-label="R$/kg">${movement.saleDetails ?formatCurrency(movement.saleDetails.pricePerKg || 0) : "-"}</td>
       <td data-label="Total">${formatCurrency(movement.value || 0)}</td>
     </tr>
   `).join("");
@@ -4351,7 +4387,7 @@ const MOVEMENTS_PAGE_SIZE = 50;
 
 function renderMovementsTable(farm) {
   const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
-  const colCount = isTotalView ? 8 : 7;
+  const colCount = isTotalView ?8 : 7;
 
   // Build full sorted list
   let allMovements;
@@ -4365,7 +4401,7 @@ function renderMovementsTable(farm) {
   // Apply search filter
   const query = runtime.movementsSearch.trim().toLowerCase();
   const filtered = query
-    ? allMovements.filter((m) =>
+    ?allMovements.filter((m) =>
         (m.code || "").toLowerCase().includes(query) ||
         (m.type || "").toLowerCase().includes(query) ||
         (m.categoryName || "").toLowerCase().includes(query) ||
@@ -4383,7 +4419,7 @@ function renderMovementsTable(farm) {
   if (elements.movementsTableHead) {
     elements.movementsTableHead.innerHTML = `<tr>
       <th>Código</th>
-      ${isTotalView ? "<th>Fazenda</th>" : ""}
+      ${isTotalView ?"<th>Fazenda</th>" : ""}
       <th>Data</th><th>Tipo</th><th>Categoria</th><th>Qtd.</th><th>Obs.</th><th></th>
     </tr>`;
   }
@@ -4407,11 +4443,11 @@ function renderMovementsTable(farm) {
       >
     </div>
     <div class="movements-pagination">
-      <span class="movements-count">${filtered.length} registro${filtered.length !== 1 ? "s" : ""}${query ? " encontrado" + (filtered.length !== 1 ? "s" : "") : ""}</span>
-      ${totalPages > 1 ? `
-        <button class="mov-page-btn" data-page="${page - 1}" ${page === 0 ? "disabled" : ""}>&#8249; Anterior</button>
+      <span class="movements-count">${filtered.length} registro${filtered.length !== 1 ?"s" : ""}${query ?" encontrado" + (filtered.length !== 1 ?"s" : "") : ""}</span>
+      ${totalPages > 1 ?`
+        <button class="mov-page-btn" data-page="${page - 1}" ${page === 0 ?"disabled" : ""}>&#8249; Anterior</button>
         <span class="mov-page-info">Página ${page + 1} de ${totalPages}</span>
-        <button class="mov-page-btn" data-page="${page + 1}" ${page >= totalPages - 1 ? "disabled" : ""}>Próxima &#8250;</button>
+        <button class="mov-page-btn" data-page="${page + 1}" ${page >= totalPages - 1 ?"disabled" : ""}>Próxima &#8250;</button>
       ` : ""}
     </div>
   `;
@@ -4430,19 +4466,19 @@ function renderMovementsTable(farm) {
 
   if (!movements.length) {
     elements.movementsTableBody.innerHTML = `
-      <tr><td colspan="${colCount}" class="table-empty-cell">${query ? "Nenhum registro encontrado para a busca." : "Ainda não há lançamentos. Use os botões acima para iniciar o controle."}</td></tr>
+      <tr><td colspan="${colCount}" class="table-empty-cell">${query ?"Nenhum registro encontrado para a busca." : "Ainda não há lançamentos. Use os botões acima para iniciar o controle."}</td></tr>
     `;
     return;
   }
 
   elements.movementsTableBody.innerHTML = movements.map((movement) => {
     const badgeClass = MOVEMENT_TYPE_STYLES[movement.type] || "badge-neutral";
-    const deltaSign = movement.delta > 0 ? "+" : "";
+    const deltaSign = movement.delta > 0 ?"+" : "";
     const codeDisplay = movement.code
-      ? `<span class="movement-code">${escapeHtml(movement.code)}</span>`
+      ?`<span class="movement-code">${escapeHtml(movement.code)}</span>`
       : `<span class="movement-code movement-code-legacy">—</span>`;
     const farmCell = isTotalView
-      ? `<td data-label="Fazenda"><span class="sanitary-origin manual">${escapeHtml(movement._farmName)}</span></td>`
+      ?`<td data-label="Fazenda"><span class="sanitary-origin manual">${escapeHtml(movement._farmName)}</span></td>`
       : "";
     return `
       <tr>
@@ -4472,7 +4508,7 @@ function renderMovementsTable(farm) {
 function getHistoryOperationLabel(operation) {
   if (operation === "sanitario") return "Sanitário";
   const meta = MOVEMENT_TYPES.find((item) => item.value === operation);
-  return meta ? meta.label : capitalize(operation || "registro");
+  return meta ?meta.label : capitalize(operation || "registro");
 }
 
 function getHistoryRecordCode(record) {
@@ -4484,8 +4520,8 @@ function getHistoryRecordCode(record) {
 function getUnifiedHistoryRecords(baseFarm, options = {}) {
   const forceSingleFarm = options.scope === "single";
   const farms = forceSingleFarm
-    ? [baseFarm].filter(Boolean)
-    : (state.data.selectedFarmId === TOTAL_FARM_ID ? getAllFarms() : [baseFarm].filter(Boolean));
+    ?[baseFarm].filter(Boolean)
+    : (state.data.selectedFarmId === TOTAL_FARM_ID ?getAllFarms() : [baseFarm].filter(Boolean));
 
   return farms.flatMap((farm) => {
     const movementRecords = farm.movements.map((movement) => ({
@@ -4500,9 +4536,9 @@ function getUnifiedHistoryRecords(baseFarm, options = {}) {
       categoryName: movement.categoryName || "—",
       quantity: Number(movement.quantity || 0),
       details: [
-        movement.potreiro ? `Potreiro: ${movement.potreiro}` : "",
-        movement.potreiroDest ? `Destino: ${movement.potreiroDest}` : "",
-        movement.value ? `Valor: ${formatCurrency(movement.value)}` : "",
+        movement.potreiro ?`Potreiro: ${movement.potreiro}` : "",
+        movement.potreiroDest ?`Destino: ${movement.potreiroDest}` : "",
+        movement.value ?`Valor: ${formatCurrency(movement.value)}` : "",
         getMovementNotes(movement)
       ].filter(Boolean).join(" · "),
       raw: movement
@@ -4520,8 +4556,8 @@ function getUnifiedHistoryRecords(baseFarm, options = {}) {
       categoryName: record.categoryName || "—",
       quantity: Number(record.quantity || 0),
       details: [
-        record.product ? `Produto: ${record.product}` : "",
-        record.potreiro ? `Potreiro: ${record.potreiro}` : "",
+        record.product ?`Produto: ${record.product}` : "",
+        record.potreiro ?`Potreiro: ${record.potreiro}` : "",
         record.notes || ""
       ].filter(Boolean).join(" · "),
       raw: record
@@ -4537,7 +4573,7 @@ function getUnifiedHistoryRecords(baseFarm, options = {}) {
 
 function renderMovementsTable(farm) {
   const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
-  const colCount = isTotalView ? 8 : 7;
+  const colCount = isTotalView ?8 : 7;
   const allRecords = getUnifiedHistoryRecords(farm);
   const years = [...new Set(allRecords.map((record) => record.year).filter(Boolean))].sort((a, b) => b.localeCompare(a));
   const categories = [...new Set(allRecords.map((record) => record.categoryName).filter(Boolean))].sort((a, b) => a.localeCompare(b));
@@ -4569,7 +4605,7 @@ function renderMovementsTable(farm) {
   if (elements.movementsTableHead) {
     elements.movementsTableHead.innerHTML = `<tr>
       <th>Código</th>
-      ${isTotalView ? "<th>Fazenda</th>" : ""}
+      ${isTotalView ?"<th>Fazenda</th>" : ""}
       <th>Data</th><th>Operação</th><th>Categoria</th><th>Qtd.</th><th>Registro</th><th></th>
     </tr>`;
   }
@@ -4593,31 +4629,31 @@ function renderMovementsTable(farm) {
     </div>
     <div class="movements-filter-group">
       ${isTotalView
-        ? `<select class="movements-filter-select" id="movementsFarmFilter">
+        ?`<select class="movements-filter-select" id="movementsFarmFilter">
             <option value="all">Todas as fazendas</option>
-            ${getAllFarms().map((item) => `<option value="${escapeHtml(item.id)}" ${runtime.movementsFarmFilter === item.id ? "selected" : ""}>${escapeHtml(item.name)}</option>`).join("")}
+            ${getAllFarms().map((item) => `<option value="${escapeHtml(item.id)}" ${runtime.movementsFarmFilter === item.id ?"selected" : ""}>${escapeHtml(item.name)}</option>`).join("")}
           </select>`
         : `<select class="movements-filter-select" id="movementsFarmFilter" disabled><option value="${escapeHtml(farm.id)}">${escapeHtml(farm.name)}</option></select>`
       }
       <select class="movements-filter-select" id="movementsOperationFilter">
         <option value="all">Todas as operações</option>
-        ${operations.map((operation) => `<option value="${escapeHtml(operation)}" ${runtime.movementsOperationFilter === operation ? "selected" : ""}>${escapeHtml(getHistoryOperationLabel(operation))}</option>`).join("")}
+        ${operations.map((operation) => `<option value="${escapeHtml(operation)}" ${runtime.movementsOperationFilter === operation ?"selected" : ""}>${escapeHtml(getHistoryOperationLabel(operation))}</option>`).join("")}
       </select>
       <select class="movements-filter-select" id="movementsCategoryFilter">
         <option value="all">Todas as categorias</option>
-        ${categories.map((category) => `<option value="${escapeHtml(category)}" ${runtime.movementsCategoryFilter === category ? "selected" : ""}>${escapeHtml(category)}</option>`).join("")}
+        ${categories.map((category) => `<option value="${escapeHtml(category)}" ${runtime.movementsCategoryFilter === category ?"selected" : ""}>${escapeHtml(category)}</option>`).join("")}
       </select>
       <select class="movements-filter-select" id="movementsYearFilter">
         <option value="all">Todos os anos</option>
-        ${years.map((year) => `<option value="${escapeHtml(year)}" ${runtime.movementsYearFilter === year ? "selected" : ""}>${escapeHtml(year)}</option>`).join("")}
+        ${years.map((year) => `<option value="${escapeHtml(year)}" ${runtime.movementsYearFilter === year ?"selected" : ""}>${escapeHtml(year)}</option>`).join("")}
       </select>
     </div>
     <div class="movements-pagination">
-      <span class="movements-count">${filtered.length} registro${filtered.length !== 1 ? "s" : ""}${query ? " encontrado" + (filtered.length !== 1 ? "s" : "") : ""}</span>
-      ${totalPages > 1 ? `
-        <button class="mov-page-btn" data-page="${page - 1}" ${page === 0 ? "disabled" : ""}>&#8249; Anterior</button>
+      <span class="movements-count">${filtered.length} registro${filtered.length !== 1 ?"s" : ""}${query ?" encontrado" + (filtered.length !== 1 ?"s" : "") : ""}</span>
+      ${totalPages > 1 ?`
+        <button class="mov-page-btn" data-page="${page - 1}" ${page === 0 ?"disabled" : ""}>&#8249; Anterior</button>
         <span class="mov-page-info">Página ${page + 1} de ${totalPages}</span>
-        <button class="mov-page-btn" data-page="${page + 1}" ${page >= totalPages - 1 ? "disabled" : ""}>Próxima &#8250;</button>
+        <button class="mov-page-btn" data-page="${page + 1}" ${page >= totalPages - 1 ?"disabled" : ""}>Próxima &#8250;</button>
       ` : ""}
     </div>
   `;
@@ -4656,19 +4692,19 @@ function renderMovementsTable(farm) {
 
   if (!records.length) {
     elements.movementsTableBody.innerHTML = `
-      <tr><td colspan="${colCount}" class="table-empty-cell">${query ? "Nenhum registro encontrado para a busca." : "Ainda não há registros no histórico consolidado."}</td></tr>
+      <tr><td colspan="${colCount}" class="table-empty-cell">${query ?"Nenhum registro encontrado para a busca." : "Ainda não há registros no histórico consolidado."}</td></tr>
     `;
     return;
   }
 
   elements.movementsTableBody.innerHTML = records.map((record) => {
     const badgeClass = MOVEMENT_TYPE_STYLES[record.operation] || "badge-neutral";
-    const codeDisplay = `<span class="movement-code ${record.kind === "sanitary" ? "san-code" : ""}">${escapeHtml(getHistoryRecordCode(record))}</span>`;
+    const codeDisplay = `<span class="movement-code ${record.kind === "sanitary" ?"san-code" : ""}">${escapeHtml(getHistoryRecordCode(record))}</span>`;
     const farmCell = isTotalView
-      ? `<td data-label="Fazenda"><span class="sanitary-origin manual">${escapeHtml(record.farmName)}</span></td>`
+      ?`<td data-label="Fazenda"><span class="sanitary-origin manual">${escapeHtml(record.farmName)}</span></td>`
       : "";
     const actionButtons = record.kind === "movement"
-      ? `
+      ?`
           <button class="movement-action-btn edit-btn" title="Editar" data-farm-id="${escapeHtml(record.farmId)}" data-movement-id="${escapeHtml(record.id)}">✏️</button>
           <button class="movement-action-btn delete-btn" title="Excluir" data-farm-id="${escapeHtml(record.farmId)}" data-movement-id="${escapeHtml(record.id)}">🗑️</button>
         `
@@ -4681,7 +4717,7 @@ function renderMovementsTable(farm) {
         <td data-label="Operação"><span class="badge ${badgeClass}">${escapeHtml(getHistoryOperationLabel(record.operation))}</span></td>
         <td data-label="Categoria">${escapeHtml(record.categoryName)}</td>
         <td data-label="Qtd.">${formatInteger(record.quantity)}</td>
-        <td data-label="Registro">${escapeHtml(record.details || "—")}${record.kind === "movement" ? getMovementPhotoFlagMarkup(record.raw) : ""}</td>
+        <td data-label="Registro">${escapeHtml(record.details || "—")}${record.kind === "movement" ?getMovementPhotoFlagMarkup(record.raw) : ""}</td>
         <td class="movement-actions-cell">${actionButtons}</td>
       </tr>
     `;
@@ -4762,7 +4798,7 @@ function openEditMovementDialog(farmId, movementId) {
 
   elements.movementDate.value = movement.date;
   elements.movementQuantity.value = movement.quantity;
-  elements.adjustDirection.value = movement.delta >= 0 ? "add" : "sub";
+  elements.adjustDirection.value = movement.delta >= 0 ?"add" : "sub";
   elements.movementNotes.value = movement.notes || "";
   elements.movementValue.value = movement.value || "";
 
@@ -4872,7 +4908,7 @@ function summarizePurchasePeriod(farm, year, month) {
 }
 
 function getSaleModeLabel(mode) {
-  return mode === "carcaca" ? "Kg carcaça" : "Kg vivo";
+  return mode === "carcaca" ?"Kg carcaça" : "Kg vivo";
 }
 
 function getOperationalInsights(farm, year = state.filters.year, month = state.filters.month) {
@@ -4880,13 +4916,13 @@ function getOperationalInsights(farm, year = state.filters.year, month = state.f
   const biggestCategory = [...farm.categories].sort((a, b) => b.quantity - a.quantity)[0];
   const annual = summarizePeriod(farm, year, "all");
   const monthly = summarizePeriod(farm, year, month);
-  const mortalityRate = total > 0 ? ((annual.byType.morte / total) * 100).toFixed(2) : "0.00";
+  const mortalityRate = total > 0 ?((annual.byType.morte / total) * 100).toFixed(2) : "0.00";
 
   return [
     {
       tag: "Maior lote",
-      title: biggestCategory ? biggestCategory.name : "Sem dados",
-      text: biggestCategory ? `${formatInteger(biggestCategory.quantity)} animais, representando ${(biggestCategory.quantity / Math.max(total, 1) * 100).toFixed(1)}% do rebanho atual.` : "Cadastre categorias para visualizar concentracao do rebanho."
+      title: biggestCategory ?biggestCategory.name : "Sem dados",
+      text: biggestCategory ?`${formatInteger(biggestCategory.quantity)} animais, representando ${(biggestCategory.quantity / Math.max(total, 1) * 100).toFixed(1)}% do rebanho atual.` : "Cadastre categorias para visualizar concentracao do rebanho."
     },
     {
       tag: "Saude do manejo",
@@ -4895,8 +4931,8 @@ function getOperationalInsights(farm, year = state.filters.year, month = state.f
     },
     {
       tag: "Recorte ativo",
-      title: monthly.totalMovements ? `${monthly.totalMovements} lançamentos no período` : "Sem lançamentos no período",
-      text: month === "all" ? `Visão consolidada do ano de ${year}.` : `Leitura mensal de ${MONTH_NAMES[Number(month) - 1]} de ${year}.`
+      title: monthly.totalMovements ?`${monthly.totalMovements} lançamentos no período` : "Sem lançamentos no período",
+      text: month === "all" ?`Visão consolidada do ano de ${year}.` : `Leitura mensal de ${MONTH_NAMES[Number(month) - 1]} de ${year}.`
     }
   ];
 }
@@ -4909,7 +4945,7 @@ function getMovementNotes(movement) {
 
   const detail = movement.saleDetails;
   const saleText = `${getSaleModeLabel(detail.mode)}: ${formatWeight(detail.weightKg)} x ${formatCurrency(detail.pricePerKg)}`;
-  return notes ? `${saleText}. ${notes}` : saleText;
+  return notes ?`${saleText}. ${notes}` : saleText;
 }
 
 function renderSanitarySummary(farm) {
@@ -4929,19 +4965,87 @@ function renderSanitarySummary(farm) {
   const cards = [
     { title: "Aplicações no período", value: formatInteger(totalApplications), detail: "registros sanitários no filtro ativo" },
     { title: "Animais tratados", value: formatInteger(treatedAnimals), detail: "cabeças somadas nos registros" },
-    { title: "Produtos distintos", value: formatInteger(uniqueProducts), detail: "variedade de produtos aplicados" },
-    { title: "Produto mais usado", value: topProduct ? escapeHtml(topProduct[0]) : "—", detail: topProduct ? `${topProduct[1]} aplicação(ões)` : "sem registros no período" },
-    { title: "Categoria mais tratada", value: topCat ? escapeHtml(topCat[0]) : "—", detail: topCat ? `${formatInteger(topCat[1])} cabeças no período` : "sem registros no período" },
-    { title: "Último manejo", value: latestRecord ? formatDate(latestRecord.date) : "—", detail: latestRecord ? latestRecord.product : "nenhum registro disponível" }
+    { title: "Produtos distintos", value: formatInteger(uniqueProducts), detail: "clique para ver os produtos aplicados", action: "products" },
+    { title: "Produto mais usado", value: topProduct ?escapeHtml(topProduct[0]) : "—", detail: topProduct ?`${topProduct[1]} aplicação(ões)` : "sem registros no período" },
+    { title: "Categoria mais tratada", value: topCat ?escapeHtml(topCat[0]) : "—", detail: topCat ?`${formatInteger(topCat[1])} cabeças no período` : "sem registros no período" },
+    { title: "Último manejo", value: latestRecord ?formatDate(latestRecord.date) : "—", detail: latestRecord ?latestRecord.product : "nenhum registro disponível" }
   ];
 
   elements.sanitarySummary.innerHTML = cards.map((card) => `
-    <article class="analytics-card">
+    <article class="analytics-card ${card.action ?"analytics-card-clickable" : ""}" ${card.action ?`role="button" tabindex="0" data-sanitary-summary-action="${card.action}"` : ""}>
       <p class="panel-kicker">${card.title}</p>
       <strong>${card.value}</strong>
       <p>${card.detail}</p>
     </article>
   `).join("");
+  elements.sanitarySummary.querySelectorAll("[data-sanitary-summary-action='products']").forEach((card) => {
+    card.addEventListener("click", () => openSanitaryProductsDialog(farm));
+    card.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        openSanitaryProductsDialog(farm);
+      }
+    });
+  });
+}
+
+function getSanitaryProductUsage(farm) {
+  const rows = new Map();
+  getFilteredSanitaryRecords(farm).forEach((record) => {
+    const product = record.product || "Sem produto";
+    const current = rows.get(product) || { product, applications: 0, animals: 0, latestDate: "" };
+    current.applications += 1;
+    current.animals += Number(record.quantity || 0);
+    if (!current.latestDate || record.date > current.latestDate) current.latestDate = record.date;
+    rows.set(product, current);
+  });
+  return [...rows.values()].sort((a, b) => b.applications - a.applications || a.product.localeCompare(b.product));
+}
+
+function openSanitaryProductsDialog(farm) {
+  let dialog = document.getElementById("sanitaryProductsDialog");
+  if (!dialog) {
+    dialog = document.createElement("dialog");
+    dialog.id = "sanitaryProductsDialog";
+    dialog.className = "modal";
+    document.body.appendChild(dialog);
+  }
+  const rows = getSanitaryProductUsage(farm);
+  dialog.innerHTML = `
+    <div class="modal-card sanitary-products-modal">
+      <div class="modal-header">
+        <div>
+          <p class="panel-kicker">Produtos aplicados</p>
+          <h2>${escapeHtml(farm.name || "Fazenda")}</h2>
+        </div>
+        <button type="button" class="ghost-btn" data-close-products-dialog>Fechar</button>
+      </div>
+      <div class="table-wrap">
+        <table class="sanitary-table">
+          <thead>
+            <tr>
+              <th>Produto</th>
+              <th>Aplicações</th>
+              <th>Animais tratados</th>
+              <th>Última aplicação</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.length ?rows.map((row) => `
+              <tr>
+                <td><strong>${escapeHtml(row.product)}</strong></td>
+                <td>${formatInteger(row.applications)}</td>
+                <td>${formatInteger(row.animals)}</td>
+                <td>${row.latestDate ?formatDate(row.latestDate) : "—"}</td>
+              </tr>
+            `).join("") : `<tr><td colspan="4" class="table-empty-cell">Nenhum produto aplicado no período.</td></tr>`}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+  dialog.querySelector("[data-close-products-dialog]")?.addEventListener("click", () => dialog.close());
+  dialog.showModal();
 }
 
 function resetSanitaryTableFilters() {
@@ -4959,7 +5063,7 @@ function setSanitarySelectOptions(select, options, selectedValue, allLabel) {
 
   const normalizedOptions = Array.from(new Set(options.filter(Boolean))).sort((a, b) => a.localeCompare(b, "pt-BR"));
   const validValues = new Set(["all", ...normalizedOptions]);
-  const nextValue = validValues.has(selectedValue) ? selectedValue : "all";
+  const nextValue = validValues.has(selectedValue) ?selectedValue : "all";
 
   select.innerHTML = [
     `<option value="all">${escapeHtml(allLabel)}</option>`,
@@ -4970,8 +5074,8 @@ function setSanitarySelectOptions(select, options, selectedValue, allLabel) {
 
 function syncSanitaryHistoryFilters(allRecords, farm, isTotalView) {
   const farmOptions = isTotalView
-    ? allRecords.map((record) => record._farmName)
-    : (farm?.name ? [farm.name] : []);
+    ?allRecords.map((record) => record._farmName)
+    : (farm?.name ?[farm.name] : []);
   const potreroOptions = allRecords.map((record) => record.potreiro || "Sem potreiro");
   const categoryOptions = allRecords.map((record) => record.categoryName || "");
   const productOptions = allRecords.map((record) => record.product || "");
@@ -5069,7 +5173,7 @@ function renderSanitaryTable(farm) {
   // Search filter
   const query = runtime.sanitarySearch.trim().toLowerCase();
   const filtered = query
-    ? structurallyFiltered.filter((r) =>
+    ?structurallyFiltered.filter((r) =>
         (r.code || "").toLowerCase().includes(query) ||
         (r.product || "").toLowerCase().includes(query) ||
         (r.categoryName || "").toLowerCase().includes(query) ||
@@ -5099,11 +5203,11 @@ function renderSanitaryTable(farm) {
   const paginationEl = document.getElementById("sanitaryHistoryPagination");
   if (paginationEl) {
     paginationEl.innerHTML = `
-      <span class="movements-count">${filtered.length} registro${filtered.length !== 1 ? "s" : ""}</span>
-      ${totalPages > 1 ? `
-        <button class="mov-page-btn" ${page === 0 ? "disabled" : ""} id="sanPrev">&#8249; Anterior</button>
+      <span class="movements-count">${filtered.length} registro${filtered.length !== 1 ?"s" : ""}</span>
+      ${totalPages > 1 ?`
+        <button class="mov-page-btn" ${page === 0 ?"disabled" : ""} id="sanPrev">&#8249; Anterior</button>
         <span class="mov-page-info">Pág. ${page + 1}/${totalPages}</span>
-        <button class="mov-page-btn" ${page >= totalPages - 1 ? "disabled" : ""} id="sanNext">Próxima &#8250;</button>
+        <button class="mov-page-btn" ${page >= totalPages - 1 ?"disabled" : ""} id="sanNext">Próxima &#8250;</button>
       ` : ""}
     `;
     document.getElementById("sanPrev")?.addEventListener("click", () => { runtime.sanitaryPage--; renderSanitaryTable(farm); });
@@ -5116,15 +5220,15 @@ function renderSanitaryTable(farm) {
       || runtime.sanitaryPotreroFilter !== "all"
       || runtime.sanitaryCategoryFilter !== "all"
       || runtime.sanitaryProductFilter !== "all";
-    elements.sanitaryTableBody.innerHTML = `<tr><td colspan="9" class="table-empty-cell">${query || hasStructuredFilters ? "Nenhum registro encontrado com os filtros aplicados." : "Nenhum registro sanitário no período."}</td></tr>`;
+    elements.sanitaryTableBody.innerHTML = `<tr><td colspan="9" class="table-empty-cell">${query || hasStructuredFilters ?"Nenhum registro encontrado com os filtros aplicadoss." : "Nenhum registro sanitário no período."}</td></tr>`;
     return;
   }
 
   elements.sanitaryTableBody.innerHTML = records.map((record) => {
     const code = record.code
-      ? `<span class="movement-code san-code">${escapeHtml(record.code)}</span>`
+      ?`<span class="movement-code san-code">${escapeHtml(record.code)}</span>`
       : record.sourceId?.startsWith("xls-san-")
-        ? `<span class="movement-code movement-code-legacy">${escapeHtml("IMP-" + getFarmCodePrefix(record._farmId))}</span>`
+        ?`<span class="movement-code movement-code-legacy">${escapeHtml("IMP-" + getFarmCodePrefix(record._farmId))}</span>`
         : `<span class="movement-code movement-code-legacy">—</span>`;
     const editId = record.id || record.sourceId;
     return `
@@ -5162,7 +5266,7 @@ function renderSanitaryFarmSwitch() {
   ].forEach((item) => {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = `farm-btn ${item.id === state.data.selectedFarmId ? "active" : ""}`;
+    button.className = `farm-btn ${item.id === state.data.selectedFarmId ?"active" : ""}`;
     button.textContent = item.name;
     button.addEventListener("click", () => {
       state.data.selectedFarmId = item.id;
@@ -5248,12 +5352,12 @@ function renderMonthlyProtocol(farm) {
   if (isTotalView) return;
 
   const records = [...getFilteredMonthlyRecords(farm)].sort((a, b) => {
-    if (a.period !== b.period) return a.period < b.period ? 1 : -1;
+    if (a.period !== b.period) return a.period < b.period ?1 : -1;
     return a.title.localeCompare(b.title);
   });
 
   if (elements.monthlyProtocolCount) {
-    elements.monthlyProtocolCount.textContent = `${records.length} registro${records.length !== 1 ? "s" : ""}`;
+    elements.monthlyProtocolCount.textContent = `${records.length} registro${records.length !== 1 ?"s" : ""}`;
   }
 
   if (!records.length) {
@@ -5286,11 +5390,11 @@ function renderMonthlyProtocol(farm) {
             <span class="protocol-category">${escapeHtml(getMonthlyCategoryLabel(record.category))}</span>
           </div>
           <strong class="protocol-title">${escapeHtml(record.title)}</strong>
-          ${record.notes ? `<p class="protocol-notes">${escapeHtml(record.notes)}</p>` : ""}
+          ${record.notes ?`<p class="protocol-notes">${escapeHtml(record.notes)}</p>` : ""}
         </div>
         <div class="protocol-values">
-          ${record.quantity ? `<span class="protocol-qty">${formatInteger(record.quantity)} cab.</span>` : ""}
-          ${record.value ? `<span class="protocol-val">${formatCurrency(record.value)}</span>` : ""}
+          ${record.quantity ?`<span class="protocol-qty">${formatInteger(record.quantity)} cab.</span>` : ""}
+          ${record.value ?`<span class="protocol-val">${formatCurrency(record.value)}</span>` : ""}
         </div>
         <button type="button" class="table-action-btn protocol-edit-btn" data-edit-monthly-id="${record.id}">Editar</button>
       </div>
@@ -5317,7 +5421,7 @@ function renderPotreirosView() {
     const balance = totalAnimals - allocated;
 
     const potreirosHtml = potreiros.length
-      ? potreiros.map((p) => `
+      ?potreiros.map((p) => `
           <article class="potrero-card">
             <div class="potrero-card-bar" style="width:${Math.min(p.share, 100).toFixed(1)}%"></div>
             <p class="panel-kicker">${escapeHtml(p.name)}</p>
@@ -5332,11 +5436,11 @@ function renderPotreirosView() {
         `).join("")
       : `<p class="field-note" style="padding:12px 0">Nenhum potreiro cadastrado. Use "Editar estoque" para cadastrar.</p>`;
 
-    const balanceHtml = potreiros.length ? `
+    const balanceHtml = potreiros.length ?`
       <article class="potrero-card potrero-card-highlight">
-        <p class="panel-kicker">${balance === 0 ? "Conferência" : balance > 0 ? "Sem potreiro" : "Excedente"}</p>
-        <strong>${balance === 0 ? "✓ OK" : (balance > 0 ? "+" : "") + formatInteger(balance)}</strong>
-        <p>${balance === 0 ? "Distribuição conferida." : balance > 0 ? `${formatInteger(balance)} ainda não alocados.` : `${formatInteger(Math.abs(balance))} acima do estoque.`}</p>
+        <p class="panel-kicker">${balance === 0 ?"Conferência" : balance > 0 ?"Sem potreiro" : "Excedente"}</p>
+        <strong>${balance === 0 ?"✓ OK" : (balance > 0 ?"+" : "") + formatInteger(balance)}</strong>
+        <p>${balance === 0 ?"Distribuição conferida." : balance > 0 ?`${formatInteger(balance)} ainda não alocados.` : `${formatInteger(Math.abs(balance))} acima do estoque.`}</p>
       </article>
     ` : "";
 
@@ -5364,8 +5468,8 @@ function openPotrManejDialog(farmId, potreirosId) {
   const farm = state.data.farms[farmId];
   if (!farm) return;
   const potrero = getPotreroEntries(farm).find((p) => p.id === potreirosId);
-  const potreroName = potrero ? potrero.name : "Sem potreiro";
-  const potreroQty = potrero ? normalizePotreroQuantity(potrero.quantity) : 0;
+  const potreroName = potrero ?potrero.name : "Sem potreiro";
+  const potreroQty = potrero ?normalizePotreroQuantity(potrero.quantity) : 0;
   const farmTotal = getFarmTotal(farm);
 
   // Calc unallocated
@@ -5450,7 +5554,7 @@ function syncPotrManejForm() {
     if (elements.potrManejPhotoWrap) elements.potrManejPhotoWrap.hidden = true;
     if (elements.potrManejPhotoPanel) elements.potrManejPhotoPanel.hidden = true;
 
-    elements.potrManejDestPotrLabel.textContent = isSameFarm ? "Potreiro de destino" : "Potreiro de destino na fazenda selecionada";
+    elements.potrManejDestPotrLabel.textContent = isSameFarm ?"Potreiro de destino" : "Potreiro de destino na fazenda selecionada";
     elements.potrManejSubmit.textContent = "Registrar transferência";
     elements.potrManejSubmit.className = "action-btn secondary";
     return;
@@ -5508,7 +5612,7 @@ function handlePotrManejPhotosChange() {
   Promise.all(promises).then((photos) => {
     runtime.potrManej.photoDrafts = photos;
     const count = photos.length;
-    elements.potrManejPhotoCounter.textContent = count ? `${formatInteger(count)} foto${count !== 1 ? "s" : ""} anexada${count !== 1 ? "s" : ""}.` : "Nenhuma foto anexada.";
+    elements.potrManejPhotoCounter.textContent = count ?`${formatInteger(count)} foto${count !== 1 ?"s" : ""} anexada${count !== 1 ?"s" : ""}.` : "Nenhuma foto anexada.";
     elements.potrManejPhotoPanel.hidden = !count;
     elements.potrManejPhotoPreview.innerHTML = photos.map((p) => `
       <div class="movement-photo-thumb"><img src="${p.dataUrl}" alt="${escapeHtml(p.name)}"></div>
@@ -5674,7 +5778,7 @@ function handlePotrManejSubmit(event) {
     category.quantity -= qty;
     category.allocation[originId] = Math.max(0, category.allocation[originId] - qty);
     updatePotreroQuantitiesFromAllocation(farm);
-    const photos = type === "morte" ? runtime.potrManej.photoDrafts.map((p) => ({ ...p })) : [];
+    const photos = type === "morte" ?runtime.potrManej.photoDrafts.map((p) => ({ ...p })) : [];
     farm.movements.push({ id: createMovementId(), code: generateMovementCode(farm), type, date, categoryId, categoryName: category.name, quantity: qty, delta: -qty, value: 0, saleDetails: null, notes, potreiro: originId, sourceId: "", photos });
 
   } else if (type === "retorno") {
@@ -5855,7 +5959,7 @@ function handleGeorefSave() {
     farmId: farm.id,
     potreiros: clonePotreroEntries(nextPotreiros),
     selectedId: nextPotreiros.some((entry) => entry.id === runtime.georefDraft?.selectedId)
-      ? runtime.georefDraft?.selectedId || ""
+      ?runtime.georefDraft?.selectedId || ""
       : nextPotreiros[0]?.id || ""
   };
   saveData();
@@ -5977,7 +6081,7 @@ function parseArapeyKml(kmlText) {
       sourceNames: [...feature.sourceNames],
       label: formatArapeyGeoLabel(feature.key),
       markerPoint: pointInfo?.point || getFeatureCenter(feature.polygons),
-      areaHa: Number.isFinite(pointInfo?.areaHa) ? pointInfo.areaHa : null
+      areaHa: Number.isFinite(pointInfo?.areaHa) ?pointInfo.areaHa : null
     };
   });
 
@@ -6029,7 +6133,7 @@ function buildArapeyGeorefModel(farm, kmlData, options = {}) {
   const editorEntries = potreiros
     .map((potrero) => {
       const key = resolveArapeyGeoKey(potrero.name);
-      const matchedFeature = key ? visibleFeatures.find((feature) => feature.key === key) || null : null;
+      const matchedFeature = key ?visibleFeatures.find((feature) => feature.key === key) || null : null;
       return {
         id: potrero.id,
         name: potrero.name,
@@ -6095,13 +6199,13 @@ function renderGeorefSummaryCards(model) {
 
 function renderEditableGeorefLegend(model) {
   const editorCards = model.editorEntries.length
-    ? model.editorEntries.map((entry, index) => {
+    ?model.editorEntries.map((entry, index) => {
       const areaText = Number.isFinite(entry.areaHa)
-        ? `<span class="georef-meta-pill">${formatWeight(entry.areaHa)} ha</span>`
+        ?`<span class="georef-meta-pill">${formatWeight(entry.areaHa)} ha</span>`
         : "";
 
       return `
-        <article class="georef-legend-item georef-editor-card ${entry.isLinked ? "is-linked" : "is-unmatched"} ${entry.isSelected ? "is-active" : ""}" data-georef-card-id="${escapeHtml(entry.id)}">
+        <article class="georef-legend-item georef-editor-card ${entry.isLinked ?"is-linked" : "is-unmatched"} ${entry.isSelected ?"is-active" : ""}" data-georef-card-id="${escapeHtml(entry.id)}">
           <div class="georef-legend-head">
             <div class="georef-card-title">
               <span class="georef-card-index">Card ${index + 1}</span>
@@ -6110,7 +6214,7 @@ function renderEditableGeorefLegend(model) {
             <span class="georef-badge">${formatInteger(entry.quantity)} cab.</span>
           </div>
           <div class="georef-legend-meta">
-            <span class="georef-meta-pill">${entry.isLinked ? `Campo: ${escapeHtml(entry.mapLabel)}` : "Sem referencia no mapa"}</span>
+            <span class="georef-meta-pill">${entry.isLinked ?`Campo: ${escapeHtml(entry.mapLabel)}` : "Sem referencia no mapa"}</span>
             ${areaText}
           </div>
           <label class="georef-field">
@@ -6134,7 +6238,7 @@ function renderEditableGeorefLegend(model) {
               placeholder="0"
             >
           </label>
-          <p class="georef-legend-note">${entry.isLinked ? "Clique no card para destacar este campo no mapa." : "Ajuste o nome para o KML reconhecer o campo correto."}</p>
+          <p class="georef-legend-note">${entry.isLinked ?"Clique no card para destacar este campo no mapa." : "Ajuste o nome para o KML reconhecer o campo correto."}</p>
         </article>
       `;
     }).join("")
@@ -6142,7 +6246,7 @@ function renderEditableGeorefLegend(model) {
 
   const emptyFeatures = model.visibleFeatures.filter((feature) => !feature.isLinked);
   const emptySection = emptyFeatures.length
-    ? `
+    ?`
       <section class="georef-legend-section">
         <h3>Campos do KML sem cadastro</h3>
         <p>Essas areas existem no mapa, mas ainda nao possuem um potreiro vinculado no painel.</p>
@@ -6153,7 +6257,7 @@ function renderEditableGeorefLegend(model) {
               <span class="georef-badge">Livre</span>
             </div>
             <div class="georef-legend-meta">
-              ${Number.isFinite(feature.areaHa) ? `<span class="georef-meta-pill">${formatWeight(feature.areaHa)} ha</span>` : ""}
+              ${Number.isFinite(feature.areaHa) ?`<span class="georef-meta-pill">${formatWeight(feature.areaHa)} ha</span>` : ""}
               <span class="georef-meta-pill">Sem cadastro</span>
             </div>
             <p class="georef-legend-note">Renomeie um card lateral com esta referencia e salve para vincular o campo.</p>
@@ -6206,23 +6310,23 @@ function renderEditableGeorefMap(model) {
   const featuresSvg = model.visibleFeatures.map((feature) => {
     const isActive = Boolean(model.selectedKey) && feature.key === model.selectedKey;
     const fill = getGeorefFeatureFill(feature.quantity, maxQuantity, feature.isLinked);
-    const stroke = isActive ? "#bf7e42" : feature.isLinked ? "#335c43" : "#8f6132";
+    const stroke = isActive ?"#bf7e42" : feature.isLinked ?"#335c43" : "#8f6132";
     const tooltip = feature.registeredNames.length
-      ? `${feature.label}: ${formatInteger(feature.quantity)} cab. | ${feature.registeredNames.join(", ")}`
+      ?`${feature.label}: ${formatInteger(feature.quantity)} cab. | ${feature.registeredNames.join(", ")}`
       : `${feature.label}: sem lotacao cadastrada`;
     const polygons = feature.polygons.map((polygon) => {
       const points = polygon.map(projectPoint).map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(" ");
-      return `<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${isActive ? "4.6" : "2.4"}"></polygon>`;
+      return `<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${isActive ?"4.6" : "2.4"}"></polygon>`;
     }).join("");
 
     const labelAnchor = projectPoint(feature.markerPoint || getFeatureCenter(feature.polygons));
-    const quantityText = feature.quantity > 0 ? `${formatInteger(feature.quantity)} cab.` : "Sem gado";
+    const quantityText = feature.quantity > 0 ?`${formatInteger(feature.quantity)} cab.` : "Sem gado";
     const labelWidth = Math.max(feature.label.length, quantityText.length) * 8 + 26;
     const labelX = clamp(labelAnchor.x, (labelWidth / 2) + 8, width - (labelWidth / 2) - 8);
     const labelY = clamp(labelAnchor.y, 34, height - 46);
 
     return `
-      <g class="georef-feature ${feature.isLinked ? "is-linked" : "is-unlinked"} ${isActive ? "is-active" : ""}">
+      <g class="georef-feature ${feature.isLinked ?"is-linked" : "is-unlinked"} ${isActive ?"is-active" : ""}">
         <title>${escapeHtml(tooltip)}</title>
         ${polygons}
         <g class="georef-label">
@@ -6246,24 +6350,24 @@ function renderEditableGeorefMap(model) {
 
 function renderGeorefLegend(model) {
   const mappedItems = model.visibleFeatures.length
-    ? model.visibleFeatures.map((feature) => {
+    ?model.visibleFeatures.map((feature) => {
       const namesText = feature.registeredNames.length
-        ? `Cadastro: ${escapeHtml(feature.registeredNames.join(", "))}.`
+        ?`Cadastro: ${escapeHtml(feature.registeredNames.join(", "))}.`
         : "Sem lotação cadastrada para esta localidade.";
       const areaText = Number.isFinite(feature.areaHa)
-        ? `<span class="georef-meta-pill">${formatWeight(feature.areaHa)} ha</span>`
+        ?`<span class="georef-meta-pill">${formatWeight(feature.areaHa)} ha</span>`
         : "";
-      const quantityText = feature.quantity > 0 ? `${formatInteger(feature.quantity)} cab.` : "Sem gado";
+      const quantityText = feature.quantity > 0 ?`${formatInteger(feature.quantity)} cab.` : "Sem gado";
 
       return `
-        <article class="georef-legend-item ${feature.isLinked ? "is-linked" : ""}">
+        <article class="georef-legend-item ${feature.isLinked ?"is-linked" : ""}">
           <div class="georef-legend-head">
             <strong>${escapeHtml(feature.label)}</strong>
             <span class="georef-badge">${escapeHtml(quantityText)}</span>
           </div>
           <div class="georef-legend-meta">
             ${areaText}
-            <span class="georef-meta-pill">${feature.isLinked ? "Vinculado" : "Sem vínculo"}</span>
+            <span class="georef-meta-pill">${feature.isLinked ?"Vinculado" : "Sem vínculo"}</span>
           </div>
           <p class="georef-legend-note">${namesText}</p>
         </article>
@@ -6272,7 +6376,7 @@ function renderGeorefLegend(model) {
     : "<p>Nenhuma geometria da Arapey foi localizada no arquivo KML.</p>";
 
   const unmatchedSection = model.unmatchedPotreiros.length
-    ? `
+    ?`
       <section class="georef-legend-section">
         <h3>Potreiros sem correspondência automática</h3>
         <p>Esses cadastros ainda precisam de ajuste de nome para o mapa reconhecer a localidade correta.</p>
@@ -6331,9 +6435,9 @@ function renderGeorefMap(model) {
 
   const featuresSvg = model.visibleFeatures.map((feature) => {
     const fill = getGeorefFeatureFill(feature.quantity, maxQuantity, feature.isLinked);
-    const stroke = feature.isLinked ? "#335c43" : "#8f6132";
+    const stroke = feature.isLinked ?"#335c43" : "#8f6132";
     const tooltip = feature.registeredNames.length
-      ? `${feature.label}: ${formatInteger(feature.quantity)} cab. | ${feature.registeredNames.join(", ")}`
+      ?`${feature.label}: ${formatInteger(feature.quantity)} cab. | ${feature.registeredNames.join(", ")}`
       : `${feature.label}: sem lotação cadastrada`;
     const polygons = feature.polygons.map((polygon) => {
       const points = polygon.map(projectPoint).map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(" ");
@@ -6341,13 +6445,13 @@ function renderGeorefMap(model) {
     }).join("");
 
     const labelAnchor = projectPoint(feature.markerPoint || getFeatureCenter(feature.polygons));
-    const quantityText = feature.quantity > 0 ? `${formatInteger(feature.quantity)} cab.` : "Sem gado";
+    const quantityText = feature.quantity > 0 ?`${formatInteger(feature.quantity)} cab.` : "Sem gado";
     const labelWidth = Math.max(feature.label.length, quantityText.length) * 8 + 26;
     const labelX = clamp(labelAnchor.x, (labelWidth / 2) + 8, width - (labelWidth / 2) - 8);
     const labelY = clamp(labelAnchor.y, 34, height - 46);
 
     return `
-      <g class="georef-feature ${feature.isLinked ? "is-linked" : "is-unlinked"}">
+      <g class="georef-feature ${feature.isLinked ?"is-linked" : "is-unlinked"}">
         <title>${escapeHtml(tooltip)}</title>
         ${polygons}
         <g class="georef-label">
@@ -6427,7 +6531,7 @@ function parseKmlNumber(value) {
   }
 
   const parsed = Number(String(value).replace(/\./g, "").replace(",", "."));
-  return Number.isFinite(parsed) ? parsed : null;
+  return Number.isFinite(parsed) ?parsed : null;
 }
 
 function getFeatureCenter(polygons) {
@@ -6553,8 +6657,16 @@ function renderInsights(farm) {
 
 function renderCharts(farm) {
   renderInventoryRankedList(farm);
-  renderMovementChart(farm);
-  renderMonthlyEvolutionChart(farm);
+  if (state.charts.movement) {
+    state.charts.movement.destroy();
+    state.charts.movement = null;
+  }
+  if (state.charts.monthlyEvolution) {
+    state.charts.monthlyEvolution.destroy();
+    state.charts.monthlyEvolution = null;
+  }
+  document.getElementById("movementChart")?.closest(".chart-panel")?.setAttribute("hidden", "");
+  document.getElementById("monthlyEvolutionChart")?.closest(".chart-panel")?.setAttribute("hidden", "");
 }
 
 function renderInventoryRankedList(farm) {
@@ -6657,7 +6769,7 @@ function renderMovementChart(farm) {
         },
         {
           type: "bar",
-          label: "Saidas",
+          label: "Saídas",
           data: summaryByMonth.map((item) => item.saidas),
           backgroundColor: createLinearColor(context, "rgba(140, 75, 56, 0.98)", "rgba(195, 120, 100, 0.62)"),
           borderRadius: 10,
@@ -6862,7 +6974,7 @@ function renderMonthlyCategoryChart(farm) {
   const context = document.getElementById("monthlyCategoryChart");
   const summary = getMonthlySummary(farm);
   const labels = summary.byCategory.map((item) => item.label);
-  const values = summary.byCategory.map((item) => item.value > 0 ? item.value : item.quantity > 0 ? item.quantity : item.count);
+  const values = summary.byCategory.map((item) => item.value > 0 ?item.value : item.quantity > 0 ?item.quantity : item.count);
 
   if (!hasMeaningfulMonthlyData(summary)) {
     if (state.charts.monthlyCategory) {
@@ -6880,10 +6992,10 @@ function renderMonthlyCategoryChart(farm) {
   state.charts.monthlyCategory = new Chart(context, {
     type: "doughnut",
     data: {
-      labels: labels.length ? labels : ["Sem dados"],
+      labels: labels.length ?labels : ["Sem dados"],
       datasets: [{
-        data: values.length ? values : [1],
-        backgroundColor: (labels.length ? labels : ["Sem dados"]).map((_, index) => COLORS[index % COLORS.length]),
+        data: values.length ?values : [1],
+        backgroundColor: (labels.length ?labels : ["Sem dados"]).map((_, index) => COLORS[index % COLORS.length]),
         borderWidth: 0
       }]
     },
@@ -6902,8 +7014,8 @@ function renderMonthlyCategoryChart(farm) {
       cutout: "58%"
     },
     plugins: [centerTextPlugin(() => ({
-      title: summary.count ? formatInteger(summary.count) : "0",
-      subtitle: summary.count ? "dados mensais" : "Sem dados"
+      title: summary.count ?formatInteger(summary.count) : "0",
+      subtitle: summary.count ?"dados mensais" : "Sem dados"
     }))]
   });
 }
@@ -6922,7 +7034,7 @@ function renderMonthlyCategoryModernChart(farm) {
   const categories = [...summary.byCategory]
     .map((item) => ({
       ...item,
-      metric: item.value > 0 ? item.value : item.quantity > 0 ? item.quantity : item.count
+      metric: item.value > 0 ?item.value : item.quantity > 0 ?item.quantity : item.count
     }))
     .filter((item) => item.metric > 0)
     .sort((a, b) => b.metric - a.metric)
@@ -6942,7 +7054,7 @@ function renderMonthlyCategoryModernChart(farm) {
   const total = values.reduce((sum, value) => sum + value, 0) || 1;
   const usesValue = categories.some((item) => item.value > 0);
   const usesQuantity = !usesValue && categories.some((item) => item.quantity > 0);
-  const metricLabel = usesValue ? "Valor" : usesQuantity ? "Quantidade" : "Registros";
+  const metricLabel = usesValue ?"Valor" : usesQuantity ?"Quantidade" : "Registros";
 
   if (state.charts.monthlyCategory) {
     state.charts.monthlyCategory.destroy();
@@ -7031,7 +7143,7 @@ function renderMonthlyCategoryModernChart(farm) {
             },
             callback(value) {
               return usesValue
-                ? formatCurrency(value).replace(",00", "")
+                ?formatCurrency(value).replace(",00", "")
                 : formatInteger(value);
             }
           }
@@ -7061,9 +7173,9 @@ function syncMovementFarmOptions(selectedFarmId = null) {
   const shouldRequireExplicitSelection = !selectedFarmId && state.data.selectedFarmId === TOTAL_FARM_ID;
   const currentId = selectedFarmId ?? (state.data.selectedFarmId !== TOTAL_FARM_ID ? state.data.selectedFarmId : "");
   elements.movementFarm.innerHTML = [
-    shouldRequireExplicitSelection ? '<option value="">Selecione uma fazenda</option>' : "",
+    shouldRequireExplicitSelection ?'<option value="">Selecione uma fazenda</option>' : "",
     ...farms.map((farm) => `
-    <option value="${escapeHtml(farm.id)}" ${farm.id === currentId ? "selected" : ""}>${escapeHtml(farm.name)}</option>
+    <option value="${escapeHtml(farm.id)}" ${farm.id === currentId ?"selected" : ""}>${escapeHtml(farm.name)}</option>
   `)
   ].join("");
   elements.movementFarm.value = currentId;
@@ -7074,7 +7186,7 @@ function syncMovementFarmOptions(selectedFarmId = null) {
 
 function getMovementDialogFarm() {
   const farmId = elements.movementFarm?.value;
-  return (farmId && state.data.farms[farmId]) ? state.data.farms[farmId] : null;
+  return (farmId && state.data.farms[farmId]) ?state.data.farms[farmId] : null;
 }
 
 function openMovementDialog(initialType) {
@@ -7125,7 +7237,7 @@ function renderMovementPhotoDrafts() {
   elements.movementPhotoWrap.hidden = !visible;
   elements.movementPhotoPanel.hidden = !visible || !count;
   elements.movementPhotoCounter.textContent = count
-    ? `${formatInteger(count)} ${count === 1 ? "foto anexada" : "fotos anexadas"}`
+    ?`${formatInteger(count)} ${count === 1 ?"foto anexada" : "fotos anexadas"}`
     : "Nenhuma foto anexada.";
 
   if (!visible || !count) {
@@ -7211,9 +7323,9 @@ function openCategoryDialog() {
   elements.categoryDialog.showModal();
 }
 
-function syncMonthlyDataFarmOptions(selectedFarmId = elements.monthlyDataFarm.value || (state.data.selectedFarmId === TOTAL_FARM_ID ? getAllFarms()[0]?.id : state.data.selectedFarmId)) {
+function syncMonthlyDataFarmOptions(selectedFarmId = elements.monthlyDataFarm.value || (state.data.selectedFarmId === TOTAL_FARM_ID ?getAllFarms()[0]?.id : state.data.selectedFarmId)) {
   elements.monthlyDataFarm.innerHTML = getAllFarms().map((farm) => `
-    <option value="${farm.id}" ${farm.id === selectedFarmId ? "selected" : ""}>${escapeHtml(farm.name)}</option>
+    <option value="${farm.id}" ${farm.id === selectedFarmId ?"selected" : ""}>${escapeHtml(farm.name)}</option>
   `).join("");
   if (selectedFarmId) {
     elements.monthlyDataFarm.value = selectedFarmId;
@@ -7222,19 +7334,19 @@ function syncMonthlyDataFarmOptions(selectedFarmId = elements.monthlyDataFarm.va
 
 function syncMonthlyDataCategoryOptions(selectedCategory = elements.monthlyDataCategory.value || MONTHLY_REPORT_CATEGORIES[0].value) {
   elements.monthlyDataCategory.innerHTML = MONTHLY_REPORT_CATEGORIES.map((category) => `
-    <option value="${category.value}" ${category.value === selectedCategory ? "selected" : ""}>${escapeHtml(category.label)}</option>
+    <option value="${category.value}" ${category.value === selectedCategory ?"selected" : ""}>${escapeHtml(category.label)}</option>
   `).join("");
   elements.monthlyDataCategory.value = selectedCategory;
 }
 
-function resetMonthlyDataForm(defaultFarmId = state.data.selectedFarmId === TOTAL_FARM_ID ? getAllFarms()[0]?.id : state.data.selectedFarmId) {
+function resetMonthlyDataForm(defaultFarmId = state.data.selectedFarmId === TOTAL_FARM_ID ?getAllFarms()[0]?.id : state.data.selectedFarmId) {
   state.monthlyEditingId = null;
   elements.monthlyDataDialogTitle.textContent = "Registrar dado mensal";
   elements.monthlyDataSubmitButton.textContent = "Salvar dado mensal";
   elements.monthlyDataEditingId.value = "";
   syncMonthlyDataFarmOptions(defaultFarmId);
   syncMonthlyDataCategoryOptions();
-  elements.monthlyDataPeriod.value = `${state.filters.year}-${state.filters.month === "all" ? String(today.getMonth() + 1).padStart(2, "0") : state.filters.month}`;
+  elements.monthlyDataPeriod.value = `${state.filters.year}-${state.filters.month === "all" ?String(today.getMonth() + 1).padStart(2, "0") : state.filters.month}`;
   elements.monthlyDataTitle.value = "";
   elements.monthlyDataQuantity.value = "";
   elements.monthlyDataValue.value = "";
@@ -7274,8 +7386,8 @@ function openMonthlyDataEditorForFarm(recordId, farmId) {
   syncMonthlyDataCategoryOptions(record.category);
   elements.monthlyDataPeriod.value = record.period;
   elements.monthlyDataTitle.value = record.title;
-  elements.monthlyDataQuantity.value = record.quantity ? String(record.quantity) : "";
-  elements.monthlyDataValue.value = record.value ? String(record.value) : "";
+  elements.monthlyDataQuantity.value = record.quantity ?String(record.quantity) : "";
+  elements.monthlyDataValue.value = record.value ?String(record.value) : "";
   elements.monthlyDataNotes.value = record.notes || "";
   elements.monthlyDataDialog.showModal();
 }
@@ -7338,16 +7450,16 @@ function renderStockCategoryAccordion() {
     const declared = farm.declaredTotal || total;
     const diff = declared - total;
     const diffLabel = diff === 0
-      ? '<span class="stock-ok">✓ Alinhado</span>'
-      : `<span class="stock-diff ${diff > 0 ? "stock-diff-pos" : "stock-diff-neg"}">${diff > 0 ? "+" : ""}${formatInteger(diff)} declarado vs. calculado</span>`;
+      ?'<span class="stock-ok">✓ Alinhado</span>'
+      : `<span class="stock-diff ${diff > 0 ?"stock-diff-pos" : "stock-diff-neg"}">${diff > 0 ?"+" : ""}${formatInteger(diff)} declarado vs. calculado</span>`;
     return `
       <div class="stock-accordion-item" data-cat-farm="${escapeHtml(farm.id)}">
         <button type="button" class="stock-accordion-hdr" data-toggle-cat="${escapeHtml(farm.id)}">
           <span class="stock-farm-name">${escapeHtml(farm.name)}</span>
           <span class="stock-farm-meta">${farm.categories.length} categoria(s) · ${formatInteger(total)} animais ${diffLabel}</span>
-          <span class="stock-chevron">${i === 0 ? "▲" : "▼"}</span>
+          <span class="stock-chevron">${i === 0 ?"▲" : "▼"}</span>
         </button>
-        <div class="stock-accordion-body" ${i > 0 ? "hidden" : ""} data-cat-body="${escapeHtml(farm.id)}">
+        <div class="stock-accordion-body" ${i > 0 ?"hidden" : ""} data-cat-body="${escapeHtml(farm.id)}">
           <div class="stock-declared-row">
             <label>Total declarado
               <input type="number" class="stock-input" min="0" step="1"
@@ -7388,15 +7500,15 @@ function renderStockPotreirosAccordion() {
     const potreiros = getPotreroEntries(farm);
     const allocated = potreiros.reduce((s, p) => s + (Number(p.quantity) || 0), 0);
     const farmTotal = getFarmTotal(farm);
-    const pct = farmTotal > 0 ? Math.round((allocated / farmTotal) * 100) : 0;
+    const pct = farmTotal > 0 ?Math.round((allocated / farmTotal) * 100) : 0;
     return `
       <div class="stock-accordion-item" data-potr-farm="${escapeHtml(farm.id)}">
         <button type="button" class="stock-accordion-hdr" data-toggle-potr="${escapeHtml(farm.id)}">
           <span class="stock-farm-name">${escapeHtml(farm.name)}</span>
           <span class="stock-farm-meta">${potreiros.length} potreiro(s) · ${formatInteger(allocated)}/${formatInteger(farmTotal)} alocados (${pct}%)</span>
-          <span class="stock-chevron">${i === 0 ? "▲" : "▼"}</span>
+          <span class="stock-chevron">${i === 0 ?"▲" : "▼"}</span>
         </button>
-        <div class="stock-accordion-body" ${i > 0 ? "hidden" : ""} data-potr-body="${escapeHtml(farm.id)}">
+        <div class="stock-accordion-body" ${i > 0 ?"hidden" : ""} data-potr-body="${escapeHtml(farm.id)}">
           <table class="stock-table">
             <thead><tr><th>Potreiro</th><th>Animais</th><th></th></tr></thead>
             <tbody data-potr-tbody="${escapeHtml(farm.id)}">
@@ -7418,7 +7530,7 @@ function handleStockCategoryAccordionClick(e) {
     const chevron = toggleBtn.querySelector(".stock-chevron");
     if (body) {
       body.hidden = !body.hidden;
-      if (chevron) chevron.textContent = body.hidden ? "▼" : "▲";
+      if (chevron) chevron.textContent = body.hidden ?"▼" : "▲";
     }
     return;
   }
@@ -7457,7 +7569,7 @@ function handleStockPotreirosAccordionClick(e) {
     const chevron = toggleBtn.querySelector(".stock-chevron");
     if (body) {
       body.hidden = !body.hidden;
-      if (chevron) chevron.textContent = body.hidden ? "▼" : "▲";
+      if (chevron) chevron.textContent = body.hidden ?"▼" : "▲";
     }
     return;
   }
@@ -7512,7 +7624,7 @@ function handleSaveStockEdit() {
     }
     const declaredInput = document.querySelector(`[data-declared="${farm.id}"]`);
     const declared = Number(declaredInput?.value);
-    catUpdates[farm.id] = { cats, declared: Number.isFinite(declared) && declared >= 0 ? declared : getFarmTotal(farm) };
+    catUpdates[farm.id] = { cats, declared: Number.isFinite(declared) && declared >= 0 ?declared : getFarmTotal(farm) };
   }
 
   // Validate & collect potreiros
@@ -7532,7 +7644,7 @@ function handleSaveStockEdit() {
       const normalized = normalizeText(name);
       if (seen.has(normalized)) { errors.push(`${farm.name}: potreiro "${name}" duplicado.`); break; }
       seen.add(normalized);
-      potrs.push({ id: potrId.startsWith("new-") ? createPotreroId(name) : potrId, name, quantity: qty });
+      potrs.push({ id: potrId.startsWith("new-") ?createPotreroId(name) : potrId, name, quantity: qty });
     }
     potrUpdates[farm.id] = potrs;
   }
@@ -7614,7 +7726,7 @@ function deleteSanitaryRecord(recordId) {
   const aggregateRecord = getAggregateFarm().sanitaryRecords.find((item) => item.id === recordId || item.sourceId === recordId);
   const ownerFarmId = aggregateRecord?.farmId || aggregateRecord?._farmId;
   const farm = ownerFarmId
-    ? state.data.farms[ownerFarmId]
+    ?state.data.farms[ownerFarmId]
     : getAllFarms().find((item) => item.sanitaryRecords.some((record) => record.id === recordId || record.sourceId === recordId));
   if (!farm) {
     return;
@@ -7669,7 +7781,7 @@ function openSanitaryEditor(recordId) {
   elements.sanitaryEditingId.value = record.id || record.sourceId;
   elements.sanitaryFarm.value = farm.id;
   elements.sanitaryDate.value = record.date;
-  elements.sanitaryQuantity.value = Number.isFinite(record.quantity) ? String(record.quantity) : "";
+  elements.sanitaryQuantity.value = Number.isFinite(record.quantity) ?String(record.quantity) : "";
   elements.sanitaryCategory.value = record.categoryId;
   elements.sanitaryProduct.value = record.product;
   elements.sanitaryPotrero.value = record.potreiro || "Sem potreiro";
@@ -7685,21 +7797,21 @@ function openSanitaryEditor(recordId) {
 
 function syncMovementTypeOptions(selectedType = elements.movementType.value || "compra") {
   elements.movementType.innerHTML = MOVEMENT_TYPES.map((type) => `
-    <option value="${type.value}" ${type.value === selectedType ? "selected" : ""}>${type.label}</option>
+    <option value="${type.value}" ${type.value === selectedType ?"selected" : ""}>${type.label}</option>
   `).join("");
 }
 
 function updateMovementFormForType(type) {
   const farm = getMovementDialogFarm() || getFarm();
   const typeMeta = MOVEMENT_TYPES.find((item) => item.value === type);
-  elements.movementDialogTitle.textContent = typeMeta ? `Registrar ${typeMeta.label.toLowerCase()}` : "Registrar movimentação";
+  elements.movementDialogTitle.textContent = typeMeta ?`Registrar ${typeMeta.label.toLowerCase()}` : "Registrar movimentação";
   elements.adjustDirectionWrap.hidden = type !== "ajuste";
   const isTransfer = type === "transferencia";
   const isExit = typeMeta?.direction === -1;
   if (elements.movementPotreiroWrap) {
     elements.movementPotreiroWrap.hidden = false;
     if (elements.movementPotreiroLabel) {
-      elements.movementPotreiroLabel.textContent = (isExit || isTransfer) ? "Potreiro de origem" : "Potreiro de destino";
+      elements.movementPotreiroLabel.textContent = (isExit || isTransfer) ?"Potreiro de origem" : "Potreiro de destino";
     }
   }
   if (elements.movementPotreirowDestWrap) {
@@ -7744,7 +7856,7 @@ function updateSaleFieldVisibility() {
   const farm = getMovementDialogFarm() || getFarm();
   const isSale = elements.movementType.value === "venda";
   const isPremiumFarm = isPremiumSaleFarm(farm);
-  const saleMode = isPremiumFarm ? elements.movementSaleMode.value : "vivo";
+  const saleMode = isPremiumFarm ?elements.movementSaleMode.value : "vivo";
   const showLive = isSale && saleMode === "vivo";
   const showCarcass = isSale && isPremiumFarm && saleMode === "carcaca";
 
@@ -7773,11 +7885,11 @@ function updateSaleComputedValue() {
   }
 
   const farm = getMovementDialogFarm();
-  const saleMode = isPremiumSaleFarm(farm) ? elements.movementSaleMode.value : "vivo";
-  const pricePerKg = Number(saleMode === "carcaca" ? elements.movementCarcassPrice.value : elements.movementLivePrice.value);
-  const weightKg = Number(saleMode === "carcaca" ? elements.movementCarcassKg.value : elements.movementLiveKg.value);
-  const total = Number.isFinite(pricePerKg) && Number.isFinite(weightKg) ? pricePerKg * weightKg : 0;
-  elements.movementValue.value = total > 0 ? total.toFixed(2) : "";
+  const saleMode = isPremiumSaleFarm(farm) ?elements.movementSaleMode.value : "vivo";
+  const pricePerKg = Number(saleMode === "carcaca" ?elements.movementCarcassPrice.value : elements.movementLivePrice.value);
+  const weightKg = Number(saleMode === "carcaca" ?elements.movementCarcassKg.value : elements.movementLiveKg.value);
+  const total = Number.isFinite(pricePerKg) && Number.isFinite(weightKg) ?pricePerKg * weightKg : 0;
+  elements.movementValue.value = total > 0 ?total.toFixed(2) : "";
 }
 
 function updatePurchaseComputedValues() {
@@ -7867,7 +7979,7 @@ function syncMovementPotreirosOptions() {
 
   const unallocatedQty = Number(alloc[UNALLOCATED_POTREIRO_KEY] || 0);
   const unallocatedLabel = isExit || isTransfer
-    ? `Sem potreiro (${formatInteger(unallocatedQty)} animais)`
+    ?`Sem potreiro (${formatInteger(unallocatedQty)} animais)`
     : "Sem potreiro (padrão)";
 
   const potreroOptions = [
@@ -7875,7 +7987,7 @@ function syncMovementPotreirosOptions() {
     ...potreiros.map((p) => {
       const qty = Number(alloc[p.id] || 0);
       const label = (isExit || isTransfer)
-        ? `${escapeHtml(p.name)} (${formatInteger(qty)} animais)`
+        ?`${escapeHtml(p.name)} (${formatInteger(qty)} animais)`
         : escapeHtml(p.name);
       return `<option value="${escapeHtml(p.id)}">${label}</option>`;
     })
@@ -7921,25 +8033,25 @@ function syncSanitaryFormOptions() {
   }
 
   const currentFarmId = (elements.sanitaryFarm?.value && state.data.farms[elements.sanitaryFarm.value])
-    ? elements.sanitaryFarm.value
-    : (state.data.selectedFarmId !== TOTAL_FARM_ID ? state.data.selectedFarmId : availableFarms[0].id);
+    ?elements.sanitaryFarm.value
+    : (state.data.selectedFarmId !== TOTAL_FARM_ID ?state.data.selectedFarmId : availableFarms[0].id);
   const farm = state.data.farms[currentFarmId] || availableFarms[0];
   const selectedCategory = elements.sanitaryCategory.value;
   const selectedProduct = elements.sanitaryProduct.value;
   const selectedPotrero = elements.sanitaryPotrero?.value || "";
 
   elements.sanitaryFarm.innerHTML = availableFarms.map((item) => `
-    <option value="${item.id}" ${item.id === farm.id ? "selected" : ""}>${escapeHtml(item.name)}</option>
+    <option value="${item.id}" ${item.id === farm.id ?"selected" : ""}>${escapeHtml(item.name)}</option>
   `).join("");
 
   elements.sanitaryCategory.innerHTML = getSanitaryCategoryOptions(farm).map((category) => `
-    <option value="${category.id}" ${category.id === selectedCategory ? "selected" : ""}>${escapeHtml(category.name)}</option>
+    <option value="${category.id}" ${category.id === selectedCategory ?"selected" : ""}>${escapeHtml(category.name)}</option>
   `).join("");
 
   const productOptions = farm.sanitaryProducts.map((product) => `
-    <option value="${escapeHtml(product)}" ${product === selectedProduct ? "selected" : ""}>${escapeHtml(product)}</option>
+    <option value="${escapeHtml(product)}" ${product === selectedProduct ?"selected" : ""}>${escapeHtml(product)}</option>
   `);
-  productOptions.push(`<option value="__new__" ${selectedProduct === "__new__" ? "selected" : ""}>Outros</option>`);
+  productOptions.push(`<option value="__new__" ${selectedProduct === "__new__" ?"selected" : ""}>Outros</option>`);
 
   elements.sanitaryProduct.innerHTML = productOptions.join("");
   if (!elements.sanitaryProduct.value && farm.sanitaryProducts.length) {
@@ -7949,9 +8061,9 @@ function syncSanitaryFormOptions() {
   const potreroOptions = [
     '<option value="Sem potreiro">Sem potreiro</option>',
     ...getPotreroEntries(farm).map((potrero) => `
-      <option value="${escapeHtml(potrero.name)}" ${potrero.name === selectedPotrero ? "selected" : ""}>${escapeHtml(potrero.name)}</option>
+      <option value="${escapeHtml(potrero.name)}" ${potrero.name === selectedPotrero ?"selected" : ""}>${escapeHtml(potrero.name)}</option>
     `),
-    `<option value="__new__" ${selectedPotrero === "__new__" ? "selected" : ""}>Outro potreiro</option>`
+    `<option value="__new__" ${selectedPotrero === "__new__" ?"selected" : ""}>Outro potreiro</option>`
   ];
   elements.sanitaryPotrero.innerHTML = potreroOptions.join("");
   if (!elements.sanitaryPotrero.value) {
@@ -8018,7 +8130,7 @@ async function handleMovementSubmit(event) {
   }
 
   const movementAuditMeta = runtime.editingMovement
-    ? { action: "Edição", details: "Lançamento do rebanho atualizado" }
+    ?{ action: "Edição", details: "Lançamento do rebanho atualizado" }
     : { action: "Adição", details: "Novo lançamento do rebanho registrado" };
 
   // If editing, revert old movement first then remove it
@@ -8072,7 +8184,7 @@ async function handleMovementSubmit(event) {
     const originQty = Number(category.allocation[originId] || 0);
     if (originQty < quantity) {
       rollbackEditing();
-      const originName = originId === UNALLOCATED_POTREIRO_KEY ? "Sem potreiro" : (farm.potreiros.find((p) => p.id === originId)?.name || originId);
+      const originName = originId === UNALLOCATED_POTREIRO_KEY ?"Sem potreiro" : (farm.potreiros.find((p) => p.id === originId)?.name || originId);
       alert(`Apenas ${formatInteger(originQty)} animais estão alocados em "${originName}" para essa categoria.`);
       return;
     }
@@ -8118,9 +8230,9 @@ async function handleMovementSubmit(event) {
   }
 
   if (type === "venda") {
-    const saleMode = isPremiumSaleFarm(farm) ? elements.movementSaleMode.value : "vivo";
-    const pricePerKg = Number(saleMode === "carcaca" ? elements.movementCarcassPrice.value : elements.movementLivePrice.value);
-    const weightKg = Number(saleMode === "carcaca" ? elements.movementCarcassKg.value : elements.movementLiveKg.value);
+    const saleMode = isPremiumSaleFarm(farm) ?elements.movementSaleMode.value : "vivo";
+    const pricePerKg = Number(saleMode === "carcaca" ?elements.movementCarcassPrice.value : elements.movementLivePrice.value);
+    const weightKg = Number(saleMode === "carcaca" ?elements.movementCarcassKg.value : elements.movementLiveKg.value);
 
     if (!Number.isFinite(pricePerKg) || pricePerKg <= 0 || !Number.isFinite(weightKg) || weightKg <= 0) {
       rollbackEditing();
@@ -8131,7 +8243,7 @@ async function handleMovementSubmit(event) {
     value = pricePerKg * weightKg;
     const buyer = elements.movSaleBuyer?.value?.trim() || "";
     const yieldPct = Number(elements.movSaleYieldPct?.value) || null;
-    const valuePerHead = quantity > 0 ? +(value / quantity).toFixed(2) : null;
+    const valuePerHead = quantity > 0 ?+(value / quantity).toFixed(2) : null;
     saleDetails = {
       mode: saleMode,
       pricePerKg,
@@ -8155,7 +8267,7 @@ async function handleMovementSubmit(event) {
   }
 
   const selectedPotreiro = (!elements.movementPotreiroWrap?.hidden && elements.movementPotreiro?.value)
-    ? elements.movementPotreiro.value
+    ?elements.movementPotreiro.value
     : UNALLOCATED_POTREIRO_KEY;
 
   ensureCategoryAllocation(category);
@@ -8182,7 +8294,7 @@ async function handleMovementSubmit(event) {
     currency: getFarmCurrency(farm.id),
     notes,
     potreiro: selectedPotreiro,
-    photos: movementTypeSupportsPhotos(type) ? runtime.movementPhotoDrafts.map((photo) => ({ ...photo })) : []
+    photos: movementTypeSupportsPhotos(type) ?runtime.movementPhotoDrafts.map((photo) => ({ ...photo })) : []
   });
 
   if (farm.declaredTotal === 0) {
@@ -8242,15 +8354,15 @@ function handleMonthlyDataSubmit(event) {
     period,
     category,
     title,
-    quantity: Number.isFinite(quantity) ? Math.round(quantity) : 0,
-    value: Number.isFinite(value) ? Number(value.toFixed(2)) : 0,
+    quantity: Number.isFinite(quantity) ?Math.round(quantity) : 0,
+    value: Number.isFinite(value) ?Number(value.toFixed(2)) : 0,
     notes
   };
   const isEditingMonthly = Boolean(editingId);
 
   if (editingId) {
     const ownerFarm = getAllFarms().find((item) => getMonthlyRecords(item).some((record) => record.id === editingId));
-    const existing = ownerFarm ? getMonthlyRecords(ownerFarm).find((record) => record.id === editingId) : null;
+    const existing = ownerFarm ?getMonthlyRecords(ownerFarm).find((record) => record.id === editingId) : null;
     if (existing && ownerFarm?.id === farm.id) {
       Object.assign(existing, payload);
     } else if (existing) {
@@ -8273,7 +8385,7 @@ function handleMonthlyDataSubmit(event) {
   }
 
   state.data.selectedFarmId = farm.id;
-  logAuditEvent(isEditingMonthly ? "Edição" : "Adição", "dado mensal", `${title} (${period})`, {
+  logAuditEvent(isEditingMonthly ?"Edição" : "Adição", "dado mensal", `${title} (${period})`, {
     farmId: farm.id,
     farmName: farm.name,
     recordCode: editingId || ""
@@ -8299,10 +8411,10 @@ function handleSanitarySubmit(event) {
   const categoryLabel = elements.sanitaryCategory.selectedOptions[0]?.textContent || "Categoria";
   const selectedProduct = elements.sanitaryProduct.value;
   const newProductName = elements.newProductName.value.trim();
-  const product = selectedProduct === "__new__" ? newProductName : selectedProduct;
+  const product = selectedProduct === "__new__" ?newProductName : selectedProduct;
   const selectedPotrero = elements.sanitaryPotrero.value;
   const newPotreroName = elements.newPotreroName.value.trim();
-  const potreiro = selectedPotrero === "__new__" ? newPotreroName : selectedPotrero;
+  const potreiro = selectedPotrero === "__new__" ?newPotreroName : selectedPotrero;
   const notes = elements.sanitaryNotes.value.trim();
   const isEditingSanitary = Boolean(editingId);
 
@@ -8354,10 +8466,10 @@ function handleSanitarySubmit(event) {
   }
 
   const savedSanitaryRecord = editingId
-    ? farm.sanitaryRecords.find((item) => item.id === editingId || item.sourceId === editingId)
+    ?farm.sanitaryRecords.find((item) => item.id === editingId || item.sourceId === editingId)
     : farm.sanitaryRecords[farm.sanitaryRecords.length - 1];
   state.data.selectedFarmId = farm.id;
-  logAuditEvent(isEditingSanitary ? "Edição" : "Adição", "sanitário", `${product} em ${potreiro}`, {
+  logAuditEvent(isEditingSanitary ?"Edição" : "Adição", "sanitário", `${product} em ${potreiro}`, {
     farmId: farm.id,
     farmName: farm.name,
     recordCode: savedSanitaryRecord?.code || ""
@@ -8449,7 +8561,7 @@ function handleEditStockSubmit(event) {
   farm.potreiros = nextPotreiros;
   farm.declaredTotal = declaredTotal;
   state.data.selectedFarmId = runtime.editStockContextFarmId === TOTAL_FARM_ID
-    ? TOTAL_FARM_ID
+    ?TOTAL_FARM_ID
     : farm.id;
   saveData();
   elements.editStockDialog.close();
@@ -8524,8 +8636,8 @@ function getPotreroTotals(farm) {
       return {
         id: potrero.id,
         name: potrero.name,
-        farmId: potrero.farmId || (farm.id === TOTAL_FARM_ID ? "" : farm.id),
-        farmName: potrero.farmName || (farm.id === TOTAL_FARM_ID ? "" : farm.name),
+        farmId: potrero.farmId || (farm.id === TOTAL_FARM_ID ?"" : farm.id),
+        farmName: potrero.farmName || (farm.id === TOTAL_FARM_ID ?"" : farm.name),
         quantity,
         share: (quantity / totalAnimals) * 100
       };
@@ -8535,7 +8647,7 @@ function getPotreroTotals(farm) {
 
 function getMovementDelta(type, quantity, adjustDirection) {
   if (type === "ajuste") {
-    return adjustDirection === "subtract" ? -quantity : quantity;
+    return adjustDirection === "subtract" ?-quantity : quantity;
   }
 
   const meta = MOVEMENT_TYPES.find((item) => item.value === type);
@@ -8560,7 +8672,7 @@ function openPdfOptionsDialog() {
   elements.pdfOptionsForm.reset();
   runtime.pdfContextFarmId = state.data.selectedFarmId;
   populatePdfPeriodFilters();
-  renderPdfFarmOptions(runtime.pdfContextFarmId === TOTAL_FARM_ID ? getAllFarms().map((farm) => farm.id) : [runtime.pdfContextFarmId]);
+  renderPdfFarmOptions(runtime.pdfContextFarmId === TOTAL_FARM_ID ?getAllFarms().map((farm) => farm.id) : [runtime.pdfContextFarmId]);
   const currentScope = elements.pdfOptionsForm.querySelector('input[name="pdfScope"][value="current"]');
   if (currentScope) {
     currentScope.checked = true;
@@ -8573,7 +8685,7 @@ function renderPdfFarmOptions(selectedIds = []) {
   const selected = new Set(selectedIds);
   elements.pdfFarmList.innerHTML = getAllFarms().map((farm) => `
     <label class="user-row pdf-farm-row">
-      <input type="checkbox" name="pdfFarmIds" value="${farm.id}" ${selected.has(farm.id) ? "checked" : ""}>
+      <input type="checkbox" name="pdfFarmIds" value="${farm.id}" ${selected.has(farm.id) ?"checked" : ""}>
       <div>
         <strong>${escapeHtml(farm.name)}</strong>
         <span>${formatInteger(getFarmTotal(farm))} animais em estoque atualmente</span>
@@ -8592,7 +8704,7 @@ function updatePdfScopeMode() {
   elements.pdfFarmList.hidden = scope !== "custom";
 
   if (scope === "custom" && !elements.pdfFarmList.querySelector('input[name="pdfFarmIds"]:checked')) {
-    const currentFarmId = runtime.pdfContextFarmId !== TOTAL_FARM_ID ? runtime.pdfContextFarmId : state.data.selectedFarmId;
+    const currentFarmId = runtime.pdfContextFarmId !== TOTAL_FARM_ID ?runtime.pdfContextFarmId : state.data.selectedFarmId;
     const currentFarmInput = elements.pdfFarmList.querySelector(`input[name="pdfFarmIds"][value="${currentFarmId}"]`);
     if (currentFarmInput) {
       currentFarmInput.checked = true;
@@ -8657,7 +8769,7 @@ async function addPdfHeader(doc, farm, periodLabel, monthly) {
   doc.text(`Período analisado: ${periodLabel}`, 42, 33);
   doc.text(`Responsável técnico: ${TECHNICAL_MANAGER_NAME}`, 42, 39);
   doc.text(`Movimentações no período: ${formatInteger(monthly.totalMovements)}`, 14, 50);
-  doc.text(`Saldo do período: ${monthly.netChange > 0 ? "+" : ""}${formatInteger(monthly.netChange)}`, 92, 50);
+  doc.text(`Saldo do período: ${monthly.netChange > 0 ?"+" : ""}${formatInteger(monthly.netChange)}`, 92, 50);
   return 56;
 }
 
@@ -8690,13 +8802,54 @@ function drawPdfPastureBackground(doc) {
   doc.line(0, height * 0.63, width, height * 0.63);
 }
 
-async function appendPdfCoverPage(doc, farms, periodLabel) {
+async function appendPdfCoverPage(doc, farms, periodLabel, reportSubtitle = "Relatório Pecuário") {
   const { width, height } = getPdfPageSize(doc);
   const scopeLabel = farms.length === 1
-    ? farms[0].name
+    ?farms[0].name
     : farms.length === getAllFarms().length
-      ? "Todas as fazendas"
+      ?"Todas as fazendas"
       : `${formatInteger(farms.length)} fazendas selecionadas`;
+
+  doc.setFillColor(6, 6, 6);
+  doc.rect(0, 0, width, height, "F");
+  const imageX = width * 0.52;
+  const imageW = width - imageX;
+  try {
+    const coverImage = await loadAssetAsDataUrl(PDF_COVER_IMAGE_PATH);
+    doc.addImage(coverImage, "JPEG", imageX, 0, imageW, height);
+  } catch (error) {
+    console.warn("Não foi possível carregar a imagem da capa do PDF.", error);
+  }
+
+  const left = 18;
+  doc.setDrawColor(197, 167, 74);
+  doc.setLineWidth(1.1);
+  doc.line(left, 27, left + 19, 27);
+  doc.setTextColor(197, 167, 74);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.text("PREMIUM", left, 40);
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(24);
+  doc.text("Painel Pecuário", left, 56);
+  doc.text("Premium", left, 72);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(13);
+  doc.setTextColor(215, 215, 215);
+  doc.text(reportSubtitle, left, 91);
+  doc.setFontSize(9);
+  doc.setTextColor(197, 167, 74);
+  doc.text("Estabelecimentos Da Luz", left, 101);
+  doc.setFontSize(8);
+  doc.setTextColor(170, 170, 170);
+  doc.text(`Fazenda: ${scopeLabel}`, left, height - 37);
+  doc.text(`Período: ${periodLabel}`, left, height - 29);
+  doc.text(`Administrador: ${ADMINISTRATOR_NAME}`, left, height - 21);
+  doc.text(`Responsável Técnico: ${TECHNICAL_MANAGER_NAME}`, left, height - 13);
+  doc.setDrawColor(197, 167, 74);
+  doc.setLineWidth(0.5);
+  doc.line(left, height - 7, left + 74, height - 7);
+  return;
 
   drawPdfPastureBackground(doc);
 
@@ -8724,6 +8877,7 @@ async function appendPdfCoverPage(doc, farms, periodLabel) {
   doc.text(`Período analisado: ${periodLabel}`, width / 2, 161, { align: "center" });
   doc.text(`Responsável técnico: ${TECHNICAL_MANAGER_NAME}`, width / 2, 170, { align: "center" });
 
+  doc.text(`Administrador: ${ADMINISTRATOR_NAME}`, width / 2, 179, { align: "center" });
   doc.setFontSize(9.5);
   doc.setTextColor(230, 239, 223);
   doc.text("Relatório gerencial com consolidado, movimentações, sanitário e dados mensais.", width / 2, height - 26, { align: "center" });
@@ -8799,21 +8953,78 @@ function appendFarmDividerPage(doc, farm, periodLabel, year, month, sectionIndex
   doc.text("Painel Pecuário | separação por fazenda no relatório consolidado", 16, height - 18);
 }
 
+function appendPdfFarmReportDivider(doc, farm, periodLabel, reportTitle, cards, sectionIndex, sectionCount) {
+  const { width, height } = getPdfPageSize(doc);
+  doc.setFillColor(242, 238, 228);
+  doc.rect(0, 0, width, height, "F");
+  doc.setFillColor(37, 88, 58);
+  doc.rect(0, 0, width, 46, "F");
+
+  doc.setTextColor(248, 244, 236);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.text(`Fazenda ${sectionIndex} de ${sectionCount}`, 14, 15);
+  doc.setFontSize(20);
+  doc.text(farm.name, 14, 29);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text(`${reportTitle} | ${periodLabel}`, 14, 38);
+
+  doc.setTextColor(45, 35, 25);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  doc.text("Separação por fazenda", 14, 64);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text("As pr?ximas paginas detalham somente os registros desta unidade.", 14, 73);
+
+  const gap = 7;
+  const cardWidth = (width - 28 - gap * (cards.length - 1)) / cards.length;
+  cards.forEach((card, index) => {
+    const x = 14 + index * (cardWidth + gap);
+    const y = 88;
+    doc.setFillColor(255, 252, 245);
+    doc.roundedRect(x, y, cardWidth, 28, 3, 3, "F");
+    doc.setDrawColor(219, 209, 191);
+    doc.roundedRect(x, y, cardWidth, 28, 3, 3, "S");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(87, 69, 52);
+    doc.text(card.label, x + 5, y + 10);
+    doc.setFontSize(11);
+    doc.setTextColor(38, 66, 48);
+    doc.text(String(card.value), x + 5, y + 21);
+  });
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(112, 94, 76);
+  doc.text("Painel Pecuário Premium | Fazenda Da Luz", 14, height - 18);
+}
+
 function addPdfFooters(doc, options = {}) {
   const { coverPage = false } = options;
   const pageCount = doc.getNumberOfPages();
-  const firstFooterPage = coverPage ? 2 : 1;
-  const visiblePageCount = coverPage ? Math.max(pageCount - 1, 0) : pageCount;
+  const firstFooterPage = coverPage ?2 : 1;
+  const visiblePageCount = coverPage ?Math.max(pageCount - 1, 0) : pageCount;
 
   for (let page = firstFooterPage; page <= pageCount; page += 1) {
     doc.setPage(page);
+    const { width, height } = getPdfPageSize(doc);
+    const margin = 14;
     doc.setDrawColor(220, 209, 193);
-    doc.line(14, 286, 196, 286);
+    doc.line(margin, height - 11, width - margin, height - 11);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(112, 94, 76);
+    if (height < 260) {
+      doc.text(`Estabelecimentos Da Luz | Responsável tecnico: ${TECHNICAL_MANAGER_NAME}`, margin, height - 6);
+      doc.text(`Pagina ${coverPage ?page - 1 : page} de ${visiblePageCount}`, width - margin, height - 6, { align: "right" });
+      doc.setTextColor(45, 35, 25);
+      continue;
+    }
     doc.text(`Estabelecimentos Da Luz | Responsável técnico: ${TECHNICAL_MANAGER_NAME}`, 14, 291);
-    doc.text(`Página ${coverPage ? page - 1 : page} de ${visiblePageCount}`, 196, 291, { align: "right" });
+    doc.text(`Página ${coverPage ?page - 1 : page} de ${visiblePageCount}`, 196, 291, { align: "right" });
     doc.setTextColor(45, 35, 25);
   }
 }
@@ -8824,24 +9035,24 @@ function appendExecutivePdfTable(doc, farm, monthly, discrepancy, topY) {
   const potreroBalance = getPotreroBalance(farm);
   const total = getFarmTotal(farm);
   const annualForMortality = summarizePeriod(farm, String(new Date().getFullYear()), "all");
-  const mortalityRate = total > 0 ? ((annualForMortality.byType.morte / total) * 100).toFixed(2) : "0.00";
+  const mortalityRate = total > 0 ?((annualForMortality.byType.morte / total) * 100).toFixed(2) : "0.00";
   doc.autoTable({
     startY: topY + 4,
     head: [["Indicador executivo", "Valor"]],
     body: [
       ["Estoque atual", `${formatInteger(total)} animais`],
-      ["Total declarado", farm.declaredTotal ? `${formatInteger(farm.declaredTotal)} animais` : "Não informado"],
-      ["Conferência de estoque", discrepancy === 0 ? "Alinhado" : `${discrepancy > 0 ? "+" : ""}${formatInteger(discrepancy)} animais`],
+      ["Total declarado", farm.declaredTotal ?`${formatInteger(farm.declaredTotal)} animais` : "Não informado"],
+      ["Conferência de estoque", discrepancy === 0 ?"Alinhado" : `${discrepancy > 0 ?"+" : ""}${formatInteger(discrepancy)} animais`],
       ["Taxa de mortalidade (ano)", `${mortalityRate}%`],
       ["Potreiros cadastrados", formatInteger(registeredPotreiros)],
       ["Animais distribuídos em potreiros", `${formatInteger(registeredAnimals)} animais`],
-      ["Saldo da distribuição", potreroBalance === 0 ? "Alinhado" : `${potreroBalance > 0 ? "+" : ""}${formatInteger(potreroBalance)} animais`],
+      ["Saldo da distribuição", potreroBalance === 0 ?"Alinhado" : `${potreroBalance > 0 ?"+" : ""}${formatInteger(potreroBalance)} animais`],
       ["Movimentações no período", formatInteger(monthly.totalMovements)],
-      ["Saldo do período", `${monthly.netChange > 0 ? "+" : ""}${formatInteger(monthly.netChange)}`],
+      ["Saldo do período", `${monthly.netChange > 0 ?"+" : ""}${formatInteger(monthly.netChange)}`],
       ["Responsável técnico", TECHNICAL_MANAGER_NAME]
     ],
     theme: "striped",
-    headStyles: { fillColor: [76, 64, 50] }
+    headStyles: { fillColor: [43, 132, 184] }
   });
 }
 
@@ -8851,7 +9062,7 @@ function appendInventoryPdfTable(doc, farm) {
     head: [["Categoria", "Quantidade"]],
     body: farm.categories.map((category) => [category.name, formatInteger(category.quantity)]),
     theme: "grid",
-    headStyles: { fillColor: [51, 92, 67] }
+    headStyles: { fillColor: [43, 132, 184] }
   });
 }
 
@@ -8867,10 +9078,10 @@ function appendOperationalPdfTable(doc, monthly, annual, saleSummary) {
       ["Nascimentos no período", formatInteger(monthly.byType.nascimento)],
       ["Mortes no período", formatInteger(monthly.byType.morte)],
       ["Movimentações no ano", formatInteger(annual.totalMovements)],
-      ["Valor anual movimentado", annual.totalValue ? formatCurrency(annual.totalValue) : "Sem valor informado"]
+      ["Valor anual movimentado", annual.totalValue ?formatCurrency(annual.totalValue) : "Sem valor informado"]
     ],
     theme: "striped",
-    headStyles: { fillColor: [138, 75, 56] }
+    headStyles: { fillColor: [43, 132, 184] }
   });
 }
 
@@ -8883,10 +9094,10 @@ function appendSaleSummaryPdfTable(doc, saleSummary) {
       ["Faturamento total", formatCurrency(saleSummary.totalValue)],
       ["Kg vivo negociado", formatWeight(saleSummary.liveKg)],
       ["Kg carcaça negociado", formatWeight(saleSummary.carcassKg)],
-      ["Preço médio kg vivo", saleSummary.liveKg > 0 ? formatCurrency(saleSummary.totalValue / saleSummary.liveKg) : formatCurrency(0)]
+      ["Preço médio kg vivo", saleSummary.liveKg > 0 ?formatCurrency(saleSummary.totalValue / saleSummary.liveKg) : formatCurrency(0)]
     ],
     theme: "striped",
-    headStyles: { fillColor: [201, 140, 79] }
+    headStyles: { fillColor: [43, 132, 184] }
   });
 }
 
@@ -8895,18 +9106,18 @@ function appendSaleDetailsPdfTable(doc, saleSummary) {
     startY: doc.lastAutoTable.finalY + 10,
     head: [["Data", "Categoria", "Base", "Kg", "R$/kg", "Total", "Fotos"]],
     body: saleSummary.movements.length
-      ? saleSummary.movements.map((movement) => [
+      ?saleSummary.movements.map((movement) => [
         formatDate(movement.date),
         movement.categoryName,
-        movement.saleDetails ? getSaleModeLabel(movement.saleDetails.mode || "vivo") : "Relatório mensal",
-        movement.saleDetails ? formatWeight(movement.saleDetails.weightKg || 0) : "-",
-        movement.saleDetails ? formatCurrency(movement.saleDetails.pricePerKg || 0) : "-",
+        movement.saleDetails ?getSaleModeLabel(movement.saleDetails.mode || "vivo") : "Relatório mensal",
+        movement.saleDetails ?formatWeight(movement.saleDetails.weightKg || 0) : "-",
+        movement.saleDetails ?formatCurrency(movement.saleDetails.pricePerKg || 0) : "-",
         formatCurrency(movement.value || 0),
         formatMovementPhotoCount(movement)
       ])
       : [["-", "-", "-", "-", "-", "Sem vendas no período", "-"]],
     theme: "striped",
-    headStyles: { fillColor: [201, 140, 79] }
+    headStyles: { fillColor: [43, 132, 184] }
   });
 }
 
@@ -8918,10 +9129,10 @@ function appendPurchaseSummaryPdfTable(doc, purchaseSummary) {
       ["Compras registradas", formatInteger(purchaseSummary.count)],
       ["Animais adquiridos", formatInteger(purchaseSummary.totalAnimals)],
       ["Custo total de aquisição", formatCurrency(purchaseSummary.totalValue)],
-      ["Custo médio por animal", purchaseSummary.totalAnimals > 0 ? formatCurrency(purchaseSummary.totalValue / purchaseSummary.totalAnimals) : formatCurrency(0)]
+      ["Custo médio por animal", purchaseSummary.totalAnimals > 0 ?formatCurrency(purchaseSummary.totalValue / purchaseSummary.totalAnimals) : formatCurrency(0)]
     ],
     theme: "striped",
-    headStyles: { fillColor: [79, 115, 168] }
+    headStyles: { fillColor: [43, 132, 184] }
   });
 }
 
@@ -8930,7 +9141,7 @@ function appendPurchaseDetailsPdfTable(doc, purchaseSummary) {
     startY: doc.lastAutoTable.finalY + 10,
     head: [["Data", "Categoria", "Qtd.", "Custo total", "Custo/cab.", "Observações"]],
     body: purchaseSummary.movements.length
-      ? purchaseSummary.movements.map((movement) => {
+      ?purchaseSummary.movements.map((movement) => {
         const qty = Number(movement.quantity || 0);
         const val = Number(movement.value || 0);
         return [
@@ -8938,13 +9149,13 @@ function appendPurchaseDetailsPdfTable(doc, purchaseSummary) {
           movement.categoryName || "-",
           formatInteger(qty),
           formatCurrency(val),
-          qty > 0 ? formatCurrency(val / qty) : "-",
+          qty > 0 ?formatCurrency(val / qty) : "-",
           movement.notes || "-"
         ];
       })
       : [["-", "-", "-", "-", "-", "Sem compras no período"]],
     theme: "striped",
-    headStyles: { fillColor: [79, 115, 168] }
+    headStyles: { fillColor: [43, 132, 184] }
   });
 }
 
@@ -8956,11 +9167,11 @@ function appendFinancialBalancePdfTable(doc, saleSummary, purchaseSummary) {
     body: [
       ["Receita de vendas", formatCurrency(saleSummary.totalValue)],
       ["Custo de compras", formatCurrency(purchaseSummary.totalValue)],
-      ["Resultado líquido", `${saldo >= 0 ? "+" : ""}${formatCurrency(saldo)}`]
+      ["Resultado líquido", `${saldo >= 0 ?"+" : ""}${formatCurrency(saldo)}`]
     ],
     theme: "striped",
-    headStyles: { fillColor: [55, 91, 67] },
-    bodyStyles: (row) => row.index === 2 ? { fontStyle: "bold" } : {}
+    headStyles: { fillColor: [43, 132, 184] },
+    bodyStyles: (row) => row.index === 2 ?{ fontStyle: "bold" } : {}
   });
 }
 
@@ -8969,10 +9180,10 @@ function appendPotreroPdfTable(doc, potreroTotals) {
     startY: doc.lastAutoTable.finalY + 10,
     head: [["Potreiro", "Animais atuais", "% do rebanho"]],
     body: potreroTotals.length
-      ? potreroTotals.map((item) => [item.name, formatInteger(item.quantity), `${item.share.toFixed(1)}%`])
+      ?potreroTotals.map((item) => [item.name, formatInteger(item.quantity), `${item.share.toFixed(1)}%`])
       : [["Sem cadastro", "0", "0,0%"]],
     theme: "striped",
-    headStyles: { fillColor: [55, 91, 67] }
+    headStyles: { fillColor: [43, 132, 184] }
   });
 }
 
@@ -8987,7 +9198,7 @@ function appendMonthlySummaryPdfTable(doc, monthlySummary) {
       ["Categorias ativas", formatInteger(monthlySummary.activeCategories)]
     ],
     theme: "striped",
-    headStyles: { fillColor: [111, 95, 77] }
+    headStyles: { fillColor: [43, 132, 184] }
   });
 }
 
@@ -8996,17 +9207,17 @@ function appendMonthlyDetailsPdfTable(doc, farm, monthlyRecords) {
     startY: doc.lastAutoTable.finalY + 10,
     head: [["Competência", "Categoria", "Indicador", "Qtd.", "Valor", "Observações"]],
     body: monthlyRecords.length
-      ? monthlyRecords.map((record) => [
+      ?monthlyRecords.map((record) => [
         formatMonthYear(record.period),
         getMonthlyCategoryLabel(record.category),
-        record.farmName && farm.id === TOTAL_FARM_ID ? `${record.farmName} | ${record.title}` : record.title,
-        record.quantity ? formatInteger(record.quantity) : "-",
-        record.value ? formatCurrency(record.value) : "-",
+        record.farmName && farm.id === TOTAL_FARM_ID ?`${record.farmName} | ${record.title}` : record.title,
+        record.quantity ?formatInteger(record.quantity) : "-",
+        record.value ?formatCurrency(record.value) : "-",
         record.notes || "-"
       ])
       : [["-", "-", "Sem dados mensais no período", "-", "-", "-"]],
     theme: "striped",
-    headStyles: { fillColor: [111, 95, 77] }
+    headStyles: { fillColor: [43, 132, 184] }
   });
 }
 
@@ -9018,10 +9229,10 @@ function appendSanitarySummaryPdfTable(doc, sanitarySummary) {
       ["Aplicações no período", formatInteger(sanitarySummary.totalApplications)],
       ["Animais tratados", formatInteger(sanitarySummary.treatedAnimals)],
       ["Produtos utilizados", formatInteger(sanitarySummary.uniqueProducts)],
-      ["Último manejo", sanitarySummary.latestRecord ? `${formatDate(sanitarySummary.latestRecord.date)} - ${sanitarySummary.latestRecord.product}` : "Sem registro"]
+    { title: "Último manejo", value: latestRecord ?formatDate(latestRecord.date) : "—", detail: latestRecord ?latestRecord.product : "nenhum registro disponível" }
     ],
     theme: "striped",
-    headStyles: { fillColor: [55, 91, 67] }
+    headStyles: { fillColor: [43, 132, 184] }
   });
 }
 
@@ -9030,7 +9241,7 @@ function appendSanitaryDetailsPdfTable(doc, sanitaryRecords) {
     startY: doc.lastAutoTable.finalY + 10,
     head: [["Data", "Categoria", "Qtd.", "Produto", "Observações"]],
     body: sanitaryRecords.length
-      ? sanitaryRecords.map((record) => [
+      ?sanitaryRecords.map((record) => [
         formatDate(record.date),
         record.categoryName,
         formatMaybeQuantity(record.quantity),
@@ -9039,7 +9250,7 @@ function appendSanitaryDetailsPdfTable(doc, sanitaryRecords) {
       ])
       : [["-", "-", "-", "Sem registros sanitários no período", "-"]],
     theme: "striped",
-    headStyles: { fillColor: [55, 91, 67] }
+    headStyles: { fillColor: [43, 132, 184] }
   });
 }
 
@@ -9049,7 +9260,7 @@ function appendInsightsPdfTable(doc, insights) {
     head: [["Insight gerencial", "Leitura"]],
     body: insights.map((item) => [item.tag, item.text]),
     theme: "striped",
-    headStyles: { fillColor: [76, 64, 50] }
+    headStyles: { fillColor: [43, 132, 184] }
   });
 }
 
@@ -9058,18 +9269,18 @@ function appendRecentMovementsPdfTable(doc, recentMovements) {
     startY: doc.lastAutoTable.finalY + 10,
     head: [["Data", "Tipo", "Categoria", "Qtd.", "Valor", "Fotos", "Observação"]],
     body: recentMovements.length
-      ? recentMovements.map((movement) => [
+      ?recentMovements.map((movement) => [
         formatDate(movement.date),
         capitalize(movement.type),
         movement.categoryName,
         formatInteger(movement.quantity),
-        movement.value ? formatCurrency(movement.value) : "-",
+        movement.value ?formatCurrency(movement.value) : "-",
         formatMovementPhotoCount(movement),
         getMovementNotes(movement)
       ])
       : [["-", "-", "-", "-", "-", "-", "Sem movimentações recentes"]],
     theme: "striped",
-    headStyles: { fillColor: [138, 75, 56] }
+    headStyles: { fillColor: [43, 132, 184] }
   });
 }
 
@@ -9078,7 +9289,7 @@ function appendUnifiedHistoryPdfTable(doc, records) {
     startY: doc.lastAutoTable.finalY + 10,
     head: [["Código", "Data", "Operação", "Categoria", "Qtd.", "Registro"]],
     body: records.length
-      ? records.map((record) => [
+      ?records.map((record) => [
         getHistoryRecordCode(record),
         formatDate(record.date),
         getHistoryOperationLabel(record.operation),
@@ -9088,7 +9299,7 @@ function appendUnifiedHistoryPdfTable(doc, records) {
       ])
       : [["-", "-", "-", "-", "-", "Sem registros no histórico do período"]],
     theme: "striped",
-    headStyles: { fillColor: [138, 75, 56] }
+    headStyles: { fillColor: [43, 132, 184] }
   });
 }
 
@@ -9165,7 +9376,7 @@ async function appendMovementPhotoPages(doc, farm, year, month) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7);
       doc.setTextColor(112, 94, 76);
-      const obsText = obs ? doc.splitTextToSize(obs, boxW - 6)[0] : "";
+      const obsText = obs ?doc.splitTextToSize(obs, boxW - 6)[0] : "";
       doc.text(obsText, boxX + 3, boxY + boxH - 4);
     }
   }
@@ -9173,7 +9384,7 @@ async function appendMovementPhotoPages(doc, farm, year, month) {
 
 function appendPdfSectionTitle(doc, title, startY) {
   doc.autoTable({
-    startY: startY !== undefined ? startY : (doc.lastAutoTable ? doc.lastAutoTable.finalY + 8 : 55),
+    startY: startY !== undefined ?startY : (doc.lastAutoTable ?doc.lastAutoTable.finalY + 8 : 55),
     head: [[{ content: title, styles: { halign: "left" } }]],
     body: [],
     theme: "plain",
@@ -9193,16 +9404,16 @@ function appendInventoryWithPercentTable(doc, farm) {
   const rows = farm.categories.map((cat) => [
     cat.name,
     formatInteger(cat.quantity),
-    total > 0 ? `${((cat.quantity / total) * 100).toFixed(1)}%` : "0,0%"
+    total > 0 ?`${((cat.quantity / total) * 100).toFixed(1)}%` : "0,0%"
   ]);
   if (!rows.length) rows.push(["Sem categorias cadastradas", "0", "0,0%"]);
   doc.autoTable({
-    startY: doc.lastAutoTable ? doc.lastAutoTable.finalY + 2 : 55,
+    startY: doc.lastAutoTable ?doc.lastAutoTable.finalY + 2 : 55,
     head: [["Categoria", "Quantidade", "% do rebanho"]],
     body: rows,
     foot: [["Total", formatInteger(total), "100%"]],
     theme: "striped",
-    headStyles: { fillColor: [51, 92, 67] },
+    headStyles: { fillColor: [43, 132, 184] },
     footStyles: { fillColor: [237, 244, 238], fontStyle: "bold", textColor: [30, 60, 40] },
     alternateRowStyles: { fillColor: [245, 250, 246] },
     margin: { left: 14, right: 14 }
@@ -9223,20 +9434,20 @@ function appendPurchasesByCategoryPdfTable(doc, purchaseSummary) {
       cat,
       formatInteger(data.qty),
       formatCurrency(data.value),
-      data.qty > 0 ? formatCurrency(data.value / data.qty) : "-"
+      data.qty > 0 ?formatCurrency(data.value / data.qty) : "-"
     ]);
   if (!rows.length) {
     rows.push(["Sem compras no período", "-", "-", "-"]);
   } else {
     rows.push(["TOTAL", formatInteger(purchaseSummary.totalAnimals), formatCurrency(purchaseSummary.totalValue),
-      purchaseSummary.totalAnimals > 0 ? formatCurrency(purchaseSummary.totalValue / purchaseSummary.totalAnimals) : "-"]);
+      purchaseSummary.totalAnimals > 0 ?formatCurrency(purchaseSummary.totalValue / purchaseSummary.totalAnimals) : "-"]);
   }
   doc.autoTable({
-    startY: doc.lastAutoTable ? doc.lastAutoTable.finalY + 2 : 55,
+    startY: doc.lastAutoTable ?doc.lastAutoTable.finalY + 2 : 55,
     head: [["Categoria", "Qtd. animais", "Custo total", "Custo/cab."]],
     body: rows,
     theme: "striped",
-    headStyles: { fillColor: [79, 115, 168] },
+    headStyles: { fillColor: [43, 132, 184] },
     alternateRowStyles: { fillColor: [240, 246, 255] },
     margin: { left: 14, right: 14 }
   });
@@ -9259,23 +9470,23 @@ function appendSalesByCategoryPdfTable(doc, saleSummary) {
     .map(([cat, data]) => [
       cat,
       formatInteger(data.qty),
-      data.liveKg > 0 ? formatWeight(data.liveKg) : "-",
+      data.liveKg > 0 ?formatWeight(data.liveKg) : "-",
       formatCurrency(data.value),
-      data.liveKg > 0 ? formatCurrency(data.value / data.liveKg) : "-"
+      data.liveKg > 0 ?formatCurrency(data.value / data.liveKg) : "-"
     ]);
   if (!rows.length) {
     rows.push(["Sem vendas no período", "-", "-", "-", "-"]);
   } else {
     rows.push(["TOTAL", formatInteger(totalQty), formatWeight(saleSummary.liveKg),
       formatCurrency(saleSummary.totalValue),
-      saleSummary.liveKg > 0 ? formatCurrency(saleSummary.totalValue / saleSummary.liveKg) : "-"]);
+      saleSummary.liveKg > 0 ?formatCurrency(saleSummary.totalValue / saleSummary.liveKg) : "-"]);
   }
   doc.autoTable({
-    startY: doc.lastAutoTable ? doc.lastAutoTable.finalY + 2 : 55,
+    startY: doc.lastAutoTable ?doc.lastAutoTable.finalY + 2 : 55,
     head: [["Categoria", "Qtd. animais", "Kg vivo", "Receita total", "R$/kg vivo"]],
     body: rows,
     theme: "striped",
-    headStyles: { fillColor: [201, 140, 79] },
+    headStyles: { fillColor: [43, 132, 184] },
     alternateRowStyles: { fillColor: [255, 247, 237] },
     margin: { left: 14, right: 14 }
   });
@@ -9296,7 +9507,7 @@ function appendChronologicalEvolutionPdfTable(doc, farm, year) {
       formatCurrency(purchase.totalValue),
       formatInteger(sale.count),
       formatCurrency(sale.totalValue),
-      `${saldo >= 0 ? "+" : ""}${formatCurrency(saldo)}`
+      `${saldo >= 0 ?"+" : ""}${formatCurrency(saldo)}`
     ]);
     totalBuyQty += purchase.count;
     totalBuyVal += purchase.totalValue;
@@ -9309,14 +9520,14 @@ function appendChronologicalEvolutionPdfTable(doc, farm, year) {
     const totalSaldo = totalSellVal - totalBuyVal;
     rows.push(["TOTAL", formatInteger(totalBuyQty), formatCurrency(totalBuyVal),
       formatInteger(totalSellQty), formatCurrency(totalSellVal),
-      `${totalSaldo >= 0 ? "+" : ""}${formatCurrency(totalSaldo)}`]);
+      `${totalSaldo >= 0 ?"+" : ""}${formatCurrency(totalSaldo)}`]);
   }
   doc.autoTable({
-    startY: doc.lastAutoTable ? doc.lastAutoTable.finalY + 2 : 55,
+    startY: doc.lastAutoTable ?doc.lastAutoTable.finalY + 2 : 55,
     head: [["Mês", "Compras (op.)", "Custo compras", "Vendas (op.)", "Receita vendas", "Saldo"]],
     body: rows,
     theme: "striped",
-    headStyles: { fillColor: [37, 88, 58] },
+    headStyles: { fillColor: [43, 132, 184] },
     alternateRowStyles: { fillColor: [240, 248, 242] },
     margin: { left: 14, right: 14 }
   });
@@ -9339,15 +9550,15 @@ function appendSanitaryByProductPdfTable(doc, sanitaryRecords) {
       product,
       formatInteger(data.applications),
       formatInteger(data.animals),
-      data.lastDate ? formatDate(data.lastDate) : "-"
+      data.lastDate ?formatDate(data.lastDate) : "-"
     ]);
   if (!rows.length) rows.push(["Sem registros sanitários no período", "-", "-", "-"]);
   doc.autoTable({
-    startY: doc.lastAutoTable ? doc.lastAutoTable.finalY + 2 : 55,
+    startY: doc.lastAutoTable ?doc.lastAutoTable.finalY + 2 : 55,
     head: [["Produto / Vacina", "Aplicações", "Animais tratados", "Último uso"]],
     body: rows,
     theme: "striped",
-    headStyles: { fillColor: [55, 91, 67] },
+    headStyles: { fillColor: [43, 132, 184] },
     alternateRowStyles: { fillColor: [240, 248, 242] },
     margin: { left: 14, right: 14 }
   });
@@ -9388,7 +9599,7 @@ function appendConsolidatedPdfIntro(doc, farms, periodLabel, year, month) {
     { label: "Custo total de compras", value: formatCurrency(totals.purchasesValue), color: [60, 90, 145] },
     { label: "Vendas realizadas", value: `${formatInteger(totals.salesQty)} op.`, color: [195, 130, 65] },
     { label: "Receita total de vendas", value: formatCurrency(totals.salesValue), color: [170, 110, 50] },
-    { label: "Saldo financeiro", value: formatCurrency(Math.abs(saldo)), sub: saldo >= 0 ? "positivo" : "negativo", color: saldo >= 0 ? [55, 91, 67] : [140, 60, 50] },
+    { label: "Saldo financeiro", value: formatCurrency(Math.abs(saldo)), sub: saldo >= 0 ?"positivo" : "negativo", color: saldo >= 0 ?[55, 91, 67] : [140, 60, 50] },
     { label: "Aplicações sanitárias", value: formatInteger(totals.sanitaryCount), color: [80, 110, 60] },
     { label: "Animais tratados", value: formatInteger(totals.treatedAnimals), color: [65, 90, 50] }
   ];
@@ -9444,12 +9655,12 @@ function appendConsolidatedPdfIntro(doc, farms, periodLabel, year, month) {
         formatCurrency(purchase.totalValue),
         formatInteger(sale.count),
         formatCurrency(sale.totalValue),
-        `${farmSaldo >= 0 ? "+" : ""}${formatCurrency(farmSaldo)}`,
+        `${farmSaldo >= 0 ?"+" : ""}${formatCurrency(farmSaldo)}`,
         formatInteger(sanitary.totalApplications)
       ];
     }),
     theme: "striped",
-    headStyles: { fillColor: [37, 88, 58], fontSize: 8 },
+    headStyles: { fillColor: [43, 132, 184], fontSize: 8 },
     styles: { fontSize: 8.5, cellPadding: 2.5 },
     alternateRowStyles: { fillColor: [245, 250, 246] },
     margin: { left: 14, right: 14 }
@@ -9469,7 +9680,7 @@ async function appendFarmPdfSection(doc, farm, periodLabel, year, month) {
     { label: "Estoque atual", value: `${formatInteger(getFarmTotal(farm))} animais`, color: [37, 88, 58] },
     { label: "Receita de vendas", value: formatCurrency(saleSummary.totalValue), color: [195, 130, 65] },
     { label: "Custo de compras", value: formatCurrency(purchaseSummary.totalValue), color: [79, 115, 168] },
-    { label: "Saldo financeiro", value: formatCurrency(Math.abs(saldo)), sub: saldo >= 0 ? "positivo" : "negativo", color: saldo >= 0 ? [55, 91, 67] : [140, 60, 50] }
+    { label: "Saldo financeiro", value: formatCurrency(Math.abs(saldo)), sub: saldo >= 0 ?"positivo" : "negativo", color: saldo >= 0 ?[55, 91, 67] : [140, 60, 50] }
   ];
   const cardW = (width - margin * 2 - 12) / 4;
   const cardH = 22;
@@ -9497,6 +9708,8 @@ async function appendFarmPdfSection(doc, farm, periodLabel, year, month) {
 
   appendPdfSectionTitle(doc, "Estoque por Categoria", afterCardsY);
   appendInventoryWithPercentTable(doc, farm);
+  appendPdfSectionTitle(doc, "Campos / Potreiros");
+  appendPotreroPdfTable(doc, getPotreroTotals(farm));
 
   appendPdfSectionTitle(doc, "Compras no Período");
   appendPurchasesByCategoryPdfTable(doc, purchaseSummary);
@@ -9508,52 +9721,6 @@ async function appendFarmPdfSection(doc, farm, periodLabel, year, month) {
 
   appendPdfSectionTitle(doc, `Evolução Cronológica – ${year}`);
   appendChronologicalEvolutionPdfTable(doc, farm, year);
-
-  // ── Sanitário ──────────────────────────────────────────
-  const sanitarySummary = getSanitarySummary(farm, year, month);
-  const sanitaryRecords = getFilteredSanitaryRecords(farm, year, month)
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
-
-  appendPdfSectionTitle(doc, "Manejo Sanitário — Resumo do Período");
-  doc.autoTable({
-    startY: doc.lastAutoTable.finalY + 2,
-    head: [["Indicador", "Valor"]],
-    body: [
-      ["Aplicações registradas", formatInteger(sanitarySummary.totalApplications)],
-      ["Animais tratados (soma)", formatInteger(sanitarySummary.treatedAnimals)],
-      ["Produtos distintos utilizados", formatInteger(sanitarySummary.uniqueProducts)],
-      ["Último manejo", sanitarySummary.latestRecord
-        ? `${formatDate(sanitarySummary.latestRecord.date)} · ${sanitarySummary.latestRecord.product}`
-        : "Sem registro no período"]
-    ],
-    theme: "striped",
-    headStyles: { fillColor: [55, 91, 67] },
-    styles: { fontSize: 9, cellPadding: 3 },
-    margin: { left: 14, right: 14 }
-  });
-
-  appendPdfSectionTitle(doc, "Manejo Sanitário — Detalhamento");
-  appendSanitaryByProductPdfTable(doc, sanitaryRecords);
-
-  doc.autoTable({
-    startY: doc.lastAutoTable.finalY + 2,
-    head: [["Código", "Data", "Categoria", "Qtd.", "Produto", "Obs."]],
-    body: sanitaryRecords.length
-      ? sanitaryRecords.map((r) => [
-        r.code || "—",
-        formatDate(r.date),
-        r.categoryName || "—",
-        formatInteger(r.quantity || 0),
-        r.product || "—",
-        r.notes || "—"
-      ])
-      : [["—", "—", "—", "—", "Sem registros no período", "—"]],
-    theme: "striped",
-    headStyles: { fillColor: [55, 91, 67] },
-    styles: { fontSize: 8.5, cellPadding: 2.5 },
-    alternateRowStyles: { fillColor: [245, 250, 246] },
-    margin: { left: 14, right: 14 }
-  });
 
   // ── Reprodução ─────────────────────────────────────────
   const repRecords = (farm.reproductionRecords || [])
@@ -9578,11 +9745,11 @@ async function appendFarmPdfSection(doc, farm, periodLabel, year, month) {
       ["Entouradas", formatInteger(repStats.totalEntouradas)],
       ["Prenhes confirmadas", formatInteger(repStats.totalPegou)],
       ["Falhadas", formatInteger(repStats.totalFalhou)],
-      ["Taxa de prenhez", repStats.taxaSucesso != null ? `${repStats.taxaSucesso.toFixed(1)}%` : "Aguardando verificação"],
+      ["Taxa de prenhez", repStats.taxaSucesso != null ?`${repStats.taxaSucesso.toFixed(1)}%` : "Aguardando verificação"],
       ["Aguardando verificação", formatInteger(repPendentes)]
     ],
     theme: "striped",
-    headStyles: { fillColor: [140, 80, 45] },
+    headStyles: { fillColor: [43, 132, 184] },
     styles: { fontSize: 9, cellPadding: 3 },
     margin: { left: 14, right: 14 }
   });
@@ -9594,27 +9761,27 @@ async function appendFarmPdfSection(doc, farm, periodLabel, year, month) {
       head: [["Código", "Data", "Tipo", "Categoria", "Qtd.", "Data Verif.", "Prenha", "Falhada", "% Prenhez"]],
       body: repRecords.map((r) => {
         const qty = Number(r.quantity || 0);
-        const pegou = r.quantityPegou != null ? formatInteger(r.quantityPegou) : "—";
+        const pegou = r.quantityPegou != null ?formatInteger(r.quantityPegou) : "—";
         const falhou = r.verificationDate && r.quantityPegou != null
-          ? formatInteger(Math.max(0, qty - Number(r.quantityPegou)))
+          ?formatInteger(Math.max(0, qty - Number(r.quantityPegou)))
           : "—";
         const taxa = r.verificationDate && r.quantityPegou != null && qty > 0
-          ? `${((Number(r.quantityPegou) / qty) * 100).toFixed(1)}%`
+          ?`${((Number(r.quantityPegou) / qty) * 100).toFixed(1)}%`
           : "Aguardando";
         return [
           r.code || "—",
           formatDate(r.date),
-          r.type === "inseminacao" ? "Inseminação" : "Entourada",
+          r.type === "inseminacao" ?"Inseminação" : "Entourada",
           r.categoryName || "—",
           formatInteger(qty),
-          r.verificationDate ? formatDate(r.verificationDate) : "Pendente",
+          r.verificationDate ?formatDate(r.verificationDate) : "Pendente",
           pegou,
           falhou,
           taxa
         ];
       }),
       theme: "striped",
-      headStyles: { fillColor: [140, 80, 45] },
+      headStyles: { fillColor: [43, 132, 184] },
       styles: { fontSize: 8, cellPadding: 2 },
       alternateRowStyles: { fillColor: [255, 247, 237] },
       margin: { left: 14, right: 14 }
@@ -9630,12 +9797,12 @@ async function exportReproducaoPdf() {
 
   const { jsPDF } = window.jspdf;
   const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
-  const farms = isTotalView ? getAllFarms() : [getFarm()].filter(Boolean);
+  const farms = isTotalView ?getAllFarms() : [getFarm()].filter(Boolean);
   if (!farms.length) { alert("Nenhuma fazenda encontrada."); return; }
 
   const year = String(state.filters.year);
   const month = state.filters.month;
-  const periodLabel = month === "all" ? `Ano ${year}` : `${MONTH_NAMES[Number(month) - 1]}/${year}`;
+  const periodLabel = month === "all" ?`Ano ${year}` : `${MONTH_NAMES[Number(month) - 1]}/${year}`;
 
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
@@ -9643,9 +9810,34 @@ async function exportReproducaoPdf() {
   const margin = 14;
   let firstPage = true;
 
+  await appendPdfCoverPage(doc, farms, periodLabel, "Relatório de Reprodução");
+  doc.addPage();
+
+  if (isTotalView) {
+    appendReproductionConsolidatedPdfIntro(doc, farms, periodLabel, year, month);
+    doc.addPage();
+  }
+
   for (const farm of farms) {
     if (!firstPage) doc.addPage();
     firstPage = false;
+
+    if (isTotalView) {
+      const recordsForDivider = getReproductionRecords(farm).filter((record) => {
+        const d = record.date || "";
+        if (year !== "all" && !d.startsWith(year)) return false;
+        if (month !== "all" && d.slice(5, 7) !== String(month).padStart(2, "0")) return false;
+        return true;
+      });
+      const dividerStats = calcReproductionStats(recordsForDivider);
+      appendPdfFarmReportDivider(doc, farm, periodLabel, "Relatório de Reprodução", [
+        { label: "Eventos", value: formatInteger(recordsForDivider.length) },
+        { label: "Prenhas", value: formatInteger(dividerStats.totalPegou) },
+        { label: "Falhadas", value: formatInteger(dividerStats.totalFalhou) },
+        { label: "Taxa", value: dividerStats.taxaSucesso != null ?`${dividerStats.taxaSucesso.toFixed(1)}%` : "-" }
+      ], farms.indexOf(farm) + 1, farms.length);
+      doc.addPage();
+    }
 
     // Header
     try {
@@ -9677,7 +9869,7 @@ async function exportReproducaoPdf() {
 
     const stats = calcReproductionStats(repRecords);
     const pendentes = repRecords.filter((r) => !r.verificationDate).length;
-    const taxaStr = stats.taxaSucesso != null ? `${stats.taxaSucesso.toFixed(1)}%` : "—";
+    const taxaStr = stats.taxaSucesso != null ?`${stats.taxaSucesso.toFixed(1)}%` : "—";
 
     // KPI row
     const kpis = [
@@ -9711,22 +9903,22 @@ async function exportReproducaoPdf() {
       startY: 52,
       head: [["Código", "Data", "Tipo", "Categoria", "Qtd.", "Data Verif.", "Prenha", "Falhada", "% Prenhez", "Obs."]],
       body: repRecords.length
-        ? repRecords.map((r) => {
+        ?repRecords.map((r) => {
           const qty = Number(r.quantity || 0);
-          const pegou = r.quantityPegou != null ? formatInteger(r.quantityPegou) : "—";
+          const pegou = r.quantityPegou != null ?formatInteger(r.quantityPegou) : "—";
           const falhou = r.verificationDate && r.quantityPegou != null
-            ? formatInteger(Math.max(0, qty - Number(r.quantityPegou)))
+            ?formatInteger(Math.max(0, qty - Number(r.quantityPegou)))
             : "—";
           const taxa = r.verificationDate && r.quantityPegou != null && qty > 0
-            ? `${((Number(r.quantityPegou) / qty) * 100).toFixed(1)}%`
+            ?`${((Number(r.quantityPegou) / qty) * 100).toFixed(1)}%`
             : "Aguardando";
           return [
             r.code || "—",
             formatDate(r.date),
-            r.type === "inseminacao" ? "Inseminação" : "Entourada",
+            r.type === "inseminacao" ?"Inseminação" : "Entourada",
             r.categoryName || "—",
             formatInteger(qty),
-            r.verificationDate ? formatDate(r.verificationDate) : "Pendente",
+            r.verificationDate ?formatDate(r.verificationDate) : "Pendente",
             pegou,
             falhou,
             taxa,
@@ -9735,13 +9927,14 @@ async function exportReproducaoPdf() {
         })
         : [["—", "—", "—", "—", "—", "—", "—", "—", "Sem eventos no período", ""]],
       theme: "striped",
-      headStyles: { fillColor: [140, 80, 45], fontSize: 8 },
+      headStyles: { fillColor: [43, 132, 184], fontSize: 8 },
       styles: { fontSize: 8, cellPadding: 2 },
       alternateRowStyles: { fillColor: [255, 247, 237] },
       margin: { left: margin, right: margin }
     });
 
-    // Footer
+    // Footer handled after all pages are assembled.
+    /*
     const pageCount = doc.internal.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
@@ -9750,11 +9943,79 @@ async function exportReproducaoPdf() {
       doc.text(`Página ${i} de ${pageCount}`, pageW - margin, pageH - 6, { align: "right" });
       doc.text(`Estabelecimentos Da Luz · Reprodução · ${periodLabel}`, margin, pageH - 6);
     }
+    */
   }
 
-  const periodSuffix = month === "all" ? year : `${year}-${month}`;
-  const farmSuffix = isTotalView ? "todas-fazendas" : slugify(farms[0]?.name || "");
+  addPdfFooters(doc, { coverPage: true });
+  const periodSuffix = month === "all" ?year : `${year}-${month}`;
+  const farmSuffix = isTotalView ?"todas-fazendas" : slugify(farms[0]?.name || "");
   doc.save(`reproducao-${farmSuffix}-${periodSuffix}.pdf`);
+}
+
+function appendReproductionConsolidatedPdfIntro(doc, farms, periodLabel, year, month) {
+  const pageW = doc.internal.pageSize.getWidth();
+  const margin = 14;
+  const allRecords = farms.flatMap((farm) =>
+    getReproductionRecords(farm)
+      .filter((record) => {
+        const d = record.date || "";
+        if (year !== "all" && !d.startsWith(year)) return false;
+        if (month !== "all" && d.slice(5, 7) !== String(month).padStart(2, "0")) return false;
+        return true;
+      })
+      .map((record) => ({ ...record, farmName: farm.name }))
+  );
+  const stats = calcReproductionStats(allRecords);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(17);
+  doc.setTextColor(45, 35, 25);
+  doc.text("Relatório de Reprodução - Todas as Fazendas", margin, 16);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(87, 69, 52);
+  doc.text(`Período: ${periodLabel} | Fazendas: ${formatInteger(farms.length)} | Responsável: ${TECHNICAL_MANAGER_NAME}`, margin, 24);
+  doc.setDrawColor(140, 80, 45);
+  doc.line(margin, 30, pageW - margin, 30);
+
+  doc.autoTable({
+    startY: 38,
+    head: [["Indicador", "Valor"]],
+    body: [
+      ["Eventos no período", formatInteger(allRecords.length)],
+      ["Inseminacoes", formatInteger(stats.totalInseminacoes)],
+      ["Entouradas", formatInteger(stats.totalEntouradas)],
+      ["Prenhas confirmadas", formatInteger(stats.totalPegou)],
+      ["Falhadas", formatInteger(stats.totalFalhou)],
+      ["Taxa de prenhez", stats.taxaSucesso != null ?`${stats.taxaSucesso.toFixed(1)}%` : "-"],
+      ["Aguardando resultado", formatInteger(allRecords.filter((record) => !record.verificationDate).length)]
+    ],
+    theme: "striped",
+    headStyles: { fillColor: [43, 132, 184] },
+    styles: { fontSize: 9, cellPadding: 3 },
+    margin: { left: margin, right: margin }
+  });
+
+  doc.autoTable({
+    startY: doc.lastAutoTable.finalY + 8,
+    head: [["Fazenda", "Eventos", "Prenhas", "Falhadas", "Pendentes", "Taxa"]],
+    body: farms.map((farm) => {
+      const records = allRecords.filter((record) => record.farmName === farm.name);
+      const farmStats = calcReproductionStats(records);
+      return [
+        farm.name,
+        formatInteger(records.length),
+        formatInteger(farmStats.totalPegou),
+        formatInteger(farmStats.totalFalhou),
+        formatInteger(records.filter((record) => !record.verificationDate).length),
+        farmStats.taxaSucesso != null ?`${farmStats.taxaSucesso.toFixed(1)}%` : "-"
+      ];
+    }),
+    theme: "striped",
+    headStyles: { fillColor: [43, 132, 184] },
+    styles: { fontSize: 9, cellPadding: 3 },
+    margin: { left: margin, right: margin }
+  });
 }
 
 async function exportSanitaryPdfReport() {
@@ -9764,29 +10025,100 @@ async function exportSanitaryPdfReport() {
   }
 
   const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
-  const farms = isTotalView ? getAllFarms() : [getFarm()].filter(Boolean);
+  const farms = isTotalView ?getAllFarms() : [getFarm()].filter(Boolean);
   if (!farms.length) {
     alert("Nenhuma fazenda válida encontrada.");
     return;
   }
 
   const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  const periodSuffix = state.filters.month === "all"
+    ?state.filters.year
+    : `${state.filters.year}-${state.filters.month}`;
+  const periodLabel = state.filters.month === "all"
+    ?`Ano ${state.filters.year}`
+    : `${MONTH_NAMES[Number(state.filters.month) - 1]}/${state.filters.year}`;
 
-  for (const farm of farms) {
-    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-    await appendSanitaryPdfReport(doc, farm);
-    const periodSuffix = state.filters.month === "all"
-      ? state.filters.year
-      : `${state.filters.year}-${state.filters.month}`;
-    doc.save(`manejo-sanitario-${slugify(farm.name)}-${periodSuffix}.pdf`);
+  await appendPdfCoverPage(doc, farms, periodLabel, "Relatório Sanitário");
+
+  if (farms.length > 1) {
+    doc.addPage();
+    appendSanitaryConsolidatedPdfIntro(doc, farms);
+    for (const [index, farm] of farms.entries()) {
+      doc.addPage();
+      const summary = getSanitarySummary(farm, state.filters.year, state.filters.month);
+      appendPdfFarmReportDivider(doc, farm, periodLabel, "Relatório Sanitário", [
+        { label: "Aplicacoes", value: formatInteger(summary.totalApplications) },
+        { label: "Animais tratados", value: formatInteger(summary.treatedAnimals) },
+        { label: "Produtos", value: formatInteger(summary.uniqueProducts) },
+        { label: "Estoque", value: formatInteger(getFarmTotal(farm)) }
+      ], index + 1, farms.length);
+      doc.addPage();
+      await appendSanitaryPdfReport(doc, farm);
+    }
+    addPdfFooters(doc, { coverPage: true });
+    doc.save(`manejo-sanitario-todas-fazendas-${periodSuffix}.pdf`);
+  } else {
+    doc.addPage();
+    await appendSanitaryPdfReport(doc, farms[0]);
+    addPdfFooters(doc, { coverPage: true });
+    doc.save(`manejo-sanitario-${slugify(farms[0].name)}-${periodSuffix}.pdf`);
   }
+}
+
+function appendSanitaryConsolidatedPdfIntro(doc, farms) {
+  const year = state.filters.year;
+  const month = state.filters.month;
+  const periodLabel = month === "all"
+    ?`Ano ${year}`
+    : `${MONTH_NAMES[Number(month) - 1]}/${year}`;
+  const pageW = doc.internal.pageSize.getWidth();
+  const margin = 14;
+
+  const rows = farms.map((farm) => {
+    const summary = getSanitarySummary(farm, year, month);
+    return [
+      farm.name,
+      formatInteger(summary.totalApplications),
+      formatInteger(summary.treatedAnimals),
+      formatInteger(summary.uniqueProducts),
+      summary.latestRecord ?`${formatDate(summary.latestRecord.date)} - ${summary.latestRecord.product}` : "-"
+    ];
+  });
+  const totals = rows.reduce((acc, row) => {
+    acc.applications += Number(String(row[1]).replace(/\D/g, "") || 0);
+    acc.animals += Number(String(row[2]).replace(/\D/g, "") || 0);
+    return acc;
+  }, { applications: 0, animals: 0 });
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(17);
+  doc.setTextColor(45, 35, 25);
+  doc.text("Relatório Sanitário - Todas as Fazendas", margin, 16);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(87, 69, 52);
+  doc.text(`Período: ${periodLabel} | Fazendas: ${formatInteger(farms.length)} | Responsável: ${TECHNICAL_MANAGER_NAME}`, margin, 24);
+  doc.setDrawColor(55, 91, 67);
+  doc.line(margin, 30, pageW - margin, 30);
+
+  doc.autoTable({
+    startY: 38,
+    head: [["Fazenda", "Aplica??es", "Animais tratados", "Produtos", "?ltimo manejo"]],
+    body: rows.concat([["TOTAL", formatInteger(totals.applications), formatInteger(totals.animals), "-", "-"]]),
+    theme: "striped",
+    headStyles: { fillColor: [43, 132, 184] },
+    styles: { fontSize: 9, cellPadding: 3 },
+    margin: { left: margin, right: margin }
+  });
 }
 
 async function appendSanitaryPdfReport(doc, farm) {
   const year = state.filters.year;
   const month = state.filters.month;
   const periodLabel = month === "all"
-    ? `Ano ${year}`
+    ?`Ano ${year}`
     : `${MONTH_NAMES[Number(month) - 1]}/${year}`;
 
   const pageW = doc.internal.pageSize.getWidth();
@@ -9876,7 +10208,7 @@ async function appendSanitaryPdfReport(doc, farm) {
 
     doc.setFontSize(7.5);
     const cells = [
-      record.code || (record.sourceId?.startsWith("xls-san-") ? `IMP-${getFarmCodePrefix(farm.id)}` : "—"),
+      record.code || (record.sourceId?.startsWith("xls-san-") ?`IMP-${getFarmCodePrefix(farm.id)}` : "—"),
       formatDate(record.date),
       record.categoryName || "—",
       String(record.quantity || "—"),
@@ -9898,7 +10230,8 @@ async function appendSanitaryPdfReport(doc, farm) {
     y += rowH;
   });
 
-  // Footer
+  // Footer handled after all pages are assembled.
+  /*
   const pageCount = doc.internal.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
@@ -9907,10 +10240,11 @@ async function appendSanitaryPdfReport(doc, farm) {
     doc.text(`Página ${i} de ${pageCount}`, pageW - margin, pageH - 6, { align: "right" });
     doc.text(`Estabelecimentos Da Luz · Manejo Sanitário · ${periodLabel}`, margin, pageH - 6);
   }
+  */
 }
 
 function getPdfFileName(farms, year, month) {
-  const periodSuffix = month === "all" ? year : `${year}-${month}`;
+  const periodSuffix = month === "all" ?year : `${year}-${month}`;
   if (farms.length === 1) {
     return `relatorio-${slugify(farms[0].name)}-${periodSuffix}.pdf`;
   }
@@ -9931,7 +10265,7 @@ async function exportPdfReport(farmIds = [state.data.selectedFarmId], period = {
   }
 
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   if (typeof doc.autoTable !== "function") {
     alert("O módulo de tabela do PDF não foi carregado. Verifique sua conexão e tente novamente.");
     return;
@@ -9939,7 +10273,7 @@ async function exportPdfReport(farmIds = [state.data.selectedFarmId], period = {
 
   const year = String(period.year || state.filters.year);
   const month = period.month || state.filters.month;
-  const periodLabel = month === "all" ? `Ano de ${year}` : `${MONTH_NAMES[Number(month) - 1]} de ${year}`;
+  const periodLabel = month === "all" ?`Ano de ${year}` : `${MONTH_NAMES[Number(month) - 1]} de ${year}`;
 
   await appendPdfCoverPage(doc, farms, periodLabel);
 
@@ -10010,7 +10344,7 @@ function ensureDataShape(data, options = {}) {
   // Migrate users without roles — first user is admin, rest are usuario
   data.auth.users.forEach((user, index) => {
     if (!user.role) {
-      user.role = index === 0 ? "admin" : "usuario";
+      user.role = index === 0 ?"admin" : "usuario";
     }
   });
   if (!data.auth.users.some((user) => user.id === data.auth.sessionUserId)) {
@@ -10085,7 +10419,7 @@ function ensureDataShape(data, options = {}) {
       notes: movement.notes || "",
       photos: normalizeMovementPhotos(movement.photos),
       saleDetails: movement.saleDetails
-        ? {
+        ?{
           mode: movement.saleDetails.mode || "vivo",
           pricePerKg: Number(movement.saleDetails.pricePerKg || 0),
           weightKg: Number(movement.saleDetails.weightKg || 0)
@@ -10215,7 +10549,7 @@ function applyImportedFarmBaseline(farm) {
 }
 
 function isPlaceholderInventory(farm) {
-  const categories = Array.isArray(farm.categories) ? farm.categories : [];
+  const categories = Array.isArray(farm.categories) ?farm.categories : [];
   const hasAnyCategoryValue = categories.some((category) => Number(category.quantity || 0) > 0);
   const usesOnlyStandardCategories = categories.every((category) => STANDARD_FARM_CATEGORIES.some((template) => template.id === category.id));
   const hasOperationalHistory = (farm.movements?.length || 0) > 0
@@ -10322,7 +10656,7 @@ function drawChartFallback(canvasId, message) {
 }
 
 function showStartupError(error) {
-  const message = error instanceof Error ? error.message : String(error);
+  const message = error instanceof Error ?error.message : String(error);
   const target = document.querySelector(".page-shell");
   if (!target) {
     return;
@@ -10403,7 +10737,7 @@ function normalizeMovementPhotos(photos) {
       id: photo.id || `photo-${index + 1}`,
       name: String(photo.name || `Foto ${index + 1}`),
       caption: String(photo.caption || ""),
-      mimeType: String(photo.mimeType || (photo.dataUrl ? getDataUrlMimeType(photo.dataUrl) : "image/jpeg")),
+      mimeType: String(photo.mimeType || (photo.dataUrl ?getDataUrlMimeType(photo.dataUrl) : "image/jpeg")),
       url: photo.url || null,
       dataUrl: photo.dataUrl || null
     }));
@@ -10411,7 +10745,7 @@ function normalizeMovementPhotos(photos) {
 
 function getDataUrlMimeType(dataUrl = "") {
   const match = String(dataUrl).match(/^data:([^;]+);/i);
-  return match ? match[1] : "image/jpeg";
+  return match ?match[1] : "image/jpeg";
 }
 
 function getDataUrlImageFormat(dataUrl = "") {
@@ -10431,7 +10765,7 @@ function getMovementPhotoCount(movement) {
 
 function formatMovementPhotoCount(movement) {
   const count = getMovementPhotoCount(movement);
-  return count ? `${formatInteger(count)} ${count === 1 ? "foto" : "fotos"}` : "-";
+  return count ?`${formatInteger(count)} ${count === 1 ?"foto" : "fotos"}` : "-";
 }
 
 function getMovementPhotoFlagMarkup(movement) {
@@ -10440,7 +10774,7 @@ function getMovementPhotoFlagMarkup(movement) {
     return "";
   }
 
-  return `<span class="photo-flag">${formatInteger(count)} ${count === 1 ? "foto" : "fotos"}</span>`;
+  return `<span class="photo-flag">${formatInteger(count)} ${count === 1 ?"foto" : "fotos"}</span>`;
 }
 
 async function readFileAsDataUrl(file) {
@@ -10599,7 +10933,7 @@ function formatInteger(value) {
 }
 
 function formatMaybeQuantity(value) {
-  return Number.isFinite(value) ? formatInteger(value) : "?";
+  return Number.isFinite(value) ?formatInteger(value) : "?";
 }
 
 function formatCurrency(value) {
@@ -10659,7 +10993,7 @@ function getCategoryFamily(categoryName) {
 }
 
 function trimLabel(value, max) {
-  return value.length > max ? `${value.slice(0, max - 1)}...` : value;
+  return value.length > max ?`${value.slice(0, max - 1)}...` : value;
 }
 
 function lightenColor(hexColor, amount) {
@@ -10708,7 +11042,7 @@ function escapeHtml(value) {
 
 function getLastBackupDate() {
   const stored = localStorage.getItem(BACKUP_DATE_KEY);
-  return stored ? new Date(stored) : null;
+  return stored ?new Date(stored) : null;
 }
 
 function getDaysSinceBackup() {
@@ -10776,21 +11110,21 @@ async function handleRestoreFile(event) {
 
     const restored = ensureDataShape(payload.dados, { preserveSnapshot: true });
     const currentSessionUserId = state.data.auth.sessionUserId;
-    const currentUsers = Array.isArray(state.data.auth.users) ? [...state.data.auth.users] : [];
+    const currentUsers = Array.isArray(state.data.auth.users) ?[...state.data.auth.users] : [];
     restored.selectedFarmId = TOTAL_FARM_ID;
     restored.auth.users = currentUsers;
     restored.auth.sessionUserId = restored.auth.users.some((user) => user.id === currentSessionUserId)
-      ? currentSessionUserId
+      ?currentSessionUserId
       : "";
 
     state.data = restored;
-    logAuditEvent("Restauração", "sistema", `Backup restaurado${payload.dataBackup ? ` de ${new Date(payload.dataBackup).toLocaleString("pt-BR")}` : ""}`);
+    logAuditEvent("Restauração", "sistema", `Backup restaurado${payload.dataBackup ?` de ${new Date(payload.dataBackup).toLocaleString("pt-BR")}` : ""}`);
     saveData();
     markBackupDone();
     renderAuthState();
     initializeAppShell();
     render();
-    alert(`Backup restaurado com sucesso!\nData do backup: ${payload.dataBackup ? new Date(payload.dataBackup).toLocaleString("pt-BR") : "desconhecida"}`);
+    alert(`Backup restaurado com sucesso!\nData do backup: ${payload.dataBackup ?new Date(payload.dataBackup).toLocaleString("pt-BR") : "desconhecida"}`);
   } catch (error) {
     console.error("Falha ao restaurar backup.", error);
     alert("Não foi possível restaurar o backup. Verifique se o arquivo está correto.");
@@ -10819,7 +11153,7 @@ function checkBackupWarning() {
 // ─── MÓDULO: REPRODUÇÃO ───────────────────────────────────────────────────────
 
 function getReproductionRecords(farm) {
-  return Array.isArray(farm?.reproductionRecords) ? farm.reproductionRecords : [];
+  return Array.isArray(farm?.reproductionRecords) ?farm.reproductionRecords : [];
 }
 
 function getAllReproductionRecords() {
@@ -10838,7 +11172,7 @@ function getFilteredReproductionRecords() {
     records = getAllReproductionRecords();
   } else {
     const farm = state.data.farms[farmId];
-    records = farm ? getReproductionRecords(farm).map((rec) => ({ ...rec, farmId: farm.id, farmName: farm.name })) : [];
+    records = farm ?getReproductionRecords(farm).map((rec) => ({ ...rec, farmId: farm.id, farmName: farm.name })) : [];
   }
 
   return records.filter((rec) => {
@@ -10878,7 +11212,7 @@ function calcReproductionStats(records) {
   });
 
   const totalVerified = verifiedInseminacoes + verifiedEntouradas;
-  const taxaSucesso = totalVerified > 0 ? (totalPegou / totalVerified) * 100 : null;
+  const taxaSucesso = totalVerified > 0 ?(totalPegou / totalVerified) * 100 : null;
 
   return { totalInseminacoes, totalEntouradas, totalPegou, totalFalhou, taxaSucesso, totalVerified };
 }
@@ -10897,7 +11231,7 @@ function renderRepFarmSwitch() {
   items.forEach((item) => {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = `farm-btn ${item.id === state.data.selectedFarmId ? "active" : ""}`;
+    btn.className = `farm-btn ${item.id === state.data.selectedFarmId ?"active" : ""}`;
     btn.textContent = item.name;
     btn.addEventListener("click", () => {
       state.data.selectedFarmId = item.id;
@@ -10915,11 +11249,11 @@ function renderRepSummaryCards() {
   const pendingVerif = records.filter((r) => !r.verificationDate).length;
 
   const taxaLabel = stats.taxaSucesso != null
-    ? `${stats.taxaSucesso.toFixed(1)}%`
+    ?`${stats.taxaSucesso.toFixed(1)}%`
     : "—";
-  const taxaColor = stats.taxaSucesso == null ? ""
-    : stats.taxaSucesso >= 70 ? "color:var(--green)"
-    : stats.taxaSucesso >= 50 ? "color:var(--sand)"
+  const taxaColor = stats.taxaSucesso == null ?""
+    : stats.taxaSucesso >= 70 ?"color:var(--green)"
+    : stats.taxaSucesso >= 50 ?"color:var(--sand)"
     : "color:var(--red)";
 
   elements.repSummarySection.innerHTML = `
@@ -10947,7 +11281,7 @@ function renderRepSummaryCards() {
       <article class="summary-card">
         <p class="panel-kicker">Taxa de Prenhez</p>
         <strong style="${taxaColor}">${taxaLabel}</strong>
-        <p>${stats.totalVerified > 0 ? `base: ${formatInteger(stats.totalVerified)} verificados` : "aguardando verificações"}</p>
+        <p>${stats.totalVerified > 0 ?`base: ${formatInteger(stats.totalVerified)} verificados` : "aguardando verificações"}</p>
       </article>
       <article class="summary-card">
         <p class="panel-kicker">Aguardando Resultado</p>
@@ -11054,7 +11388,7 @@ function renderRepDonutChart() {
     return;
   }
 
-  const taxaStr = stats.taxaSucesso != null ? `${stats.taxaSucesso.toFixed(1)}%` : "—";
+  const taxaStr = stats.taxaSucesso != null ?`${stats.taxaSucesso.toFixed(1)}%` : "—";
 
   state.charts.repDonut = new Chart(canvas, {
     type: "doughnut",
@@ -11075,7 +11409,7 @@ function renderRepDonutChart() {
         tooltip: {
           callbacks: {
             label: (ctx) => {
-              const pct = stats.totalVerified > 0 ? ((ctx.parsed / stats.totalVerified) * 100).toFixed(1) : 0;
+              const pct = stats.totalVerified > 0 ?((ctx.parsed / stats.totalVerified) * 100).toFixed(1) : 0;
               return ` ${ctx.label}: ${ctx.parsed} (${pct}%)`;
             }
           }
@@ -11111,7 +11445,7 @@ function renderRepHistoryTable() {
       const category = (rec.categoryName || rec.categoryId || "").toLowerCase();
       const potreiro = (rec.potreiro || "").toLowerCase();
       const notes = (rec.notes || "").toLowerCase();
-      const typeLabel = rec.type === "inseminacao" ? "inseminação" : "entourada";
+      const typeLabel = rec.type === "inseminacao" ?"inseminação" : "entourada";
       return [farmName, code, category, potreiro, notes, typeLabel].some((s) => s.includes(search));
     });
   }
@@ -11123,30 +11457,30 @@ function renderRepHistoryTable() {
 
   elements.repTableBody.innerHTML = pageRecords.map((rec) => {
     const farmId = rec.farmId || state.data.selectedFarmId;
-    const pegou = rec.quantityPegou != null ? formatInteger(rec.quantityPegou) : "—";
+    const pegou = rec.quantityPegou != null ?formatInteger(rec.quantityPegou) : "—";
     const qty = Number(rec.quantity || 0);
     const falhou = rec.verificationDate && rec.quantityPegou != null
-      ? formatInteger(Math.max(0, qty - Number(rec.quantityPegou)))
+      ?formatInteger(Math.max(0, qty - Number(rec.quantityPegou)))
       : "—";
     const taxa = rec.verificationDate && rec.quantityPegou != null && qty > 0
-      ? `${((Number(rec.quantityPegou) / qty) * 100).toFixed(1)}%`
+      ?`${((Number(rec.quantityPegou) / qty) * 100).toFixed(1)}%`
       : "—";
     const verifCell = rec.verificationDate
-      ? `<div class="rep-verif-result">
+      ?`<div class="rep-verif-result">
            <span class="rep-verif-date">${formatDate(rec.verificationDate)}</span>
-           <span class="rep-verif-taxa ${rec.quantityPegou != null && qty > 0 ? ((Number(rec.quantityPegou)/qty) >= 0.7 ? "taxa-ok" : "taxa-low") : ""}">${taxa !== "—" ? taxa + " prenhez" : ""}</span>
+           <span class="rep-verif-taxa ${rec.quantityPegou != null && qty > 0 ?((Number(rec.quantityPegou)/qty) >= 0.7 ?"taxa-ok" : "taxa-low") : ""}">${taxa !== "—" ?taxa + " prenhez" : ""}</span>
          </div>`
       : `<span class="rep-pendente-badge">Aguardando</span>`;
     const typeTag = rec.type === "inseminacao"
-      ? `<span class="rep-tag rep-tag-insem">Inseminação</span>`
+      ?`<span class="rep-tag rep-tag-insem">Inseminação</span>`
       : `<span class="rep-tag rep-tag-entour">Entourada</span>`;
     const farmLabel = rec.farmName || farmId;
     const registrarBtn = !rec.verificationDate
-      ? `<button type="button" class="action-row-btn btn-registrar" data-rep-verif-id="${escapeHtml(rec.id)}" data-farm-id="${escapeHtml(farmId)}" title="Registrar resultado">Registrar</button>`
+      ?`<button type="button" class="action-row-btn btn-registrar" data-rep-verif-id="${escapeHtml(rec.id)}" data-farm-id="${escapeHtml(farmId)}" title="Registrar resultado">Registrar</button>`
       : "";
 
     return `
-      <tr class="${rec.verificationDate ? "rep-row-done" : "rep-row-pending"}">
+      <tr class="${rec.verificationDate ?"rep-row-done" : "rep-row-pending"}">
         <td><code class="movement-code">${escapeHtml(rec.code || "—")}</code></td>
         <td>${escapeHtml(farmLabel)}</td>
         <td>${typeTag}</td>
@@ -11156,7 +11490,7 @@ function renderRepHistoryTable() {
         <td>${verifCell}</td>
         <td><strong class="rep-num-ok">${pegou}</strong></td>
         <td><strong class="rep-num-fail">${falhou}</strong></td>
-        <td title="${escapeHtml(rec.notes || "")}">${escapeHtml((rec.notes || "").slice(0, 25) + (rec.notes?.length > 25 ? "…" : ""))}</td>
+        <td title="${escapeHtml(rec.notes || "")}">${escapeHtml((rec.notes || "").slice(0, 25) + (rec.notes?.length > 25 ?"…" : ""))}</td>
         <td class="rep-actions-cell">
           <button type="button" class="action-row-btn btn-edit" data-rep-edit-id="${escapeHtml(rec.id)}" data-farm-id="${escapeHtml(farmId)}" title="Editar">Editar</button>
           ${registrarBtn}
@@ -11167,7 +11501,7 @@ function renderRepHistoryTable() {
   }).join("");
 
   if (!pageRecords.length) {
-    elements.repTableBody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--muted)">Nenhum registro encontrado${search ? " para a busca realizada" : ". Use o botão Editar em uma linha para criar o primeiro evento"}.</td></tr>`;
+    elements.repTableBody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--muted)">Nenhum registro encontrado${search ?" para a busca realizada" : ". Use o botão Editar em uma linha para criar o primeiro evento"}.</td></tr>`;
   }
 
   // Pagination
@@ -11189,14 +11523,14 @@ function renderRepPagination(total, page) {
   if (!elements.repHistoryPagination) return;
   const totalPages = Math.ceil(total / REP_PAGE_SIZE);
   if (totalPages <= 1) {
-    elements.repHistoryPagination.innerHTML = total > 0 ? `<span class="pagination-info">${total} registro${total !== 1 ? "s" : ""}</span>` : "";
+    elements.repHistoryPagination.innerHTML = total > 0 ?`<span class="pagination-info">${total} registro${total !== 1 ?"s" : ""}</span>` : "";
     return;
   }
   elements.repHistoryPagination.innerHTML = `
     <span class="pagination-info">${total} registros</span>
-    <button type="button" class="ghost-btn" id="repPagePrev" ${page === 0 ? "disabled" : ""}>&#8592; Anterior</button>
+    <button type="button" class="ghost-btn" id="repPagePrev" ${page === 0 ?"disabled" : ""}>&#8592; Anterior</button>
     <span class="pagination-info">Página ${page + 1} de ${totalPages}</span>
-    <button type="button" class="ghost-btn" id="repPageNext" ${page >= totalPages - 1 ? "disabled" : ""}>Próxima &#8594;</button>
+    <button type="button" class="ghost-btn" id="repPageNext" ${page >= totalPages - 1 ?"disabled" : ""}>Próxima &#8594;</button>
   `;
   document.getElementById("repPagePrev")?.addEventListener("click", () => {
     runtime.repPage = Math.max(0, (runtime.repPage || 0) - 1);
@@ -11229,8 +11563,8 @@ function openRepDialog(editingId = null, editingFarmId = null) {
 
   if (editingId) {
     const farmId = editingFarmId || state.data.selectedFarmId;
-    const farm = farmId !== TOTAL_FARM_ID ? state.data.farms[farmId] : null;
-    const rec = farm ? getReproductionRecords(farm).find((r) => r.id === editingId) : null;
+    const farm = farmId !== TOTAL_FARM_ID ?state.data.farms[farmId] : null;
+    const rec = farm ?getReproductionRecords(farm).find((r) => r.id === editingId) : null;
     if (!rec) return;
     titleEl.textContent = "Editar Evento Reprodutivo";
     idEl.value = rec.id;
@@ -11248,7 +11582,7 @@ function openRepDialog(editingId = null, editingFarmId = null) {
   } else {
     titleEl.textContent = "Novo Evento Reprodutivo";
     idEl.value = "";
-    const currentFarmId = state.data.selectedFarmId !== TOTAL_FARM_ID ? state.data.selectedFarmId : farms[0]?.id || "";
+    const currentFarmId = state.data.selectedFarmId !== TOTAL_FARM_ID ?state.data.selectedFarmId : farms[0]?.id || "";
     farmEl.value = currentFarmId;
     typeEl.value = "inseminacao";
     dateEl.value = new Date().toISOString().slice(0, 10);
@@ -11356,7 +11690,7 @@ function handleRepFormSubmit() {
 }
 
 function deleteRepRecord(id, farmId) {
-  const farm = farmId !== TOTAL_FARM_ID ? state.data.farms[farmId] : null;
+  const farm = farmId !== TOTAL_FARM_ID ?state.data.farms[farmId] : null;
   if (!farm) return;
   const rec = getReproductionRecords(farm).find((r) => r.id === id);
   if (!rec) return;
@@ -11371,21 +11705,21 @@ function openRepVerifDialog(recordId, farmId) {
   const dlg = elements.repVerifDlg;
   if (!dlg) return;
 
-  const farm = farmId !== TOTAL_FARM_ID ? state.data.farms[farmId] : null;
-  const rec = farm ? getReproductionRecords(farm).find((r) => r.id === recordId) : null;
+  const farm = farmId !== TOTAL_FARM_ID ?state.data.farms[farmId] : null;
+  const rec = farm ?getReproductionRecords(farm).find((r) => r.id === recordId) : null;
   if (!rec || !farm) return;
 
   document.getElementById("repVerifId").value = recordId;
   document.getElementById("repVerifId").dataset.farmId = farmId;
   document.getElementById("repVerifDate").value = rec.verificationDate || new Date().toISOString().slice(0, 10);
-  document.getElementById("repVerifPegou").value = rec.quantityPegou != null ? rec.quantityPegou : "";
+  document.getElementById("repVerifPegou").value = rec.quantityPegou != null ?rec.quantityPegou : "";
   document.getElementById("repVerifNotes").value = rec.verificationNotes || "";
   document.getElementById("repVerifFeedback").hidden = true;
 
-  const typeLabel = rec.type === "inseminacao" ? "Inseminação" : "Entourada";
+  const typeLabel = rec.type === "inseminacao" ?"Inseminação" : "Entourada";
   document.getElementById("repVerifInfo").innerHTML = `
     <div class="rep-verif-info-box">
-      <span class="rep-tag ${rec.type === "inseminacao" ? "rep-tag-insem" : "rep-tag-entour"}">${typeLabel}</span>
+      <span class="rep-tag ${rec.type === "inseminacao" ?"rep-tag-insem" : "rep-tag-entour"}">${typeLabel}</span>
       <span><strong>Fazenda:</strong> ${escapeHtml(farm.name)}</span>
       <span><strong>Data do evento:</strong> ${formatDate(rec.date)}</span>
       <span><strong>Categoria:</strong> ${escapeHtml(rec.categoryName || rec.categoryId)}</span>
@@ -11405,8 +11739,8 @@ function updateRepVerifFalhou() {
   if (!verifId || !pegouEl || !falhouEl) return;
 
   const farmId = verifId.dataset.farmId;
-  const farm = farmId ? state.data.farms[farmId] : null;
-  const rec = farm ? getReproductionRecords(farm).find((r) => r.id === verifId.value) : null;
+  const farm = farmId ?state.data.farms[farmId] : null;
+  const rec = farm ?getReproductionRecords(farm).find((r) => r.id === verifId.value) : null;
   if (!rec) return;
 
   const qty = Number(rec.quantity || 0);
@@ -11431,8 +11765,8 @@ function handleRepVerifSubmit() {
     return;
   }
 
-  const farm = farmId ? state.data.farms[farmId] : null;
-  const recIdx = farm ? farm.reproductionRecords.findIndex((r) => r.id === recordId) : -1;
+  const farm = farmId ?state.data.farms[farmId] : null;
+  const recIdx = farm ?farm.reproductionRecords.findIndex((r) => r.id === recordId) : -1;
   if (recIdx < 0) return;
 
   const qty = Number(farm.reproductionRecords[recIdx].quantity || 0);
