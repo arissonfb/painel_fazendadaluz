@@ -3529,6 +3529,25 @@ th {
   gap: 6px;
 }
 
+.stock-tab-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 20px;
+  border-radius: 6px;
+  background: rgba(55, 91, 67, 0.1);
+  color: var(--green);
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.stock-tab.active .stock-tab-icon {
+  background: rgba(55, 91, 67, 0.16);
+}
+
 .stock-tab.active {
   color: var(--green);
   border-bottom-color: var(--green);
