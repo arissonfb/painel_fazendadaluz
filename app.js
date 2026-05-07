@@ -11546,9 +11546,12 @@ function renderRepBarChart() {
     }
   };
 
-  // Altura: 80px por fazenda × 4 datasets + legenda
-  const chartH = Math.max(240, labels.length * 96 + 60);
-  canvas.setAttribute("height", chartH);
+  // Altura definida no container — evita loop de resize com responsive:true
+  const chartH = Math.max(260, labels.length * 96 + 60);
+  const chartPanel = canvas.closest(".chart-panel") || canvas.parentElement;
+  chartPanel.style.minHeight = chartH + "px";
+  canvas.removeAttribute("height");
+  canvas.removeAttribute("width");
 
   state.charts.repBar = new Chart(canvas, {
     type: "bar",
