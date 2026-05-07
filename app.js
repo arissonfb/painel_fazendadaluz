@@ -11505,11 +11505,11 @@ function renderRepBarChart() {
   canvas.style.display = "";
   canvas.parentElement.querySelector(".rep-empty-note")?.remove();
 
-  // Plugin: valor + % à direita de cada barra horizontal
+  // Plugin: valor + % ao lado direito de cada barra
   const repBarPctPlugin = {
     id: "repBarPct",
     afterDatasetsDraw(chart) {
-      const { ctx, data } = chart;
+      const { ctx, data, chartArea } = chart;
       const insemD  = data.datasets[0]?.data || [];
       const entourD = data.datasets[1]?.data || [];
       const totals  = insemD.map((v, i) => (v || 0) + (entourD[i] || 0));
@@ -11523,29 +11523,22 @@ function renderRepBarChart() {
           if (!value || !total) return;
           const pct = Math.round((value / total) * 100);
           const barW = Math.abs(bar.x - bar.base);
-          if (barW < 6) return;
 
           ctx.save();
           ctx.textBaseline = "middle";
 
-          if (barW >= 52) {
-            // Dentro da barra: valor + %
+          if (barW >= 48) {
+            // Label dentro da barra, à direita
             ctx.textAlign = "right";
-            ctx.font = "bold 10px 'Manrope', sans-serif";
-            ctx.fillStyle = "rgba(255,255,255,0.95)";
-            ctx.fillText(`${value}`, bar.x - 7, bar.y - 5);
-            ctx.font = "600 8px 'Manrope', sans-serif";
-            ctx.fillStyle = "rgba(255,255,255,0.72)";
-            ctx.fillText(`${pct}%`, bar.x - 7, bar.y + 6);
-          } else {
-            // Fora da barra: valor + %
+            ctx.font = `bold ${Math.min(11, barW / 6)}px 'Manrope', sans-serif`;
+            ctx.fillStyle = "rgba(255,255,255,0.96)";
+            ctx.fillText(`${value} · ${pct}%`, bar.x - 8, bar.y);
+          } else if (barW >= 10) {
+            // Label fora da barra
             ctx.textAlign = "left";
-            ctx.font = "bold 9.5px 'Manrope', sans-serif";
-            ctx.fillStyle = "#111111";
-            ctx.fillText(`${value}`, bar.x + 5, bar.y - 5);
-            ctx.font = "600 8px 'Manrope', sans-serif";
-            ctx.fillStyle = "#888888";
-            ctx.fillText(`${pct}%`, bar.x + 5, bar.y + 5);
+            ctx.font = "bold 10px 'Manrope', sans-serif";
+            ctx.fillStyle = "#222222";
+            ctx.fillText(`${value} · ${pct}%`, bar.x + 6, bar.y);
           }
           ctx.restore();
         });
@@ -11553,31 +11546,32 @@ function renderRepBarChart() {
     }
   };
 
-  // Altura dinâmica: ~88px por fazenda, mínimo 200px
-  const chartH = Math.max(200, labels.length * 88);
-  canvas.style.cssText = `display:block;width:100%;height:${chartH}px;max-height:none;margin:12px 16px 16px;`;
+  // Altura: 80px por fazenda × 4 datasets + legenda
+  const chartH = Math.max(240, labels.length * 96 + 60);
+  canvas.setAttribute("height", chartH);
 
   state.charts.repBar = new Chart(canvas, {
     type: "bar",
     data: {
       labels,
       datasets: [
-        { label: "Inseminações", data: dataInsem,  backgroundColor: "#1a5fb4", borderRadius: 4, borderSkipped: false },
-        { label: "Entouradas",   data: dataEntour, backgroundColor: "#c9a84c", borderRadius: 4, borderSkipped: false },
-        { label: "Prenhas",      data: dataPegou,  backgroundColor: "#1b6e3e", borderRadius: 4, borderSkipped: false },
-        { label: "Falhadas",     data: dataFalhou, backgroundColor: "#c0392b", borderRadius: 4, borderSkipped: false },
+        { label: "Inseminações", data: dataInsem,  backgroundColor: "#1a5fb4", borderRadius: 5, borderSkipped: false, barThickness: 16 },
+        { label: "Entouradas",   data: dataEntour, backgroundColor: "#c9a84c", borderRadius: 5, borderSkipped: false, barThickness: 16 },
+        { label: "Prenhas",      data: dataPegou,  backgroundColor: "#1b6e3e", borderRadius: 5, borderSkipped: false, barThickness: 16 },
+        { label: "Falhadas",     data: dataFalhou, backgroundColor: "#c0392b", borderRadius: 5, borderSkipped: false, barThickness: 16 },
       ]
     },
     plugins: [repBarPctPlugin],
     options: {
       indexAxis: "y",
-      responsive: false,
+      responsive: true,
       maintainAspectRatio: false,
+      layout: { padding: { right: 8, top: 8, bottom: 8 } },
       plugins: {
         legend: {
           position: "bottom",
           labels: {
-            padding: 22,
+            padding: 20,
             usePointStyle: true,
             pointStyle: "circle",
             font: { size: 12 },
@@ -11587,7 +11581,7 @@ function renderRepBarChart() {
         tooltip: {
           backgroundColor: "#111111",
           titleColor: "#ffffff",
-          bodyColor: "rgba(255,255,255,0.78)",
+          bodyColor: "rgba(255,255,255,0.80)",
           padding: 12,
           cornerRadius: 8,
           boxPadding: 4,
@@ -11605,17 +11599,17 @@ function renderRepBarChart() {
       scales: {
         x: {
           beginAtZero: true,
-          ticks: { precision: 0, color: "#888888", font: { size: 10 } },
-          grid: { color: "rgba(0,0,0,0.05)" },
+          ticks: { precision: 0, color: "#aaaaaa", font: { size: 10 } },
+          grid: { color: "rgba(0,0,0,0.05)", drawTicks: false },
           border: { display: false }
         },
         y: {
           grid: { display: false },
           border: { display: false },
           ticks: {
-            color: "#333333",
+            color: "#222222",
             font: { size: 12, weight: "600" },
-            padding: 8,
+            padding: 10,
           }
         }
       }
