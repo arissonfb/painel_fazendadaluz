@@ -6409,6 +6409,47 @@ tr:last-child td { border-bottom: none; }
 /* ─── Sidebar brand badge (mantém escuro) ─── */
 .sidebar .brand-badge { /* preservado pela regra .sidebar .brand-badge já existente */ }
 
+/* ─── Painel de contexto de estoque no modal de Reprodução ─── */
+.rep-stock-hint {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+}
+
+.rep-stock-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.rep-stock-item-cat {
+  border-left: 1px solid rgba(0, 0, 0, 0.08);
+  padding-left: 12px;
+}
+
+.rep-stock-label {
+  font-size: 0.70rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #888888;
+}
+
+.rep-stock-value {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #111111;
+  letter-spacing: -0.02em;
+}
+
+.rep-stock-cat {
+  color: var(--green);
+}
+
 /* ─── btn-primary-sm (usado em alguns modais) ─── */
 .btn-primary-sm {
   border-radius: 6px;

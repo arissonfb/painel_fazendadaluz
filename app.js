@@ -3046,6 +3046,7 @@ function bindEvents() {
   document.getElementById("repVerifSubmit")?.addEventListener("click", handleRepVerifSubmit);
   document.getElementById("repType")?.addEventListener("change", syncRepTypeFields);
   document.getElementById("repFarm")?.addEventListener("change", syncRepFarmFields);
+  document.getElementById("repCategory")?.addEventListener("change", syncRepStockHint);
   document.getElementById("repVerifPegou")?.addEventListener("input", updateRepVerifFalhou);
   elements.repHistorySearch?.addEventListener("input", () => {
     runtime.repPage = 0;
@@ -11504,7 +11505,7 @@ function renderRepBarChart() {
   canvas.style.display = "";
   canvas.parentElement.querySelector(".rep-empty-note")?.remove();
 
-  // Plugin: percentual dentro de cada barra
+  // Plugin: valor + % acima de cada barra, em preto
   const repBarPctPlugin = {
     id: "repBarPct",
     afterDatasetsDraw(chart) {
@@ -11521,14 +11522,21 @@ function renderRepBarChart() {
           const total = totals[idx];
           if (!value || !total) return;
           const pct = Math.round((value / total) * 100);
-          const barH = Math.abs(bar.base - bar.y);
-          if (barH < 18) return;           // barra pequena demais
+
           ctx.save();
-          ctx.font = "bold 9.5px 'Manrope', sans-serif";
-          ctx.fillStyle = "rgba(255,255,255,0.92)";
           ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText(`${pct}%`, bar.x, bar.y + barH / 2);
+          ctx.textBaseline = "bottom";
+
+          // Número em negrito
+          ctx.font = "bold 10px 'Manrope', sans-serif";
+          ctx.fillStyle = "#111111";
+          ctx.fillText(`${value}`, bar.x, bar.y - 12);
+
+          // Percentual menor abaixo do número
+          ctx.font = "600 8.5px 'Manrope', sans-serif";
+          ctx.fillStyle = "#666666";
+          ctx.fillText(`${pct}%`, bar.x, bar.y - 2);
+
           ctx.restore();
         });
       });
@@ -11853,6 +11861,7 @@ function openRepDialog(editingId = null, editingFarmId = null) {
   }
 
   syncRepTypeFields();
+  syncRepStockHint();
   dlg.showModal();
 }
 
@@ -11865,6 +11874,38 @@ function syncRepFarmFields() {
   if (!farm) return;
 
   catEl.innerHTML = farm.categories.map((c) => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join("");
+  syncRepStockHint();
+}
+
+function syncRepStockHint() {
+  const hintEl = document.getElementById("repStockHint");
+  const farmEl = document.getElementById("repFarm");
+  const catEl  = document.getElementById("repCategory");
+  if (!hintEl || !farmEl) return;
+
+  const farm = state.data.farms[farmEl.value];
+  if (!farm) { hintEl.hidden = true; return; }
+
+  const farmTotal = getFarmTotal(farm);
+  const catId = catEl?.value;
+  const catObj = farm.categories.find((c) => c.id === catId);
+  const catTotal = catObj ? catObj.quantity : null;
+  const catName  = catObj ? catObj.name : "";
+
+  hintEl.hidden = false;
+  hintEl.innerHTML = `
+    <div class="rep-stock-hint">
+      <div class="rep-stock-item">
+        <span class="rep-stock-label">Total na fazenda</span>
+        <strong class="rep-stock-value">${formatInteger(farmTotal)} animais</strong>
+      </div>
+      ${catTotal !== null ? `
+      <div class="rep-stock-item rep-stock-item-cat">
+        <span class="rep-stock-label">${escapeHtml(catName)}</span>
+        <strong class="rep-stock-value rep-stock-cat">${formatInteger(catTotal)} animais</strong>
+      </div>` : ""}
+    </div>
+  `;
 }
 
 function syncRepTypeFields() {
