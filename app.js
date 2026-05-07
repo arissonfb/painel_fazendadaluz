@@ -11481,7 +11481,6 @@ function renderRepBarChart() {
       }
       return true;
     });
-    if (!recs.length) return;
     const stats = calcReproductionStats(recs);
     labels.push(farm.name);
     dataInsem.push(stats.totalInseminacoes);
@@ -11490,14 +11489,15 @@ function renderRepBarChart() {
     dataFalhou.push(stats.totalFalhou);
   });
 
-  if (!labels.length) {
+  const hasAnyData = dataInsem.some((v) => v > 0) || dataEntour.some((v) => v > 0);
+  if (!hasAnyData) {
     canvas.style.display = "none";
     const existing = canvas.parentElement.querySelector(".rep-empty-note");
     if (!existing) {
       const p = document.createElement("p");
       p.className = "field-note rep-empty-note";
       p.style.cssText = "text-align:center;padding:24px";
-      p.textContent = "Nenhum dado para exibir no período selecionado.";
+      p.textContent = "Nenhum evento reprodutivo registrado no período selecionado.";
       canvas.parentElement.appendChild(p);
     }
     return;
