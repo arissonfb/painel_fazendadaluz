@@ -837,7 +837,12 @@ const runtime = {
   sanitaryCategoryFilter: "all",
   sanitaryProductFilter: "all",
   repPage: 0,
-  repSearch: ""
+  repSearch: "",
+  auditSearch: "",
+  auditPage: 0,
+  auditSessionId: "",
+  auditSessionIp: "",
+  auditSessionIpReady: false
 };
 
 const today = new Date();
@@ -859,12 +864,7 @@ const state = {
   },
   userEditingId: null,
   userEditingMode: null,
-  monthlyEditingId: null,
-  auditSearch: "",
-  auditPage: 0,
-  auditSessionId: "",
-  auditSessionIp: "",
-  auditSessionIpReady: false
+  monthlyEditingId: null
 };
 
 const elements = {
