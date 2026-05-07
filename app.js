@@ -1233,8 +1233,25 @@ if (elements.salesSummary) {
 
 boot();
 
+function fixSanitaryDates2026Dec() {
+  let changed = 0;
+  Object.values(state.data.farms || {}).forEach((farm) => {
+    (farm.sanitaryRecords || []).forEach((record) => {
+      if (typeof record.date === "string" && record.date.startsWith("2026-12")) {
+        record.date = record.date.replace("2026-12", "2025-12");
+        changed++;
+      }
+    });
+  });
+  if (changed > 0) {
+    console.log(`[migração] ${changed} registro(s) sanitário(s) corrigido(s): dez/2026 → dez/2025`);
+  }
+  return changed;
+}
+
 function boot() {
   try {
+    if (fixSanitaryDates2026Dec() > 0) saveData({ skipCloud: false });
     bindEvents();
     setAuthLoginMode(runtime.authLoginMode);
     renderAuthState();
@@ -1853,7 +1870,9 @@ async function cloudPull() {
     const cloudJson = JSON.stringify(merged.farms);
     if (localJson !== cloudJson) {
       state.data = merged;
+      const fixedCount = fixSanitaryDates2026Dec();
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
+      if (fixedCount > 0) scheduleCloudPush();
       if (isAuthenticated()) {
         render();
       }
@@ -11485,21 +11504,118 @@ function renderRepBarChart() {
   canvas.style.display = "";
   canvas.parentElement.querySelector(".rep-empty-note")?.remove();
 
+  // Plugin: percentual dentro de cada barra
+  const repBarPctPlugin = {
+    id: "repBarPct",
+    afterDatasetsDraw(chart) {
+      const { ctx, data } = chart;
+      const insemD  = data.datasets[0]?.data || [];
+      const entourD = data.datasets[1]?.data || [];
+      const totals  = insemD.map((v, i) => (v || 0) + (entourD[i] || 0));
+
+      data.datasets.forEach((dataset, di) => {
+        const meta = chart.getDatasetMeta(di);
+        if (meta.hidden) return;
+        meta.data.forEach((bar, idx) => {
+          const value = dataset.data[idx];
+          const total = totals[idx];
+          if (!value || !total) return;
+          const pct = Math.round((value / total) * 100);
+          const barH = Math.abs(bar.base - bar.y);
+          if (barH < 18) return;           // barra pequena demais
+          ctx.save();
+          ctx.font = "bold 9.5px 'Manrope', sans-serif";
+          ctx.fillStyle = "rgba(255,255,255,0.92)";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(`${pct}%`, bar.x, bar.y + barH / 2);
+          ctx.restore();
+        });
+      });
+    }
+  };
+
   state.charts.repBar = new Chart(canvas, {
     type: "bar",
     data: {
       labels,
       datasets: [
-        { label: "Inseminações", data: dataInsem, backgroundColor: "#5b8db8" },
-        { label: "Entouradas", data: dataEntour, backgroundColor: "#c98c4f" },
-        { label: "Prenha", data: dataPegou, backgroundColor: "#375b43" },
-        { label: "Falhada", data: dataFalhou, backgroundColor: "#8c4b38" }
+        {
+          label: "Inseminações",
+          data: dataInsem,
+          backgroundColor: "#1a5fb4",
+          borderRadius: 6,
+          borderSkipped: false,
+        },
+        {
+          label: "Entouradas",
+          data: dataEntour,
+          backgroundColor: "#c9a84c",
+          borderRadius: 6,
+          borderSkipped: false,
+        },
+        {
+          label: "Prenhas",
+          data: dataPegou,
+          backgroundColor: "#1b6e3e",
+          borderRadius: 6,
+          borderSkipped: false,
+        },
+        {
+          label: "Falhadas",
+          data: dataFalhou,
+          backgroundColor: "#c0392b",
+          borderRadius: 6,
+          borderSkipped: false,
+        }
       ]
     },
+    plugins: [repBarPctPlugin],
     options: {
       responsive: true,
-      plugins: { legend: { position: "bottom" } },
-      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+      maintainAspectRatio: true,
+      plugins: {
+        legend: {
+          position: "bottom",
+          labels: {
+            padding: 20,
+            usePointStyle: true,
+            pointStyle: "circle",
+            font: { size: 11.5 },
+            color: "#444444",
+          }
+        },
+        tooltip: {
+          backgroundColor: "#111111",
+          titleColor: "#ffffff",
+          bodyColor: "rgba(255,255,255,0.78)",
+          padding: 12,
+          cornerRadius: 8,
+          boxPadding: 4,
+          callbacks: {
+            label: (ctx) => {
+              const insem  = dataInsem[ctx.dataIndex]  || 0;
+              const entour = dataEntour[ctx.dataIndex] || 0;
+              const total  = insem + entour;
+              const pct = total > 0 ? ` (${Math.round((ctx.parsed.y / total) * 100)}%)` : "";
+              return ` ${ctx.dataset.label}: ${ctx.parsed.y}${pct}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          border: { display: false },
+          ticks: { color: "#666666", font: { size: 11 } }
+        },
+        y: {
+          beginAtZero: true,
+          ticks: { precision: 0, color: "#888888", font: { size: 10.5 } },
+          grid: { color: "rgba(0,0,0,0.06)" },
+          border: { display: false, dash: [4, 4] }
+        }
+      }
     }
   });
 }
@@ -11527,20 +11643,29 @@ function renderRepDonutChart() {
   state.charts.repDonut = new Chart(canvas, {
     type: "doughnut",
     data: {
-      labels: ["Prenha", "Falhada"],
+      labels: ["Prenhas", "Falhadas"],
       datasets: [{
         data: [stats.totalPegou, stats.totalFalhou],
-        backgroundColor: ["#375b43", "#8c4b38"],
-        borderWidth: 2,
-        borderColor: "#fffbf5"
+        backgroundColor: ["#1b6e3e", "#c0392b"],
+        hoverBackgroundColor: ["#22863a", "#e74c3c"],
+        borderWidth: 3,
+        borderColor: "#ffffff",
+        hoverOffset: 10,
       }]
     },
     options: {
       responsive: true,
-      cutout: "65%",
+      cutout: "72%",
+      animation: { animateRotate: true, animateScale: true },
       plugins: {
         legend: { display: false },
         tooltip: {
+          backgroundColor: "#111111",
+          titleColor: "#ffffff",
+          bodyColor: "rgba(255,255,255,0.82)",
+          padding: 12,
+          cornerRadius: 8,
+          boxPadding: 4,
           callbacks: {
             label: (ctx) => {
               const pct = stats.totalVerified > 0 ?((ctx.parsed / stats.totalVerified) * 100).toFixed(1) : 0;
@@ -11554,10 +11679,10 @@ function renderRepDonutChart() {
 
   legendEl.innerHTML = `
     <div class="rep-donut-legend-items">
-      <span class="rep-legend-dot" style="background:#375b43"></span>
-      <span>Prenha: <strong>${formatInteger(stats.totalPegou)}</strong></span>
-      <span class="rep-legend-dot" style="background:#8c4b38"></span>
-      <span>Falhada: <strong>${formatInteger(stats.totalFalhou)}</strong></span>
+      <span class="rep-legend-dot" style="background:#1b6e3e"></span>
+      <span>Prenhas: <strong>${formatInteger(stats.totalPegou)}</strong></span>
+      <span class="rep-legend-dot" style="background:#c0392b"></span>
+      <span>Falhadas: <strong>${formatInteger(stats.totalFalhou)}</strong></span>
     </div>
     <p class="rep-taxa-label">Taxa de Prenhez: <strong>${taxaStr}</strong></p>
   `;
