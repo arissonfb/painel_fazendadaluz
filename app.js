@@ -1459,6 +1459,11 @@ function openAuditTrailDialog() {
 
 async function exportAuditTrailPdf() {
   if (!isAdmin()) return;
+  if (!window.jspdf || typeof window.jspdf.jsPDF !== "function") {
+    alert("Biblioteca de PDF não disponível. Verifique sua conexão e recarregue a página.");
+    return;
+  }
+  const { jsPDF } = window.jspdf;
 
   const entries = getAuditEntries();
   const now = new Date();
