@@ -3042,7 +3042,7 @@ function bindEvents() {
   document.getElementById("closeRepVerifDlg")?.addEventListener("click", () => elements.repVerifDlg.close());
   document.getElementById("repRegisterBtn")?.addEventListener("click", () => openRepDialog());
   document.getElementById("exportRepPdfBtn")?.addEventListener("click", exportReproducaoPdf);
-  document.getElementById("repFormSubmit")?.addEventListener("click", handleRepFormSubmit);
+  document.getElementById("repFormSubmit")?.addEventListener("click", handleRepFormSubmitFixed);
   document.getElementById("repVerifSubmit")?.addEventListener("click", handleRepVerifSubmit);
   document.getElementById("repType")?.addEventListener("change", syncRepTypeFields);
   document.getElementById("repFarm")?.addEventListener("change", syncRepFarmFields);
@@ -10531,6 +10531,18 @@ function ensureDataShape(data, options = {}) {
     if (!Array.isArray(farm.reproductionRecords)) {
       farm.reproductionRecords = [];
     }
+    farm.reproductionRecords = farm.reproductionRecords.map((record) => ({
+      ...record,
+      id: record.id || record.sourceId || createMovementId(),
+      farmId: farm.id,
+      categoryName: record.categoryName || record.categoryId || "Sem categoria",
+      categoryId: record.categoryId || record.categoryName || "",
+      quantity: Number(record.quantity || 0),
+      quantityPegou: record.quantityPegou == null ?null : Number(record.quantityPegou || 0),
+      verificationDate: record.verificationDate || null,
+      verificationNotes: record.verificationNotes || "",
+      notes: record.notes || ""
+    }));
     if (typeof farm.reproductionCodeSequence !== "number") {
       farm.reproductionCodeSequence = farm.reproductionRecords.length;
     }
@@ -11310,10 +11322,39 @@ function getReproductionRecords(farm) {
   return Array.isArray(farm?.reproductionRecords) ?farm.reproductionRecords : [];
 }
 
+function withReproductionFarmContext(record, farm) {
+  return {
+    ...record,
+    farmId: farm.id,
+    farmName: farm.name
+  };
+}
+
 function getAllReproductionRecords() {
   return getAllFarms().flatMap((farm) =>
-    getReproductionRecords(farm).map((rec) => ({ ...rec, farmId: farm.id, farmName: farm.name }))
+    getReproductionRecords(farm).map((rec) => withReproductionFarmContext(rec, farm))
   );
+}
+
+function findReproductionRecordLocation(recordId, preferredFarmId = null) {
+  if (!recordId) return null;
+
+  const farms = preferredFarmId && preferredFarmId !== TOTAL_FARM_ID
+    ?[state.data.farms[preferredFarmId]].filter(Boolean)
+    : getAllFarms();
+
+  for (const farm of farms) {
+    const index = getReproductionRecords(farm).findIndex((record) => record.id === recordId);
+    if (index >= 0) {
+      return { farm, farmId: farm.id, index, record: farm.reproductionRecords[index] };
+    }
+  }
+
+  if (preferredFarmId && preferredFarmId !== TOTAL_FARM_ID) {
+    return findReproductionRecordLocation(recordId, null);
+  }
+
+  return null;
 }
 
 function getFilteredReproductionRecords() {
@@ -11326,7 +11367,7 @@ function getFilteredReproductionRecords() {
     records = getAllReproductionRecords();
   } else {
     const farm = state.data.farms[farmId];
-    records = farm ?getReproductionRecords(farm).map((rec) => ({ ...rec, farmId: farm.id, farmName: farm.name })) : [];
+    records = farm ?getReproductionRecords(farm).map((rec) => withReproductionFarmContext(rec, farm)) : [];
   }
 
   return records.filter((rec) => {
@@ -11389,6 +11430,7 @@ function renderRepFarmSwitch() {
     btn.textContent = item.name;
     btn.addEventListener("click", () => {
       state.data.selectedFarmId = item.id;
+      runtime.repPage = 0;
       saveData();
       renderReproducaoView();
     });
@@ -11547,9 +11589,11 @@ function renderRepBarChart() {
   };
 
   // Altura definida no container — evita loop de resize com responsive:true
-  const chartH = Math.max(260, labels.length * 96 + 60);
+  const chartH = Math.min(520, Math.max(300, labels.length * 56 + 96));
   const chartPanel = canvas.closest(".chart-panel") || canvas.parentElement;
-  chartPanel.style.minHeight = chartH + "px";
+  chartPanel.style.minHeight = "";
+  canvas.style.setProperty("height", `${chartH}px`, "important");
+  canvas.style.setProperty("max-height", `${chartH}px`, "important");
   canvas.removeAttribute("height");
   canvas.removeAttribute("width");
 
@@ -11569,6 +11613,7 @@ function renderRepBarChart() {
       indexAxis: "y",
       responsive: true,
       maintainAspectRatio: false,
+      resizeDelay: 120,
       layout: { padding: { right: 8, top: 8, bottom: 8 } },
       plugins: {
         legend: {
@@ -11709,8 +11754,10 @@ function renderRepHistoryTable() {
     });
   }
 
-  const page = runtime.repPage || 0;
   const total = records.length;
+  const totalPages = Math.max(1, Math.ceil(total / REP_PAGE_SIZE));
+  const page = Math.min(Math.max(0, runtime.repPage || 0), totalPages - 1);
+  runtime.repPage = page;
   const start = page * REP_PAGE_SIZE;
   const pageRecords = records.slice(start, start + REP_PAGE_SIZE);
 
@@ -11771,10 +11818,10 @@ function renderRepHistoryTable() {
     btn.addEventListener("click", () => openRepDialog(btn.dataset.repEditId, btn.dataset.farmId));
   });
   elements.repTableBody.querySelectorAll("[data-rep-del-id]").forEach((btn) => {
-    btn.addEventListener("click", () => deleteRepRecord(btn.dataset.repDelId, btn.dataset.farmId));
+    btn.addEventListener("click", () => deleteRepRecordFixed(btn.dataset.repDelId, btn.dataset.farmId));
   });
   elements.repTableBody.querySelectorAll("[data-rep-verif-id]").forEach((btn) => {
-    btn.addEventListener("click", () => openRepVerifDialog(btn.dataset.repVerifId, btn.dataset.farmId));
+    btn.addEventListener("click", () => openRepVerifDialogFixed(btn.dataset.repVerifId, btn.dataset.farmId));
   });
 }
 
@@ -11821,12 +11868,12 @@ function openRepDialog(editingId = null, editingFarmId = null) {
   farmEl.innerHTML = farms.map((f) => `<option value="${escapeHtml(f.id)}">${escapeHtml(f.name)}</option>`).join("");
 
   if (editingId) {
-    const farmId = editingFarmId || state.data.selectedFarmId;
-    const farm = farmId !== TOTAL_FARM_ID ?state.data.farms[farmId] : null;
-    const rec = farm ?getReproductionRecords(farm).find((r) => r.id === editingId) : null;
-    if (!rec) return;
+    const location = findReproductionRecordLocation(editingId, editingFarmId || state.data.selectedFarmId);
+    if (!location) return;
+    const { farmId, rec } = { farmId: location.farmId, rec: location.record };
     titleEl.textContent = "Editar Evento Reprodutivo";
     idEl.value = rec.id;
+    idEl.dataset.farmId = farmId;
     farmEl.value = farmId;
     typeEl.value = rec.type;
     dateEl.value = rec.date || "";
@@ -11841,6 +11888,7 @@ function openRepDialog(editingId = null, editingFarmId = null) {
   } else {
     titleEl.textContent = "Novo Evento Reprodutivo";
     idEl.value = "";
+    delete idEl.dataset.farmId;
     const currentFarmId = state.data.selectedFarmId !== TOTAL_FARM_ID ?state.data.selectedFarmId : farms[0]?.id || "";
     farmEl.value = currentFarmId;
     typeEl.value = "inseminacao";
@@ -11981,6 +12029,98 @@ function handleRepFormSubmit() {
   if (state.activeView === "reproducao") renderReproducaoView();
 }
 
+function handleRepFormSubmitFixed() {
+  const farmEl = document.getElementById("repFarm");
+  const typeEl = document.getElementById("repType");
+  const dateEl = document.getElementById("repDate");
+  const catEl = document.getElementById("repCategory");
+  const qtyEl = document.getElementById("repQuantity");
+  const bullEl = document.getElementById("repBullInfo");
+  const techEl = document.getElementById("repTechInfo");
+  const notesEl = document.getElementById("repNotes");
+  const idEl = document.getElementById("repEditingId");
+
+  const farmId = farmEl?.value;
+  const type = typeEl?.value;
+  const date = dateEl?.value;
+  const qty = Number(qtyEl?.value || 0);
+
+  if (!farmId || !type || !date || qty < 1) {
+    alert("Preencha todos os campos obrigatorios (fazenda, tipo, data e quantidade).");
+    return;
+  }
+
+  const farm = state.data.farms[farmId];
+  if (!farm) return;
+  if (!Array.isArray(farm.reproductionRecords)) farm.reproductionRecords = [];
+
+  const catId = catEl?.value || "";
+  const catName = farm.categories.find((c) => c.id === catId)?.name || catId;
+  const editId = idEl?.value;
+
+  if (editId) {
+    const existing = findReproductionRecordLocation(editId, idEl?.dataset.farmId || farmId);
+    if (!existing) return;
+    const updatedRecord = {
+      ...existing.record,
+      farmId,
+      type,
+      date,
+      categoryId: catId,
+      categoryName: catName,
+      quantity: qty,
+      bullInfo: bullEl?.value || "",
+      techInfo: techEl?.value || "",
+      notes: notesEl?.value || ""
+    };
+
+    if (existing.farmId !== farmId) {
+      existing.farm.reproductionRecords.splice(existing.index, 1);
+      farm.reproductionRecords.push(updatedRecord);
+    } else {
+      farm.reproductionRecords[existing.index] = updatedRecord;
+    }
+    logAuditEvent("Reproducao editada", farmId, `${updatedRecord.code} - ${type} em ${date}`);
+  } else {
+    const newRec = {
+      id: createMovementId(),
+      code: generateReproductionCode(farm),
+      farmId,
+      type,
+      date,
+      categoryId: catId,
+      categoryName: catName,
+      quantity: qty,
+      bullInfo: bullEl?.value || "",
+      techInfo: techEl?.value || "",
+      verificationDate: null,
+      quantityPegou: null,
+      verificationNotes: "",
+      notes: notesEl?.value || "",
+      createdAt: new Date().toISOString()
+    };
+    farm.reproductionRecords.push(newRec);
+    logAuditEvent("Reproducao registrada", farmId, `${newRec.code} - ${type} em ${date} (${qty} animais)`);
+  }
+
+  saveData();
+  elements.reproducaoDlg.close();
+  if (state.activeView === "reproducao") renderReproducaoView();
+}
+
+function deleteRepRecordFixed(id, farmId) {
+  const location = findReproductionRecordLocation(id, farmId);
+  if (!location) return;
+
+  const { farm, record: rec } = location;
+  if (!confirm(`Excluir o registro ${rec.code || id}?\n\nEsta acao nao pode ser desfeita.`)) return;
+
+  farm.reproductionRecords.splice(location.index, 1);
+  logAuditEvent("Reproducao excluida", location.farmId, `${rec.code || id} - ${rec.type || ""} em ${rec.date || ""}`);
+  saveData();
+  renderReproducaoView();
+}
+
 function deleteRepRecord(id, farmId) {
   const farm = farmId !== TOTAL_FARM_ID ?state.data.farms[farmId] : null;
   if (!farm) return;
@@ -11991,6 +12131,37 @@ function deleteRepRecord(id, farmId) {
   logAuditEvent("Reprodução excluída", farmId, `${rec.code} — ${rec.type} em ${rec.date}`);
   saveData();
   renderReproducaoView();
+}
+
+function openRepVerifDialogFixed(recordId, farmId) {
+  const dlg = elements.repVerifDlg;
+  if (!dlg) return;
+
+  const location = findReproductionRecordLocation(recordId, farmId);
+  if (!location) return;
+
+  const { farm, record: rec } = location;
+  document.getElementById("repVerifId").value = recordId;
+  document.getElementById("repVerifId").dataset.farmId = location.farmId;
+  document.getElementById("repVerifDate").value = rec.verificationDate || new Date().toISOString().slice(0, 10);
+  document.getElementById("repVerifPegou").value = rec.quantityPegou != null ?rec.quantityPegou : "";
+  document.getElementById("repVerifNotes").value = rec.verificationNotes || "";
+  document.getElementById("repVerifFeedback").hidden = true;
+
+  const typeLabel = rec.type === "inseminacao" ?"Inseminacao" : "Entourada";
+  document.getElementById("repVerifInfo").innerHTML = `
+    <div class="rep-verif-info-box">
+      <span class="rep-tag ${rec.type === "inseminacao" ?"rep-tag-insem" : "rep-tag-entour"}">${typeLabel}</span>
+      <span><strong>Fazenda:</strong> ${escapeHtml(farm.name)}</span>
+      <span><strong>Data do evento:</strong> ${formatDate(rec.date)}</span>
+      <span><strong>Categoria:</strong> ${escapeHtml(rec.categoryName || rec.categoryId)}</span>
+      <span><strong>Potreiro:</strong> ${escapeHtml(rec.potreiro || "—")}</span>
+      <span><strong>Total no evento:</strong> ${formatInteger(Number(rec.quantity || 0))} animais</span>
+    </div>
+  `;
+
+  updateRepVerifFalhou();
+  dlg.showModal();
 }
 
 function openRepVerifDialog(recordId, farmId) {
