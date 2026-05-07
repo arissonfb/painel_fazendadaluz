@@ -1457,6 +1457,134 @@ function openAuditTrailDialog() {
   elements.auditTrailDialog.showModal();
 }
 
+async function exportAuditTrailPdf() {
+  if (!isAdmin()) return;
+
+  const entries = getAuditEntries();
+  const now = new Date();
+  const generatedAt = now.toLocaleString("pt-BR");
+  const dateLabel = now.toLocaleDateString("pt-BR", { year: "numeric", month: "long", day: "numeric" });
+  const fileName = `trilha-auditoria-${now.toISOString().slice(0, 10)}.pdf`;
+
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  const pageW = doc.internal.pageSize.getWidth();
+  const margin = 14;
+
+  // ── Capa ──────────────────────────────────────────────────────────────
+  await appendPdfCoverPage(doc, getAllFarms(), dateLabel, "Trilha de Auditoria");
+  doc.addPage();
+
+  // ── Cabeçalho da página de conteúdo ───────────────────────────────────
+  try {
+    const logoData = await loadLogoForPdf("#ffffff");
+    doc.addImage(logoData, "JPEG", margin, 7, 17, 17);
+  } catch (e) { /* sem logo */ }
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.setTextColor(45, 35, 25);
+  doc.text("Trilha de Auditoria", margin + 21, 13);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9.5);
+  doc.setTextColor(87, 69, 52);
+  doc.text(
+    `Administrador: ${ADMINISTRATOR_NAME}   |   Responsável Técnico: ${TECHNICAL_MANAGER_NAME}   |   Gerado em: ${generatedAt}`,
+    margin + 21, 21
+  );
+  doc.setDrawColor(140, 80, 45);
+  doc.setLineWidth(0.6);
+  doc.line(margin, 26, pageW - margin, 26);
+
+  // ── Resumo executivo ───────────────────────────────────────────────────
+  const uniqueUsers = [...new Set(entries.map((e) => e.userLogin))].length;
+  const uniqueFarms = [...new Set(entries.map((e) => e.farmName).filter(Boolean))].length;
+  const timestamps = entries.map((e) => new Date(e.timestamp).getTime()).filter(Boolean);
+  const firstEvent = timestamps.length ?new Date(Math.min(...timestamps)).toLocaleString("pt-BR") : "—";
+  const lastEvent  = timestamps.length ?new Date(Math.max(...timestamps)).toLocaleString("pt-BR") : "—";
+
+  const actionCounts = {};
+  entries.forEach((e) => { actionCounts[e.action] = (actionCounts[e.action] || 0) + 1; });
+  const topActions = Object.entries(actionCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([action, count]) => `${action} (${formatInteger(count)})`)
+    .join(", ") || "—";
+
+  doc.autoTable({
+    startY: 31,
+    head: [["Resumo da Trilha de Auditoria", ""]],
+    body: [
+      ["Total de eventos registrados", formatInteger(entries.length)],
+      ["Usuários com atividade", formatInteger(uniqueUsers)],
+      ["Fazendas referenciadas", formatInteger(uniqueFarms)],
+      ["Primeiro evento", firstEvent],
+      ["Último evento", lastEvent],
+      ["Ações mais frequentes", topActions],
+      ["Administrador responsável", ADMINISTRATOR_NAME],
+      ["Responsável Técnico", TECHNICAL_MANAGER_NAME],
+    ],
+    theme: "striped",
+    headStyles: { fillColor: [43, 132, 184], fontSize: 9 },
+    bodyStyles: { fontSize: 8.5 },
+    columnStyles: { 0: { fontStyle: "bold", cellWidth: 68 } },
+    margin: { left: margin, right: margin },
+  });
+
+  // ── Tabela principal de eventos ────────────────────────────────────────
+  const tableStartY = doc.lastAutoTable.finalY + 10;
+
+  const tableHead = [["Data / Hora", "Usuário", "Perfil", "IP", "Ação", "Fazenda", "Referência", "Detalhes"]];
+  const tableBody = entries.length
+    ?entries.map((entry) => [
+        new Date(entry.timestamp).toLocaleString("pt-BR"),
+        entry.userLogin || "—",
+        getRoleLabel(entry.userRole === "admin" ?"admin" : "usuario"),
+        entry.ip || "IP indisponível",
+        entry.action || "—",
+        entry.farmName || "—",
+        entry.recordCode || "—",
+        entry.details || entry.entity || "—",
+      ])
+    : [["—", "—", "—", "—", "—", "—", "—", "Nenhum evento auditado até o momento."]];
+
+  doc.autoTable({
+    startY: tableStartY,
+    head: tableHead,
+    body: tableBody,
+    theme: "striped",
+    headStyles: { fillColor: [43, 132, 184], fontSize: 8, fontStyle: "bold" },
+    bodyStyles: { fontSize: 7.5, textColor: [45, 35, 25] },
+    alternateRowStyles: { fillColor: [248, 244, 236] },
+    columnStyles: {
+      0: { cellWidth: 33 },
+      1: { cellWidth: 22 },
+      2: { cellWidth: 20 },
+      3: { cellWidth: 26 },
+      4: { cellWidth: 24 },
+      5: { cellWidth: 22 },
+      6: { cellWidth: 26 },
+      7: { cellWidth: "auto" },
+    },
+    margin: { left: margin, right: margin },
+    didDrawPage: (data) => {
+      if (data.pageNumber > 1) {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8.5);
+        doc.setTextColor(87, 69, 52);
+        doc.text("Trilha de Auditoria  |  Estabelecimentos Da Luz", margin, 7);
+        doc.setDrawColor(140, 80, 45);
+        doc.setLineWidth(0.35);
+        doc.line(margin, 9, pageW - margin, 9);
+      }
+    },
+  });
+
+  // ── Rodapés ────────────────────────────────────────────────────────────
+  addPdfFooters(doc, { coverPage: true });
+
+  doc.save(fileName);
+}
+
 // ─── Cloud Sync ───────────────────────────────────────────────────────────────
 
 async function cloudGetToken() {
@@ -2839,6 +2967,7 @@ function bindEvents() {
   elements.manageUsersForm.addEventListener("submit", handleManageUsersSubmit);
   elements.auditTrailButton?.addEventListener("click", openAuditTrailDialog);
   elements.closeAuditTrailDialog?.addEventListener("click", () => elements.auditTrailDialog.close());
+  document.getElementById("exportAuditPdfBtn")?.addEventListener("click", exportAuditTrailPdf);
   elements.auditTrailSearch?.addEventListener("input", (event) => {
     runtime.auditSearch = event.target.value;
     runtime.auditPage = 0;
