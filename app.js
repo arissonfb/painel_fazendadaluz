@@ -11505,7 +11505,7 @@ function renderRepBarChart() {
   canvas.style.display = "";
   canvas.parentElement.querySelector(".rep-empty-note")?.remove();
 
-  // Plugin: valor + % acima de cada barra, em preto
+  // Plugin: valor + % à direita de cada barra horizontal
   const repBarPctPlugin = {
     id: "repBarPct",
     afterDatasetsDraw(chart) {
@@ -11522,74 +11522,65 @@ function renderRepBarChart() {
           const total = totals[idx];
           if (!value || !total) return;
           const pct = Math.round((value / total) * 100);
+          const barW = Math.abs(bar.x - bar.base);
+          if (barW < 6) return;
 
           ctx.save();
-          ctx.textAlign = "center";
-          ctx.textBaseline = "bottom";
+          ctx.textBaseline = "middle";
 
-          // Número em negrito
-          ctx.font = "bold 10px 'Manrope', sans-serif";
-          ctx.fillStyle = "#111111";
-          ctx.fillText(`${value}`, bar.x, bar.y - 12);
-
-          // Percentual menor abaixo do número
-          ctx.font = "600 8.5px 'Manrope', sans-serif";
-          ctx.fillStyle = "#666666";
-          ctx.fillText(`${pct}%`, bar.x, bar.y - 2);
-
+          if (barW >= 52) {
+            // Dentro da barra: valor + %
+            ctx.textAlign = "right";
+            ctx.font = "bold 10px 'Manrope', sans-serif";
+            ctx.fillStyle = "rgba(255,255,255,0.95)";
+            ctx.fillText(`${value}`, bar.x - 7, bar.y - 5);
+            ctx.font = "600 8px 'Manrope', sans-serif";
+            ctx.fillStyle = "rgba(255,255,255,0.72)";
+            ctx.fillText(`${pct}%`, bar.x - 7, bar.y + 6);
+          } else {
+            // Fora da barra: valor + %
+            ctx.textAlign = "left";
+            ctx.font = "bold 9.5px 'Manrope', sans-serif";
+            ctx.fillStyle = "#111111";
+            ctx.fillText(`${value}`, bar.x + 5, bar.y - 5);
+            ctx.font = "600 8px 'Manrope', sans-serif";
+            ctx.fillStyle = "#888888";
+            ctx.fillText(`${pct}%`, bar.x + 5, bar.y + 5);
+          }
           ctx.restore();
         });
       });
     }
   };
 
+  // Altura dinâmica: ~88px por fazenda, mínimo 200px
+  const chartH = Math.max(200, labels.length * 88);
+  canvas.style.cssText = `display:block;width:100%;height:${chartH}px;max-height:none;margin:12px 16px 16px;`;
+
   state.charts.repBar = new Chart(canvas, {
     type: "bar",
     data: {
       labels,
       datasets: [
-        {
-          label: "Inseminações",
-          data: dataInsem,
-          backgroundColor: "#1a5fb4",
-          borderRadius: 6,
-          borderSkipped: false,
-        },
-        {
-          label: "Entouradas",
-          data: dataEntour,
-          backgroundColor: "#c9a84c",
-          borderRadius: 6,
-          borderSkipped: false,
-        },
-        {
-          label: "Prenhas",
-          data: dataPegou,
-          backgroundColor: "#1b6e3e",
-          borderRadius: 6,
-          borderSkipped: false,
-        },
-        {
-          label: "Falhadas",
-          data: dataFalhou,
-          backgroundColor: "#c0392b",
-          borderRadius: 6,
-          borderSkipped: false,
-        }
+        { label: "Inseminações", data: dataInsem,  backgroundColor: "#1a5fb4", borderRadius: 4, borderSkipped: false },
+        { label: "Entouradas",   data: dataEntour, backgroundColor: "#c9a84c", borderRadius: 4, borderSkipped: false },
+        { label: "Prenhas",      data: dataPegou,  backgroundColor: "#1b6e3e", borderRadius: 4, borderSkipped: false },
+        { label: "Falhadas",     data: dataFalhou, backgroundColor: "#c0392b", borderRadius: 4, borderSkipped: false },
       ]
     },
     plugins: [repBarPctPlugin],
     options: {
-      responsive: true,
-      maintainAspectRatio: true,
+      indexAxis: "y",
+      responsive: false,
+      maintainAspectRatio: false,
       plugins: {
         legend: {
           position: "bottom",
           labels: {
-            padding: 20,
+            padding: 22,
             usePointStyle: true,
             pointStyle: "circle",
-            font: { size: 11.5 },
+            font: { size: 12 },
             color: "#444444",
           }
         },
@@ -11605,23 +11596,27 @@ function renderRepBarChart() {
               const insem  = dataInsem[ctx.dataIndex]  || 0;
               const entour = dataEntour[ctx.dataIndex] || 0;
               const total  = insem + entour;
-              const pct = total > 0 ? ` (${Math.round((ctx.parsed.y / total) * 100)}%)` : "";
-              return ` ${ctx.dataset.label}: ${ctx.parsed.y}${pct}`;
+              const pct = total > 0 ? ` (${Math.round((ctx.parsed.x / total) * 100)}%)` : "";
+              return ` ${ctx.dataset.label}: ${ctx.parsed.x}${pct}`;
             }
           }
         }
       },
       scales: {
         x: {
-          grid: { display: false },
-          border: { display: false },
-          ticks: { color: "#666666", font: { size: 11 } }
+          beginAtZero: true,
+          ticks: { precision: 0, color: "#888888", font: { size: 10 } },
+          grid: { color: "rgba(0,0,0,0.05)" },
+          border: { display: false }
         },
         y: {
-          beginAtZero: true,
-          ticks: { precision: 0, color: "#888888", font: { size: 10.5 } },
-          grid: { color: "rgba(0,0,0,0.06)" },
-          border: { display: false, dash: [4, 4] }
+          grid: { display: false },
+          border: { display: false },
+          ticks: {
+            color: "#333333",
+            font: { size: 12, weight: "600" },
+            padding: 8,
+          }
         }
       }
     }
