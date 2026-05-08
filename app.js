@@ -839,6 +839,7 @@ const runtime = {
   repPage: 0,
   repSearch: "",
   comprasPage: 0,
+  vendasPage: 0,
   auditSearch: "",
   auditPage: 0,
   auditSessionId: "",
@@ -863,7 +864,9 @@ const state = {
     repBar: null,
     repDonut: null,
     comprasBar: null,
-    comprasEvolution: null
+    comprasEvolution: null,
+    vendasBar: null,
+    vendasEvolution: null
   },
   userEditingId: null,
   userEditingMode: null,
@@ -1022,6 +1025,20 @@ const elements = {
   comprasFilterDateTo: document.getElementById("comprasFilterDateTo"),
   comprasFilterCategory: document.getElementById("comprasFilterCategory"),
   clearComprasFiltersBtn: document.getElementById("clearComprasFiltersBtn"),
+  vendasView: document.getElementById("vendasView"),
+  vendasShortcut: document.getElementById("vendasShortcut"),
+  vendasFarmSwitch: document.getElementById("vendasFarmSwitch"),
+  vendasKpiSection: document.getElementById("vendasKpiSection"),
+  vendasNovaBtn: document.getElementById("vendasNovaBtn"),
+  exportVendasPdfBtn: document.getElementById("exportVendasPdfBtn"),
+  vendasHistorySearch: document.getElementById("vendasHistorySearch"),
+  vendasTableBody: document.getElementById("vendasTableBody"),
+  vendasHistoryPagination: document.getElementById("vendasHistoryPagination"),
+  vendasFilterFarm: document.getElementById("vendasFilterFarm"),
+  vendasFilterDateFrom: document.getElementById("vendasFilterDateFrom"),
+  vendasFilterDateTo: document.getElementById("vendasFilterDateTo"),
+  vendasFilterCategory: document.getElementById("vendasFilterCategory"),
+  clearVendasFiltersBtn: document.getElementById("clearVendasFiltersBtn"),
   movTypeRecordsDlg: document.getElementById("movTypeRecordsDlg"),
   maximizeMovTypeRecordsDlg: document.getElementById("maximizeMovTypeRecordsDlg"),
   closeMovTypeRecordsDlg: document.getElementById("closeMovTypeRecordsDlg"),
@@ -3119,9 +3136,8 @@ function bindEvents() {
   });
 
   elements.quickVendasBtn?.addEventListener("click", () => {
-    state.activeView = "dashboard";
+    state.activeView = "vendas";
     render();
-    openMovTypeRecordsDlg("venda");
   });
 
   document.getElementById("exportSanitaryPdfBtn")?.addEventListener("click", exportSanitaryPdfReport);
@@ -3141,6 +3157,25 @@ function bindEvents() {
   // Compras view
   elements.comprasNovaBtn?.addEventListener("click", () => openMovementDialog("compra"));
   elements.exportComprasPdfBtn?.addEventListener("click", exportComprasPdfReport);
+
+  // Vendas view
+  elements.vendasShortcut?.addEventListener("click", () => { state.activeView = "vendas"; render(); });
+  elements.vendasNovaBtn?.addEventListener("click", () => openMovementDialog("venda"));
+  elements.exportVendasPdfBtn?.addEventListener("click", exportVendasPdfReport);
+  elements.vendasHistorySearch?.addEventListener("input", () => { runtime.vendasPage = 0; renderVendasTable(); });
+  elements.vendasFilterFarm?.addEventListener("change", () => { runtime.vendasPage = 0; renderVendasTable(); });
+  elements.vendasFilterDateFrom?.addEventListener("change", () => { runtime.vendasPage = 0; renderVendasTable(); });
+  elements.vendasFilterDateTo?.addEventListener("change", () => { runtime.vendasPage = 0; renderVendasTable(); });
+  elements.vendasFilterCategory?.addEventListener("change", () => { runtime.vendasPage = 0; renderVendasTable(); });
+  elements.clearVendasFiltersBtn?.addEventListener("click", () => {
+    if (elements.vendasHistorySearch) elements.vendasHistorySearch.value = "";
+    if (elements.vendasFilterFarm) elements.vendasFilterFarm.value = "";
+    if (elements.vendasFilterDateFrom) elements.vendasFilterDateFrom.value = "";
+    if (elements.vendasFilterDateTo) elements.vendasFilterDateTo.value = "";
+    if (elements.vendasFilterCategory) elements.vendasFilterCategory.value = "";
+    runtime.vendasPage = 0;
+    renderVendasTable();
+  });
   elements.comprasHistorySearch?.addEventListener("input", () => { runtime.comprasPage = 0; renderComprasTable(); });
   elements.comprasFilterFarm?.addEventListener("change", () => { runtime.comprasPage = 0; renderComprasTable(); });
   elements.comprasFilterDateFrom?.addEventListener("change", () => { runtime.comprasPage = 0; renderComprasTable(); });
@@ -4407,19 +4442,16 @@ function renderActiveView() {
   elements.potreirosView.hidden = view !== "potreiros";
   elements.reproducaoView.hidden = view !== "reproducao";
   if (elements.comprasView) elements.comprasView.hidden = view !== "compras";
+  if (elements.vendasView) elements.vendasView.hidden = view !== "vendas";
   elements.sanitaryShortcut.classList.toggle("active", view === "sanitary");
   elements.potreirosShortcut.classList.toggle("active", view === "potreiros");
   elements.reproducaoShortcut.classList.toggle("active", view === "reproducao");
   elements.comprasShortcut?.classList.toggle("active", view === "compras");
-  if (view === "potreiros") {
-    renderPotreirosView();
-  }
-  if (view === "reproducao") {
-    renderReproducaoView();
-  }
-  if (view === "compras") {
-    renderComprasView();
-  }
+  elements.vendasShortcut?.classList.toggle("active", view === "vendas");
+  if (view === "potreiros") renderPotreirosView();
+  if (view === "reproducao") renderReproducaoView();
+  if (view === "compras") renderComprasView();
+  if (view === "vendas") renderVendasView();
   syncMobileNav(view);
 }
 
@@ -12449,38 +12481,21 @@ function renderComprasKpiCards() {
 
   const mostRecentDate = movs.length ? movs.slice().sort((a, b) => new Date(b.date) - new Date(a.date))[0].date : null;
 
+  const kpi = (label, value, sub, cls = "") => `
+    <article class="comercial-kpi-card">
+      <p class="comercial-kpi-label">${label}</p>
+      <p class="comercial-kpi-value ${cls}">${value}</p>
+      <p class="comercial-kpi-sub">${sub}</p>
+    </article>`;
+
   elements.comprasKpiSection.innerHTML = `
-    <div class="rep-kpi-grid compras-kpi-grid">
-      <article class="summary-card">
-        <p class="panel-kicker">Operações</p>
-        <strong>${formatInteger(totalOps)}</strong>
-        <p>compras no período</p>
-      </article>
-      <article class="summary-card">
-        <p class="panel-kicker">Cabeças adquiridas</p>
-        <strong>${formatInteger(totalCabecas)}</strong>
-        <p>animais comprados</p>
-      </article>
-      <article class="summary-card">
-        <p class="panel-kicker">Investimento BRL</p>
-        <strong class="fin-value">${fmtBRL(totalBRL)}</strong>
-        <p>total em reais</p>
-      </article>
-      <article class="summary-card">
-        <p class="panel-kicker">Investimento USD</p>
-        <strong class="fin-value">${fmtUSD(totalUSD)}</strong>
-        <p>total em dólares</p>
-      </article>
-      <article class="summary-card">
-        <p class="panel-kicker">Média/cabeça BRL</p>
-        <strong class="fin-value">${fmtBRL(avgBRL)}</strong>
-        <p>por cabeça (BRL)</p>
-      </article>
-      <article class="summary-card">
-        <p class="panel-kicker">Média/cabeça USD</p>
-        <strong class="fin-value">${fmtUSD(avgUSD)}</strong>
-        <p>por cabeça (USD)</p>
-      </article>
+    <div class="comercial-kpi-grid">
+      ${kpi("Operações", formatInteger(totalOps), "compras no período")}
+      ${kpi("Cabeças adquiridas", formatInteger(totalCabecas), "animais comprados")}
+      ${kpi("Investimento BRL", fmtBRL(totalBRL), "total em reais", "fin")}
+      ${kpi("Investimento USD", fmtUSD(totalUSD), "total em dólares", "fin")}
+      ${kpi("Média/cabeça BRL", fmtBRL(avgBRL), "custo médio (BRL)", "fin")}
+      ${kpi("Média/cabeça USD", fmtUSD(avgUSD), "custo médio (USD)", "fin")}
     </div>
   `;
 }
@@ -13054,4 +13069,472 @@ async function exportComprasPdfReport() {
   }
 
   doc.save(`compras-${isTotalView ? "todas-fazendas" : farms[0]?.name?.toLowerCase().replace(/\s+/g, "-") || "fazenda"}-${periodLabel.replace(/\//g, "-")}.pdf`);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VENDAS VIEW
+// ─────────────────────────────────────────────────────────────────────────────
+
+const VENDAS_PAGE_SIZE = 50;
+
+function renderVendasView() {
+  renderVendasFarmSwitch();
+  renderVendasKpiCards();
+  renderVendasCharts();
+  renderVendasFilterSelects();
+  renderVendasTable();
+}
+
+function renderVendasFarmSwitch() {
+  if (!elements.vendasFarmSwitch) return;
+  elements.vendasFarmSwitch.innerHTML = "";
+  const items = [{ id: TOTAL_FARM_ID, name: "Todas as fazendas" }, ...getAllFarms()];
+  items.forEach((item) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `farm-btn ${item.id === state.data.selectedFarmId ? "active" : ""}`;
+    btn.textContent = item.name;
+    btn.addEventListener("click", () => {
+      state.data.selectedFarmId = item.id;
+      runtime.vendasPage = 0;
+      saveData();
+      renderVendasView();
+    });
+    elements.vendasFarmSwitch.appendChild(btn);
+  });
+}
+
+function getVendasMovements() {
+  const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
+  if (isTotalView) {
+    return getAllFarms().flatMap((f) =>
+      f.movements.filter((m) => m.type === "venda").map((m) => ({ ...m, _farmId: f.id, _farmName: f.name }))
+    );
+  }
+  const farm = getFarm();
+  return (farm?.movements || []).filter((m) => m.type === "venda").map((m) => ({ ...m, _farmId: farm.id, _farmName: farm.name }));
+}
+
+function renderVendasKpiCards() {
+  if (!elements.vendasKpiSection) return;
+
+  const allMovs = getVendasMovements();
+  const year = state.filters.year;
+  const month = state.filters.month;
+
+  const movs = allMovs.filter((m) => {
+    const d = m.date || "";
+    if (year !== "all" && !d.startsWith(year)) return false;
+    if (month !== "all" && d.slice(5, 7) !== String(month).padStart(2, "0")) return false;
+    return true;
+  });
+
+  const allFarmsInView = state.data.selectedFarmId === TOTAL_FARM_ID ? getAllFarms() : [getFarm()].filter(Boolean);
+  const brlFarms = new Set(allFarmsInView.filter((f) => getFarmCurrency(f.id) === "BRL").map((f) => f.id));
+  const usdFarms = new Set(allFarmsInView.filter((f) => getFarmCurrency(f.id) === "USD").map((f) => f.id));
+
+  const totalOps = movs.length;
+  const totalCabecas = movs.reduce((s, m) => s + Number(m.quantity || 0), 0);
+  const totalBRL = movs.filter((m) => brlFarms.has(m._farmId)).reduce((s, m) => s + Number(m.value || 0), 0);
+  const totalUSD = movs.filter((m) => usdFarms.has(m._farmId)).reduce((s, m) => s + Number(m.value || 0), 0);
+  const cabsBRL = movs.filter((m) => brlFarms.has(m._farmId)).reduce((s, m) => s + Number(m.quantity || 0), 0);
+  const cabsUSD = movs.filter((m) => usdFarms.has(m._farmId)).reduce((s, m) => s + Number(m.quantity || 0), 0);
+  const avgBRL = cabsBRL > 0 ? totalBRL / cabsBRL : 0;
+  const avgUSD = cabsUSD > 0 ? totalUSD / cabsUSD : 0;
+  const totalKg = movs.reduce((s, m) => s + Number(m.saleDetails?.weightKg || 0), 0);
+
+  const fmtBRL = (v) => v > 0 ? `R$ ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)}` : "—";
+  const fmtUSD = (v) => v > 0 ? `US$ ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)}` : "—";
+  const fmtKg = (v) => v > 0 ? `${new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(v)} kg` : "—";
+
+  const kpi = (label, value, sub, cls = "") => `
+    <article class="comercial-kpi-card">
+      <p class="comercial-kpi-label">${label}</p>
+      <p class="comercial-kpi-value ${cls}">${value}</p>
+      <p class="comercial-kpi-sub">${sub}</p>
+    </article>`;
+
+  elements.vendasKpiSection.innerHTML = `
+    <div class="comercial-kpi-grid">
+      ${kpi("Operações", formatInteger(totalOps), "vendas no período")}
+      ${kpi("Cabeças vendidas", formatInteger(totalCabecas), "animais comercializados")}
+      ${kpi("Receita BRL", fmtBRL(totalBRL), "total em reais", "fin")}
+      ${kpi("Receita USD", fmtUSD(totalUSD), "total em dólares", "fin")}
+      ${kpi("Média/cabeça BRL", fmtBRL(avgBRL), "receita média (BRL)", "fin")}
+      ${kpi("Média/cabeça USD", fmtUSD(avgUSD), "receita média (USD)", "fin")}
+      ${kpi("Kg negociados", fmtKg(totalKg), "peso total negociado")}
+    </div>
+  `;
+}
+
+function renderVendasCharts() {
+  renderVendasBarChart();
+  renderVendasEvolutionChart();
+}
+
+function renderVendasBarChart() {
+  const canvas = document.getElementById("vendasBarChart");
+  if (!canvas) return;
+  if (state.charts.vendasBar) { state.charts.vendasBar.destroy(); state.charts.vendasBar = null; }
+
+  const year = state.filters.year;
+  const month = state.filters.month;
+  const labels = [], dataHeads = [], dataValues = [];
+
+  getAllFarms().forEach((farm) => {
+    const movs = farm.movements.filter((m) => {
+      if (m.type !== "venda") return false;
+      const d = m.date || "";
+      if (year !== "all" && !d.startsWith(year)) return false;
+      if (month !== "all" && d.slice(5, 7) !== String(month).padStart(2, "0")) return false;
+      return true;
+    });
+    const heads = movs.reduce((s, m) => s + Number(m.quantity || 0), 0);
+    if (heads > 0) {
+      labels.push(farm.name);
+      dataHeads.push(heads);
+      dataValues.push(movs.reduce((s, m) => s + Number(m.value || 0), 0));
+    }
+  });
+
+  if (!labels.length) {
+    canvas.style.display = "none";
+    if (!canvas.parentElement.querySelector(".vendas-empty-note")) {
+      const p = document.createElement("p");
+      p.className = "field-note vendas-empty-note";
+      p.style.cssText = "text-align:center;padding:24px";
+      p.textContent = "Nenhuma venda registrada no período selecionado.";
+      canvas.parentElement.appendChild(p);
+    }
+    return;
+  }
+  canvas.style.display = "";
+  canvas.parentElement.querySelector(".vendas-empty-note")?.remove();
+
+  const chartH = Math.min(480, Math.max(260, labels.length * 52 + 80));
+  canvas.style.setProperty("height", `${chartH}px`, "important");
+  canvas.style.setProperty("max-height", `${chartH}px`, "important");
+  canvas.removeAttribute("height"); canvas.removeAttribute("width");
+
+  state.charts.vendasBar = new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{ label: "Cabeças vendidas", data: dataHeads, backgroundColor: "#b83232", borderRadius: 5, borderSkipped: false, barThickness: 18 }]
+    },
+    options: {
+      indexAxis: "y", responsive: true, maintainAspectRatio: false, resizeDelay: 120,
+      layout: { padding: { right: 8, top: 8, bottom: 8 } },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: "#111", titleColor: "#fff", bodyColor: "rgba(255,255,255,0.80)", padding: 12, cornerRadius: 8,
+          callbacks: { label: (ctx) => { const val = dataValues[ctx.dataIndex]; const fmtV = val > 0 ? ` | ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2 }).format(val)}` : ""; return ` ${ctx.parsed.x} cabeças${fmtV}`; } }
+        }
+      },
+      scales: {
+        x: { beginAtZero: true, ticks: { precision: 0, color: "#aaa", font: { size: 10 } }, grid: { color: "rgba(0,0,0,0.05)", drawTicks: false }, border: { display: false } },
+        y: { grid: { display: false }, border: { display: false }, ticks: { color: "#222", font: { size: 12, weight: "600" }, padding: 10 } }
+      }
+    }
+  });
+}
+
+function renderVendasEvolutionChart() {
+  const canvas = document.getElementById("vendasEvolutionChart");
+  if (!canvas) return;
+  if (state.charts.vendasEvolution) { state.charts.vendasEvolution.destroy(); state.charts.vendasEvolution = null; }
+
+  const year = state.filters.year;
+  const allMovs = getVendasMovements().filter((m) => year === "all" || String(m.date || "").startsWith(year));
+  const monthlyHeads = {}, monthlyValues = {};
+  for (let i = 1; i <= 12; i++) { const k = String(i).padStart(2, "0"); monthlyHeads[k] = 0; monthlyValues[k] = 0; }
+  allMovs.forEach((m) => {
+    const mo = String(m.date || "").slice(5, 7);
+    if (monthlyHeads[mo] !== undefined) { monthlyHeads[mo] += Number(m.quantity || 0); monthlyValues[mo] += Number(m.value || 0); }
+  });
+
+  const headsData = Object.values(monthlyHeads);
+  if (!headsData.some((v) => v > 0)) {
+    canvas.style.display = "none";
+    if (!canvas.parentElement.querySelector(".vendas-evo-empty")) {
+      const p = document.createElement("p"); p.className = "field-note vendas-evo-empty";
+      p.style.cssText = "text-align:center;padding:24px"; p.textContent = "Nenhuma venda no ano selecionado.";
+      canvas.parentElement.appendChild(p);
+    }
+    return;
+  }
+  canvas.style.display = ""; canvas.parentElement.querySelector(".vendas-evo-empty")?.remove();
+  canvas.removeAttribute("height"); canvas.removeAttribute("width");
+
+  state.charts.vendasEvolution = new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels: MONTH_NAMES.map((n) => n.slice(0, 3)),
+      datasets: [
+        { label: "Cabeças", data: headsData, backgroundColor: "rgba(184,50,50,0.72)", borderRadius: 4, borderSkipped: false, yAxisID: "yLeft" },
+        { type: "line", label: "Receita total", data: Object.values(monthlyValues), borderColor: "#c9a84c", backgroundColor: "rgba(201,168,76,0.12)", pointBackgroundColor: "#c9a84c", tension: 0.35, fill: true, yAxisID: "yRight", pointRadius: 4 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, resizeDelay: 120,
+      layout: { padding: { top: 8 } },
+      plugins: {
+        legend: { position: "bottom", labels: { padding: 16, usePointStyle: true, pointStyle: "circle", font: { size: 11 }, color: "#444" } },
+        tooltip: { backgroundColor: "#111", titleColor: "#fff", bodyColor: "rgba(255,255,255,0.80)", padding: 12, cornerRadius: 8 }
+      },
+      scales: {
+        yLeft: { beginAtZero: true, position: "left", ticks: { precision: 0, color: "#b83232", font: { size: 10 } }, grid: { color: "rgba(0,0,0,0.05)" }, border: { display: false } },
+        yRight: { beginAtZero: true, position: "right", ticks: { color: "#c9a84c", font: { size: 10 }, callback: (v) => v > 0 ? new Intl.NumberFormat("pt-BR", { notation: "compact" }).format(v) : "" }, grid: { display: false }, border: { display: false } },
+        x: { ticks: { color: "#888", font: { size: 10 } }, grid: { display: false }, border: { display: false } }
+      }
+    }
+  });
+}
+
+function renderVendasFilterSelects() {
+  if (!elements.vendasFilterFarm || !elements.vendasFilterCategory) return;
+  const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
+  const allMovs = getVendasMovements();
+  const currentFarm = elements.vendasFilterFarm.value;
+  elements.vendasFilterFarm.innerHTML = `<option value="">Todas as fazendas</option>` +
+    getAllFarms().map((f) => `<option value="${escapeHtml(f.id)}" ${currentFarm === f.id ? "selected" : ""}>${escapeHtml(f.name)}</option>`).join("");
+  elements.vendasFilterFarm.hidden = !isTotalView;
+  const cats = [...new Set(allMovs.map((m) => m.categoryName).filter(Boolean))].sort();
+  const currentCat = elements.vendasFilterCategory.value;
+  elements.vendasFilterCategory.innerHTML = `<option value="">Todas as categorias</option>` +
+    cats.map((c) => `<option value="${escapeHtml(c)}" ${currentCat === c ? "selected" : ""}>${escapeHtml(c)}</option>`).join("");
+}
+
+function renderVendasTable() {
+  if (!elements.vendasTableBody) return;
+  const year = state.filters.year;
+  const month = state.filters.month;
+  const search = (elements.vendasHistorySearch?.value || "").trim().toLowerCase();
+  const filterFarm = elements.vendasFilterFarm?.value || "";
+  const filterDateFrom = elements.vendasFilterDateFrom?.value || "";
+  const filterDateTo = elements.vendasFilterDateTo?.value || "";
+  const filterCat = elements.vendasFilterCategory?.value || "";
+
+  let movs = getVendasMovements().filter((m) => {
+    const d = m.date || "";
+    if (year !== "all" && !d.startsWith(year)) return false;
+    if (month !== "all" && d.slice(5, 7) !== String(month).padStart(2, "0")) return false;
+    if (filterFarm && m._farmId !== filterFarm) return false;
+    if (filterDateFrom && d < filterDateFrom) return false;
+    if (filterDateTo && d > filterDateTo) return false;
+    if (filterCat && m.categoryName !== filterCat) return false;
+    if (search) {
+      const buyer = (m.saleDetails?.buyer || extractBuyerFromNotes(m.notes) || "").toLowerCase();
+      const base = [m.code, m.categoryName, m.notes, m._farmName].join(" ").toLowerCase();
+      if (!base.includes(search) && !buyer.includes(search)) return false;
+    }
+    return true;
+  }).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  const total = movs.length;
+  const totalPages = Math.max(1, Math.ceil(total / VENDAS_PAGE_SIZE));
+  const page = Math.min(Math.max(0, runtime.vendasPage || 0), totalPages - 1);
+  runtime.vendasPage = page;
+  const slice = movs.slice(page * VENDAS_PAGE_SIZE, (page + 1) * VENDAS_PAGE_SIZE);
+
+  if (!slice.length) {
+    elements.vendasTableBody.innerHTML = `<tr><td colspan="11" class="table-empty-cell">${search || filterFarm || filterCat || filterDateFrom || filterDateTo ? "Nenhum registro encontrado com estes filtros." : "Nenhuma venda registrada ainda."}</td></tr>`;
+  } else {
+    elements.vendasTableBody.innerHTML = slice.map((m) => {
+      const d = m.saleDetails || {};
+      const currency = m.currency || getFarmCurrency(m._farmId);
+      const sym = currency === "USD" ? "US$" : "R$";
+      const fmtVal = (v) => v > 0 ? `${sym} ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)}` : "—";
+      const fmtKg = (v) => v > 0 ? `${new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(v)} kg` : "—";
+      const fmtPriceKg = (v) => v > 0 ? `${sym} ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 3, maximumFractionDigits: 3 }).format(v)}` : "—";
+      const code = m.code ? `<span class="movement-code">${escapeHtml(m.code)}</span>` : `<span class="movement-code movement-code-legacy">—</span>`;
+      const buyer = d.buyer || extractBuyerFromNotes(m.notes);
+      const buyerCell = buyer ? escapeHtml(buyer) : `<span class="muted-cell">—</span>`;
+      const pricePerKg = d.pricePerKg || (d.weightKg > 0 && m.value > 0 ? m.value / d.weightKg : 0);
+      const currBadge = `<span class="currency-badge ${currency === "USD" ? "usd" : "brl"}">${currency}</span>`;
+      const notesTxt = m.notes ? `<span title="${escapeHtml(m.notes)}" class="table-notes-cell">${escapeHtml(m.notes.slice(0, 35))}${m.notes.length > 35 ? "…" : ""}</span>` : `<span class="muted-cell">—</span>`;
+      return `<tr class="mov-record-row mov-record-row-venda">
+        <td>${code}</td>
+        <td><div class="mov-records-main-cell"><strong>${escapeHtml(m._farmName)}</strong></div></td>
+        <td>${formatDate(m.date)}</td>
+        <td><strong>${escapeHtml(m.categoryName)}</strong></td>
+        <td class="num-col"><strong>${formatInteger(m.quantity)}</strong></td>
+        <td>${buyerCell}</td>
+        <td class="num-col">${fmtKg(d.weightKg || 0)}</td>
+        <td class="num-col">${fmtPriceKg(pricePerKg)}</td>
+        <td class="num-col fin-value">${currBadge} ${fmtVal(m.value)}</td>
+        <td>${notesTxt}</td>
+        <td class="movement-actions-cell">
+          <button class="movement-action-btn edit-btn" data-farm-id="${escapeHtml(m._farmId)}" data-movement-id="${escapeHtml(m.id)}">Editar</button>
+          <button class="movement-action-btn delete-btn" data-farm-id="${escapeHtml(m._farmId)}" data-movement-id="${escapeHtml(m.id)}">Excluir</button>
+        </td>
+      </tr>`;
+    }).join("");
+
+    elements.vendasTableBody.querySelectorAll(".edit-btn").forEach((btn) => {
+      btn.addEventListener("click", () => openEditMovementDialog(btn.dataset.farmId, btn.dataset.movementId));
+    });
+    elements.vendasTableBody.querySelectorAll(".delete-btn").forEach((btn) => {
+      btn.addEventListener("click", () => deleteMovement(btn.dataset.farmId, btn.dataset.movementId));
+    });
+  }
+
+  if (elements.vendasHistoryPagination) {
+    if (totalPages <= 1) {
+      elements.vendasHistoryPagination.innerHTML = total > 0 ? `<span class="pagination-info">${total} registro${total !== 1 ? "s" : ""}</span>` : "";
+    } else {
+      elements.vendasHistoryPagination.innerHTML = `
+        <span class="pagination-info">${total} registros</span>
+        <button type="button" class="ghost-btn" id="vendasPagePrev" ${page === 0 ? "disabled" : ""}>&#8592; Anterior</button>
+        <span class="pagination-info">Página ${page + 1} de ${totalPages}</span>
+        <button type="button" class="ghost-btn" id="vendasPageNext" ${page >= totalPages - 1 ? "disabled" : ""}>Próxima &#8594;</button>
+      `;
+      document.getElementById("vendasPagePrev")?.addEventListener("click", () => { runtime.vendasPage = Math.max(0, page - 1); renderVendasTable(); });
+      document.getElementById("vendasPageNext")?.addEventListener("click", () => { runtime.vendasPage = Math.min(totalPages - 1, page + 1); renderVendasTable(); });
+    }
+  }
+}
+
+async function exportVendasPdfReport() {
+  if (!window.jspdf || typeof window.jspdf.jsPDF !== "function") {
+    alert("A biblioteca de PDF não foi carregada. Verifique sua conexão e tente novamente.");
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
+  const farms = isTotalView ? getAllFarms() : [getFarm()].filter(Boolean);
+  if (!farms.length) { alert("Nenhuma fazenda encontrada."); return; }
+
+  const year = String(state.filters.year);
+  const month = state.filters.month;
+  const periodLabel = month === "all" ? `Ano ${year}` : `${MONTH_NAMES[Number(month) - 1]}/${year}`;
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  const pageW = doc.internal.pageSize.getWidth();
+  const margin = 14;
+  let firstPage = true;
+
+  await appendPdfCoverPage(doc, farms, periodLabel, "Relatório de Vendas");
+  doc.addPage();
+
+  for (const farm of farms) {
+    if (!firstPage) doc.addPage();
+    firstPage = false;
+
+    const vendas = farm.movements.filter((m) => {
+      if (m.type !== "venda") return false;
+      const d = m.date || "";
+      if (!d.startsWith(year)) return false;
+      if (month !== "all" && d.slice(5, 7) !== String(month).padStart(2, "0")) return false;
+      return true;
+    }).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    const totalCabecas = vendas.reduce((s, m) => s + Number(m.quantity || 0), 0);
+    const totalValor = vendas.reduce((s, m) => s + Number(m.value || 0), 0);
+    const totalKg = vendas.reduce((s, m) => s + Number(m.saleDetails?.weightKg || 0), 0);
+    const currency = getFarmCurrency(farm.id);
+    const sym = currency === "USD" ? "US$" : "R$";
+    const fmtVal = (v) => v > 0 ? `${sym} ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)}` : "—";
+
+    if (isTotalView) {
+      appendPdfFarmReportDivider(doc, farm, periodLabel, "Relatório de Vendas", [
+        { label: "Operações", value: String(vendas.length) },
+        { label: "Cabeças", value: formatInteger(totalCabecas) },
+        { label: "Receita", value: fmtVal(totalValor) }
+      ], farms.indexOf(farm) + 1, farms.length);
+      doc.addPage();
+    }
+
+    try { const logoData = await loadLogoForPdf("#ffffff"); doc.addImage(logoData, "JPEG", margin, 8, 18, 18); } catch (e) { /* ignore */ }
+    doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.setTextColor(45, 35, 25);
+    doc.text("Relatório de Vendas", margin + 22, 14);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10.5); doc.setTextColor(87, 69, 52);
+    doc.text(`Fazenda: ${farm.name}   Período: ${periodLabel}   Responsável: ${TECHNICAL_MANAGER_NAME}`, margin + 22, 22);
+    doc.setDrawColor(140, 80, 45); doc.setLineWidth(0.6); doc.line(margin, 27, pageW - margin, 27);
+
+    let xBox = margin;
+    const boxW = 58, boxH = 16, boxY = 30;
+    [
+      { label: "Operações", value: String(vendas.length) },
+      { label: "Cabeças vendidas", value: formatInteger(totalCabecas) },
+      { label: `Receita (${currency})`, value: fmtVal(totalValor) },
+      { label: "Kg negociados", value: totalKg > 0 ? `${new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(totalKg)} kg` : "—" },
+      { label: "Média/cabeça", value: totalCabecas > 0 ? fmtVal(totalValor / totalCabecas) : "—" }
+    ].forEach((kpi) => {
+      doc.setFillColor(250, 244, 234); doc.setDrawColor(200, 185, 160); doc.setLineWidth(0.3);
+      doc.roundedRect(xBox, boxY, boxW - 2, boxH, 2, 2, "FD");
+      doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(30, 30, 30);
+      doc.text(kpi.value, xBox + (boxW - 2) / 2, boxY + 6.5, { align: "center" });
+      doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(100, 80, 55);
+      doc.text(kpi.label, xBox + (boxW - 2) / 2, boxY + 13, { align: "center" });
+      xBox += boxW;
+    });
+
+    if (!vendas.length) {
+      doc.setFont("helvetica", "italic"); doc.setFontSize(10); doc.setTextColor(130, 110, 90);
+      doc.text("Nenhuma venda registrada neste período.", margin, boxY + boxH + 10);
+      continue;
+    }
+
+    const tableStartY = boxY + boxH + 8;
+    const cols = [
+      { header: "Código", w: 22 }, { header: "Data", w: 20 }, { header: "Categoria", w: 36 },
+      { header: "Cab.", w: 14, align: "right" }, { header: "Frigorífico/Comprador", w: 48 },
+      { header: "Kg", w: 22, align: "right" }, { header: `${sym}/kg`, w: 22, align: "right" },
+      { header: `Valor (${currency})`, w: 38, align: "right" }, { header: "Obs.", w: 0 }
+    ];
+    cols[cols.length - 1].w = Math.max(18, pageW - margin * 2 - cols.slice(0, -1).reduce((s, c) => s + c.w, 0));
+
+    let curX = margin; const rowH = 7;
+    doc.setFillColor(45, 35, 25); doc.rect(margin, tableStartY, pageW - margin * 2, rowH, "F");
+    doc.setFont("helvetica", "bold"); doc.setFontSize(7.5); doc.setTextColor(255, 255, 255);
+    cols.forEach((col) => {
+      doc.text(col.header, col.align === "right" ? curX + col.w - 2 : curX + 2, tableStartY + 4.8, { align: col.align === "right" ? "right" : "left" });
+      curX += col.w;
+    });
+
+    let rowY = tableStartY + rowH;
+    const maxY = doc.internal.pageSize.getHeight() - margin - 8;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(7.5);
+
+    vendas.forEach((m, idx) => {
+      if (rowY + rowH > maxY) { doc.addPage(); rowY = margin + 8; }
+      const sd = m.saleDetails || {};
+      const buyer = sd.buyer || extractBuyerFromNotes(m.notes) || "—";
+      const pricePerKg = sd.pricePerKg || (sd.weightKg > 0 && m.value > 0 ? m.value / sd.weightKg : 0);
+      if (idx % 2 === 0) { doc.setFillColor(249, 244, 236); doc.rect(margin, rowY, pageW - margin * 2, rowH, "F"); }
+      doc.setTextColor(30, 30, 30);
+      const rowVals = [
+        m.code || "—", formatDate(m.date), (m.categoryName || "—").slice(0, 22),
+        formatInteger(m.quantity), buyer.slice(0, 28),
+        sd.weightKg > 0 ? new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(sd.weightKg) : "—",
+        pricePerKg > 0 ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 3, maximumFractionDigits: 3 }).format(pricePerKg) : "—",
+        m.value > 0 ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(m.value) : "—",
+        (m.notes || "—").slice(0, 25)
+      ];
+      curX = margin;
+      rowVals.forEach((val, ci) => {
+        const col = cols[ci]; const isRight = col.align === "right";
+        doc.text(String(val), isRight ? curX + col.w - 2 : curX + 2, rowY + 4.8, { align: isRight ? "right" : "left", maxWidth: col.w - 3 });
+        curX += col.w;
+      });
+      doc.setDrawColor(220, 210, 195); doc.setLineWidth(0.15);
+      doc.line(margin, rowY + rowH, pageW - margin, rowY + rowH);
+      rowY += rowH;
+    });
+
+    doc.setDrawColor(120, 80, 40); doc.setLineWidth(0.5); doc.line(margin, rowY, pageW - margin, rowY);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(30, 30, 30);
+    doc.text(`Total: ${formatInteger(totalCabecas)} cab.   ${fmtVal(totalValor)}`, pageW - margin - 60, rowY + 5);
+  }
+
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(160, 140, 120);
+    doc.text(`Página ${i} de ${pageCount}`, pageW - margin, doc.internal.pageSize.getHeight() - 5, { align: "right" });
+    doc.text(`Fazendas Da Luz — Relatório de Vendas — ${periodLabel}`, margin, doc.internal.pageSize.getHeight() - 5);
+  }
+
+  doc.save(`vendas-${isTotalView ? "todas-fazendas" : farms[0]?.name?.toLowerCase().replace(/\s+/g, "-") || "fazenda"}-${periodLabel.replace(/\//g, "-")}.pdf`);
 }
