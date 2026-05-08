@@ -883,6 +883,8 @@ const elements = {
   loginUsername: document.getElementById("loginUsername"),
   loginPassword: document.getElementById("loginPassword"),
   loginFeedback: document.getElementById("loginFeedback"),
+  emergencyRestoreBtn: document.getElementById("emergencyRestoreBtn"),
+  emergencyRestoreInput: document.getElementById("emergencyRestoreInput"),
   farmSwitch: document.getElementById("farmSwitch"),
   mobileAppButton: document.getElementById("mobileAppButton"),
   mobileAppQuickButton: document.getElementById("mobileAppQuickButton"),
@@ -3093,6 +3095,8 @@ function bindEvents() {
   elements.loginRoleTabs.forEach((button) => {
     button.addEventListener("click", () => setAuthLoginMode(button.dataset.authRole));
   });
+  elements.emergencyRestoreBtn?.addEventListener("click", () => elements.emergencyRestoreInput?.click());
+  elements.emergencyRestoreInput?.addEventListener("change", handleEmergencyRestore);
   elements.mobileAppButton?.addEventListener("click", openMobileAppDialog);
   elements.mobileAppQuickButton?.addEventListener("click", openMobileAppDialog);
   elements.mobileDrawerAppButton?.addEventListener("click", openMobileAppDialog);
@@ -11410,6 +11414,39 @@ function exportBackup() {
   logAuditEvent("Backup", "sistema", `Backup exportado: backup-painel-pecuario-${dateTag}.json`);
   saveData();
   alert(`Backup realizado com sucesso!\nArquivo: backup-painel-pecuario-${dateTag}.json\nGuarde em local seguro (Drive, pen drive, etc).`);
+}
+
+async function handleEmergencyRestore(event) {
+  const file = event.target.files[0];
+  event.target.value = "";
+  if (!file) return;
+
+  try {
+    const text = await file.text();
+    const payload = JSON.parse(text);
+
+    if (!payload.dados || !payload.dados.farms || !payload.dados.auth) {
+      alert("Arquivo inválido. Este não parece ser um backup do Painel Pecuário.");
+      return;
+    }
+
+    const confirmed = confirm(
+      `Backup de ${new Date(payload.dataBackup || Date.now()).toLocaleDateString("pt-BR")} encontrado.\n\n` +
+      `Fazendas: ${Object.keys(payload.dados.farms || {}).join(", ")}\n\n` +
+      `Restaurar estes dados? Os dados atuais do dispositivo serão substituídos.`
+    );
+    if (!confirmed) return;
+
+    const restored = ensureDataShape(payload.dados, { preserveSnapshot: true });
+    restored.selectedFarmId = TOTAL_FARM_ID;
+    restored.auth.sessionUserId = "";
+
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(restored));
+    alert("Backup restaurado com sucesso!\n\nAgora faça login com seu usuário. Se o servidor estiver fora, use o acesso de emergência quando solicitado.");
+    location.reload();
+  } catch (err) {
+    alert("Erro ao ler o arquivo de backup: " + (err.message || "arquivo inválido."));
+  }
 }
 
 async function handleRestoreFile(event) {

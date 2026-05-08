@@ -900,6 +900,29 @@ body::before {
 .btn-login:hover { background: var(--gold-light); }
 .btn-login:active { transform: scale(0.98); }
 
+/* Restaurar backup de emergência na tela de login */
+.auth-emergency-restore {
+  text-align: center;
+  margin-top: 6px;
+}
+
+.auth-restore-link {
+  background: none;
+  border: none;
+  padding: 4px 8px;
+  font-family: inherit;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.35);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.2s;
+}
+
+.auth-restore-link:hover {
+  color: rgba(255, 255, 255, 0.65);
+}
+
 /* Rodapé da tela de login */
 .auth-footer-note {
   font-size: 0.74rem;
