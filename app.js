@@ -838,6 +838,7 @@ const runtime = {
   sanitaryProductFilter: "all",
   repPage: 0,
   repSearch: "",
+  comprasPage: 0,
   auditSearch: "",
   auditPage: 0,
   auditSessionId: "",
@@ -860,7 +861,9 @@ const state = {
     monthlyEvolution: null,
     monthlyCategory: null,
     repBar: null,
-    repDonut: null
+    repDonut: null,
+    comprasBar: null,
+    comprasEvolution: null
   },
   userEditingId: null,
   userEditingMode: null,
@@ -883,7 +886,6 @@ const elements = {
   mobileFarmQuickButton: document.getElementById("mobileFarmQuickButton"),
   sanitaryShortcut: document.getElementById("sanitaryShortcut"),
   reproducaoShortcut: document.getElementById("reproducaoShortcut"),
-  quickComprasBtn: document.getElementById("quickComprasBtn"),
   quickVendasBtn: document.getElementById("quickVendasBtn"),
   auditTrailButton: document.getElementById("auditTrailButton"),
   dashboardFarmLabel: document.getElementById("dashboardFarmLabel"),
@@ -1005,6 +1007,21 @@ const elements = {
   reproducaoDlg: document.getElementById("reproducaoDlg"),
   repVerifDlg: document.getElementById("repVerifDlg"),
   mobileNavReproducao: document.getElementById("mobileNavReproducao"),
+  comprasView: document.getElementById("comprasView"),
+  comprasShortcut: document.getElementById("comprasShortcut"),
+  comprasFarmSwitch: document.getElementById("comprasFarmSwitch"),
+  comprasKpiSection: document.getElementById("comprasKpiSection"),
+  comprasNovaBtn: document.getElementById("comprasNovaBtn"),
+  exportComprasPdfBtn: document.getElementById("exportComprasPdfBtn"),
+  comprasHistorySearch: document.getElementById("comprasHistorySearch"),
+  comprasTableHead: document.getElementById("comprasTableHead"),
+  comprasTableBody: document.getElementById("comprasTableBody"),
+  comprasHistoryPagination: document.getElementById("comprasHistoryPagination"),
+  comprasFilterFarm: document.getElementById("comprasFilterFarm"),
+  comprasFilterDateFrom: document.getElementById("comprasFilterDateFrom"),
+  comprasFilterDateTo: document.getElementById("comprasFilterDateTo"),
+  comprasFilterCategory: document.getElementById("comprasFilterCategory"),
+  clearComprasFiltersBtn: document.getElementById("clearComprasFiltersBtn"),
   movTypeRecordsDlg: document.getElementById("movTypeRecordsDlg"),
   maximizeMovTypeRecordsDlg: document.getElementById("maximizeMovTypeRecordsDlg"),
   closeMovTypeRecordsDlg: document.getElementById("closeMovTypeRecordsDlg"),
@@ -2383,6 +2400,58 @@ function legacyHandleLogoutApiUnused() {
   startSplashExperience();
 }
 
+async function sha256Hex(str) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function localCredKey(username) {
+  return `plc_${btoa(unescape(encodeURIComponent(username.toLowerCase())))}`;
+}
+
+async function saveLocalCredential(username, password, userId) {
+  try {
+    const hash = await sha256Hex(`${password}:${userId}:paineldaluz`);
+    localStorage.setItem(localCredKey(username), JSON.stringify({ hash, userId }));
+  } catch { /* ignore */ }
+}
+
+async function checkLocalCredential(username, password) {
+  try {
+    const raw = localStorage.getItem(localCredKey(username));
+    if (!raw) return null;
+    const { hash, userId } = JSON.parse(raw);
+    const candidate = await sha256Hex(`${password}:${userId}:paineldaluz`);
+    if (candidate !== hash) return null;
+    return state.data.auth.users.find((u) => String(u.id) === String(userId)) || null;
+  } catch { return null; }
+}
+
+function completaLoginLocal(user) {
+  if ((user.role || "usuario") !== runtime.authLoginMode) {
+    elements.loginFeedback.hidden = false;
+    elements.loginFeedback.textContent = runtime.authLoginMode === "admin"
+      ? "Este login não possui perfil de Administrador."
+      : "Este login não possui perfil de Usuário padrão.";
+    return;
+  }
+  runtime.cloudToken = null;
+  runtime.cloudConflict = false;
+  runtime.cloudRevision = 0;
+  setApiNotice("Modo local ativo — sincronização com o servidor indisponível. Seus dados locais estão íntegros.", "warn");
+  state.data.auth.sessionUserId = user.id;
+  elements.loginFeedback.hidden = true;
+  elements.loginFeedback.textContent = "";
+  elements.loginForm.reset();
+  startAuditSession();
+  logAuditEvent("Login local", "auth", "Entrada no sistema (modo offline)");
+  saveData({ skipCloud: true });
+  renderAuthState();
+  initializeAppShell();
+  render();
+  checkBackupWarning();
+}
+
 async function handleLoginSubmit(event) {
   event.preventDefault();
   const login = elements.loginUsername.value.trim();
@@ -2416,6 +2485,7 @@ async function handleLoginSubmit(event) {
     elements.loginForm.reset();
     startAuditSession();
     logAuditEvent("Login", "auth", "Entrada no sistema");
+    await saveLocalCredential(login, password, user.id);
     saveData({ skipCloud: true });
     renderAuthState();
     initializeAppShell();
@@ -2429,6 +2499,38 @@ async function handleLoginSubmit(event) {
     render();
     checkBackupWarning();
   } catch (error) {
+    const isServerError = !error.status
+      ? true
+      : error.status >= 500;
+    if (isServerError) {
+      // Tenta credential local salva (logins anteriores com backend online)
+      const localUser = await checkLocalCredential(login, password);
+      if (localUser) {
+        completaLoginLocal(localUser);
+        return;
+      }
+      // Emergência: verifica se usuário existe nos dados locais e confirma acesso
+      const cachedUser = state.data.auth.users.find(
+        (u) => (u.login || "").toLowerCase() === login.toLowerCase()
+      );
+      if (cachedUser && Array.isArray(state.data.auth.users) && state.data.auth.users.length > 0) {
+        const ok = confirm(
+          `O servidor está com falha (erro 500).\n\n` +
+          `Usuário "${login}" encontrado nos dados locais deste dispositivo.\n\n` +
+          `Deseja entrar em MODO LOCAL?\n` +
+          `• Seus dados permanecem íntegros\n` +
+          `• Não haverá sincronização com o servidor\n` +
+          `• Recomendado fazer backup após entrar`
+        );
+        if (ok) {
+          completaLoginLocal(cachedUser);
+          return;
+        }
+      }
+      elements.loginFeedback.hidden = false;
+      elements.loginFeedback.textContent = "Servidor indisponível (erro 500). Verifique os logs do Render. Se já usou este sistema neste dispositivo, tente novamente — o acesso local pode estar disponível.";
+      return;
+    }
     elements.loginFeedback.hidden = false;
     elements.loginFeedback.textContent = error.message || "Não foi possível autenticar.";
   }
@@ -3011,10 +3113,9 @@ function bindEvents() {
     render();
   });
 
-  elements.quickComprasBtn?.addEventListener("click", () => {
-    state.activeView = "dashboard";
+  elements.comprasShortcut?.addEventListener("click", () => {
+    state.activeView = "compras";
     render();
-    openMovTypeRecordsDlg("compra");
   });
 
   elements.quickVendasBtn?.addEventListener("click", () => {
@@ -3035,6 +3136,24 @@ function bindEvents() {
   elements.reproducaoShortcut.addEventListener("click", () => {
     state.activeView = "reproducao";
     render();
+  });
+
+  // Compras view
+  elements.comprasNovaBtn?.addEventListener("click", () => openMovementDialog("compra"));
+  elements.exportComprasPdfBtn?.addEventListener("click", exportComprasPdfReport);
+  elements.comprasHistorySearch?.addEventListener("input", () => { runtime.comprasPage = 0; renderComprasTable(); });
+  elements.comprasFilterFarm?.addEventListener("change", () => { runtime.comprasPage = 0; renderComprasTable(); });
+  elements.comprasFilterDateFrom?.addEventListener("change", () => { runtime.comprasPage = 0; renderComprasTable(); });
+  elements.comprasFilterDateTo?.addEventListener("change", () => { runtime.comprasPage = 0; renderComprasTable(); });
+  elements.comprasFilterCategory?.addEventListener("change", () => { runtime.comprasPage = 0; renderComprasTable(); });
+  elements.clearComprasFiltersBtn?.addEventListener("click", () => {
+    if (elements.comprasHistorySearch) elements.comprasHistorySearch.value = "";
+    if (elements.comprasFilterFarm) elements.comprasFilterFarm.value = "";
+    if (elements.comprasFilterDateFrom) elements.comprasFilterDateFrom.value = "";
+    if (elements.comprasFilterDateTo) elements.comprasFilterDateTo.value = "";
+    if (elements.comprasFilterCategory) elements.comprasFilterCategory.value = "";
+    runtime.comprasPage = 0;
+    renderComprasTable();
   });
 
   // Reproduction dialogs
@@ -4287,14 +4406,19 @@ function renderActiveView() {
   elements.sanitaryView.hidden = view !== "sanitary";
   elements.potreirosView.hidden = view !== "potreiros";
   elements.reproducaoView.hidden = view !== "reproducao";
+  if (elements.comprasView) elements.comprasView.hidden = view !== "compras";
   elements.sanitaryShortcut.classList.toggle("active", view === "sanitary");
   elements.potreirosShortcut.classList.toggle("active", view === "potreiros");
   elements.reproducaoShortcut.classList.toggle("active", view === "reproducao");
+  elements.comprasShortcut?.classList.toggle("active", view === "compras");
   if (view === "potreiros") {
     renderPotreirosView();
   }
   if (view === "reproducao") {
     renderReproducaoView();
+  }
+  if (view === "compras") {
+    renderComprasView();
   }
   syncMobileNav(view);
 }
@@ -4308,6 +4432,7 @@ function syncMobileNav(view) {
   if (view === "sanitary" && elements.mobileNavSanitary) elements.mobileNavSanitary.classList.add("active");
   if (view === "potreiros" && elements.mobileNavPotreiros) elements.mobileNavPotreiros.classList.add("active");
   if (view === "reproducao" && elements.mobileNavReproducao) elements.mobileNavReproducao.classList.add("active");
+  // compras não tem botão mobile dedicado — mantém padrão
 }
 
 function renderMobileFarmDrawer() {
@@ -12248,4 +12373,685 @@ function handleRepVerifSubmit() {
   saveData();
   elements.repVerifDlg.close();
   if (state.activeView === "reproducao") renderReproducaoView();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPRAS VIEW
+// ─────────────────────────────────────────────────────────────────────────────
+
+const COMPRAS_PAGE_SIZE = 50;
+
+function renderComprasView() {
+  renderComprasFarmSwitch();
+  renderComprasKpiCards();
+  renderComprasCharts();
+  renderComprasFilterSelects();
+  renderComprasTable();
+}
+
+function renderComprasFarmSwitch() {
+  if (!elements.comprasFarmSwitch) return;
+  elements.comprasFarmSwitch.innerHTML = "";
+  const items = [{ id: TOTAL_FARM_ID, name: "Todas as fazendas" }, ...getAllFarms()];
+  items.forEach((item) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `farm-btn ${item.id === state.data.selectedFarmId ? "active" : ""}`;
+    btn.textContent = item.name;
+    btn.addEventListener("click", () => {
+      state.data.selectedFarmId = item.id;
+      runtime.comprasPage = 0;
+      saveData();
+      renderComprasView();
+    });
+    elements.comprasFarmSwitch.appendChild(btn);
+  });
+}
+
+function getComprasMovements() {
+  const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
+  if (isTotalView) {
+    return getAllFarms().flatMap((f) =>
+      f.movements.filter((m) => m.type === "compra").map((m) => ({ ...m, _farmId: f.id, _farmName: f.name }))
+    );
+  }
+  const farm = getFarm();
+  return (farm?.movements || []).filter((m) => m.type === "compra").map((m) => ({ ...m, _farmId: farm.id, _farmName: farm.name }));
+}
+
+function renderComprasKpiCards() {
+  if (!elements.comprasKpiSection) return;
+
+  const allMovs = getComprasMovements();
+  const year = state.filters.year;
+  const month = state.filters.month;
+
+  const movs = allMovs.filter((m) => {
+    if (year !== "all" && !String(m.date || "").startsWith(year)) return false;
+    if (month !== "all" && String(m.date || "").slice(5, 7) !== String(month).padStart(2, "0")) return false;
+    return true;
+  });
+
+  const allFarmsInView = state.data.selectedFarmId === TOTAL_FARM_ID ? getAllFarms() : [getFarm()].filter(Boolean);
+  const brlFarms = new Set(allFarmsInView.filter((f) => getFarmCurrency(f.id) === "BRL").map((f) => f.id));
+  const usdFarms = new Set(allFarmsInView.filter((f) => getFarmCurrency(f.id) === "USD").map((f) => f.id));
+
+  const totalOps = movs.length;
+  const totalCabecas = movs.reduce((s, m) => s + Number(m.quantity || 0), 0);
+  const totalBRL = movs.filter((m) => brlFarms.has(m._farmId)).reduce((s, m) => s + Number(m.value || 0), 0);
+  const totalUSD = movs.filter((m) => usdFarms.has(m._farmId)).reduce((s, m) => s + Number(m.value || 0), 0);
+  const cabecasBRL = movs.filter((m) => brlFarms.has(m._farmId)).reduce((s, m) => s + Number(m.quantity || 0), 0);
+  const cabecasUSD = movs.filter((m) => usdFarms.has(m._farmId)).reduce((s, m) => s + Number(m.quantity || 0), 0);
+  const avgBRL = cabecasBRL > 0 ? totalBRL / cabecasBRL : 0;
+  const avgUSD = cabecasUSD > 0 ? totalUSD / cabecasUSD : 0;
+  const fmtBRL = (v) => v > 0 ? `R$ ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)}` : "—";
+  const fmtUSD = (v) => v > 0 ? `US$ ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)}` : "—";
+
+  const mostRecentDate = movs.length ? movs.slice().sort((a, b) => new Date(b.date) - new Date(a.date))[0].date : null;
+
+  elements.comprasKpiSection.innerHTML = `
+    <div class="rep-kpi-grid compras-kpi-grid">
+      <article class="summary-card">
+        <p class="panel-kicker">Operações</p>
+        <strong>${formatInteger(totalOps)}</strong>
+        <p>compras no período</p>
+      </article>
+      <article class="summary-card">
+        <p class="panel-kicker">Cabeças adquiridas</p>
+        <strong>${formatInteger(totalCabecas)}</strong>
+        <p>animais comprados</p>
+      </article>
+      <article class="summary-card">
+        <p class="panel-kicker">Investimento BRL</p>
+        <strong class="fin-value">${fmtBRL(totalBRL)}</strong>
+        <p>total em reais</p>
+      </article>
+      <article class="summary-card">
+        <p class="panel-kicker">Investimento USD</p>
+        <strong class="fin-value">${fmtUSD(totalUSD)}</strong>
+        <p>total em dólares</p>
+      </article>
+      <article class="summary-card">
+        <p class="panel-kicker">Média/cabeça BRL</p>
+        <strong class="fin-value">${fmtBRL(avgBRL)}</strong>
+        <p>por cabeça (BRL)</p>
+      </article>
+      <article class="summary-card">
+        <p class="panel-kicker">Média/cabeça USD</p>
+        <strong class="fin-value">${fmtUSD(avgUSD)}</strong>
+        <p>por cabeça (USD)</p>
+      </article>
+    </div>
+  `;
+}
+
+function renderComprasCharts() {
+  renderComprasBarChart();
+  renderComprasEvolutionChart();
+}
+
+function renderComprasBarChart() {
+  const canvas = document.getElementById("comprasBarChart");
+  if (!canvas) return;
+
+  if (state.charts.comprasBar) {
+    state.charts.comprasBar.destroy();
+    state.charts.comprasBar = null;
+  }
+
+  const year = state.filters.year;
+  const month = state.filters.month;
+  const farms = getAllFarms();
+  const labels = [];
+  const dataHeads = [];
+  const dataValues = [];
+
+  farms.forEach((farm) => {
+    const movs = farm.movements.filter((m) => {
+      if (m.type !== "compra") return false;
+      const d = m.date || "";
+      if (year !== "all" && !d.startsWith(year)) return false;
+      if (month !== "all" && d.slice(5, 7) !== String(month).padStart(2, "0")) return false;
+      return true;
+    });
+    const heads = movs.reduce((s, m) => s + Number(m.quantity || 0), 0);
+    if (heads > 0) {
+      labels.push(farm.name);
+      dataHeads.push(heads);
+      dataValues.push(movs.reduce((s, m) => s + Number(m.value || 0), 0));
+    }
+  });
+
+  if (!labels.length) {
+    canvas.style.display = "none";
+    const existing = canvas.parentElement.querySelector(".compras-empty-note");
+    if (!existing) {
+      const p = document.createElement("p");
+      p.className = "field-note compras-empty-note";
+      p.style.cssText = "text-align:center;padding:24px";
+      p.textContent = "Nenhuma compra registrada no período selecionado.";
+      canvas.parentElement.appendChild(p);
+    }
+    return;
+  }
+  canvas.style.display = "";
+  canvas.parentElement.querySelector(".compras-empty-note")?.remove();
+
+  const chartH = Math.min(480, Math.max(260, labels.length * 52 + 80));
+  canvas.style.setProperty("height", `${chartH}px`, "important");
+  canvas.style.setProperty("max-height", `${chartH}px`, "important");
+  canvas.removeAttribute("height");
+  canvas.removeAttribute("width");
+
+  state.charts.comprasBar = new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "Cabeças compradas",
+          data: dataHeads,
+          backgroundColor: "#1b6e3e",
+          borderRadius: 5,
+          borderSkipped: false,
+          barThickness: 18
+        }
+      ]
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      maintainAspectRatio: false,
+      resizeDelay: 120,
+      layout: { padding: { right: 8, top: 8, bottom: 8 } },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: "#111111",
+          titleColor: "#ffffff",
+          bodyColor: "rgba(255,255,255,0.80)",
+          padding: 12,
+          cornerRadius: 8,
+          callbacks: {
+            label: (ctx) => {
+              const val = dataValues[ctx.dataIndex];
+              const sym = "R$/US$";
+              const fmtV = val > 0 ? ` | Valor: ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val)}` : "";
+              return ` ${ctx.parsed.x} cabeças${fmtV}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          ticks: { precision: 0, color: "#aaaaaa", font: { size: 10 } },
+          grid: { color: "rgba(0,0,0,0.05)", drawTicks: false },
+          border: { display: false }
+        },
+        y: {
+          grid: { display: false },
+          border: { display: false },
+          ticks: { color: "#222222", font: { size: 12, weight: "600" }, padding: 10 }
+        }
+      }
+    }
+  });
+}
+
+function renderComprasEvolutionChart() {
+  const canvas = document.getElementById("comprasEvolutionChart");
+  if (!canvas) return;
+
+  if (state.charts.comprasEvolution) {
+    state.charts.comprasEvolution.destroy();
+    state.charts.comprasEvolution = null;
+  }
+
+  const year = state.filters.year;
+  const allMovs = getComprasMovements().filter((m) => {
+    if (year !== "all" && !String(m.date || "").startsWith(year)) return false;
+    return true;
+  });
+
+  const monthlyHeads = {};
+  const monthlyValues = {};
+  for (let i = 1; i <= 12; i++) {
+    const key = String(i).padStart(2, "0");
+    monthlyHeads[key] = 0;
+    monthlyValues[key] = 0;
+  }
+
+  allMovs.forEach((m) => {
+    const mo = String(m.date || "").slice(5, 7);
+    if (monthlyHeads[mo] !== undefined) {
+      monthlyHeads[mo] += Number(m.quantity || 0);
+      monthlyValues[mo] += Number(m.value || 0);
+    }
+  });
+
+  const labels = MONTH_NAMES.map((n) => n.slice(0, 3));
+  const headsData = Object.values(monthlyHeads);
+  const valuesData = Object.values(monthlyValues);
+  const hasData = headsData.some((v) => v > 0);
+
+  if (!hasData) {
+    canvas.style.display = "none";
+    const existing = canvas.parentElement.querySelector(".compras-evo-empty");
+    if (!existing) {
+      const p = document.createElement("p");
+      p.className = "field-note compras-evo-empty";
+      p.style.cssText = "text-align:center;padding:24px";
+      p.textContent = "Nenhuma compra registrada no ano selecionado.";
+      canvas.parentElement.appendChild(p);
+    }
+    return;
+  }
+  canvas.style.display = "";
+  canvas.parentElement.querySelector(".compras-evo-empty")?.remove();
+  canvas.removeAttribute("height");
+  canvas.removeAttribute("width");
+
+  state.charts.comprasEvolution = new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "Cabeças",
+          data: headsData,
+          backgroundColor: "rgba(27, 110, 62, 0.75)",
+          borderRadius: 4,
+          borderSkipped: false,
+          yAxisID: "yLeft"
+        },
+        {
+          type: "line",
+          label: "Valor total",
+          data: valuesData,
+          borderColor: "#c9a84c",
+          backgroundColor: "rgba(201, 168, 76, 0.12)",
+          pointBackgroundColor: "#c9a84c",
+          tension: 0.35,
+          fill: true,
+          yAxisID: "yRight",
+          pointRadius: 4
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      resizeDelay: 120,
+      layout: { padding: { top: 8 } },
+      plugins: {
+        legend: {
+          position: "bottom",
+          labels: { padding: 16, usePointStyle: true, pointStyle: "circle", font: { size: 11 }, color: "#444" }
+        },
+        tooltip: {
+          backgroundColor: "#111",
+          titleColor: "#fff",
+          bodyColor: "rgba(255,255,255,0.80)",
+          padding: 12,
+          cornerRadius: 8
+        }
+      },
+      scales: {
+        yLeft: {
+          beginAtZero: true,
+          position: "left",
+          ticks: { precision: 0, color: "#1b6e3e", font: { size: 10 } },
+          grid: { color: "rgba(0,0,0,0.05)" },
+          border: { display: false }
+        },
+        yRight: {
+          beginAtZero: true,
+          position: "right",
+          ticks: { color: "#c9a84c", font: { size: 10 }, callback: (v) => v > 0 ? new Intl.NumberFormat("pt-BR", { notation: "compact" }).format(v) : "" },
+          grid: { display: false },
+          border: { display: false }
+        },
+        x: {
+          ticks: { color: "#888", font: { size: 10 } },
+          grid: { display: false },
+          border: { display: false }
+        }
+      }
+    }
+  });
+}
+
+function renderComprasFilterSelects() {
+  if (!elements.comprasFilterFarm || !elements.comprasFilterCategory) return;
+
+  const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
+  const farms = getAllFarms();
+  const allMovs = getComprasMovements();
+
+  // Farm filter
+  const currentFarmFilter = elements.comprasFilterFarm.value;
+  elements.comprasFilterFarm.innerHTML = `<option value="">Todas as fazendas</option>` +
+    farms.map((f) => `<option value="${escapeHtml(f.id)}" ${currentFarmFilter === f.id ? "selected" : ""}>${escapeHtml(f.name)}</option>`).join("");
+  elements.comprasFilterFarm.hidden = !isTotalView;
+  elements.comprasFilterFarm.closest && elements.comprasFilterFarm.closest(".san-history-filters")?.querySelector("#comprasFilterFarm")?.parentElement;
+
+  // Category filter
+  const cats = [...new Set(allMovs.map((m) => m.categoryName).filter(Boolean))].sort();
+  const currentCat = elements.comprasFilterCategory.value;
+  elements.comprasFilterCategory.innerHTML = `<option value="">Todas as categorias</option>` +
+    cats.map((c) => `<option value="${escapeHtml(c)}" ${currentCat === c ? "selected" : ""}>${escapeHtml(c)}</option>`).join("");
+}
+
+function renderComprasTable() {
+  if (!elements.comprasTableBody) return;
+
+  const year = state.filters.year;
+  const month = state.filters.month;
+  const search = (elements.comprasHistorySearch?.value || "").trim().toLowerCase();
+  const filterFarm = elements.comprasFilterFarm?.value || "";
+  const filterDateFrom = elements.comprasFilterDateFrom?.value || "";
+  const filterDateTo = elements.comprasFilterDateTo?.value || "";
+  const filterCat = elements.comprasFilterCategory?.value || "";
+
+  let movs = getComprasMovements().filter((m) => {
+    const d = m.date || "";
+    if (year !== "all" && !d.startsWith(year)) return false;
+    if (month !== "all" && d.slice(5, 7) !== String(month).padStart(2, "0")) return false;
+    if (filterFarm && m._farmId !== filterFarm) return false;
+    if (filterDateFrom && d < filterDateFrom) return false;
+    if (filterDateTo && d > filterDateTo) return false;
+    if (filterCat && m.categoryName !== filterCat) return false;
+    if (search) {
+      const origin = (m.purchaseDetails?.sourceProperty || "").toLowerCase();
+      const base = [m.code, m.categoryName, m.notes, m._farmName].join(" ").toLowerCase();
+      if (!base.includes(search) && !origin.includes(search)) return false;
+    }
+    return true;
+  }).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  const total = movs.length;
+  const totalPages = Math.max(1, Math.ceil(total / COMPRAS_PAGE_SIZE));
+  const page = Math.min(Math.max(0, runtime.comprasPage || 0), totalPages - 1);
+  runtime.comprasPage = page;
+  const slice = movs.slice(page * COMPRAS_PAGE_SIZE, (page + 1) * COMPRAS_PAGE_SIZE);
+
+  if (!slice.length) {
+    elements.comprasTableBody.innerHTML = `<tr><td colspan="10" class="table-empty-cell">${search || filterFarm || filterCat || filterDateFrom || filterDateTo ? "Nenhum registro encontrado com estes filtros." : "Nenhuma compra registrada ainda."}</td></tr>`;
+  } else {
+    elements.comprasTableBody.innerHTML = slice.map((m) => {
+      const p = m.purchaseDetails || {};
+      const currency = m.currency || getFarmCurrency(m._farmId);
+      const sym = currency === "USD" ? "US$" : "R$";
+      const fmtVal = (v) => v > 0 ? `${sym} ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)}` : "—";
+      const fmtKg = (v) => v > 0 ? `${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(v)} kg` : "—";
+      const code = m.code
+        ? `<span class="movement-code">${escapeHtml(m.code)}</span>`
+        : `<span class="movement-code movement-code-legacy">—</span>`;
+      const origin = p.sourceProperty ? escapeHtml(p.sourceProperty) : `<span class="muted-cell">—</span>`;
+      const noteSpan = m.notes ? `<span class="muted-cell">${escapeHtml(m.notes)}</span>` : "";
+      const currBadge = `<span class="currency-badge ${currency === "USD" ? "usd" : "brl"}">${currency}</span>`;
+      return `<tr class="mov-record-row mov-record-row-compra">
+        <td>${code}</td>
+        <td><div class="mov-records-main-cell"><strong>${escapeHtml(m._farmName)}</strong></div></td>
+        <td>${formatDate(m.date)}</td>
+        <td><div class="mov-records-main-cell"><strong>${escapeHtml(m.categoryName)}</strong>${noteSpan}</div></td>
+        <td class="num-col"><strong>${formatInteger(m.quantity)}</strong></td>
+        <td>${origin}</td>
+        <td class="num-col">${fmtKg(p.avgWeight || 0)}</td>
+        <td class="num-col fin-value">${currBadge} ${fmtVal(m.value)}</td>
+        <td>${m.notes ? `<span title="${escapeHtml(m.notes)}" class="table-notes-cell">${escapeHtml(m.notes.slice(0, 40))}${m.notes.length > 40 ? "…" : ""}</span>` : `<span class="muted-cell">—</span>`}</td>
+        <td class="movement-actions-cell">
+          <button class="movement-action-btn edit-btn" data-farm-id="${escapeHtml(m._farmId)}" data-movement-id="${escapeHtml(m.id)}">Editar</button>
+          <button class="movement-action-btn delete-btn" data-farm-id="${escapeHtml(m._farmId)}" data-movement-id="${escapeHtml(m.id)}">Excluir</button>
+        </td>
+      </tr>`;
+    }).join("");
+
+    elements.comprasTableBody.querySelectorAll(".edit-btn").forEach((btn) => {
+      btn.addEventListener("click", () => openEditMovementDialog(btn.dataset.farmId, btn.dataset.movementId));
+    });
+    elements.comprasTableBody.querySelectorAll(".delete-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        deleteMovement(btn.dataset.farmId, btn.dataset.movementId);
+      });
+    });
+  }
+
+  // Pagination
+  if (elements.comprasHistoryPagination) {
+    if (totalPages <= 1) {
+      elements.comprasHistoryPagination.innerHTML = total > 0
+        ? `<span class="pagination-info">${total} registro${total !== 1 ? "s" : ""}</span>`
+        : "";
+    } else {
+      elements.comprasHistoryPagination.innerHTML = `
+        <span class="pagination-info">${total} registros</span>
+        <button type="button" class="ghost-btn" id="comprasPagePrev" ${page === 0 ? "disabled" : ""}>&#8592; Anterior</button>
+        <span class="pagination-info">Página ${page + 1} de ${totalPages}</span>
+        <button type="button" class="ghost-btn" id="comprasPageNext" ${page >= totalPages - 1 ? "disabled" : ""}>Próxima &#8594;</button>
+      `;
+      document.getElementById("comprasPagePrev")?.addEventListener("click", () => {
+        runtime.comprasPage = Math.max(0, page - 1);
+        renderComprasTable();
+      });
+      document.getElementById("comprasPageNext")?.addEventListener("click", () => {
+        runtime.comprasPage = Math.min(totalPages - 1, page + 1);
+        renderComprasTable();
+      });
+    }
+  }
+}
+
+// ─── PDF de Compras ───────────────────────────────────────────────────────────
+
+async function exportComprasPdfReport() {
+  if (!window.jspdf || typeof window.jspdf.jsPDF !== "function") {
+    alert("A biblioteca de PDF não foi carregada. Verifique sua conexão e tente novamente.");
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
+  const farms = isTotalView ? getAllFarms() : [getFarm()].filter(Boolean);
+  if (!farms.length) { alert("Nenhuma fazenda encontrada."); return; }
+
+  const year = String(state.filters.year);
+  const month = state.filters.month;
+  const periodLabel = month === "all" ? `Ano ${year}` : `${MONTH_NAMES[Number(month) - 1]}/${year}`;
+
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  const pageW = doc.internal.pageSize.getWidth();
+  const margin = 14;
+  let firstPage = true;
+
+  await appendPdfCoverPage(doc, farms, periodLabel, "Relatório de Compras");
+  doc.addPage();
+
+  for (const farm of farms) {
+    if (!firstPage) doc.addPage();
+    firstPage = false;
+
+    const compras = farm.movements.filter((m) => {
+      if (m.type !== "compra") return false;
+      const d = m.date || "";
+      if (!d.startsWith(year)) return false;
+      if (month !== "all" && d.slice(5, 7) !== String(month).padStart(2, "0")) return false;
+      return true;
+    }).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    const totalCabecas = compras.reduce((s, m) => s + Number(m.quantity || 0), 0);
+    const totalValor = compras.reduce((s, m) => s + Number(m.value || 0), 0);
+    const currency = getFarmCurrency(farm.id);
+    const sym = currency === "USD" ? "US$" : "R$";
+    const fmtVal = (v) => v > 0 ? `${sym} ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)}` : "—";
+
+    if (isTotalView) {
+      appendPdfFarmReportDivider(doc, farm, periodLabel, "Relatório de Compras", [
+        { label: "Operações", value: formatInteger(compras.length) },
+        { label: "Cabeças", value: formatInteger(totalCabecas) },
+        { label: "Investido", value: fmtVal(totalValor) }
+      ], farms.indexOf(farm) + 1, farms.length);
+      doc.addPage();
+    }
+
+    // Header
+    try {
+      const logoData = await loadLogoForPdf("#ffffff");
+      doc.addImage(logoData, "JPEG", margin, 8, 18, 18);
+    } catch (e) { /* ignore */ }
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.setTextColor(45, 35, 25);
+    doc.text("Relatório de Compras", margin + 22, 14);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10.5);
+    doc.setTextColor(87, 69, 52);
+    doc.text(`Fazenda: ${farm.name}   Período: ${periodLabel}   Responsável: ${TECHNICAL_MANAGER_NAME}`, margin + 22, 22);
+    doc.setDrawColor(140, 80, 45);
+    doc.setLineWidth(0.6);
+    doc.line(margin, 27, pageW - margin, 27);
+
+    // KPI summary boxes
+    let xBox = margin;
+    const boxW = 60;
+    const boxH = 16;
+    const boxY = 30;
+    const kpis = [
+      { label: "Operações", value: String(compras.length) },
+      { label: "Cabeças adquiridas", value: formatInteger(totalCabecas) },
+      { label: `Investimento (${currency})`, value: fmtVal(totalValor) },
+      { label: "Média/cabeça", value: totalCabecas > 0 ? fmtVal(totalValor / totalCabecas) : "—" }
+    ];
+    kpis.forEach((kpi) => {
+      doc.setFillColor(250, 244, 234);
+      doc.setDrawColor(200, 185, 160);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(xBox, boxY, boxW - 2, boxH, 2, 2, "FD");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(30, 30, 30);
+      doc.text(kpi.value, xBox + (boxW - 2) / 2, boxY + 7, { align: "center" });
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      doc.setTextColor(100, 80, 55);
+      doc.text(kpi.label, xBox + (boxW - 2) / 2, boxY + 13, { align: "center" });
+      xBox += boxW;
+    });
+
+    // Table
+    if (!compras.length) {
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(10);
+      doc.setTextColor(130, 110, 90);
+      doc.text("Nenhuma compra registrada neste período.", margin, boxY + boxH + 10);
+      continue;
+    }
+
+    const tableStartY = boxY + boxH + 8;
+    const cols = [
+      { header: "Código", w: 24 },
+      { header: "Data", w: 22 },
+      { header: "Categoria", w: 40 },
+      { header: "Cabeças", w: 20, align: "right" },
+      { header: "Origem / Propriedade", w: 60 },
+      { header: "Peso Méd. (kg)", w: 26, align: "right" },
+      { header: `Valor (${currency})`, w: 40, align: "right" },
+      { header: "Obs.", w: 0 }
+    ];
+    const lastColW = pageW - margin * 2 - cols.slice(0, -1).reduce((s, c) => s + c.w, 0);
+    cols[cols.length - 1].w = Math.max(20, lastColW);
+
+    // Table header
+    let curX = margin;
+    const rowH = 7;
+    doc.setFillColor(45, 35, 25);
+    doc.rect(margin, tableStartY, pageW - margin * 2, rowH, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(255, 255, 255);
+    cols.forEach((col) => {
+      doc.text(col.header, col.align === "right" ? curX + col.w - 2 : curX + 2, tableStartY + 4.8, { align: col.align === "right" ? "right" : "left" });
+      curX += col.w;
+    });
+
+    // Table rows
+    let rowY = tableStartY + rowH;
+    const maxY = doc.internal.pageSize.getHeight() - margin - 8;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+
+    compras.forEach((m, idx) => {
+      if (rowY + rowH > maxY) {
+        doc.addPage();
+        rowY = margin + 8;
+        // Re-draw header
+        curX = margin;
+        doc.setFillColor(45, 35, 25);
+        doc.rect(margin, rowY - rowH, pageW - margin * 2, rowH, "F");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8);
+        doc.setTextColor(255, 255, 255);
+        cols.forEach((col) => {
+          doc.text(col.header, col.align === "right" ? margin + cols.slice(0, cols.indexOf(col) + 1).reduce((s, c) => s + c.w, 0) - 2 : margin + cols.slice(0, cols.indexOf(col)).reduce((s, c) => s + c.w, 0) + 2, rowY - rowH + 4.8, { align: col.align === "right" ? "right" : "left" });
+        });
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(7.5);
+      }
+
+      const p = m.purchaseDetails || {};
+      if (idx % 2 === 0) {
+        doc.setFillColor(249, 244, 236);
+        doc.rect(margin, rowY, pageW - margin * 2, rowH, "F");
+      }
+      doc.setTextColor(30, 30, 30);
+
+      const rowValues = [
+        m.code || "—",
+        formatDate(m.date),
+        m.categoryName || "—",
+        formatInteger(m.quantity),
+        (p.sourceProperty || "—").slice(0, 30),
+        p.avgWeight > 0 ? `${Number(p.avgWeight).toFixed(1)}` : "—",
+        m.value > 0 ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(m.value) : "—",
+        (m.notes || "—").slice(0, 28)
+      ];
+
+      curX = margin;
+      rowValues.forEach((val, ci) => {
+        const col = cols[ci];
+        const isRight = col.align === "right";
+        doc.text(String(val), isRight ? curX + col.w - 2 : curX + 2, rowY + 4.8, { align: isRight ? "right" : "left", maxWidth: col.w - 3 });
+        curX += col.w;
+      });
+      doc.setDrawColor(220, 210, 195);
+      doc.setLineWidth(0.15);
+      doc.line(margin, rowY + rowH, pageW - margin, rowY + rowH);
+      rowY += rowH;
+    });
+
+    // Footer total line
+    doc.setDrawColor(120, 80, 40);
+    doc.setLineWidth(0.5);
+    doc.line(margin, rowY, pageW - margin, rowY);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(30, 30, 30);
+    const totalX = pageW - margin - cols[cols.length - 1].w - cols[cols.length - 2].w;
+    doc.text(`Total: ${formatInteger(totalCabecas)} cab.   ${fmtVal(totalValor)}`, totalX, rowY + 5);
+  }
+
+  // Page numbers
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(160, 140, 120);
+    doc.text(`Página ${i} de ${pageCount}`, pageW - margin, doc.internal.pageSize.getHeight() - 5, { align: "right" });
+    doc.text(`Fazendas Da Luz — Relatório de Compras — ${periodLabel}`, margin, doc.internal.pageSize.getHeight() - 5);
+  }
+
+  doc.save(`compras-${isTotalView ? "todas-fazendas" : farms[0]?.name?.toLowerCase().replace(/\s+/g, "-") || "fazenda"}-${periodLabel.replace(/\//g, "-")}.pdf`);
 }

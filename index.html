@@ -103,7 +103,7 @@
           <button type="button" class="sidebar-shortcut" id="sanitaryShortcut">Manejo Sanitário</button>
           <button type="button" class="sidebar-shortcut" id="potreirosShortcut">Potreiros</button>
           <button type="button" class="sidebar-shortcut" id="reproducaoShortcut">Reprodução</button>
-          <button type="button" class="sidebar-shortcut shortcut-compras" id="quickComprasBtn">Registros de Compra</button>
+          <button type="button" class="sidebar-shortcut shortcut-compras" id="comprasShortcut">Compras</button>
           <button type="button" class="sidebar-shortcut shortcut-vendas" id="quickVendasBtn">Registros de Venda</button>
           <button type="button" class="sidebar-shortcut" id="manageUsersButton">Usuários</button>
           <button type="button" class="sidebar-shortcut" id="auditTrailButton">Auditoria</button>
@@ -623,6 +623,90 @@
           </article>
         </section>
       </div>
+
+      <div id="comprasView" hidden>
+        <section class="panel sanitary-toolbar">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">Aquisição de animais</p>
+              <h2>Controle de Compras</h2>
+            </div>
+            <div class="compras-header-actions">
+              <button type="button" class="action-btn pdf" id="exportComprasPdfBtn">Gerar PDF</button>
+              <button type="button" class="register-gold-btn" id="comprasNovaBtn">
+                <span class="register-gold-plus">+</span>
+                Nova Compra
+              </button>
+            </div>
+          </div>
+          <div class="farm-switch compras-farm-switch" id="comprasFarmSwitch"></div>
+        </section>
+
+        <section class="rep-summary-section" id="comprasKpiSection"></section>
+
+        <section class="content-grid">
+          <article class="panel chart-panel rep-chart-wide">
+            <div class="panel-header">
+              <div>
+                <p class="panel-kicker">Cabeças adquiridas</p>
+                <h2>Compras por fazenda</h2>
+              </div>
+            </div>
+            <canvas id="comprasBarChart" aria-label="Gráfico de compras por fazenda"></canvas>
+          </article>
+          <article class="panel chart-panel">
+            <div class="panel-header">
+              <div>
+                <p class="panel-kicker">Evolução mensal</p>
+                <h2>Cabeças × Valor</h2>
+              </div>
+            </div>
+            <canvas id="comprasEvolutionChart" aria-label="Gráfico de evolução de compras por mês"></canvas>
+          </article>
+        </section>
+
+        <section class="san-history-section">
+          <article class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="panel-kicker">Histórico de aquisições</p>
+                <h2>Registros de Compra</h2>
+              </div>
+            </div>
+            <div class="san-history-toolbar">
+              <input type="search" id="comprasHistorySearch" class="movements-search-input" placeholder="Buscar por código, categoria, fazenda, origem…">
+              <div class="movements-filter-group san-history-filters">
+                <select id="comprasFilterFarm" class="movements-filter-select" aria-label="Filtrar por fazenda"></select>
+                <input type="date" id="comprasFilterDateFrom" class="movements-filter-select san-history-date" aria-label="Data inicial">
+                <input type="date" id="comprasFilterDateTo" class="movements-filter-select san-history-date" aria-label="Data final">
+                <select id="comprasFilterCategory" class="movements-filter-select" aria-label="Filtrar por categoria"></select>
+                <button type="button" class="ghost-btn san-history-clear-btn" id="clearComprasFiltersBtn">Limpar filtros</button>
+              </div>
+              <div class="movements-pagination" id="comprasHistoryPagination"></div>
+            </div>
+            <div class="table-wrap">
+              <table class="sanitary-table compras-table">
+                <thead id="comprasTableHead">
+                  <tr>
+                    <th>Código</th>
+                    <th>Fazenda</th>
+                    <th>Data</th>
+                    <th>Categoria</th>
+                    <th class="num-col">Cabeças</th>
+                    <th>Origem / Propriedade</th>
+                    <th class="num-col">Peso Médio</th>
+                    <th class="num-col">Valor Total</th>
+                    <th>Obs.</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="comprasTableBody"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+      </div>
+
         </main>
       </div>
     </div>
