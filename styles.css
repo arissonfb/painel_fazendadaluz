@@ -6687,29 +6687,36 @@ tr:last-child td { border-bottom: none; }
 
 .ops-farm-metrics {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px 16px;
   margin-top: 14px;
   padding-top: 12px;
   border-top: 1px solid rgba(0, 0, 0, 0.07);
 }
 
 .ops-farm-metrics span {
-  display: grid;
-  gap: 3px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   color: #777777;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
+  min-width: 0;
 }
 
 .ops-farm-metrics strong {
+  display: block;
   color: #111111;
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   font-weight: 800;
   text-transform: none;
   letter-spacing: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
 }
 
 .section-module-card {

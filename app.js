@@ -2405,7 +2405,7 @@ async function legacyHandleLoginSubmitApiUnused(event) {
 }
 
 function legacyHandleLogoutApiUnused() {
-  logAuditEvent("Logout", "auth", "Sa?da do sistema");
+  logAuditEvent("Logout", "auth", "Saida do sistema");
   state.data.auth.sessionUserId = "";
   runtime.cloudToken = null;
   runtime.cloudRevision = 0;
@@ -3575,7 +3575,7 @@ function renderOverviewPanel() {
     {
       title: "Manejo / estoque",
       value: formatInteger(totals.stock),
-      detail: `${formatInteger(totals.potreiros)} campos | saldo ${movementTotals.saldo >= 0 ?"+" : ""}${formatInteger(movementTotals.saldo)} cabe?as`
+      detail: `${formatInteger(totals.potreiros)} campos | saldo ${movementTotals.saldo >= 0 ?"+" : ""}${formatInteger(movementTotals.saldo)} cabecas`
     },
     {
       title: "Receita de Vendas",
@@ -3807,7 +3807,7 @@ function renderHeadlineMetrics(farm) {
     {
       label: "Declarado",
       value: formatInteger(Number(farm.declaredTotal || 0)),
-      text: discrepancy === 0 ?"total conferido com o estoque" : `${formatInteger(discrepancy)} animais de diferen?a`
+      text: discrepancy === 0 ?"total conferido com o estoque" : `${formatInteger(discrepancy)} animais de diferenca`
     },
     {
       label: "Potreiros",
@@ -4401,7 +4401,7 @@ function renderGlobalSummary() {
       value: formatInteger(totals.declaredTotal),
       detail: totals.declaredTotal === totals.animais
         ?"estoque alinhado ao total declarado"
-        : `${formatInteger(totals.declaredTotal - totals.animais)} animais de diferen?a`
+        : `${formatInteger(totals.declaredTotal - totals.animais)} animais de diferenca`
     },
     {
       title: isTotalView ?"Saídas consolidadas" : "Saídas no período",
@@ -9291,7 +9291,7 @@ function appendPdfFarmReportDivider(doc, farm, periodLabel, reportTitle, cards, 
   doc.text("Separação por fazenda", 14, 64);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
-  doc.text("As pr?ximas paginas detalham somente os registros desta unidade.", 14, 73);
+  doc.text("As proximas paginas detalham somente os registros desta unidade.", 14, 73);
 
   const gap = 7;
   const cardWidth = (width - 28 - gap * (cards.length - 1)) / cards.length;
