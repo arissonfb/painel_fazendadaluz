@@ -2413,6 +2413,16 @@ input {
   color: var(--muted);
 }
 
+/* Campo travado em modo edição — visual de somente-leitura sem disabled */
+.select-locked {
+  pointer-events: none;
+  background: rgba(245, 235, 218, 0.55) !important;
+  color: var(--muted);
+  cursor: default;
+  border-style: dashed;
+  opacity: 0.85;
+}
+
 /* ── Potreiro Management Dialog ───────────────────────────────────── */
 .potr-manej-card {
   width: min(700px, calc(100vw - 24px));

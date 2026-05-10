@@ -3402,7 +3402,14 @@ function bindEvents() {
   if (elements.monthlyProtocolList) {
     elements.monthlyProtocolList.addEventListener("click", handleMonthlyTableInteraction);
   }
-  elements.closeMovementDialog.addEventListener("click", () => { runtime.editingMovement = null; elements.movementDialog.close(); });
+  elements.closeMovementDialog.addEventListener("click", () => {
+    runtime.editingMovement = null;
+    elements.movementType.classList.remove("select-locked");
+    if (elements.movementCategory) elements.movementCategory.classList.remove("select-locked");
+    const catHintWrap = document.getElementById("movCategoryTotalWrap");
+    if (catHintWrap) catHintWrap.hidden = true;
+    elements.movementDialog.close();
+  });
   elements.closeMovTypeRecordsDlg.addEventListener("click", () => elements.movTypeRecordsDlg.close());
   elements.maximizeMovTypeRecordsDlg?.addEventListener("click", toggleMovTypeRecordsMaximize);
   elements.movementDialog.addEventListener("close", () => {
@@ -5050,7 +5057,11 @@ function renderMovementsTable(farm) {
 }
 
 function revertMovementEffect(farm, movement) {
-  const category = farm.categories.find((c) => c.id === movement.categoryId);
+  let category = farm.categories.find((c) => c.id === movement.categoryId);
+  if (!category && movement.categoryName) {
+    // ID antigo pode estar obsoleto — tenta por nome como fallback
+    category = farm.categories.find((c) => c.name.toLowerCase() === movement.categoryName.toLowerCase());
+  }
   if (!category) return;
 
   if (movement.type === "transferencia") {
@@ -5106,16 +5117,15 @@ function openEditMovementDialog(farmId, movementId) {
   if (elements.movementFarmWrap) {
     elements.movementFarmWrap.hidden = true;
   }
+  // Popula opções sem definir os valores ainda — updateMovementFormForType pode sobrescrever
   syncMovementTypeOptions(movement.type);
   syncMovementCategoryOptionsForFarm(farm);
-  if (elements.movementCategory) elements.movementCategory.value = movement.categoryId;
   syncMovementPotreirosOptions();
 
   elements.movementDate.value = movement.date;
   elements.movementQuantity.value = movement.quantity;
   elements.adjustDirection.value = movement.delta >= 0 ?"add" : "sub";
   elements.movementNotes.value = movement.notes || "";
-  elements.movementValue.value = movement.value || "";
 
   if (movement.type === "venda" && movement.saleDetails) {
     const d = movement.saleDetails;
@@ -5149,6 +5159,54 @@ function openEditMovementDialog(farmId, movementId) {
 
   resetMovementPhotoDrafts();
   updateMovementFormForType(movement.type);
+
+  // Tipo e categoria definidos por ÚLTIMO — após updateMovementFormForType para nada sobrescrever
+  elements.movementType.value = movement.type;
+  let categoryResolved = false;
+  if (elements.movementCategory) {
+    elements.movementCategory.value = movement.categoryId;
+    categoryResolved = Array.from(elements.movementCategory.options).some(
+      (o) => o.value === movement.categoryId && o.value !== ""
+    );
+    if (!categoryResolved && movement.categoryName) {
+      // Fallback: match exato por nome
+      const byName = farm.categories.find(
+        (c) => c.name.toLowerCase() === movement.categoryName.toLowerCase()
+      );
+      if (byName) {
+        elements.movementCategory.value = byName.id;
+        categoryResolved = true;
+      }
+    }
+    if (!categoryResolved) {
+      // Categoria original não encontrada — deixa seleção vazia e avisa o usuário
+      elements.movementCategory.value = "";
+    }
+  }
+
+  // Restaura valor após updateMovementFormForType (limpa campos não-compra/venda)
+  if (movement.type !== "venda") {
+    elements.movementValue.value = movement.value || "";
+  }
+
+  // Tipo sempre travado; categoria só trava se foi resolvida
+  elements.movementType.classList.add("select-locked");
+  if (elements.movementCategory) {
+    if (categoryResolved) {
+      elements.movementCategory.classList.add("select-locked");
+    } else {
+      elements.movementCategory.classList.remove("select-locked");
+    }
+  }
+
+  // Aviso quando a categoria original não existe mais nas categorias da fazenda
+  const catHintWrap = document.getElementById("movCategoryTotalWrap");
+  const catHint = document.getElementById("movCategoryTotalHint");
+  if (!categoryResolved && catHintWrap && catHint && movement.categoryName) {
+    catHint.innerHTML = `<span style="color:#b45309">⚠ Categoria original "<strong>${escapeHtml(movement.categoryName)}</strong>" não encontrada — selecione a equivalente acima.</span>`;
+    catHintWrap.hidden = false;
+  }
+
   elements.movementDialogTitle.textContent = `Editar ${capitalize(movement.type)}`;
   elements.movementDialog.showModal();
 }
@@ -7506,6 +7564,10 @@ function getMovementDialogFarm() {
 
 function openMovementDialog(initialType) {
   runtime.editingMovement = null;
+  elements.movementType.classList.remove("select-locked");
+  if (elements.movementCategory) elements.movementCategory.classList.remove("select-locked");
+  const catHintWrap = document.getElementById("movCategoryTotalWrap");
+  if (catHintWrap) catHintWrap.hidden = true;
   syncMovementFarmOptions();
   syncMovementTypeOptions(initialType);
   syncMovementCategoryOptionsForFarm(getMovementDialogFarm());
