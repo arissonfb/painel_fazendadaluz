@@ -3043,7 +3043,7 @@ function syncFilterYearForFarm(farm, force = false) {
   }
 
   const years = getAvailableYearsForFarm(farm);
-  if (force || !years.has(Number(state.filters.year))) {
+  if (force || (state.filters.year !== "all" && !years.has(Number(state.filters.year)))) {
     state.filters.year = String(getPreferredYearForFarm(farm));
   }
 }
@@ -3094,6 +3094,14 @@ function bindEvents() {
   elements.loginForm.addEventListener("submit", handleLoginSubmit);
   elements.loginRoleTabs.forEach((button) => {
     button.addEventListener("click", () => setAuthLoginMode(button.dataset.authRole));
+  });
+  document.getElementById("toggleLoginPw")?.addEventListener("click", function () {
+    const input = document.getElementById("loginPassword");
+    const wrap = input.closest(".pw-wrap");
+    const showing = input.type === "text";
+    input.type = showing ? "password" : "text";
+    wrap.classList.toggle("is-visible", !showing);
+    this.setAttribute("aria-label", showing ? "Mostrar senha" : "Ocultar senha");
   });
   elements.emergencyRestoreBtn?.addEventListener("click", () => elements.emergencyRestoreInput?.click());
   elements.emergencyRestoreInput?.addEventListener("change", handleEmergencyRestore);
@@ -3487,6 +3495,11 @@ function populateYearFilter() {
   });
 
   elements.yearFilter.innerHTML = "";
+  const todosOpt = document.createElement("option");
+  todosOpt.value = "all";
+  todosOpt.textContent = "Todos";
+  if (state.filters.year === "all") todosOpt.selected = true;
+  elements.yearFilter.appendChild(todosOpt);
   [...years].sort((a, b) => a - b).forEach((year) => {
     const option = document.createElement("option");
     option.value = String(year);
@@ -3528,6 +3541,7 @@ function render() {
   syncMonthlyDataCategoryOptions();
   renderHero(farm);
   renderHeadlineMetrics(farm);
+  renderOpsPanel(farm);
   renderPrimarySummaryCards(farm);
   renderDashboardSectionCards(farm);
   renderDashboardVisualHerdGrid(farm);
@@ -3554,9 +3568,10 @@ function renderOverviewPanel() {
     accumulator.stock += getFarmTotal(farm);
     accumulator.declared += Number(farm.declaredTotal || 0);
     accumulator.potreiros += getPotreroEntries(farm).length;
+    accumulator.potreroAnimals += getRegisteredPotreroAnimals(farm);
     accumulator.sanitary += getFilteredSanitaryRecords(farm).length;
     return accumulator;
-  }, { stock: 0, declared: 0, potreiros: 0, sanitary: 0 });
+  }, { stock: 0, declared: 0, potreiros: 0, potreroAnimals: 0, sanitary: 0 });
   const movementTotals = farms.reduce((accumulator, farm) => {
     const monthly = summarizePeriod(farm, state.filters.year, state.filters.month);
     const sales = summarizeSalePeriod(farm, state.filters.year, state.filters.month);
@@ -3582,7 +3597,7 @@ function renderOverviewPanel() {
     {
       title: "Manejo / estoque",
       value: formatInteger(totals.stock),
-      detail: `${formatInteger(totals.potreiros)} campos | saldo ${movementTotals.saldo >= 0 ?"+" : ""}${formatInteger(movementTotals.saldo)} cabecas`
+      detail: `${formatInteger(totals.potreiros)} campos | ${formatInteger(totals.potreroAnimals)} cabeças alocadas`
     },
     {
       title: "Receita de Vendas",
@@ -3718,6 +3733,8 @@ function renderConsolidatedCategories(farms, isTotalView) {
 function renderFinancialPanel(farms, isTotalView) {
   const container = document.getElementById("financialPanel");
   if (!container) return;
+  container.innerHTML = "";
+  return;
 
   const year = state.filters.year;
   const month = state.filters.month;
@@ -3832,7 +3849,102 @@ function renderHeadlineMetrics(farm) {
   `).join("");
 }
 
+function renderOpsPanel(farm) {
+  const el = document.getElementById("opsManejoList");
+  if (!el) return;
+
+  const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
+  const farms = isTotalView ? getAllFarms() : [farm].filter(Boolean);
+
+  const counts = { compra: 0, venda: 0, transferencia: 0, morte: 0, consumo: 0, nascimento: 0 };
+  farms.forEach((f) => {
+    (f.movements || []).forEach((m) => {
+      const yr = (m.date || "").slice(0, 4);
+      const mo = (m.date || "").slice(5, 7);
+      if (state.filters.year !== "all" && yr !== String(state.filters.year)) return;
+      if (state.filters.month !== "all" && mo !== String(state.filters.month).padStart(2, "0")) return;
+      if (Object.prototype.hasOwnProperty.call(counts, m.type)) {
+        counts[m.type] += Number(m.quantity || 0);
+      }
+    });
+  });
+
+  const movRows = [
+    { key: "compra",        label: "Compra",          color: "#3d8c5a" },
+    { key: "nascimento",    label: "Nascimento",       color: "#4caf50" },
+    { key: "venda",         label: "Venda",            color: "#c9a84c" },
+    { key: "transferencia", label: "Transferência",    color: "#5b8dd9" },
+    { key: "consumo",       label: "Abate / Consumo",  color: "#d4845a" },
+    { key: "morte",         label: "Morte",            color: "#c0392b" },
+  ];
+
+  const maxVal = Math.max(...movRows.map((r) => counts[r.key]), 1);
+
+  const rowsHtml = movRows.map((r) => {
+    const val = counts[r.key];
+    const pct = (val / maxVal * 100).toFixed(1);
+    const isEmpty = val === 0;
+    return `<div class="ops-row">
+      <span class="ops-dot" style="background:${r.color};${isEmpty ? "opacity:.35" : ""}"></span>
+      <span class="ops-label" style="${isEmpty ? "color:var(--muted)" : ""}">${r.label}</span>
+      <div class="ops-bar-wrap">
+        <div class="ops-bar" style="width:${pct}%;background:${r.color};opacity:${isEmpty ? 0 : .75}"></div>
+      </div>
+      <span class="ops-value${isEmpty ? " ops-zero" : ""}">${isEmpty ? "—" : formatInteger(val) + " cab"}</span>
+    </div>`;
+  }).join("");
+
+  const repRecords = farms.flatMap((f) => (f.reproductionRecords || []).filter((r) => {
+    const yr = (r.date || "").slice(0, 4);
+    const mo = (r.date || "").slice(5, 7);
+    if (state.filters.year !== "all" && yr !== String(state.filters.year)) return false;
+    if (state.filters.month !== "all" && mo !== String(state.filters.month).padStart(2, "0")) return false;
+    return true;
+  }));
+
+  function calcRate(recs) {
+    const total = recs.reduce((s, r) => s + Number(r.quantity || 0), 0);
+    const verified = recs.filter((r) => r.verificationDate && r.quantityPegou != null);
+    const pegou = verified.reduce((s, r) => s + Number(r.quantityPegou || 0), 0);
+    const verTotal = verified.reduce((s, r) => s + Number(r.quantity || 0), 0);
+    const taxa = verTotal > 0 ? (pegou / verTotal) * 100 : null;
+    return { total, taxa };
+  }
+
+  function pctPill(taxa) {
+    if (taxa === null) return `<span class="ops-pct-pill ops-pct-wait">Aguardando</span>`;
+    const cls = taxa >= 70 ? "ops-pct-good" : taxa >= 50 ? "ops-pct-mid" : "ops-pct-low";
+    return `<span class="ops-pct-pill ${cls}">${taxa.toFixed(1)}% acerto</span>`;
+  }
+
+  const insem = calcRate(repRecords.filter((r) => r.type === "inseminacao"));
+  const entou = calcRate(repRecords.filter((r) => r.type === "entourada"));
+  const hasRep = insem.total > 0 || entou.total > 0;
+
+  const repHtml = hasRep ? `
+    <hr class="ops-rep-divider">
+    ${insem.total > 0 ? `<div class="ops-rep-row">
+      <div>
+        <p class="ops-rep-label">Inseminação</p>
+        <p class="ops-rep-sub">${formatInteger(insem.total)} animais inseminados</p>
+      </div>
+      ${pctPill(insem.taxa)}
+    </div>` : ""}
+    ${entou.total > 0 ? `<div class="ops-rep-row">
+      <div>
+        <p class="ops-rep-label">Entourada</p>
+        <p class="ops-rep-sub">${formatInteger(entou.total)} animais entourados</p>
+      </div>
+      ${pctPill(entou.taxa)}
+    </div>` : ""}` : "";
+
+  el.innerHTML = rowsHtml + repHtml;
+}
+
 function renderPrimarySummaryCards(farm) {
+  if (elements.summaryGrid) { elements.summaryGrid.innerHTML = ""; }
+  return;
+
   const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
   const annualData = summarizePeriod(farm, state.filters.year, "all");
   const filteredData = summarizePeriod(farm, state.filters.year, state.filters.month);
@@ -3879,21 +3991,11 @@ function renderPrimarySummaryCards(farm) {
 function renderDashboardSectionCards(farm) {
   const el = document.getElementById("dashboardSectionCards");
   if (!el) return;
+  el.innerHTML = "";
+  return;
 
   const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
   const farms = isTotalView ?getAllFarms() : [farm].filter(Boolean);
-
-  // Sanitário stats
-  let sanTotal = 0;
-  let sanLastDate = null;
-  let sanLastProduct = "—";
-  farms.forEach((f) => {
-    const recs = getFilteredSanitaryRecords(f);
-    sanTotal += recs.length;
-    recs.forEach((r) => {
-      if (!sanLastDate || r.date > sanLastDate) { sanLastDate = r.date; sanLastProduct = r.product; }
-    });
-  });
 
   // Reprodução stats
   let repTotal = 0;
@@ -3929,17 +4031,6 @@ function renderDashboardSectionCards(farm) {
 
   el.innerHTML = `
     <div class="section-module-grid">
-      <article class="section-module-card section-card-sanitary" role="button" tabindex="0" data-nav-view="sanitary">
-        <div class="smc-icon">🩺</div>
-        <div class="smc-body">
-          <p class="smc-kicker">Manejo Sanitário</p>
-          <strong class="smc-value">${formatInteger(sanTotal)}</strong>
-          <p class="smc-detail">registros no período</p>
-          ${sanLastDate ?`<span class="smc-last">Último: ${formatDate(sanLastDate)} · ${escapeHtml(sanLastProduct)}</span>` : `<span class="smc-last">Sem registros no período</span>`}
-        </div>
-        <span class="smc-arrow">→</span>
-      </article>
-
       <article class="section-module-card section-card-reproducao" role="button" tabindex="0" data-nav-view="reproducao">
         <div class="smc-icon">🐄</div>
         <div class="smc-body">
@@ -4642,7 +4733,7 @@ function renderPeriodSummary(farm) {
     </article>
   `).join("");
 
-  elements.discrepancyNote.textContent = getDiscrepancyText(farm);
+  elements.discrepancyNote.textContent = "";
 }
 
 function renderSalesAnalysis(farm) {
@@ -10094,76 +10185,8 @@ async function appendFarmPdfSection(doc, farm, periodLabel, year, month) {
   appendPdfSectionTitle(doc, "Vendas no Período");
   appendSalesByCategoryPdfTable(doc, saleSummary);
 
-  appendFinancialBalancePdfTable(doc, saleSummary, purchaseSummary);
-
   appendPdfSectionTitle(doc, `Evolução Cronológica – ${year}`);
   appendChronologicalEvolutionPdfTable(doc, farm, year);
-
-  // ── Reprodução ─────────────────────────────────────────
-  const repRecords = (farm.reproductionRecords || [])
-    .filter((r) => {
-      const d = r.date || "";
-      if (year !== "all" && !d.startsWith(year)) return false;
-      if (month !== "all" && d.slice(5, 7) !== String(month).padStart(2, "0")) return false;
-      return true;
-    })
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
-
-  const repStats = calcReproductionStats(repRecords);
-  const repPendentes = repRecords.filter((r) => !r.verificationDate).length;
-
-  appendPdfSectionTitle(doc, "Reprodução — Resumo do Período");
-  doc.autoTable({
-    startY: doc.lastAutoTable.finalY + 2,
-    head: [["Indicador reprodutivo", "Valor"]],
-    body: [
-      ["Total de eventos", formatInteger(repRecords.length)],
-      ["Inseminações", formatInteger(repStats.totalInseminacoes)],
-      ["Entouradas", formatInteger(repStats.totalEntouradas)],
-      ["Prenhes confirmadas", formatInteger(repStats.totalPegou)],
-      ["Falhadas", formatInteger(repStats.totalFalhou)],
-      ["Taxa de prenhez", repStats.taxaSucesso != null ?`${repStats.taxaSucesso.toFixed(1)}%` : "Aguardando verificação"],
-      ["Aguardando verificação", formatInteger(repPendentes)]
-    ],
-    theme: "striped",
-    headStyles: { fillColor: [43, 132, 184] },
-    styles: { fontSize: 9, cellPadding: 3 },
-    margin: { left: 14, right: 14 }
-  });
-
-  if (repRecords.length) {
-    appendPdfSectionTitle(doc, "Reprodução — Histórico de Eventos");
-    doc.autoTable({
-      startY: doc.lastAutoTable.finalY + 2,
-      head: [["Código", "Data", "Tipo", "Categoria", "Qtd.", "Data Verif.", "Prenha", "Falhada", "% Prenhez"]],
-      body: repRecords.map((r) => {
-        const qty = Number(r.quantity || 0);
-        const pegou = r.quantityPegou != null ?formatInteger(r.quantityPegou) : "—";
-        const falhou = r.verificationDate && r.quantityPegou != null
-          ?formatInteger(Math.max(0, qty - Number(r.quantityPegou)))
-          : "—";
-        const taxa = r.verificationDate && r.quantityPegou != null && qty > 0
-          ?`${((Number(r.quantityPegou) / qty) * 100).toFixed(1)}%`
-          : "Aguardando";
-        return [
-          r.code || "—",
-          formatDate(r.date),
-          r.type === "inseminacao" ?"Inseminação" : "Entourada",
-          r.categoryName || "—",
-          formatInteger(qty),
-          r.verificationDate ?formatDate(r.verificationDate) : "Pendente",
-          pegou,
-          falhou,
-          taxa
-        ];
-      }),
-      theme: "striped",
-      headStyles: { fillColor: [43, 132, 184] },
-      styles: { fontSize: 8, cellPadding: 2 },
-      alternateRowStyles: { fillColor: [255, 247, 237] },
-      margin: { left: 14, right: 14 }
-    });
-  }
 }
 
 async function exportReproducaoPdf() {

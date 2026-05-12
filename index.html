@@ -30,21 +30,12 @@
 
   <section class="auth-shell" id="authShell">
     <div class="auth-card">
+      <img src="./assets/logo-da-luz.jpg" alt="Logo Da Luz" class="auth-corner-logo">
 
       <!-- Painel visual esquerdo: imagem + branding -->
       <div class="auth-visual-panel">
         <div class="auth-angus-frame">
           <img src="./assets/angus.jpg" alt="Rebanho Fazendas Da Luz" class="auth-angus-image">
-        </div>
-        <div class="auth-visual-copy">
-          <div class="auth-brand-badge">
-            <img src="./assets/logo-da-luz.jpg" alt="Logo Da Luz" class="auth-brand-logo">
-            <div class="auth-brand-text">
-              <span>Estabelecimentos</span>
-              <strong>Da Luz</strong>
-            </div>
-          </div>
-          <p class="auth-visual-sub">Gestão profissional do rebanho</p>
         </div>
       </div>
 
@@ -70,7 +61,13 @@
           </label>
           <label>
             Senha
-            <input type="password" id="loginPassword" autocomplete="current-password" required placeholder="Sua senha">
+            <div class="pw-wrap">
+              <input type="password" id="loginPassword" autocomplete="current-password" required placeholder="Sua senha">
+              <button type="button" class="btn-pw-toggle" id="toggleLoginPw" aria-label="Mostrar senha" tabindex="-1">
+                <svg class="pw-icon pw-icon-show" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="pw-icon pw-icon-hide" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button>
+            </div>
           </label>
           <p class="auth-feedback" id="loginFeedback" hidden></p>
           <button type="submit" class="btn-login auth-submit">Entrar</button>
@@ -171,10 +168,7 @@
             </div>
             <p class="eyebrow">Gestão do rebanho</p>
             <h1>Fazendas Da Luz</h1>
-            <p class="hero-text">
-              Controle o estoque de animais, acompanhe movimentações mensais e anuais e gere um PDF executivo para a gestão.
-            </p>
-            <div class="hero-metrics" id="heroMetrics"></div>
+            <div class="hero-metrics" id="heroMetrics" hidden></div>
           </div>
 
           <div class="hero-highlight">
@@ -202,48 +196,48 @@
               <div class="register-menu-group">
                 <span class="register-menu-label">Entradas</span>
                 <button type="button" class="register-menu-item rmi-compra" data-mov="compra" role="menuitem">
-                  <span class="rmi-icon">ðŸ›’</span>
+                  <span class="rmi-icon">🛒</span>
                   <div class="rmi-text"><strong>Compra</strong><span>Entrada por aquisição</span></div>
                 </button>
                 <button type="button" class="register-menu-item rmi-nascimento" data-mov="nascimento" role="menuitem">
-                  <span class="rmi-icon">ðŸ£</span>
+                  <span class="rmi-icon">🐣</span>
                   <div class="rmi-text"><strong>Nascimento</strong><span>Cria nascida no campo</span></div>
                 </button>
               </div>
               <div class="register-menu-group">
                 <span class="register-menu-label">Saídas</span>
                 <button type="button" class="register-menu-item rmi-venda" data-mov="venda" role="menuitem">
-                  <span class="rmi-icon">ðŸ’°</span>
+                  <span class="rmi-icon">💰</span>
                   <div class="rmi-text"><strong>Venda</strong><span>Saída por venda comercial</span></div>
                 </button>
                 <button type="button" class="register-menu-item rmi-consumo" data-mov="consumo" role="menuitem">
-                  <span class="rmi-icon">ðŸ”ª</span>
+                  <span class="rmi-icon">🔪</span>
                   <div class="rmi-text"><strong>Abate / Consumo</strong><span>Saída por abate ou consumo</span></div>
                 </button>
                 <button type="button" class="register-menu-item rmi-morte" data-mov="morte" role="menuitem">
-                  <span class="rmi-icon">ðŸ“‹</span>
+                  <span class="rmi-icon">📋</span>
                   <div class="rmi-text"><strong>Morte</strong><span>Baixa por óbito</span></div>
                 </button>
               </div>
               <div class="register-menu-group">
                 <span class="register-menu-label">Movimentação</span>
                 <button type="button" class="register-menu-item rmi-transferencia" data-mov="transferencia" role="menuitem">
-                  <span class="rmi-icon">ðŸ”„</span>
+                  <span class="rmi-icon">🔄</span>
                   <div class="rmi-text"><strong>Transferência</strong><span>Mover animais entre fazendas</span></div>
                 </button>
               </div>
               <div class="register-menu-group">
                 <span class="register-menu-label">Gestão</span>
                 <button type="button" class="register-menu-item rmi-dado-mensal" data-mov="dado-mensal" role="menuitem">
-                  <span class="rmi-icon">ðŸ“Š</span>
+                  <span class="rmi-icon">📊</span>
                   <div class="rmi-text"><strong>Dado mensal</strong><span>Registrar indicador</span></div>
                 </button>
                 <button type="button" class="register-menu-item rmi-ajuste" data-mov="ajuste" role="menuitem">
-                  <span class="rmi-icon">âš–ï¸</span>
+                  <span class="rmi-icon">⚖️</span>
                   <div class="rmi-text"><strong>Ajuste manual</strong><span>Correção de estoque</span></div>
                 </button>
                 <button type="button" class="register-menu-item rmi-categoria" data-mov="categoria" role="menuitem">
-                  <span class="rmi-icon">ðŸ·ï¸</span>
+                  <span class="rmi-icon">🏷️</span>
                   <div class="rmi-text"><strong>Nova categoria</strong><span>Adicionar tipo de animal</span></div>
                 </button>
               </div>
@@ -275,10 +269,6 @@
         <!-- Cards de seção: Reprodução, Sanitário, Movimentações -->
         <section class="section-module-cards" id="dashboardSectionCards"></section>
 
-        <section class="summary-grid" id="summaryGrid"></section>
-
-        <section class="visual-herd-grid" id="visualHerdGrid"></section>
-
         <section class="content-grid content-grid-strong">
           <article class="panel chart-panel">
           <div class="panel-header">
@@ -300,7 +290,21 @@
           <canvas id="movementChart" aria-label="Gráfico de entradas, saídas e saldo"></canvas>
           </article>
 
+          <article class="panel chart-panel ops-panel">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">Período filtrado</p>
+              <h2>Manejos da fazenda</h2>
+            </div>
+          </div>
+          <div id="opsManejoList" class="ops-manejo-list"></div>
+          </article>
+
         </section>
+
+        <section class="summary-grid" id="summaryGrid"></section>
+
+        <section class="visual-herd-grid" id="visualHerdGrid"></section>
 
         <section class="content-grid lower-grid">
           <article class="panel analytics-panel">
@@ -318,7 +322,7 @@
           <article class="panel timeline-panel">
           <div class="panel-header">
             <div>
-              <p class="panel-kicker">Ãšltimas vendas</p>
+              <p class="panel-kicker">Últimas vendas</p>
               <h2>Leitura comercial do período</h2>
             </div>
           </div>
@@ -339,28 +343,12 @@
           </div>
           </article>
 
-          <article class="panel analytics-panel">
-          <div class="panel-header">
-            <div>
-              <p class="panel-kicker">Fechamento do período</p>
-              <h2>Resumo mensal e anual</h2>
-            </div>
-          </div>
-          <div class="analytics-cards" id="periodSummary"></div>
-          <div class="note-box" id="discrepancyNote"></div>
-          </article>
+          <div id="periodSummary" hidden></div>
+          <div class="note-box" id="discrepancyNote" hidden></div>
         </section>
 
         <section class="content-grid lower-grid" id="monthlySummarySection">
-          <article class="panel analytics-panel">
-          <div class="panel-header">
-            <div>
-              <p class="panel-kicker">Leitura mensal</p>
-              <h2>Números e valores atribuídos</h2>
-            </div>
-          </div>
-          <div class="analytics-cards" id="monthlySummaryGrid"></div>
-          </article>
+          <div id="monthlySummaryGrid" hidden></div>
 
           <article class="panel chart-panel">
           <div class="panel-header">
@@ -1281,9 +1269,9 @@
       <div class="potr-action-tabs" id="potrActionTabs" hidden>
         <button type="button" class="potr-action-tab potr-tab-add active" data-manej="adicionar">+ Adicionar</button>
         <button type="button" class="potr-action-tab potr-tab-transfer" data-manej="transferencia">â‡„ Transferência</button>
-        <button type="button" class="potr-action-tab potr-tab-sale" data-manej="venda">ðŸ’° Venda</button>
-        <button type="button" class="potr-action-tab potr-tab-death" data-manej="morte">ðŸ“‹ Morte</button>
-        <button type="button" class="potr-action-tab potr-tab-consume" data-manej="consumo">ðŸ”ª Abate</button>
+        <button type="button" class="potr-action-tab potr-tab-sale" data-manej="venda">💰 Venda</button>
+        <button type="button" class="potr-action-tab potr-tab-death" data-manej="morte">📋 Morte</button>
+        <button type="button" class="potr-action-tab potr-tab-consume" data-manej="consumo">🔪 Abate</button>
         <button type="button" class="potr-action-tab potr-tab-retorno" data-manej="retorno">â†© Retorno ao Total</button>
       </div>
 

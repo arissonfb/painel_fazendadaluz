@@ -695,14 +695,33 @@ body::before {
   filter: brightness(0.85) contrast(1.08);
 }
 
-/* Badge + copytext — sobre a imagem, no rodapé */
+/* Badge + copytext — canto inferior esquerdo, rente à borda */
 .auth-visual-copy {
-  position: relative;
+  position: absolute;
+  bottom: 0;
+  left: 0;
   z-index: 2;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 10px;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 14px 20px;
+}
+
+.auth-card { position: relative; }
+
+.auth-corner-logo {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  z-index: 10;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 2px 14px rgba(0,0,0,0.55);
+  border: 2px solid rgba(255,255,255,0.18);
+  pointer-events: none;
 }
 
 /* Badge com logo circular */
@@ -842,18 +861,46 @@ body::before {
   font-weight: 500;
 }
 
+.pw-wrap {
+  position: relative;
+  display: grid;
+}
+
+.pw-wrap .btn-pw-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: rgba(255,255,255,0.40);
+  line-height: 0;
+  transition: color 0.2s;
+}
+
+.pw-wrap .btn-pw-toggle:hover { color: rgba(255,255,255,0.80); }
+
+.pw-icon { width: 18px; height: 18px; display: block; }
+.pw-icon-hide { display: none; }
+.pw-wrap.is-visible .pw-icon-show { display: none; }
+.pw-wrap.is-visible .pw-icon-hide { display: block; }
+
 .auth-form input[type="text"],
 .auth-form input[type="password"] {
   min-height: 48px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.10);
   border-radius: 10px;
-  padding: 0 14px;
+  padding: 0 44px 0 14px;
   color: #ffffff;
   font: inherit;
   font-size: 0.95rem;
   transition: border-color 0.2s, background 0.2s;
 }
+
+.auth-form input[type="text"] { padding-right: 14px; }
 
 .auth-form input[type="text"]::placeholder,
 .auth-form input[type="password"]::placeholder {
@@ -2608,6 +2655,110 @@ input {
 
 .content-grid-strong {
   grid-template-columns: 1fr 1fr 1fr;
+}
+
+/* ─── Painel de Manejos ──────────────────────────────────────────────────── */
+.ops-manejo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.ops-row {
+  display: grid;
+  grid-template-columns: 12px 1fr minmax(60px, 90px) 52px;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: var(--surface);
+  transition: background 0.15s;
+}
+.ops-row:hover { background: rgba(255,255,255,0.04); }
+
+.ops-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ops-label {
+  font-size: 0.81rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ops-bar-wrap {
+  height: 5px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.ops-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.45s cubic-bezier(.4,0,.2,1);
+}
+
+.ops-value {
+  font-size: 0.80rem;
+  font-weight: 700;
+  color: var(--text);
+  text-align: right;
+  white-space: nowrap;
+}
+.ops-value.ops-zero { color: var(--muted); font-weight: 400; }
+
+.ops-rep-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 10px 0 8px;
+}
+
+.ops-rep-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--surface);
+  margin-bottom: 5px;
+}
+
+.ops-rep-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 2px;
+}
+.ops-rep-sub {
+  font-size: 0.74rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+.ops-pct-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.ops-pct-good { background: rgba(55,91,67,0.14); color: #3d8c5a; }
+.ops-pct-mid  { background: rgba(201,168,76,0.14); color: #b8922e; }
+.ops-pct-low  { background: rgba(192,57,43,0.12); color: #c0392b; }
+.ops-pct-wait { background: var(--border); color: var(--muted); }
+
+@media (max-width: 900px) {
+  .ops-panel { grid-column: 1 / -1; }
 }
 
 .panel {
@@ -5125,6 +5276,10 @@ th {
   letter-spacing: 0.04em;
   color: var(--muted);
   padding-bottom: 4px;
+}
+
+.fin-table-head span:not(:first-child) {
+  text-align: right;
 }
 
 .fin-farm-row {
