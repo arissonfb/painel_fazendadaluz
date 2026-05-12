@@ -871,11 +871,12 @@ body::before {
   right: 12px;
   top: 50%;
   transform: translateY(-50%);
+  z-index: 2;
   background: none;
   border: none;
   padding: 4px;
   cursor: pointer;
-  color: rgba(255,255,255,0.40);
+  color: rgba(255,255,255,0.50);
   line-height: 0;
   transition: color 0.2s;
 }
