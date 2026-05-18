@@ -970,8 +970,10 @@ const elements = {
   movementPhotoPreview: document.getElementById("movementPhotoPreview"),
   categoryDialog: document.getElementById("categoryDialog"),
   categoryForm: document.getElementById("categoryForm"),
+  categoryFarm: document.getElementById("categoryFarm"),
   categoryName: document.getElementById("categoryName"),
   categoryInitialQuantity: document.getElementById("categoryInitialQuantity"),
+  categoryPotreiro: document.getElementById("categoryPotreiro"),
   sanitaryForm: document.getElementById("sanitaryForm"),
   sanitaryDialog: document.getElementById("sanitaryDialog"),
   sanitaryDialogTitle: document.getElementById("sanitaryDialogTitle"),
@@ -3446,6 +3448,7 @@ function bindEvents() {
   elements.potrManejForm.addEventListener("submit", handlePotrManejSubmit);
   elements.potrManejPhotos?.addEventListener("change", handlePotrManejPhotosChange);
   elements.closeCategoryDialog.addEventListener("click", () => elements.categoryDialog.close());
+  elements.categoryFarm.addEventListener("change", syncCategoryPotreirosOptions);
   elements.closeEditStockDialog.addEventListener("click", () => elements.editStockDialog.close());
   elements.georefSaveButton.addEventListener("click", handleGeorefSave);
   elements.georefLegend.addEventListener("click", handleGeorefLegendInteraction);
@@ -7780,14 +7783,27 @@ function handleMovementPhotoPreviewClick(event) {
   renderMovementPhotoDrafts();
 }
 
-function openCategoryDialog() {
-  if (state.data.selectedFarmId === TOTAL_FARM_ID) {
-    alert("Selecione uma fazenda específica para adicionar uma categoria.");
-    return;
-  }
+function syncCategoryPotreirosOptions() {
+  const farmId = elements.categoryFarm?.value;
+  const farm = farmId ? state.data.farms[farmId] : null;
+  const potreiros = getPotreroEntries(farm);
+  elements.categoryPotreiro.innerHTML = [
+    '<option value="">Sem potreiro</option>',
+    ...potreiros.map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`)
+  ].join("");
+}
 
+function openCategoryDialog() {
+  const farms = getAllFarms();
+  const defaultFarmId = state.data.selectedFarmId !== TOTAL_FARM_ID
+    ? state.data.selectedFarmId
+    : farms[0]?.id || "";
+  elements.categoryFarm.innerHTML = farms.map((f) =>
+    `<option value="${escapeHtml(f.id)}" ${f.id === defaultFarmId ? "selected" : ""}>${escapeHtml(f.name)}</option>`
+  ).join("");
   elements.categoryName.value = "";
   elements.categoryInitialQuantity.value = "0";
+  syncCategoryPotreirosOptions();
   elements.categoryDialog.showModal();
 }
 
@@ -8784,15 +8800,25 @@ async function handleMovementSubmit(event) {
 
 function handleCategorySubmit(event) {
   event.preventDefault();
-  const farm = getFarm();
+  const farmId = elements.categoryFarm.value;
+  const farm = state.data.farms[farmId];
+  if (!farm) return;
   const name = elements.categoryName.value.trim();
   const quantity = Number(elements.categoryInitialQuantity.value || 0);
+  const potreirosId = elements.categoryPotreiro?.value || "";
 
-  if (!name) {
-    return;
-  }
+  if (!name) return;
 
   farm.categories.push({ id: slugify(`${name}-${Date.now()}`), name, quantity });
+
+  if (potreirosId && quantity > 0) {
+    const potrero = getPotreroEntries(farm).find((p) => p.id === potreirosId);
+    if (potrero) {
+      potrero.quantity = (Number(potrero.quantity) || 0) + quantity;
+    }
+  }
+
+  logAuditEvent("Adição", "categoria", `${name} (${farm.name})`, { farmId: farm.id, farmName: farm.name });
   saveData();
   elements.categoryDialog.close();
   render();

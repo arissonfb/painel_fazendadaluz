@@ -952,12 +952,20 @@
 
       <div class="form-grid">
         <label>
+          Fazenda
+          <select id="categoryFarm" required></select>
+        </label>
+        <label>
           Nome da categoria
           <input type="text" id="categoryName" maxlength="60" required placeholder="Ex.: Vacas em terminação">
         </label>
         <label>
           Estoque inicial
           <input type="number" id="categoryInitialQuantity" min="0" step="1" required value="0">
+        </label>
+        <label>
+          Potreiro (opcional)
+          <select id="categoryPotreiro"></select>
         </label>
       </div>
 
