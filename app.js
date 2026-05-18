@@ -8168,6 +8168,7 @@ function handleSaveStockEdit() {
   // Apply all changes
   for (const farm of farms) {
     const { cats, declared } = catUpdates[farm.id] || { cats: [], declared: 0 };
+    const newCatIds = new Set();
     for (const { id, name, qty } of cats) {
       const existing = farm.categories.find((c) => c.id === id);
       if (existing) {
@@ -8179,17 +8180,18 @@ function handleSaveStockEdit() {
         if (existing.quantity !== qty) {
           const diff = qty - existing.quantity;
           existing.quantity = qty;
-          // Propaga diferença no pool não-alocado
           ensureCategoryAllocation(existing);
           existing.allocation[UNALLOCATED_POTREIRO_KEY] = Math.max(0, Number(existing.allocation[UNALLOCATED_POTREIRO_KEY] || 0) + diff);
         }
       } else {
-        // Nova categoria — sem allocation; ensureCategoryAllocation inicializa na primeira operação
-        farm.categories.push({ id: slugify(`${name}-${Date.now()}`), name, quantity: qty });
+        // Nova categoria — id definitivo baseado no nome
+        const newId = slugify(`${name}-${Date.now()}`);
+        farm.categories.push({ id: newId, name, quantity: qty });
+        newCatIds.add(newId);
       }
     }
-    // Remove categories no longer in the list
-    const keptIds = new Set(cats.map((c) => c.id));
+    // Remove categorias excluídas, preservando as recém-criadas
+    const keptIds = new Set([...cats.map((c) => c.id), ...newCatIds]);
     farm.categories = farm.categories.filter((c) => keptIds.has(c.id));
 
     farm.declaredTotal = declared;
