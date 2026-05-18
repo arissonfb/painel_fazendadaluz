@@ -7192,18 +7192,43 @@ function renderInventoryRankedList(farm) {
 
   if (restCats.length > 0) {
     const restPct = ((restQty / total) * 100).toFixed(1);
+    const hiddenRows = restCats.map((cat, index) => {
+      const pct = ((cat.quantity / total) * 100).toFixed(1);
+      const color = COLORS[(TOP_N + index) % COLORS.length];
+      return `
+        <div class="inv-ranked-row inv-ranked-expanded-row">
+          <div class="inv-ranked-bar" style="width:${pct}%"></div>
+          <span class="inv-ranked-dot" style="background:${color}"></span>
+          <span class="inv-ranked-name">${escapeHtml(cat.name)}</span>
+          <strong class="inv-ranked-qty">${formatInteger(cat.quantity)}</strong>
+          <span class="inv-ranked-pct">${pct}%</span>
+        </div>
+      `;
+    }).join("");
     rows.push(`
-      <div class="inv-ranked-row inv-ranked-others">
+      <div class="inv-ranked-row inv-ranked-others inv-ranked-toggle" style="cursor:pointer" data-inv-toggle>
         <div class="inv-ranked-bar" style="width:${restPct}%"></div>
         <span class="inv-ranked-dot" style="background:var(--muted);opacity:0.5"></span>
-        <span class="inv-ranked-name">Outras (${restCats.length} categorias)</span>
+        <span class="inv-ranked-name inv-toggle-label">▶ Outras (${restCats.length} categorias)</span>
         <strong class="inv-ranked-qty">${formatInteger(restQty)}</strong>
         <span class="inv-ranked-pct">${restPct}%</span>
       </div>
+      <div class="inv-expanded-body" hidden>${hiddenRows}</div>
     `);
   }
 
   container.innerHTML = rows.join("");
+
+  const toggleRow = container.querySelector("[data-inv-toggle]");
+  const expandBody = container.querySelector(".inv-expanded-body");
+  if (toggleRow && expandBody) {
+    toggleRow.addEventListener("click", () => {
+      const open = !expandBody.hidden;
+      expandBody.hidden = open;
+      toggleRow.querySelector(".inv-toggle-label").textContent =
+        open ? `▶ Outras (${restCats.length} categorias)` : `▼ Outras (${restCats.length} categorias)`;
+    });
+  }
 }
 
 function renderMovementChart(farm) {
