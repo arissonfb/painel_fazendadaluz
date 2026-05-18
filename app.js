@@ -5908,6 +5908,7 @@ function renderPotreirosView() {
         <p class="panel-kicker">${balance === 0 ?"Conferência" : balance > 0 ?"Sem potreiro" : "Excedente"}</p>
         <strong>${balance === 0 ?"✓ OK" : (balance > 0 ?"+" : "") + formatInteger(balance)}</strong>
         <p>${balance === 0 ?"Distribuição conferida." : balance > 0 ?`${formatInteger(balance)} ainda não alocados.` : `${formatInteger(Math.abs(balance))} acima do estoque.`}</p>
+        ${balance > 0 ?`<button type="button" class="potr-manej-btn" data-potr-manej-farm="${escapeHtml(farm.id)}" data-potr-manej-id="${UNALLOCATED_POTREIRO_KEY}">Alocar animais</button>` : ""}
       </article>
     ` : "";
 
@@ -5934,19 +5935,19 @@ function renderPotreirosView() {
 function openPotrManejDialog(farmId, potreirosId) {
   const farm = state.data.farms[farmId];
   if (!farm) return;
-  const potrero = getPotreroEntries(farm).find((p) => p.id === potreirosId);
-  const potreroName = potrero ?potrero.name : "Sem potreiro";
-  const potreroQty = potrero ?normalizePotreroQuantity(potrero.quantity) : 0;
+  const isUnallocated = potreirosId === UNALLOCATED_POTREIRO_KEY;
+  const potrero = isUnallocated ? null : getPotreroEntries(farm).find((p) => p.id === potreirosId);
   const farmTotal = getFarmTotal(farm);
-
-  // Calc unallocated
   const allocatedTotal = getRegisteredPotreroAnimals(farm);
-  const unallocated = farmTotal - allocatedTotal;
+  const farmBalance = Math.max(0, farmTotal - allocatedTotal);
+  const potreroName = isUnallocated ? "Sem potreiro" : (potrero ?potrero.name : "Sem potreiro");
+  const potreroQty = isUnallocated ? farmBalance : (potrero ?normalizePotreroQuantity(potrero.quantity) : 0);
+  const unallocated = farmBalance;
 
   runtime.potrManej = { farmId, potreirosId, type: "transferencia", photoDrafts: [] };
 
   elements.potrManejFarmKicker.textContent = farm.name;
-  elements.potrManejDlgTitle.textContent = `Transferência — ${potreroName}`;
+  elements.potrManejDlgTitle.textContent = isUnallocated ? `Alocar animais — Sem potreiro` : `Transferência — ${potreroName}`;
   elements.potrManejFarmTotal.textContent = formatInteger(farmTotal);
   elements.potrManejPotrTotal.textContent = formatInteger(potreroQty);
   elements.potrManejUnallocated.textContent = formatInteger(Math.max(0, unallocated));
@@ -5967,10 +5968,18 @@ function openPotrManejDialog(farmId, potreirosId) {
     });
   }
 
-  // Populate categories
-  elements.potrManejCategory.innerHTML = farm.categories.map((c) => `
-    <option value="${escapeHtml(c.id)}">${escapeHtml(c.name)} (${formatInteger(c.quantity)})</option>
-  `).join("");
+  // Populate categories — when source is unallocated, show available (unallocated) qty per category
+  elements.potrManejCategory.innerHTML = farm.categories.map((c) => {
+    let disponivel = c.quantity;
+    if (isUnallocated) {
+      const alloc = c.allocation || {};
+      const alocado = Object.entries(alloc)
+        .filter(([k]) => k !== UNALLOCATED_POTREIRO_KEY)
+        .reduce((s, [, v]) => s + Number(v || 0), 0);
+      disponivel = Math.max(0, c.quantity - alocado);
+    }
+    return `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)} (${formatInteger(disponivel)} disp.)</option>`;
+  }).join("");
 
   // Populate destination farms (all farms except current)
   const allFarms = getAllFarms();
@@ -5996,11 +6005,12 @@ function syncPotrManejDestFarmPotreiros() {
     return;
   }
 
+  const isSourceUnallocated = originPotreroId === UNALLOCATED_POTREIRO_KEY;
   const opts = getPotreroEntries(destFarm)
     .filter((p) => !isSameFarm || p.id !== originPotreroId)
     .map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)} (${formatInteger(p.quantity)})</option>`);
 
-  if (isSameFarm) {
+  if (isSameFarm && !isSourceUnallocated) {
     opts.unshift(`<option value="${UNALLOCATED_POTREIRO_KEY}">Sem potreiro</option>`);
   }
 
