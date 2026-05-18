@@ -1392,6 +1392,7 @@ input {
 .rmi-dado-mensal:hover   { background: rgba(111, 95, 77, 0.09); }
 .rmi-ajuste:hover    { background: rgba(201, 140, 79, 0.12); }
 .rmi-categoria:hover { background: rgba(55, 91, 67, 0.09); }
+.rmi-alocar:hover    { background: rgba(59, 91, 143, 0.09); }
 
 .actions-secondary {
   display: flex;
@@ -6374,7 +6375,7 @@ body::before {
 .rmi-venda:hover,.rmi-morte:hover       { background: rgba(192, 57, 43, 0.06); }
 .rmi-consumo:hover,.rmi-ajuste:hover    { background: #f8f9fa; }
 .rmi-transferencia:hover                { background: rgba(26, 95, 180, 0.06); }
-.rmi-dado-mensal:hover,.rmi-categoria:hover { background: #f8f9fa; }
+.rmi-dado-mensal:hover,.rmi-categoria:hover,.rmi-alocar:hover { background: #f8f9fa; }
 
 /* ─── Botões ─── */
 .action-btn,

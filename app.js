@@ -4435,6 +4435,11 @@ function handleRegisterAction(action) {
     return;
   }
 
+  if (action === "alocar") {
+    openAlocarDialog();
+    return;
+  }
+
   openMovementDialog(action);
 }
 
@@ -7793,6 +7798,18 @@ function handleMovementPhotoPreviewClick(event) {
   renderMovementPhotoDrafts();
 }
 
+function openAlocarDialog() {
+  const farms = getAllFarms();
+  const farmId = state.data.selectedFarmId !== TOTAL_FARM_ID
+    ? state.data.selectedFarmId
+    : farms[0]?.id;
+  if (!farmId) {
+    alert("Nenhuma fazenda disponível.");
+    return;
+  }
+  openPotrManejDialog(farmId, UNALLOCATED_POTREIRO_KEY);
+}
+
 function syncCategoryPotreirosOptions() {
   const farmId = elements.categoryFarm?.value;
   const farm = farmId ? state.data.farms[farmId] : null;
@@ -8159,11 +8176,16 @@ function handleSaveStockEdit() {
           farm.sanitaryRecords.forEach((r) => { if (r.categoryId === id) r.categoryName = name; });
           existing.name = name;
         }
-        existing.quantity = qty;
+        if (existing.quantity !== qty) {
+          const diff = qty - existing.quantity;
+          existing.quantity = qty;
+          // Propaga diferença no pool não-alocado
+          ensureCategoryAllocation(existing);
+          existing.allocation[UNALLOCATED_POTREIRO_KEY] = Math.max(0, Number(existing.allocation[UNALLOCATED_POTREIRO_KEY] || 0) + diff);
+        }
       } else {
-        // New category
-        const newCatId = slugify(`${name}-${Date.now()}`);
-        farm.categories.push({ id: newCatId, name, quantity: qty, allocation: {} });
+        // Nova categoria — sem allocation; ensureCategoryAllocation inicializa na primeira operação
+        farm.categories.push({ id: slugify(`${name}-${Date.now()}`), name, quantity: qty });
       }
     }
     // Remove categories no longer in the list
@@ -8499,7 +8521,12 @@ function syncMovementPotreirosOptions() {
 
 function ensureCategoryAllocation(category) {
   if (!category.allocation || typeof category.allocation !== "object") {
-    category.allocation = { [UNALLOCATED_POTREIRO_KEY]: Number(category.quantity || 0) };
+    category.allocation = {};
+  }
+  // Se o pool não-alocado nunca foi definido, calcula como total menos o que já está em potreiros
+  if (!Object.prototype.hasOwnProperty.call(category.allocation, UNALLOCATED_POTREIRO_KEY)) {
+    const allocatedElsewhere = Object.values(category.allocation).reduce((s, v) => s + Number(v || 0), 0);
+    category.allocation[UNALLOCATED_POTREIRO_KEY] = Math.max(0, Number(category.quantity || 0) - allocatedElsewhere);
   }
 }
 
