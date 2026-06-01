@@ -2582,32 +2582,29 @@ async function handleLoginSubmit(event) {
       ? true
       : error.status >= 500;
     if (isServerError) {
-      // Tenta credential local salva (logins anteriores com backend online)
+      // Servidor indisponível ou iniciando — mostrar opção de tentar novamente
       const localUser = await checkLocalCredential(login, password);
-      if (localUser) {
-        completaLoginLocal(localUser);
-        return;
-      }
-      // Emergência: verifica se usuário existe nos dados locais e confirma acesso
-      const cachedUser = state.data.auth.users.find(
+      const cachedUser = localUser || state.data.auth.users.find(
         (u) => (u.login || "").toLowerCase() === login.toLowerCase()
       );
-      if (cachedUser && Array.isArray(state.data.auth.users) && state.data.auth.users.length > 0) {
+      if (cachedUser) {
         const ok = confirm(
-          `O servidor está com falha (erro 500).\n\n` +
-          `Usuário "${login}" encontrado nos dados locais deste dispositivo.\n\n` +
-          `Deseja entrar em MODO LOCAL?\n` +
-          `• Seus dados permanecem íntegros\n` +
-          `• Não haverá sincronização com o servidor\n` +
-          `• Recomendado fazer backup após entrar`
+          `O servidor está temporariamente indisponível (pode estar acordando).\n\n` +
+          `» Clique em CANCELAR para aguardar 30 segundos e tentar novamente — recomendado.\n\n` +
+          `» Clique em OK apenas se precisar acessar agora sem sincronização:\n` +
+          `  • Seus dados locais permanecem íntegros\n` +
+          `  • Não haverá sincronização com o servidor`
         );
         if (ok) {
           completaLoginLocal(cachedUser);
           return;
         }
+        elements.loginFeedback.hidden = false;
+        elements.loginFeedback.textContent = "Aguarde 30 segundos e tente novamente — o servidor está acordando.";
+        return;
       }
       elements.loginFeedback.hidden = false;
-      elements.loginFeedback.textContent = "Servidor indisponível (erro 500). Verifique os logs do Render. Se já usou este sistema neste dispositivo, tente novamente — o acesso local pode estar disponível.";
+      elements.loginFeedback.textContent = "Servidor temporariamente indisponível. Aguarde 30 segundos e tente novamente.";
       return;
     }
     elements.loginFeedback.hidden = false;
