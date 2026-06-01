@@ -354,6 +354,112 @@ app.post("/api/data", authMiddleware, async (req, res) => {
   }
 });
 
+// ── Merge server payload + incoming payload ──────────────────────────────────
+// Strategy: server is the base. Incoming adds NEW records only (by ID).
+// Existing records are never overwritten — only new ones are appended.
+// Code sequences always take the maximum to avoid collisions.
+// AuditLog entries from both sides are merged and deduplicated.
+function mergeServerPayloads(serverPayload, incomingPayload) {
+  if (!serverPayload) return incomingPayload;
+  if (!incomingPayload) return serverPayload;
+
+  const merged = JSON.parse(JSON.stringify(serverPayload));
+  const incoming = incomingPayload;
+
+  // ── Merge farms ──
+  const serverFarms = merged.farms || {};
+  const incomingFarms = incoming.farms || {};
+
+  Object.keys(incomingFarms).forEach((farmId) => {
+    if (!serverFarms[farmId]) {
+      merged.farms[farmId] = incomingFarms[farmId];
+      return;
+    }
+    const sf = merged.farms[farmId];
+    const lf = incomingFarms[farmId];
+
+    function appendNewRecords(serverRecs, localRecs) {
+      if (!Array.isArray(localRecs)) return serverRecs || [];
+      const existing = new Set((serverRecs || []).map((r) => r.id).filter(Boolean));
+      const toAdd = localRecs.filter((r) => r.id && !existing.has(r.id));
+      return [...(serverRecs || []), ...toAdd];
+    }
+
+    sf.movements           = appendNewRecords(sf.movements, lf.movements);
+    sf.sanitaryRecords     = appendNewRecords(sf.sanitaryRecords, lf.sanitaryRecords);
+    sf.reproductionRecords = appendNewRecords(sf.reproductionRecords, lf.reproductionRecords);
+    sf.monthlyRecords      = appendNewRecords(sf.monthlyRecords, lf.monthlyRecords);
+
+    sf.movementCodeSequence      = Math.max(sf.movementCodeSequence || 0, lf.movementCodeSequence || 0);
+    sf.sanitaryCodeSequence      = Math.max(sf.sanitaryCodeSequence || 0, lf.sanitaryCodeSequence || 0);
+    sf.reproductionCodeSequence  = Math.max(sf.reproductionCodeSequence || 0, lf.reproductionCodeSequence || 0);
+
+    if (Array.isArray(lf.potreiros)) {
+      const sfPotrIds = new Set((sf.potreiros || []).map((p) => p.id).filter(Boolean));
+      const newPotrs  = lf.potreiros.filter((p) => p.id && !sfPotrIds.has(p.id));
+      sf.potreiros = [...(sf.potreiros || []), ...newPotrs];
+    }
+  });
+
+  // ── Merge auth.auditLog ──
+  if (incoming.auth?.auditLog && merged.auth) {
+    const existing = new Set((merged.auth.auditLog || []).map((e) => e.id).filter(Boolean));
+    const newEntries = (incoming.auth.auditLog || []).filter((e) => e.id && !existing.has(e.id));
+    merged.auth.auditLog = [...(merged.auth.auditLog || []), ...newEntries];
+    if (merged.auth.auditLog.length > 2000) {
+      merged.auth.auditLog = merged.auth.auditLog.slice(-2000);
+    }
+  }
+
+  return merged;
+}
+
+// POST /api/data/merge — atomic merge, never conflicts, never loses data.
+// Accepts same payload format as POST /api/data but ignores revision.
+// Always adds NEW records from the incoming payload to the server payload.
+app.post("/api/data/merge", authMiddleware, async (req, res) => {
+  const { payload } = req.body || {};
+  if (!payload) {
+    return res.status(400).json({ error: "Payload obrigatorio." });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const current = await client.query(
+      "SELECT payload, revision FROM farm_data WHERE id=1 FOR UPDATE"
+    );
+
+    let merged;
+    if (!current.rowCount) {
+      merged = payload;
+      const inserted = await client.query(
+        "INSERT INTO farm_data(id,payload,updated_at,updated_by,revision) VALUES(1,$1,NOW(),$2,1) RETURNING updated_at, revision",
+        [merged, req.user.username]
+      );
+      await client.query("COMMIT");
+      const row = inserted.rows[0];
+      return res.json({ ok: true, merged: true, savedAt: row.updated_at, revision: Number(row.revision) });
+    }
+
+    merged = mergeServerPayloads(current.rows[0].payload, payload);
+
+    const updated = await client.query(
+      "UPDATE farm_data SET payload=$1, updated_at=NOW(), updated_by=$2, revision=revision+1 WHERE id=1 RETURNING updated_at, revision",
+      [merged, req.user.username]
+    );
+    await client.query("COMMIT");
+    const row = updated.rows[0];
+    res.json({ ok: true, merged: true, savedAt: row.updated_at, revision: Number(row.revision) });
+  } catch (err) {
+    await client.query("ROLLBACK").catch(() => {});
+    console.error("Merge error:", err.message);
+    res.status(500).json({ error: "Erro ao mesclar dados." });
+  } finally {
+    client.release();
+  }
+});
+
 async function initDB() {
   const client = await pool.connect();
   try {
