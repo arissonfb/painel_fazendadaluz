@@ -1304,6 +1304,15 @@ function boot() {
     console.error("Falha na inicialização do painel:", error);
     showStartupError(error);
   }
+  startAutoSync();
+}
+
+function startAutoSync() {
+  setInterval(() => {
+    if (isAuthenticated() && runtime.cloudToken && !runtime.cloudSyncing) {
+      cloudPull();
+    }
+  }, 5 * 60 * 1000);
 }
 
 function initializeAppShell() {
