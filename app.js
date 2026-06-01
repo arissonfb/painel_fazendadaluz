@@ -964,6 +964,9 @@ const elements = {
   movPurchaseTotalWeight: document.getElementById("movPurchaseTotalWeight"),
   movPurchasePricePerKg: document.getElementById("movPurchasePricePerKg"),
   movPurchaseValuePerHead: document.getElementById("movPurchaseValuePerHead"),
+  movUsdRateWrap: document.getElementById("movUsdRateWrap"),
+  movUsdRate: document.getElementById("movUsdRate"),
+  movUsdBrlEquiv: document.getElementById("movUsdBrlEquiv"),
   movCommercialDashboard: document.getElementById("movCommercialDashboard"),
   movementValueWrap: document.getElementById("movementValueWrap"),
   movementValueLabel: document.getElementById("movementValueLabel"),
@@ -3412,7 +3415,11 @@ function bindEvents() {
         elements.movPurchaseValuePerHead.value = +(total / qty).toFixed(2);
       }
     }
+    updateUsdBrlEquiv();
   });
+  elements.movUsdRate?.addEventListener("input", updateUsdBrlEquiv);
+  elements.movementFarm?.addEventListener("change", syncUsdRateVisibility);
+  elements.movementType?.addEventListener("change", syncUsdRateVisibility);
 
   elements.sanitaryProduct.addEventListener("change", () => {
     updateSanitaryProductMode();
@@ -5397,6 +5404,22 @@ function openEditMovementDialog(farmId, movementId) {
   if (!categoryResolved && catHintWrap && catHint && movement.categoryName) {
     catHint.innerHTML = `<span style="color:#b45309">⚠ Categoria original "<strong>${escapeHtml(movement.categoryName)}</strong>" não encontrada — selecione a equivalente acima.</span>`;
     catHintWrap.hidden = false;
+  }
+
+  // Bloqueia quantidade — edição não altera estoque
+  elements.movementQuantity.classList.add("select-locked");
+  elements.movementQuantity.readOnly = true;
+
+  // Aviso de modo edição
+  const editNotice = document.getElementById("movEditNotice");
+  if (editNotice) editNotice.hidden = false;
+
+  // Cotação USD (se disponível no registro)
+  syncUsdRateVisibility();
+  const storedRate = movement.saleDetails?.exchangeRate || movement.purchaseDetails?.exchangeRate || null;
+  if (elements.movUsdRate && !elements.movUsdRateWrap?.hidden) {
+    elements.movUsdRate.value = storedRate || "";
+    updateUsdBrlEquiv();
   }
 
   elements.movementDialogTitle.textContent = `Editar ${capitalize(movement.type)}`;
@@ -7793,6 +7816,13 @@ function openMovementDialog(initialType) {
   runtime.editingMovement = null;
   elements.movementType.classList.remove("select-locked");
   if (elements.movementCategory) elements.movementCategory.classList.remove("select-locked");
+  elements.movementQuantity.classList.remove("select-locked");
+  elements.movementQuantity.readOnly = false;
+  const editNotice = document.getElementById("movEditNotice");
+  if (editNotice) editNotice.hidden = true;
+  if (elements.movUsdRate) elements.movUsdRate.value = "";
+  if (elements.movUsdBrlEquiv) elements.movUsdBrlEquiv.value = "";
+  if (elements.movUsdRateWrap) elements.movUsdRateWrap.hidden = true;
   const catHintWrap = document.getElementById("movCategoryTotalWrap");
   if (catHintWrap) catHintWrap.hidden = true;
   syncMovementFarmOptions();
@@ -7818,6 +7848,7 @@ function openMovementDialog(initialType) {
   if (elements.movPurchaseValuePerHead) elements.movPurchaseValuePerHead.value = "";
   resetMovementPhotoDrafts();
   updateMovementFormForType(initialType);
+  syncUsdRateVisibility();
   if (elements.movementDialog.open) elements.movementDialog.close();
   elements.movementDialog.showModal();
 }
@@ -8515,6 +8546,23 @@ function updateSaleFieldVisibility() {
   updateSaleComputedValue();
 }
 
+function updateUsdBrlEquiv() {
+  if (!elements.movUsdRateWrap || elements.movUsdRateWrap.hidden) return;
+  const total = Number(elements.movementValue.value || 0);
+  const rate  = Number(elements.movUsdRate?.value || 0);
+  if (elements.movUsdBrlEquiv) {
+    elements.movUsdBrlEquiv.value = total > 0 && rate > 0 ? (total * rate).toFixed(2) : "";
+  }
+}
+
+function syncUsdRateVisibility() {
+  const farm = getMovementDialogFarm();
+  const isUsd = farm && getFarmCurrency(farm.id) === "USD";
+  const type  = elements.movementType.value;
+  const show  = isUsd && (type === "venda" || type === "compra");
+  if (elements.movUsdRateWrap) elements.movUsdRateWrap.hidden = !show;
+}
+
 function updateSaleComputedValue() {
   if (elements.movementType.value !== "venda") {
     return;
@@ -8526,13 +8574,13 @@ function updateSaleComputedValue() {
   const weightKg = Number(saleMode === "carcaca" ?elements.movementCarcassKg.value : elements.movementLiveKg.value);
   const total = Number.isFinite(pricePerKg) && Number.isFinite(weightKg) ?pricePerKg * weightKg : 0;
   elements.movementValue.value = total > 0 ?total.toFixed(2) : "";
+  updateUsdBrlEquiv();
 }
 
 function updatePurchaseComputedValues() {
   if (elements.movementType.value !== "compra") return;
   const qty = Number(elements.movementQuantity.value || 0);
   const avgWeight = Number(elements.movPurchaseAvgWeight?.value || 0);
-  const manualTotalWeight = Number(elements.movPurchaseTotalWeight?.value || 0);
   const pricePerKg = Number(elements.movPurchasePricePerKg?.value || 0);
 
   // Auto-fill total weight from qty × avgWeight (only if avg was changed)
@@ -8554,6 +8602,7 @@ function updatePurchaseComputedValues() {
   } else if (Number(elements.movementValue.value) > 0 && qty > 0 && elements.movPurchaseValuePerHead) {
     elements.movPurchaseValuePerHead.value = +(Number(elements.movementValue.value) / qty).toFixed(2);
   }
+  updateUsdBrlEquiv();
 }
 
 function syncMovementCategoryOptionsForFarm(farm) {
@@ -8770,34 +8819,63 @@ async function handleMovementSubmit(event) {
     return;
   }
 
-  const movementAuditMeta = runtime.editingMovement
-    ?{ action: "Edição", details: "Lançamento do rebanho atualizado" }
-    : { action: "Adição", details: "Novo lançamento do rebanho registrado" };
-
-  // If editing, revert old movement first then remove it
+  // ── MODO EDIÇÃO: atualiza apenas campos financeiros/descritivos, sem tocar no estoque ──
   const editing = runtime.editingMovement;
-  const editingOriginalId = editing?.movementId || null;
-  let editingRollback = null;
-  const rollbackEditing = () => {
-    if (!editingRollback) return;
-    state.data.farms[editingRollback.farmId] = editingRollback.snapshot;
-    runtime.editingMovement = editing;
-  };
   if (editing) {
     const editFarm = state.data.farms[editing.farmId];
-    if (editFarm) {
-      const oldMovement = editFarm.movements.find((m) => m.id === editing.movementId);
-      if (oldMovement) {
-        editingRollback = {
-          farmId: editFarm.id,
-          snapshot: cloneDeep(editFarm)
-        };
-        revertMovementEffect(editFarm, oldMovement);
-        editFarm.movements = editFarm.movements.filter((m) => m.id !== editing.movementId);
-      }
+    const oldIdx = editFarm?.movements.findIndex((m) => m.id === editing.movementId) ?? -1;
+    if (!editFarm || oldIdx === -1) { runtime.editingMovement = null; return; }
+
+    const oldMov = editFarm.movements[oldIdx];
+    const date  = elements.movementDate.value;
+    const notes = elements.movementNotes.value.trim();
+    let value = Number(elements.movementValue.value || 0);
+    let saleDetails = oldMov.saleDetails;
+    let purchaseDetails = oldMov.purchaseDetails;
+
+    if (oldMov.type === "venda" && oldMov.saleDetails) {
+      const saleMode = isPremiumSaleFarm(editFarm) ? elements.movementSaleMode.value : (oldMov.saleDetails.mode || "vivo");
+      const pricePerKg = Number(saleMode === "carcaca" ? elements.movementCarcassPrice.value : elements.movementLivePrice.value) || oldMov.saleDetails.pricePerKg;
+      const weightKg   = Number(saleMode === "carcaca" ? elements.movementCarcassKg.value   : elements.movementLiveKg.value)   || oldMov.saleDetails.weightKg;
+      const buyer = elements.movSaleBuyer?.value?.trim() || oldMov.saleDetails.buyer || "";
+      const yieldPct = Number(elements.movSaleYieldPct?.value) || oldMov.saleDetails.yieldPct || null;
+      value = pricePerKg * weightKg;
+      saleDetails = { ...oldMov.saleDetails, mode: saleMode, pricePerKg, weightKg, buyer, yieldPct, valuePerHead: oldMov.quantity > 0 ? +(value / oldMov.quantity).toFixed(2) : null };
     }
+    if (oldMov.type === "compra") {
+      const sourceProperty = elements.movPurchaseSource?.value?.trim() || oldMov.purchaseDetails?.sourceProperty || "";
+      const pricePerKg = Number(elements.movPurchasePricePerKg?.value) || oldMov.purchaseDetails?.pricePerKg || null;
+      const valuePerHead = Number(elements.movPurchaseValuePerHead?.value) || oldMov.purchaseDetails?.valuePerHead || null;
+      purchaseDetails = { ...oldMov.purchaseDetails, sourceProperty, pricePerKg, valuePerHead };
+    }
+
+    editFarm.movements[oldIdx] = {
+      ...oldMov,
+      date,
+      value,
+      saleDetails,
+      purchaseDetails,
+      notes,
+      userModified: true,
+      updatedAt: new Date().toISOString()
+    };
+
     runtime.editingMovement = null;
+    logAuditEvent("Edição", "movimentação", `Valores ajustados: ${capitalize(oldMov.type)} - ${oldMov.categoryName || ""}`, {
+      farmId: editFarm.id, farmName: editFarm.name, recordCode: oldMov.code || ""
+    });
+    saveData();
+    populateYearFilter();
+    resetMovementPhotoDrafts();
+    elements.movementDialog.close();
+    render();
+    return;
   }
+
+  const movementAuditMeta = { action: "Adição", details: "Novo lançamento do rebanho registrado" };
+  const editingOriginalId = null;
+  let editingRollback = null;
+  const rollbackEditing = () => {};
   const type = elements.movementType.value;
   const quantity = Number(elements.movementQuantity.value);
   const adjustDirection = elements.adjustDirection.value;
@@ -8862,13 +8940,17 @@ async function handleMovementSubmit(event) {
     return;
   }
 
+  const exchangeRate = (!elements.movUsdRateWrap?.hidden && elements.movUsdRate?.value)
+    ? Number(elements.movUsdRate.value) || null
+    : null;
+
   if (type === "compra") {
     const sourceProperty = elements.movPurchaseSource?.value?.trim() || "";
     const avgWeight = Number(elements.movPurchaseAvgWeight?.value) || null;
     const totalWeight = Number(elements.movPurchaseTotalWeight?.value) || null;
     const pricePerKg = Number(elements.movPurchasePricePerKg?.value) || null;
     const valuePerHead = Number(elements.movPurchaseValuePerHead?.value) || null;
-    purchaseDetails = { sourceProperty, avgWeight, totalWeight, pricePerKg, valuePerHead };
+    purchaseDetails = { sourceProperty, avgWeight, totalWeight, pricePerKg, valuePerHead, exchangeRate };
   }
 
   if (type === "venda") {
@@ -8892,7 +8974,8 @@ async function handleMovementSubmit(event) {
       weightKg,
       buyer,
       yieldPct,
-      valuePerHead
+      valuePerHead,
+      exchangeRate
     };
   }
 

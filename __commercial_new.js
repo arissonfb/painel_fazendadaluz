@@ -545,6 +545,8 @@ function renderVendasTable() {
     const kg  = m.saleDetails?.weightKg ? Number(m.saleDetails.weightKg).toLocaleString("pt-BR", { maximumFractionDigits: 0 }) + " kg" : "—";
     const pKg = m.saleDetails?.pricePerKg ? (m._currency === "USD" ? "US$" : "R$") + " " + Number(m.saleDetails.pricePerKg).toLocaleString("pt-BR", { minimumFractionDigits: 2 }) : "—";
     const buyer = escapeHtml(m.saleDetails?.buyer || (m.notes||"").slice(0,30) || "—");
+    const rate  = m.saleDetails?.exchangeRate || null;
+    const brlEquiv = rate && val > 0 ? `<br><span style="font-size:.78rem;color:var(--muted)">≈ R$ ${(val * rate).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})} (×${rate})</span>` : "";
     return `<tr class="rv">
       <td><span class="com2-code">${escapeHtml(m.code||"—")}</span></td>
       <td>${escapeHtml(m._farmName||m._farmId)}</td>
@@ -554,7 +556,7 @@ function renderVendasTable() {
       <td>${buyer}</td>
       <td class="com2-td-r">${kg}</td>
       <td class="com2-td-r com2-gold">${pKg}</td>
-      <td class="com2-td-r">${val > 0 ? "<span class='com2-v-fin'>" + com2FmtVal(val, m._currency) + "</span>" : "—"}</td>
+      <td class="com2-td-r">${val > 0 ? "<span class='com2-v-fin'>" + com2FmtVal(val, m._currency) + "</span>" + brlEquiv : "—"}</td>
       <td title="${escapeHtml(m.notes||"")}" style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml((m.notes||"").slice(0,22) + (m.notes?.length>22?"…":""))}</td>
       <td><div class="com2-acts">
         <button type="button" class="com2-ab com2-ab-edit" data-mov-edit-id="${escapeHtml(m.id)}" data-farm-id="${escapeHtml(m._farmId)}">Editar</button>

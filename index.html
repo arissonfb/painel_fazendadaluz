@@ -804,6 +804,10 @@
         <button type="button" class="ghost-btn" id="closeMovementDialog">Fechar</button>
       </div>
 
+      <div id="movEditNotice" hidden style="background:rgba(191,142,78,.13);border:1px solid rgba(191,142,78,.35);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:.88rem;color:#7a5200">
+        ✏️ <strong>Modo edição</strong> — apenas data, valores financeiros e notas serão alterados. O estoque não muda.
+      </div>
+
       <div class="form-grid">
         <label id="movementFarmWrap">
           Fazenda
@@ -910,6 +914,20 @@
             <label>
               Valor por animal
               <input type="number" id="movPurchaseValuePerHead" min="0" step="0.01" placeholder="calculado" readonly>
+            </label>
+          </div>
+        </div>
+
+        <!-- Cotação USD — visível apenas para fazendas com moeda USD (Arapey/Chiquita) -->
+        <div class="form-span-2" id="movUsdRateWrap" hidden>
+          <div class="sale-input-group" style="gap:12px">
+            <label>
+              Cotação USD aplicada (1 US$ = R$)
+              <input type="number" id="movUsdRate" min="0" step="0.0001" placeholder="Ex.: 5.82">
+            </label>
+            <label>
+              Equivalente em R$ (referência)
+              <input type="number" id="movUsdBrlEquiv" placeholder="calculado automaticamente" readonly style="background:rgba(0,0,0,.04);color:var(--muted)">
             </label>
           </div>
         </div>
