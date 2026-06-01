@@ -1877,10 +1877,31 @@ async function cloudPush() {
       runtime.cloudToken = null;
       setApiNotice("Sua sessao na nuvem expirou. Entre novamente para voltar a sincronizar.", "warn");
     } else if (error.status === 409) {
-      runtime.cloudConflict = true;
-      setApiNotice("Outra sessao salvou antes desta. Seus dados continuam locais neste navegador; recarregue a nuvem antes de seguir.", "warn");
+      // Conflito de revisão: usa endpoint de merge atômico para não perder nenhum dado.
+      // O merge adiciona apenas registros novos (por ID) sem sobrescrever os existentes.
+      try {
+        const mergePush = JSON.parse(JSON.stringify(state.data));
+        mergePush.auth = {
+          ...mergePush.auth,
+          sessionUserId: "",
+          users: (mergePush.auth.users || []).map((u) => ({ id: u.id, login: u.login, role: u.role }))
+        };
+        const mergeResp = await apiRequest("/api/data/merge", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ payload: mergePush })
+        });
+        runtime.cloudRevision = Number(mergeResp?.revision || runtime.cloudRevision || 0);
+        runtime.cloudConflict = false;
+        setApiNotice("Dados sincronizados com mesclagem automatica.", "info");
+        // Pull fresh state to get merged result
+        await cloudPull();
+      } catch (mergeError) {
+        runtime.cloudConflict = true;
+        setApiNotice("Conflito detectado. Recarregue os dados antes de continuar.", "warn");
+      }
     } else {
-      setApiNotice("Não foi possível sincronizar agora. O trabalho continua salvo localmente neste navegador.", "error");
+      setApiNotice("Nao foi possivel sincronizar agora. O trabalho continua salvo localmente neste navegador.", "error");
     }
   } finally {
     runtime.cloudSyncing = false;
@@ -12157,19 +12178,37 @@ function renderRepHistoryLineChart() {
   if (!canvas) return;
   if (state.charts.repHistory) { state.charts.repHistory.destroy(); state.charts.repHistory = null; }
 
-  // Ultimos 12 meses
-  const now    = new Date();
-  const months = [];
-  for (let i = 11; i >= 0; i--) {
-    const d   = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    const lbl = d.toLocaleDateString("pt-BR", { month: "short", year: "2-digit" }).replace(".", "");
-    months.push({ key, lbl, insem: 0, entou: 0, pren: 0, falh: 0, verif: 0 });
-  }
-
   const farms = getAllFarms();
-  const selectedId = state.data.selectedFarmId;
+  const selectedId  = state.data.selectedFarmId;
   const farmsToShow = selectedId === TOTAL_FARM_ID ? farms : farms.filter((f) => f.id === selectedId);
+
+  // Detecta o mês do primeiro evento registrado para não mostrar meses vazios no início.
+  // Exibe de firstEventMonth até hoje (máximo 12 meses).
+  const now = new Date();
+  let firstDate = null;
+  farmsToShow.forEach((f) => {
+    (f.reproductionRecords || []).forEach((r) => {
+      if (r.date && (!firstDate || r.date < firstDate)) firstDate = r.date;
+    });
+  });
+
+  // Se tiver primeiro evento, começa de lá. Se não, usa 6 meses atrás.
+  const startDate = firstDate
+    ? new Date(firstDate.slice(0, 7) + "-01")
+    : new Date(now.getFullYear(), now.getMonth() - 5, 1);
+
+  // Garante no máximo 12 meses
+  const minStart = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+  const effectiveStart = startDate < minStart ? minStart : startDate;
+
+  const months = [];
+  let cursor = new Date(effectiveStart.getFullYear(), effectiveStart.getMonth(), 1);
+  while (cursor <= now) {
+    const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`;
+    const lbl = cursor.toLocaleDateString("pt-BR", { month: "short", year: "2-digit" }).replace(".", "");
+    months.push({ key, lbl, insem: 0, entou: 0, pren: 0, falh: 0, verif: 0 });
+    cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+  }
 
   farmsToShow.forEach((f) => {
     (f.reproductionRecords || []).forEach((r) => {
