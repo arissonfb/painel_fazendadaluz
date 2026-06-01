@@ -679,8 +679,13 @@ const EXTENDED_MONTHLY_RECORDS = {
   ]
 };
 
-// Versão 2: todos os valores convertidos para R$ (USD × cotação aproximada por mês)
-const COMMERCIAL_MOVEMENTS_VERSION = 2;
+// Versão 3: movimentos de fazendas USD (Arapey/Chiquita) revertidos para valores em dólar
+const COMMERCIAL_MOVEMENTS_VERSION = 3;
+
+function extractUsdPriceFromNotes(notes) {
+  const m = String(notes || "").match(/US\$\s*(\d+(?:[,\.]\d+)?)\s*\/\s*kg/i);
+  return m ? parseFloat(m[1].replace(",", ".")) : null;
+}
 
 const IMPORTED_COMMERCIAL_MOVEMENTS = {
   arapey: [
@@ -3214,6 +3219,10 @@ function bindEvents() {
   });
 
   elements.comprasShortcut?.addEventListener("click", () => {
+    if (state.activeView !== "compras") {
+      state.data.selectedFarmId = TOTAL_FARM_ID;
+      runtime.comprasPage = 0;
+    }
     state.activeView = "compras";
     render();
   });
@@ -3242,7 +3251,14 @@ function bindEvents() {
   elements.exportComprasPdfBtn?.addEventListener("click", exportComprasPdfReport);
 
   // Vendas view
-  elements.vendasShortcut?.addEventListener("click", () => { state.activeView = "vendas"; render(); });
+  elements.vendasShortcut?.addEventListener("click", () => {
+    if (state.activeView !== "vendas") {
+      state.data.selectedFarmId = TOTAL_FARM_ID;
+      runtime.vendasPage = 0;
+    }
+    state.activeView = "vendas";
+    render();
+  });
   elements.vendasNovaBtn?.addEventListener("click", () => openMovementDialog("venda"));
   elements.exportVendasPdfBtn?.addEventListener("click", exportVendasPdfReport);
   elements.vendasHistorySearch?.addEventListener("input", () => { runtime.vendasPage = 0; renderVendasTable(); });
@@ -4523,7 +4539,9 @@ function renderFarmSwitch() {
   totalButton.textContent = "Total";
   totalButton.addEventListener("click", () => {
     state.data.selectedFarmId = TOTAL_FARM_ID;
-    state.activeView = "dashboard";
+    if (state.activeView !== "compras" && state.activeView !== "vendas") {
+      state.activeView = "dashboard";
+    }
     saveData();
     render();
   });
@@ -4535,12 +4553,14 @@ function renderFarmSwitch() {
     button.textContent = farm.name;
     button.addEventListener("click", () => {
       state.data.selectedFarmId = farm.id;
-      state.activeView = "dashboard";
-      runtime.movementsPage = 0;
-      runtime.movementsSearch = "";
-      runtime.sanitaryPage = 0;
-      runtime.sanitarySearch = "";
-      resetSanitaryTableFilters();
+      if (state.activeView !== "compras" && state.activeView !== "vendas") {
+        state.activeView = "dashboard";
+        runtime.movementsPage = 0;
+        runtime.movementsSearch = "";
+        runtime.sanitaryPage = 0;
+        runtime.sanitarySearch = "";
+        resetSanitaryTableFilters();
+      }
       saveData();
       render();
     });
@@ -11093,13 +11113,25 @@ function ensureDataShape(data, options = {}) {
             id: movement.sourceId || createMovementId()
           });
         } else if (needsMovementUpdate && !farm.movements[existingIdx].userModified) {
-          // Update existing movement with corrected values (e.g. USD→BRL conversion)
-          // Skip if user manually edited this movement (userModified flag protects their changes)
+          const farmCurrency = getFarmCurrency(farmId);
+          const existing = farm.movements[existingIdx];
+          let updatedValue = movement.value;
+          let updatedPricePerKg = movement.saleDetails?.pricePerKg;
+          if (farmCurrency === "USD" && existing.saleDetails?.weightKg) {
+            const usdPrice = extractUsdPriceFromNotes(movement.notes);
+            if (usdPrice !== null) {
+              updatedPricePerKg = usdPrice;
+              updatedValue = Math.round(usdPrice * existing.saleDetails.weightKg * 100) / 100;
+            }
+          }
           farm.movements[existingIdx] = {
-            ...farm.movements[existingIdx],
-            value: movement.value,
+            ...existing,
+            value: updatedValue,
             notes: movement.notes,
-            saleDetails: movement.saleDetails || farm.movements[existingIdx].saleDetails
+            currency: farmCurrency,
+            saleDetails: movement.saleDetails
+              ? { ...movement.saleDetails, pricePerKg: updatedPricePerKg }
+              : existing.saleDetails
           };
         }
       });
