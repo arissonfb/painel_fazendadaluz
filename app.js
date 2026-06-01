@@ -2589,18 +2589,16 @@ async function handleLoginSubmit(event) {
       );
       if (cachedUser) {
         const ok = confirm(
-          `O servidor está temporariamente indisponível (pode estar acordando).\n\n` +
-          `» Clique em CANCELAR para aguardar 30 segundos e tentar novamente — recomendado.\n\n` +
-          `» Clique em OK apenas se precisar acessar agora sem sincronização:\n` +
-          `  • Seus dados locais permanecem íntegros\n` +
-          `  • Não haverá sincronização com o servidor`
+          `O servidor está iniciando. Aguarde 30 segundos e tente novamente.\n\n` +
+          `» Clique em OK para tentar sincronizar agora.\n\n` +
+          `» Clique em CANCELAR para entrar sem sincronização (modo offline).`
         );
-        if (ok) {
+        if (!ok) {
           completaLoginLocal(cachedUser);
           return;
         }
         elements.loginFeedback.hidden = false;
-        elements.loginFeedback.textContent = "Aguarde 30 segundos e tente novamente — o servidor está acordando.";
+        elements.loginFeedback.textContent = "Aguarde cerca de 30 segundos e clique em Entrar novamente.";
         return;
       }
       elements.loginFeedback.hidden = false;
