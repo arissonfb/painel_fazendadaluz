@@ -1,0 +1,37 @@
+name: Publicar no Expo Go (iOS + Android)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'painel-pecuario-mobile/**'
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: painel-pecuario-mobile
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: painel-pecuario-mobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Publicar atualização (canal preview)
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: eas update --branch preview --message "Deploy ${{ github.sha }}" --non-interactive

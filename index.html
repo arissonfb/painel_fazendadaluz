@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
@@ -11,38 +11,39 @@
 </head>
 <body class="login-mode">
   <section class="splash-shell" id="splashShell" aria-label="Tela de abertura">
-    <div class="splash-landscape">
-      <div class="splash-card">
-        <img src="./assets/logo-da-luz.jpg" alt="Logo Da Luz" class="splash-logo">
+    <div class="splash-bull-frame">
+      <img src="./assets/angus.jpg" alt="" class="splash-bull-img" aria-hidden="true">
+    </div>
+    <div class="splash-glow"></div>
+    <div class="splash-content">
+      <div class="splash-brand">
+        <div class="splash-logo-ring">
+          <img src="./assets/logo-da-luz.jpg" alt="Logo Da Luz" class="splash-logo">
+        </div>
         <span class="splash-kicker">Estabelecimentos Da Luz</span>
-        <strong class="splash-title">Painel Pecuário</strong>
-        <p class="splash-text">Clique ou toque na tela para continuar.</p>
+        <strong class="splash-title">Fazendas<br>Da Luz</strong>
+        <p class="splash-sub">Sistema de gestão pecuária</p>
       </div>
+      <p class="splash-cta">Clique ou toque na tela para continuar</p>
     </div>
   </section>
 
   <section class="auth-shell" id="authShell">
     <div class="auth-card">
+      <img src="./assets/logo-da-luz.jpg" alt="Logo Da Luz" class="auth-corner-logo">
+
+      <!-- Painel visual esquerdo: imagem + branding -->
       <div class="auth-visual-panel">
-        <div class="brand-badge">
-          <img src="./assets/logo-da-luz.jpg" alt="Logo Da Luz" class="brand-logo">
-          <div class="brand-copy">
-            <span>Estabelecimentos</span>
-            <strong>Da Luz</strong>
-          </div>
-        </div>
         <div class="auth-angus-frame">
-          <img src="./assets/angus-login.svg" alt="Rosto 3D de Angus em destaque" class="auth-angus-image">
+          <img src="./assets/angus.jpg" alt="Rebanho Fazendas Da Luz" class="auth-angus-image">
         </div>
       </div>
 
+      <!-- Painel do formulário direito -->
       <div class="auth-copy-panel">
-        <p class="eyebrow">Acesso ao painel</p>
-        <h1>Entrar no sistema</h1>
-        <p class="hero-text auth-text">
-          Use seu login e senha para acessar o painel das fazendas. O acesso inicial já vem configurado para a equipe Da Luz.
-        </p>
-        <p class="hero-text auth-text">Perfis de Usuários e Administradores já podem ser gerenciados no sistema.</p>
+        <div class="auth-form-header-block">
+          <h1>Entrar no sistema</h1>
+        </div>
 
         <form id="loginForm" class="auth-form">
           <div class="auth-role-switch" role="tablist" aria-label="Tipo de acesso">
@@ -56,16 +57,29 @@
           <p class="auth-role-hint" id="loginRoleHint">Acesso padrão para operação do sistema e consulta dos registros autorizados.</p>
           <label>
             Login
-            <input type="text" id="loginUsername" autocomplete="username" required>
+            <input type="text" id="loginUsername" autocomplete="username" required placeholder="Seu login">
           </label>
           <label>
             Senha
-            <input type="password" id="loginPassword" autocomplete="current-password" required>
+            <div class="pw-wrap">
+              <input type="password" id="loginPassword" autocomplete="current-password" required placeholder="Sua senha">
+              <button type="button" class="btn-pw-toggle" id="toggleLoginPw" aria-label="Mostrar senha" tabindex="-1">
+                <svg class="pw-icon pw-icon-show" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="pw-icon pw-icon-hide" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button>
+            </div>
           </label>
           <p class="auth-feedback" id="loginFeedback" hidden></p>
-          <button type="submit" class="action-btn purchase auth-submit">Entrar</button>
+          <button type="submit" class="btn-login auth-submit">Entrar</button>
+          <div class="auth-emergency-restore">
+            <button type="button" class="auth-restore-link" id="emergencyRestoreBtn">
+              Restaurar backup de emergência
+            </button>
+            <input type="file" id="emergencyRestoreInput" accept=".json" hidden>
+          </div>
         </form>
       </div>
+
     </div>
   </section>
 
@@ -80,9 +94,6 @@
               <strong>Da Luz</strong>
             </div>
           </div>
-          <p class="eyebrow">Navegação</p>
-          <h2>Painel pecuário</h2>
-          <p class="sidebar-text">Acesse o consolidado total, entre em cada fazenda e navegue pelos registros com menos rolagem e mais contexto visual.</p>
         </div>
 
         <div class="sidebar-section">
@@ -94,8 +105,9 @@
           <span class="sidebar-label">Acesso rápido</span>
           <button type="button" class="sidebar-shortcut" id="sanitaryShortcut">Manejo Sanitário</button>
           <button type="button" class="sidebar-shortcut" id="potreirosShortcut">Potreiros</button>
-          <button type="button" class="sidebar-shortcut shortcut-compras" id="quickComprasBtn">Registros de Compra</button>
-          <button type="button" class="sidebar-shortcut shortcut-vendas" id="quickVendasBtn">Registros de Venda</button>
+          <button type="button" class="sidebar-shortcut" id="reproducaoShortcut">Reprodução</button>
+          <button type="button" class="sidebar-shortcut shortcut-compras" id="comprasShortcut">Compras</button>
+          <button type="button" class="sidebar-shortcut shortcut-vendas-nav" id="vendasShortcut">Vendas</button>
           <button type="button" class="sidebar-shortcut" id="manageUsersButton">Usuários</button>
           <button type="button" class="sidebar-shortcut" id="auditTrailButton">Auditoria</button>
           <button type="button" class="sidebar-shortcut backup-btn" id="backupButton">Backup dos dados</button>
@@ -119,6 +131,13 @@
             <strong id="dashboardFarmLabel">Painel de Controle de Todas as Fazendas</strong>
           </div>
           <div class="topbar-side">
+            <div class="topbar-chips">
+              <div class="sync-status" id="syncStatusWrap">
+                <span class="chip sync-chip" id="syncStatusChip">Local</span>
+                <button type="button" class="ghost-btn sync-retry-btn" id="syncRetryButton" hidden>Recarregar</button>
+              </div>
+              <span class="chip" id="currentUserLabel">Usuário</span>
+            </div>
             <div class="period-controls">
               <label>
                 Ano
@@ -131,12 +150,10 @@
                 </select>
               </label>
             </div>
-            <div class="sync-status" id="syncStatusWrap">
-              <span class="chip sync-chip" id="syncStatusChip">Local</span>
-              <button type="button" class="ghost-btn sync-retry-btn" id="syncRetryButton" hidden>Recarregar</button>
-            </div>
-            <span class="chip" id="currentUserLabel">Usuário</span>
           </div>
+        </section>
+        <section class="mobile-utility-bar" id="mobileUtilityBar" hidden>
+          <button type="button" class="mobile-utility-btn" id="mobileFarmQuickButton">Trocar fazenda</button>
         </section>
         <div class="api-notice" id="apiNotice" hidden></div>
 
@@ -151,18 +168,15 @@
             </div>
             <p class="eyebrow">Gestão do rebanho</p>
             <h1>Fazendas Da Luz</h1>
-            <p class="hero-text">
-              Controle o estoque de animais, acompanhe movimentações mensais e anuais e gere um PDF executivo para a gestão.
-            </p>
-            <div class="hero-metrics" id="heroMetrics"></div>
+            <div class="hero-metrics" id="heroMetrics" hidden></div>
           </div>
 
           <div class="hero-highlight">
             <div class="hero-visual">
-              <img src="./assets/herd.svg" alt="Ilustração de rebanho no campo" class="hero-illustration">
+              <img src="./assets/angus.jpg" alt="" class="hero-illustration" aria-hidden="true">
             </div>
             <div class="hero-highlight-copy">
-              <span class="hero-kicker">Manejo fluido</span>
+              <span class="hero-kicker">Fazenda ativa</span>
               <strong id="heroFarmName">Arapey</strong>
               <p id="heroFarmNote">Controle inicial carregado com base nas quantidades informadas.</p>
             </div>
@@ -209,7 +223,7 @@
                 <span class="register-menu-label">Movimentação</span>
                 <button type="button" class="register-menu-item rmi-transferencia" data-mov="transferencia" role="menuitem">
                   <span class="rmi-icon">🔄</span>
-                  <div class="rmi-text"><strong>Transferência de potreiro</strong><span>Mover animais entre campos</span></div>
+                  <div class="rmi-text"><strong>Transferência</strong><span>Mover animais entre fazendas</span></div>
                 </button>
               </div>
               <div class="register-menu-group">
@@ -226,6 +240,10 @@
                   <span class="rmi-icon">🏷️</span>
                   <div class="rmi-text"><strong>Nova categoria</strong><span>Adicionar tipo de animal</span></div>
                 </button>
+                <button type="button" class="register-menu-item rmi-alocar" data-mov="alocar" role="menuitem">
+                  <span class="rmi-icon">📍</span>
+                  <div class="rmi-text"><strong>Distribuir animais</strong><span>Alocar estoque em potreiros</span></div>
+                </button>
               </div>
             </div>
           </div>
@@ -234,6 +252,7 @@
             <button type="button" class="action-btn secondary" id="georefButton" hidden>Georreferenciamento</button>
             <button type="button" class="action-btn pdf" id="exportPdfButton">Gerar PDF</button>
             <button type="button" class="action-btn secondary" id="exportSanitaryPdfMainBtn">PDF Sanitário</button>
+            <button type="button" class="action-btn secondary" id="exportRepPdfMainBtn">PDF Reprodução</button>
           </div>
         </section>
 
@@ -251,9 +270,8 @@
         <section class="financial-panel" id="financialPanel"></section>
       </section>
 
-        <section class="summary-grid" id="summaryGrid"></section>
-
-        <section class="visual-herd-grid" id="visualHerdGrid"></section>
+        <!-- Cards de seção: Reprodução, Sanitário, Movimentações -->
+        <section class="section-module-cards" id="dashboardSectionCards"></section>
 
         <section class="content-grid content-grid-strong">
           <article class="panel chart-panel">
@@ -276,7 +294,21 @@
           <canvas id="movementChart" aria-label="Gráfico de entradas, saídas e saldo"></canvas>
           </article>
 
+          <article class="panel chart-panel ops-panel">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">Período filtrado</p>
+              <h2>Manejos da fazenda</h2>
+            </div>
+          </div>
+          <div id="opsManejoList" class="ops-manejo-list"></div>
+          </article>
+
         </section>
+
+        <section class="summary-grid" id="summaryGrid"></section>
+
+        <section class="visual-herd-grid" id="visualHerdGrid"></section>
 
         <section class="content-grid lower-grid">
           <article class="panel analytics-panel">
@@ -315,28 +347,12 @@
           </div>
           </article>
 
-          <article class="panel analytics-panel">
-          <div class="panel-header">
-            <div>
-              <p class="panel-kicker">Fechamento do período</p>
-              <h2>Resumo mensal e anual</h2>
-            </div>
-          </div>
-          <div class="analytics-cards" id="periodSummary"></div>
-          <div class="note-box" id="discrepancyNote"></div>
-          </article>
+          <div id="periodSummary" hidden></div>
+          <div class="note-box" id="discrepancyNote" hidden></div>
         </section>
 
         <section class="content-grid lower-grid" id="monthlySummarySection">
-          <article class="panel analytics-panel">
-          <div class="panel-header">
-            <div>
-              <p class="panel-kicker">Leitura mensal</p>
-              <h2>Números e valores atribuídos</h2>
-            </div>
-          </div>
-          <div class="analytics-cards" id="monthlySummaryGrid"></div>
-          </article>
+          <div id="monthlySummaryGrid" hidden></div>
 
           <article class="panel chart-panel">
           <div class="panel-header">
@@ -402,17 +418,21 @@
         </section>
 
         <section class="content-grid sanitary-layout">
-          <article class="panel sanitary-form-panel" id="sanitaryFormPanel">
-            <div class="panel-header">
+          <dialog id="sanitaryDialog" class="modal">
+            <form id="sanitaryForm" class="modal-card sanitary-modal-card">
+              <div class="modal-header">
               <div>
                 <p class="panel-kicker">Manejo sanitário</p>
-                <h2>Novo registro sanitário</h2>
+                <h2 id="sanitaryDialogTitle">Registro Sanitário</h2>
               </div>
+              <button type="button" class="ghost-btn" id="closeSanitaryDialog">Fechar</button>
             </div>
-
-            <form id="sanitaryForm" class="sanitary-form">
               <input type="hidden" id="sanitaryEditingId">
               <div class="form-grid">
+                <label>
+                  Fazenda
+                  <select id="sanitaryFarm" required></select>
+                </label>
                 <label>
                   Data
                   <input type="date" id="sanitaryDate" required>
@@ -429,17 +449,17 @@
                   Produto utilizado
                   <select id="sanitaryProduct" required></select>
                 </label>
-                <label>
-                  Potreiro de destino
-                  <select id="sanitaryPotrero" required></select>
-                </label>
                 <label id="newProductWrap" hidden>
                   Descreva o produto
                   <input type="text" id="newProductName" maxlength="80" placeholder="Ex.: Vacina aftosa, Ivermectina 1%, Carrapaticida">
                 </label>
+                <label>
+                  Potreiros
+                  <select id="sanitaryPotrero" required></select>
+                </label>
                 <label id="newPotreroWrap" hidden>
                   Novo potreiro
-                  <input type="text" id="newPotreroName" maxlength="80" placeholder="Ex.: Potreiro Norte">
+                  <input type="text" id="newPotreroName" maxlength="80" placeholder="Ex.: Campo 3, Costa, Cerrillada">
                 </label>
                 <label class="form-span-2">
                   Observações
@@ -451,7 +471,7 @@
                 <button type="submit" class="action-btn purchase" id="sanitarySubmitButton">Salvar registro sanitário</button>
               </div>
             </form>
-          </article>
+          </dialog>
 
           <article class="panel sanitary-summary-panel">
             <div class="panel-header">
@@ -471,10 +491,21 @@
                 <p class="panel-kicker">Histórico de aplicações</p>
                 <h2>Manejo Sanitário registrado</h2>
               </div>
-              <button type="button" class="action-btn secondary" id="exportSanitaryPdfBtn">Relatório Sanitário PDF</button>
+              <div class="sanitary-header-actions">
+                <button type="button" class="action-btn purchase" id="openSanitaryDialogButton">Registro Sanitário</button>
+                <button type="button" class="action-btn secondary" id="exportSanitaryPdfBtn">Relatório Sanitário PDF</button>
+              </div>
             </div>
             <div class="san-history-toolbar">
-              <input type="search" id="sanitaryHistorySearch" class="movements-search-input" placeholder="Buscar por código, produto, categoria, potreiro…">
+              <input type="search" id="sanitaryHistorySearch" class="movements-search-input" placeholder="Buscar por código, produto, categoriaâ€¦">
+              <div class="movements-filter-group san-history-filters">
+                <select id="sanitaryFilterFarm" class="movements-filter-select" aria-label="Filtrar por fazenda"></select>
+                <input type="date" id="sanitaryFilterDate" class="movements-filter-select san-history-date" aria-label="Filtrar por data">
+                <select id="sanitaryFilterPotrero" class="movements-filter-select" aria-label="Filtrar por potreiro"></select>
+                <select id="sanitaryFilterCategory" class="movements-filter-select" aria-label="Filtrar por categoria"></select>
+                <select id="sanitaryFilterProduct" class="movements-filter-select" aria-label="Filtrar por produto"></select>
+                <button type="button" class="ghost-btn san-history-clear-btn" id="clearSanitaryFiltersButton">Limpar filtros</button>
+              </div>
               <div class="movements-pagination" id="sanitaryHistoryPagination"></div>
             </div>
             <div class="table-wrap">
@@ -487,7 +518,7 @@
                     <th>Categoria</th>
                     <th>Qtd.</th>
                     <th>Produto</th>
-                    <th>Potreiro</th>
+                    <th>Potreiros</th>
                     <th>Obs.</th>
                     <th>Ações</th>
                   </tr>
@@ -512,6 +543,268 @@
           <div id="potreirosAccordion"></div>
         </section>
       </div>
+
+      <div id="reproducaoView" hidden>
+        <!-- Header Executivo -->
+        <div class="rep2-header">
+          <div class="rep2-header-top">
+            <div class="rep2-header-titles">
+              <p class="rep2-eyebrow">Gestão Reprodutiva</p>
+              <h2 class="rep2-main-title">Painel Reprodutivo</h2>
+              <p class="rep2-subtitle">Acompanhamento de inseminações, prenhezes, falhadas e desempenho por fazenda</p>
+            </div>
+            <div class="rep2-header-actions">
+              <button type="button" class="rep2-btn-secondary" id="exportRepPdfBtn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+                Relatorio PDF
+              </button>
+              <button type="button" class="rep2-btn-primary" id="repRegisterBtn">
+                + Novo Evento Reprodutivo
+              </button>
+            </div>
+          </div>
+          <div class="farm-switch rep-farm-switch" id="repFarmSwitch"></div>
+        </div>
+
+        <!-- KPI Cards -->
+        <section class="rep2-kpi-section" id="repSummarySection"></section>
+
+        <!-- Graficos: Barras + Rosca -->
+        <div class="rep2-charts-row">
+          <div class="rep2-card">
+            <div class="rep2-card-hd">
+              <h3>Desempenho Reprodutivo por Fazenda</h3>
+              <p>Comparativo entre eventos realizados e resultados obtidos no periodo selecionado</p>
+            </div>
+            <canvas id="repBarChart" aria-label="Desempenho por fazenda"></canvas>
+          </div>
+          <div class="rep2-card">
+            <div class="rep2-card-hd">
+              <h3>Taxa Geral de Prenhez</h3>
+              <p>Resultados confirmados no periodo</p>
+            </div>
+            <div class="rep2-donut-outer">
+              <canvas id="repDonutChart" aria-label="Taxa de prenhez"></canvas>
+              <div class="rep2-donut-center" id="repDonutCenter"></div>
+            </div>
+            <div id="repDonutLegend" class="rep2-donut-meta"></div>
+          </div>
+        </div>
+
+        <!-- Ranking + Historico -->
+        <div class="rep2-bottom-row">
+          <div class="rep2-card" id="repRankingCard"></div>
+          <div class="rep2-card">
+            <div class="rep2-card-hd">
+              <h3>Historico de Eventos Reprodutivos</h3>
+              <p>Evolucao mensal dos eventos e resultados nos ultimos 12 meses</p>
+            </div>
+            <canvas id="repHistoryChart" aria-label="Historico reprodutivo"></canvas>
+          </div>
+        </div>
+
+        <!-- Tabela Premium -->
+        <div class="rep2-card">
+          <div class="rep2-table-hd">
+            <div class="rep2-table-hd-left">
+              <h3>Registros Reprodutivos</h3>
+              <p id="repTableCountLabel"></p>
+            </div>
+            <div class="rep2-table-toolbar">
+              <input type="search" id="repHistorySearch" class="rep2-search" placeholder="Buscar por fazenda, codigo, categoria...">
+              <div class="movements-pagination" id="repHistoryPagination"></div>
+            </div>
+          </div>
+          <div class="rep2-tw">
+            <table class="rep2-t">
+              <thead>
+                <tr>
+                  <th>Codigo</th>
+                  <th>Fazenda</th>
+                  <th>Tipo</th>
+                  <th>Data</th>
+                  <th>Categoria</th>
+                  <th class="rr">Qtd.</th>
+                  <th>Verificacao</th>
+                  <th class="rr">Prenha</th>
+                  <th class="rr">Falhada</th>
+                  <th class="rr">Taxa</th>
+                  <th>Obs.</th>
+                  <th>Acoes</th>
+                </tr>
+              </thead>
+              <tbody id="repTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+<div id="comprasView" hidden>
+        <section class="panel sanitary-toolbar">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">Aquisição de animais</p>
+              <h2>Controle de Compras</h2>
+            </div>
+            <div class="compras-header-actions">
+              <button type="button" class="action-btn pdf" id="exportComprasPdfBtn">Gerar PDF</button>
+              <button type="button" class="register-gold-btn" id="comprasNovaBtn">
+                <span class="register-gold-plus">+</span>
+                Nova Compra
+              </button>
+            </div>
+          </div>
+          <div class="farm-switch compras-farm-switch" id="comprasFarmSwitch"></div>
+        </section>
+
+        <section class="rep-summary-section" id="comprasKpiSection"></section>
+
+        <section class="content-grid">
+          <article class="panel chart-panel rep-chart-wide">
+            <div class="panel-header">
+              <div>
+                <p class="panel-kicker">Cabeças adquiridas</p>
+                <h2>Compras por fazenda</h2>
+              </div>
+            </div>
+            <canvas id="comprasBarChart" aria-label="Gráfico de compras por fazenda"></canvas>
+          </article>
+          <article class="panel chart-panel">
+            <div class="panel-header">
+              <div>
+                <p class="panel-kicker">Evolução mensal</p>
+                <h2>Cabeças × Valor</h2>
+              </div>
+            </div>
+            <canvas id="comprasEvolutionChart" aria-label="Gráfico de evolução de compras por mês"></canvas>
+          </article>
+        </section>
+
+        <section class="san-history-section">
+          <article class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="panel-kicker">Histórico de aquisições</p>
+                <h2>Registros de Compra</h2>
+              </div>
+            </div>
+            <div class="san-history-toolbar">
+              <input type="search" id="comprasHistorySearch" class="movements-search-input" placeholder="Buscar por código, categoria, fazenda, origem…">
+              <div class="movements-filter-group san-history-filters">
+                <select id="comprasFilterFarm" class="movements-filter-select" aria-label="Filtrar por fazenda"></select>
+                <input type="date" id="comprasFilterDateFrom" class="movements-filter-select san-history-date" aria-label="Data inicial">
+                <input type="date" id="comprasFilterDateTo" class="movements-filter-select san-history-date" aria-label="Data final">
+                <select id="comprasFilterCategory" class="movements-filter-select" aria-label="Filtrar por categoria"></select>
+                <button type="button" class="ghost-btn san-history-clear-btn" id="clearComprasFiltersBtn">Limpar filtros</button>
+              </div>
+              <div class="movements-pagination" id="comprasHistoryPagination"></div>
+            </div>
+            <div class="table-wrap">
+              <table class="sanitary-table compras-table">
+                <thead id="comprasTableHead">
+                  <tr>
+                    <th>Código</th>
+                    <th>Fazenda</th>
+                    <th>Data</th>
+                    <th>Categoria</th>
+                    <th class="num-col">Cabeças</th>
+                    <th>Origem / Propriedade</th>
+                    <th class="num-col">Peso Médio</th>
+                    <th class="num-col">Valor Total</th>
+                    <th>Obs.</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="comprasTableBody"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+      </div>
+
+      <div id="vendasView" hidden>
+        <section class="panel sanitary-toolbar">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">Comercialização de animais</p>
+              <h2>Controle de Vendas</h2>
+            </div>
+            <div class="comercial-header-actions">
+              <button type="button" class="action-btn pdf" id="exportVendasPdfBtn">Gerar PDF</button>
+              <button type="button" class="register-gold-btn" id="vendasNovaBtn">
+                <span class="register-gold-plus">+</span>
+                Nova Venda
+              </button>
+            </div>
+          </div>
+          <div class="farm-switch comercial-farm-switch" id="vendasFarmSwitch"></div>
+        </section>
+
+        <section class="rep-summary-section" id="vendasKpiSection"></section>
+
+        <section class="content-grid">
+          <article class="panel chart-panel rep-chart-wide">
+            <div class="panel-header">
+              <div>
+                <p class="panel-kicker">Cabeças comercializadas</p>
+                <h2>Vendas por fazenda</h2>
+              </div>
+            </div>
+            <canvas id="vendasBarChart" aria-label="Gráfico de vendas por fazenda"></canvas>
+          </article>
+          <article class="panel chart-panel">
+            <div class="panel-header">
+              <div>
+                <p class="panel-kicker">Evolução mensal</p>
+                <h2>Cabeças × Receita</h2>
+              </div>
+            </div>
+            <canvas id="vendasEvolutionChart" aria-label="Gráfico de evolução de vendas por mês"></canvas>
+          </article>
+        </section>
+
+        <section class="san-history-section">
+          <article class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="panel-kicker">Histórico de vendas</p>
+                <h2>Registros de Venda</h2>
+              </div>
+            </div>
+            <div class="san-history-toolbar">
+              <input type="search" id="vendasHistorySearch" class="movements-search-input" placeholder="Buscar por código, categoria, fazenda, frigorífico…">
+              <div class="movements-filter-group san-history-filters">
+                <select id="vendasFilterFarm" class="movements-filter-select" aria-label="Filtrar por fazenda"></select>
+                <input type="date" id="vendasFilterDateFrom" class="movements-filter-select san-history-date" aria-label="Data inicial">
+                <input type="date" id="vendasFilterDateTo" class="movements-filter-select san-history-date" aria-label="Data final">
+                <select id="vendasFilterCategory" class="movements-filter-select" aria-label="Filtrar por categoria"></select>
+                <button type="button" class="ghost-btn san-history-clear-btn" id="clearVendasFiltersBtn">Limpar filtros</button>
+              </div>
+              <div class="movements-pagination" id="vendasHistoryPagination"></div>
+            </div>
+            <div class="table-wrap">
+              <table class="sanitary-table vendas-table">
+                <thead id="vendasTableHead">
+                  <tr>
+                    <th>Código</th>
+                    <th>Fazenda</th>
+                    <th>Data</th>
+                    <th>Categoria</th>
+                    <th class="num-col">Cabeças</th>
+                    <th>Frigorífico / Comprador</th>
+                    <th class="num-col">Kg Negociados</th>
+                    <th class="num-col">R$/kg ou US$/kg</th>
+                    <th class="num-col">Valor Total</th>
+                    <th>Obs.</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="vendasTableBody"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+      </div>
+
         </main>
       </div>
     </div>
@@ -548,7 +841,7 @@
           Quantidade
           <input type="number" id="movementQuantity" min="1" step="1" required>
         </label>
-        <label id="movementPotreiroWrap">
+        <label id="movementPotreiroWrap" hidden>
           <span id="movementPotreiroLabel">Potreiro de destino</span>
           <select id="movementPotreiro"></select>
         </label>
@@ -556,6 +849,9 @@
           Potreiro de destino
           <select id="movementPotreiroDest"></select>
         </label>
+        <div class="form-span-2" id="movCategoryTotalWrap" hidden>
+          <p class="category-total-hint" id="movCategoryTotalHint"></p>
+        </div>
         <label id="adjustDirectionWrap" hidden>
           Direção do ajuste
           <select id="adjustDirection">
@@ -599,7 +895,7 @@
         <div class="sale-input-group form-span-2" id="movSaleExtraWrap" hidden>
           <label>
             Frigorífico / Comprador
-            <input type="text" id="movSaleBuyer" maxlength="80" placeholder="Ex.: Marfrig, Frigovale…">
+            <input type="text" id="movSaleBuyer" maxlength="80" placeholder="Ex.: Marfrig, Frigovaleâ€¦">
           </label>
           <label>
             Rendimento (%)
@@ -613,7 +909,7 @@
           <div class="purchase-detail-grid">
             <label class="form-span-2">
               Propriedade / Origem
-              <input type="text" id="movPurchaseSource" maxlength="100" placeholder="Ex.: Estância Santa Rosa, Fazenda Modelo…">
+              <input type="text" id="movPurchaseSource" maxlength="100" placeholder="Ex.: Estância Santa Rosa, Fazenda Modeloâ€¦">
             </label>
             <label>
               Peso médio (kg/cabeça)
@@ -645,7 +941,7 @@
         <label class="form-span-2" id="movementPhotoWrap" hidden>
           Fotos do registro
           <input type="file" id="movementPhotos" accept="image/*" multiple>
-          <span class="field-note">Disponível para compra, venda e gado morto. Até 6 fotos por lançamento, com impressão automática no PDF.</span>
+          <span class="field-note">Disponível em todos os tipos de manejo. Até 6 fotos por lançamento, impressas automaticamente no PDF do relatório.</span>
         </label>
         <div class="movement-photo-panel form-span-2" id="movementPhotoPanel" hidden>
           <div class="movement-photo-header">
@@ -676,12 +972,20 @@
 
       <div class="form-grid">
         <label>
+          Fazenda
+          <select id="categoryFarm" required></select>
+        </label>
+        <label>
           Nome da categoria
           <input type="text" id="categoryName" maxlength="60" required placeholder="Ex.: Vacas em terminação">
         </label>
         <label>
           Estoque inicial
           <input type="number" id="categoryInitialQuantity" min="0" step="1" required value="0">
+        </label>
+        <label>
+          Potreiro (opcional)
+          <select id="categoryPotreiro"></select>
         </label>
       </div>
 
@@ -703,10 +1007,10 @@
 
       <div class="stock-editor-tabs" role="tablist">
         <button type="button" class="stock-tab active" data-stock-tab="categorias" role="tab">
-          <span>🐄</span> Categorias
+          <span class="stock-tab-icon" aria-hidden="true">CAT</span> Categorias
         </button>
         <button type="button" class="stock-tab" data-stock-tab="potreiros" role="tab">
-          <span>🌿</span> Potreiros
+          <span class="stock-tab-icon" aria-hidden="true">POT</span> Potreiros
         </button>
       </div>
 
@@ -934,7 +1238,7 @@
     </div>
   </dialog>
 
-  <!-- ── Movement Type Records Dialog ────────────────────────────── -->
+  <!-- â”€â”€ Movement Type Records Dialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
   <dialog id="movTypeRecordsDlg" class="modal modal-commercial">
     <div class="modal-card mov-records-card commercial-records-card">
       <div class="modal-header">
@@ -949,7 +1253,7 @@
       </div>
       <div id="movCommercialDashboard" class="commercial-dashboard" hidden></div>
       <div class="mov-records-toolbar">
-        <input type="search" id="movTypeRecordsSearch" class="movements-search-input" placeholder="Buscar por código, categoria, fazenda…">
+        <input type="search" id="movTypeRecordsSearch" class="movements-search-input" placeholder="Buscar por código, categoria, fazendaâ€¦">
         <button type="button" class="btn-primary-sm" id="movTypeRecordsNewBtn">+ Novo Registro</button>
       </div>
       <div class="mov-records-table-wrap commercial-table-wrap">
@@ -962,7 +1266,7 @@
     </div>
   </dialog>
 
-  <!-- ── Potreiro Management Dialog ───────────────────────────────── -->
+  <!-- â”€â”€ Potreiro Management Dialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
   <dialog id="potrManejoDlg" class="modal">
     <div class="modal-card potr-manej-card">
       <div class="modal-header">
@@ -992,11 +1296,11 @@
       <!-- Action type tabs -->
       <div class="potr-action-tabs" id="potrActionTabs" hidden>
         <button type="button" class="potr-action-tab potr-tab-add active" data-manej="adicionar">+ Adicionar</button>
-        <button type="button" class="potr-action-tab potr-tab-transfer" data-manej="transferencia">⇄ Transferência</button>
+        <button type="button" class="potr-action-tab potr-tab-transfer" data-manej="transferencia">â‡„ Transferência</button>
         <button type="button" class="potr-action-tab potr-tab-sale" data-manej="venda">💰 Venda</button>
         <button type="button" class="potr-action-tab potr-tab-death" data-manej="morte">📋 Morte</button>
         <button type="button" class="potr-action-tab potr-tab-consume" data-manej="consumo">🔪 Abate</button>
-        <button type="button" class="potr-action-tab potr-tab-retorno" data-manej="retorno">↩ Retorno ao Total</button>
+        <button type="button" class="potr-action-tab potr-tab-retorno" data-manej="retorno">â†© Retorno ao Total</button>
       </div>
 
       <div class="potr-action-single">
@@ -1087,19 +1391,33 @@
 
   <nav class="mobile-bottom-nav" id="mobileBottomNav" hidden>
     <button type="button" class="mobile-nav-btn active" id="mobileNavDashboard">
-      <span class="mobile-nav-icon">🏠</span>
+      <span class="mobile-nav-icon" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </span>
       <span>Painel</span>
     </button>
     <button type="button" class="mobile-nav-btn" id="mobileNavSanitary">
-      <span class="mobile-nav-icon">💉</span>
-      <span>Sanitário</span>
+      <span class="mobile-nav-icon" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 2a2 2 0 0 0-2 2v5H4a2 2 0 0 0-2 2v2c0 1.1.9 2 2 2h5v5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2v-5h5a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2h-5V4a2 2 0 0 0-2-2h-2z"/></svg>
+      </span>
+      <span>Sanitario</span>
     </button>
     <button type="button" class="mobile-nav-btn" id="mobileNavPotreiros">
-      <span class="mobile-nav-icon">🌿</span>
+      <span class="mobile-nav-icon" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8C8 10 5.9 16.17 3.82 21"/><path d="M9.04 13.4a14.47 14.47 0 0 0-4.8 8.87"/><path d="M22 9c-5.08 2.45-9.3 7.2-10 13"/><path d="M22 9a15.5 15.5 0 0 0-6.47 5.74"/></svg>
+      </span>
       <span>Potreiros</span>
     </button>
+    <button type="button" class="mobile-nav-btn" id="mobileNavReproducao">
+      <span class="mobile-nav-icon" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      </span>
+      <span>Reproducao</span>
+    </button>
     <button type="button" class="mobile-nav-btn" id="mobileNavFarms">
-      <span class="mobile-nav-icon">🐄</span>
+      <span class="mobile-nav-icon" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+      </span>
       <span>Fazendas</span>
     </button>
   </nav>
@@ -1144,6 +1462,36 @@
     </form>
   </dialog>
 
+  <dialog id="mobileAppDialog" class="modal">
+    <div class="modal-card mobile-app-card" style="max-width:560px">
+      <div class="modal-header">
+        <div>
+          <p class="panel-kicker">Mobile</p>
+          <h2>Usar o sistema no celular</h2>
+        </div>
+        <button type="button" class="modal-close" id="closeMobileAppDialog" aria-label="Fechar">&#x2715;</button>
+      </div>
+      <div class="mobile-app-summary">
+        <span class="chip" id="mobileAppStatusChip">Acesso mobile</span>
+        <p class="mobile-app-intro" id="mobileAppIntro">
+          O app usa o mesmo banco do sistema web. Tudo que for registrado no celular aparece aqui no painel e vice-versa.
+        </p>
+      </div>
+      <div class="mobile-app-actions">
+        <a id="mobileAndroidLink" class="action-btn purchase mobile-app-link" href="#" target="_blank" rel="noopener noreferrer">Android</a>
+        <a id="mobileIosLink" class="ghost-btn mobile-app-link" href="#" target="_blank" rel="noopener noreferrer">iPhone</a>
+      </div>
+      <div class="mobile-app-notes">
+        <p><strong>Login:</strong> use o mesmo usuário e senha do sistema web.</p>
+        <p><strong>Sincronização:</strong> compras, vendas, manejo sanitário, reprodução e movimentações ficam compartilhados entre site e app.</p>
+        <p id="mobileAppHint"><strong>Dica:</strong> instale o app indicado acima e depois entre com a mesma conta usada no painel.</p>
+      </div>
+      <div class="modal-actions">
+        <a id="mobileSystemLink" class="ghost-btn mobile-app-link" href="https://fazenda-daluz.onrender.com" target="_blank" rel="noopener noreferrer">Abrir sistema web</a>
+      </div>
+    </div>
+  </dialog>
+
   <dialog id="auditTrailDialog" class="modal">
     <div class="modal-card audit-card">
       <div class="modal-header">
@@ -1151,7 +1499,10 @@
           <p class="panel-kicker">Administrador</p>
           <h2>Trilha de auditoria</h2>
         </div>
-        <button type="button" class="modal-close" id="closeAuditTrailDialog" aria-label="Fechar">&#x2715;</button>
+        <div class="modal-header-actions">
+          <button type="button" class="action-btn pdf" id="exportAuditPdfBtn">Exportar PDF</button>
+          <button type="button" class="modal-close" id="closeAuditTrailDialog" aria-label="Fechar">&#x2715;</button>
+        </div>
       </div>
       <div class="movements-toolbar audit-toolbar">
         <div class="movements-search-wrap">
@@ -1174,6 +1525,98 @@
           </thead>
           <tbody id="auditTrailBody"></tbody>
         </table>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Modal: Registro de Evento Reprodutivo -->
+  <dialog id="reproducaoDlg" class="modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <p class="panel-kicker">Reprodução</p>
+          <h2 id="repDlgTitle">Novo Evento Reprodutivo</h2>
+        </div>
+        <button type="button" class="modal-close" id="closeRepDlg" aria-label="Fechar">&#x2715;</button>
+      </div>
+      <div class="form-grid">
+        <input type="hidden" id="repEditingId">
+        <label>
+          Fazenda
+          <select id="repFarm" required></select>
+        </label>
+        <label>
+          Tipo de evento
+          <select id="repType" required>
+            <option value="inseminacao">Inseminação artificial</option>
+            <option value="entourada">Entourada (cobertura com touro)</option>
+          </select>
+        </label>
+        <label>
+          Data do evento
+          <input type="date" id="repDate" required>
+        </label>
+        <label>
+          Categoria dos animais
+          <select id="repCategory" required></select>
+        </label>
+        <div class="form-span-2" id="repStockHint" hidden></div>
+        <label>
+          Quantidade de animais
+          <input type="number" id="repQuantity" min="1" step="1" placeholder="Ex.: 50" required>
+        </label>
+        <label id="repBullInfoWrap">
+          Identificação do touro
+          <input type="text" id="repBullInfo" maxlength="80" placeholder="Ex.: Touro 01, Angus 457">
+        </label>
+        <label id="repTechInfoWrap" hidden>
+          Técnico responsável
+          <input type="text" id="repTechInfo" maxlength="80" placeholder="Ex.: Dr. João Silva">
+        </label>
+        <label class="form-span-2">
+          Observações
+          <input type="text" id="repNotes" maxlength="200" placeholder="Ex.: Lote sincronizado, protocolo IATF">
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="action-btn purchase" id="repFormSubmit">Salvar evento</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Modal: Verificação de Gestação (Pegou/Falhou) -->
+  <dialog id="repVerifDlg" class="modal">
+    <div class="modal-card" style="max-width:480px">
+      <div class="modal-header">
+        <div>
+          <p class="panel-kicker">Diagnóstico de gestação</p>
+          <h2>Registrar Resultado</h2>
+        </div>
+        <button type="button" class="modal-close" id="closeRepVerifDlg" aria-label="Fechar">&#x2715;</button>
+      </div>
+      <div id="repVerifInfo" class="rep-verif-info"></div>
+      <div class="form-grid">
+        <input type="hidden" id="repVerifId">
+        <label>
+          Data da verificação
+          <input type="date" id="repVerifDate" required>
+        </label>
+        <label>
+          Qtd. Prenha
+          <input type="number" id="repVerifPegou" min="0" step="1" placeholder="Ex.: 35" required>
+        </label>
+        <label>
+          Qtd. Falhada (calculado)
+          <input type="number" id="repVerifFalhou" readonly tabindex="-1">
+        </label>
+        <label class="form-span-2">
+          Observações
+          <input type="text" id="repVerifNotes" maxlength="200" placeholder="Ex.: Diagnóstico por ultrassom, 30 dias pós evento">
+        </label>
+      </div>
+      <p class="auth-feedback" id="repVerifFeedback" hidden></p>
+      <div class="modal-actions">
+        <button type="button" class="action-btn purchase" id="repVerifSubmit">Confirmar resultado</button>
       </div>
     </div>
   </dialog>
