@@ -545,84 +545,100 @@
       </div>
 
       <div id="reproducaoView" hidden>
-        <section class="panel sanitary-toolbar">
-          <div class="panel-header">
-            <div>
-              <p class="panel-kicker">Programa reprodutivo</p>
-              <h2>Controle de Reprodução do Rebanho</h2>
+        <!-- Header Executivo -->
+        <div class="rep2-header">
+          <div class="rep2-header-top">
+            <div class="rep2-header-titles">
+              <p class="rep2-eyebrow">Gestão Reprodutiva</p>
+              <h2 class="rep2-main-title">Painel Reprodutivo</h2>
+              <p class="rep2-subtitle">Acompanhamento de inseminações, prenhezes, falhadas e desempenho por fazenda</p>
             </div>
-            <button type="button" class="action-btn pdf" id="exportRepPdfBtn">Gerar Relatório PDF</button>
-          </div>
-          <div class="farm-switch rep-farm-switch" id="repFarmSwitch"></div>
-        </section>
-
-        <section class="rep-summary-section" id="repSummarySection"></section>
-
-        <section class="content-grid">
-          <article class="panel chart-panel rep-chart-wide">
-            <div class="panel-header">
-              <div>
-                <p class="panel-kicker">Desempenho reprodutivo</p>
-                <h2>Resultados por fazenda</h2>
-              </div>
-            </div>
-            <canvas id="repBarChart" aria-label="Gráfico de reprodução por fazenda"></canvas>
-          </article>
-          <article class="panel chart-panel">
-            <div class="panel-header">
-              <div>
-                <p class="panel-kicker">Taxa geral</p>
-                <h2>Prenhas × Falhadas</h2>
-              </div>
-            </div>
-            <div class="rep-donut-wrap">
-              <canvas id="repDonutChart" aria-label="Gráfico de taxa de sucesso reprodutivo"></canvas>
-            </div>
-            <div id="repDonutLegend" class="rep-donut-legend"></div>
-          </article>
-        </section>
-
-        <section class="san-history-section">
-          <article class="panel">
-            <div class="panel-header">
-              <div>
-                <p class="panel-kicker">Histórico de eventos reprodutivos</p>
-                <h2>Registros de Reprodução</h2>
-              </div>
-              <button type="button" class="register-gold-btn" id="repRegisterBtn">
-                <span class="register-gold-plus">+</span>
-                Novo Evento
+            <div class="rep2-header-actions">
+              <button type="button" class="rep2-btn-secondary" id="exportRepPdfBtn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+                Relatorio PDF
+              </button>
+              <button type="button" class="rep2-btn-primary" id="repRegisterBtn">
+                + Novo Evento Reprodutivo
               </button>
             </div>
-            <div class="san-history-toolbar">
-              <input type="search" id="repHistorySearch" class="movements-search-input" placeholder="Buscar por código, fazenda, categoriaâ€¦">
+          </div>
+          <div class="farm-switch rep-farm-switch" id="repFarmSwitch"></div>
+        </div>
+
+        <!-- KPI Cards -->
+        <section class="rep2-kpi-section" id="repSummarySection"></section>
+
+        <!-- Graficos: Barras + Rosca -->
+        <div class="rep2-charts-row">
+          <div class="rep2-card">
+            <div class="rep2-card-hd">
+              <h3>Desempenho Reprodutivo por Fazenda</h3>
+              <p>Comparativo entre eventos realizados e resultados obtidos no periodo selecionado</p>
+            </div>
+            <canvas id="repBarChart" aria-label="Desempenho por fazenda"></canvas>
+          </div>
+          <div class="rep2-card">
+            <div class="rep2-card-hd">
+              <h3>Taxa Geral de Prenhez</h3>
+              <p>Resultados confirmados no periodo</p>
+            </div>
+            <div class="rep2-donut-outer">
+              <canvas id="repDonutChart" aria-label="Taxa de prenhez"></canvas>
+              <div class="rep2-donut-center" id="repDonutCenter"></div>
+            </div>
+            <div id="repDonutLegend" class="rep2-donut-meta"></div>
+          </div>
+        </div>
+
+        <!-- Ranking + Historico -->
+        <div class="rep2-bottom-row">
+          <div class="rep2-card" id="repRankingCard"></div>
+          <div class="rep2-card">
+            <div class="rep2-card-hd">
+              <h3>Historico de Eventos Reprodutivos</h3>
+              <p>Evolucao mensal dos eventos e resultados nos ultimos 12 meses</p>
+            </div>
+            <canvas id="repHistoryChart" aria-label="Historico reprodutivo"></canvas>
+          </div>
+        </div>
+
+        <!-- Tabela Premium -->
+        <div class="rep2-card">
+          <div class="rep2-table-hd">
+            <div class="rep2-table-hd-left">
+              <h3>Registros Reprodutivos</h3>
+              <p id="repTableCountLabel"></p>
+            </div>
+            <div class="rep2-table-toolbar">
+              <input type="search" id="repHistorySearch" class="rep2-search" placeholder="Buscar por fazenda, codigo, categoria...">
               <div class="movements-pagination" id="repHistoryPagination"></div>
             </div>
-            <div class="table-wrap">
-              <table class="sanitary-table rep-table-premium">
-                <thead>
-                  <tr>
-                    <th>Código</th>
-                    <th>Fazenda</th>
-                    <th>Tipo</th>
-                    <th>Data Evento</th>
-                    <th>Categoria</th>
-                    <th>Qtd.</th>
-                    <th>Verificação</th>
-                    <th>Prenha</th>
-                    <th>Falhada</th>
-                    <th>Obs.</th>
-                    <th>Ações</th>
-                  </tr>
-                </thead>
-                <tbody id="repTableBody"></tbody>
-              </table>
-            </div>
-          </article>
-        </section>
+          </div>
+          <div class="rep2-tw">
+            <table class="rep2-t">
+              <thead>
+                <tr>
+                  <th>Codigo</th>
+                  <th>Fazenda</th>
+                  <th>Tipo</th>
+                  <th>Data</th>
+                  <th>Categoria</th>
+                  <th class="rr">Qtd.</th>
+                  <th>Verificacao</th>
+                  <th class="rr">Prenha</th>
+                  <th class="rr">Falhada</th>
+                  <th class="rr">Taxa</th>
+                  <th>Obs.</th>
+                  <th>Acoes</th>
+                </tr>
+              </thead>
+              <tbody id="repTableBody"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
-
-      <div id="comprasView" hidden>
+<div id="comprasView" hidden>
         <section class="panel sanitary-toolbar">
           <div class="panel-header">
             <div>

@@ -1,4 +1,4 @@
-const STORAGE_KEY = "painelPecuario.v2";
+﻿const STORAGE_KEY = "painelPecuario.v2";
 const API_URL = "https://painel-pecuario-api.onrender.com";
 const MOBILE_APP_CONFIG = {
   androidDownloadUrl: "https://expo.dev/artifacts/eas/vb8ogAiUpRsXSZbgX1iQA2.apk",
@@ -863,6 +863,7 @@ const state = {
     monthlyCategory: null,
     repBar: null,
     repDonut: null,
+    repHistory: null,
     comprasBar: null,
     comprasEvolution: null,
     vendasBar: null,
@@ -11781,10 +11782,22 @@ function calcReproductionStats(records) {
   return { totalInseminacoes, totalEntouradas, totalPegou, totalFalhou, taxaSucesso, totalVerified };
 }
 
+// ── Classificação de desempenho reprodutivo ─────────────────────────────
+function getRepStatus(taxa) {
+  if (taxa == null) return { label: "Sem dados", cls: "rep2-nd" };
+  if (taxa >= 75)   return { label: "Excelente", cls: "rep2-ex" };
+  if (taxa >= 65)   return { label: "Bom",       cls: "rep2-bom" };
+  if (taxa >= 50)   return { label: "Atencao",   cls: "rep2-at" };
+  return               { label: "Critico",    cls: "rep2-crit" };
+}
+
 function renderReproducaoView() {
   renderRepFarmSwitch();
-  renderRepSummaryCards();
-  renderRepCharts();
+  renderRepKpiCards();
+  renderRepBarChart();
+  renderRepDonutChart();
+  renderRepFarmRanking();
+  renderRepHistoryLineChart();
   renderRepHistoryTable();
 }
 
@@ -11795,7 +11808,7 @@ function renderRepFarmSwitch() {
   items.forEach((item) => {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = `farm-btn ${item.id === state.data.selectedFarmId ?"active" : ""}`;
+    btn.className = `farm-btn ${item.id === state.data.selectedFarmId ? "active" : ""}`;
     btn.textContent = item.name;
     btn.addEventListener("click", () => {
       state.data.selectedFarmId = item.id;
@@ -11807,149 +11820,180 @@ function renderRepFarmSwitch() {
   });
 }
 
-function renderRepSummaryCards() {
+function renderRepKpiCards() {
   if (!elements.repSummarySection) return;
   const records = getFilteredReproductionRecords();
-  const stats = calcReproductionStats(records);
-  const pendingVerif = records.filter((r) => !r.verificationDate).length;
+  const stats   = calcReproductionStats(records);
+  const pending = records.filter((r) => !r.verificationDate).length;
+  const status  = getRepStatus(stats.taxaSucesso);
 
-  const taxaLabel = stats.taxaSucesso != null
-    ?`${stats.taxaSucesso.toFixed(1)}%`
-    : "—";
-  const taxaColor = stats.taxaSucesso == null ?""
-    : stats.taxaSucesso >= 70 ?"color:var(--green)"
-    : stats.taxaSucesso >= 50 ?"color:var(--sand)"
-    : "color:var(--red)";
+  // Melhor e pior fazenda
+  const farms = getAllFarms();
+  const year  = state.filters.year;
+  const month = state.filters.month;
+  let bestFarm = null, worstFarm = null, bestTaxa = -1, worstTaxa = 101;
+  farms.forEach((f) => {
+    let recs = getReproductionRecords(f).filter((r) => {
+      const d = r.date || "";
+      if (year !== "all" && !d.startsWith(year)) return false;
+      if (month !== "all" && d.slice(5,7) !== String(month).padStart(2,"0")) return false;
+      return true;
+    });
+    const s = calcReproductionStats(recs);
+    if (s.taxaSucesso != null && s.totalVerified >= 5) {
+      if (s.taxaSucesso > bestTaxa)  { bestTaxa = s.taxaSucesso;  bestFarm  = f; }
+      if (s.taxaSucesso < worstTaxa) { worstTaxa = s.taxaSucesso; worstFarm = f; }
+    }
+  });
+
+  const taxaColor = stats.taxaSucesso == null ? "var(--muted)"
+    : stats.taxaSucesso >= 65 ? "#1b6e3e"
+    : stats.taxaSucesso >= 50 ? "#856404"
+    : "#c0392b";
+
+  const icons = {
+    insem:   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%231e40af' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M8 12h8M12 8v8'/%3E%3C/svg%3E",
+    entour:  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23854d0e' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 8v8M8 12h8'/%3E%3C/svg%3E",
+    prenha:  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%231b6e3e' stroke-width='2'%3E%3Cpath d='M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z'/%3E%3C/svg%3E",
+    falhada: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23c0392b' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='15' y1='9' x2='9' y2='15'/%3E%3Cline x1='9' y1='9' x2='15' y2='15'/%3E%3C/svg%3E",
+    taxa:    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%231b6e3e' stroke-width='2'%3E%3Cpolyline points='22 12 18 12 15 21 9 3 6 12 2 12'/%3E%3C/svg%3E",
+    pend:    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23856404' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpolyline points='12 6 12 12 16 14'/%3E%3C/svg%3E",
+  };
+
+  const taxaLabel = stats.taxaSucesso != null ? `${stats.taxaSucesso.toFixed(1)}%` : "—";
 
   elements.repSummarySection.innerHTML = `
-    <div class="rep-kpi-grid">
-      <article class="summary-card">
-        <p class="panel-kicker">Inseminações</p>
-        <strong>${formatInteger(stats.totalInseminacoes)}</strong>
-        <p>animais inseminados no período</p>
-      </article>
-      <article class="summary-card">
-        <p class="panel-kicker">Entouradas</p>
-        <strong>${formatInteger(stats.totalEntouradas)}</strong>
-        <p>animais entourados no período</p>
-      </article>
-      <article class="summary-card">
-        <p class="panel-kicker">Prenha</p>
-        <strong style="color:var(--green)">${formatInteger(stats.totalPegou)}</strong>
-        <p>animais confirmados prenhes</p>
-      </article>
-      <article class="summary-card">
-        <p class="panel-kicker">Falhada</p>
-        <strong style="color:var(--red)">${formatInteger(stats.totalFalhou)}</strong>
-        <p>animais que não ficaram prenhes</p>
-      </article>
-      <article class="summary-card">
-        <p class="panel-kicker">Taxa de Prenhez</p>
-        <strong style="${taxaColor}">${taxaLabel}</strong>
-        <p>${stats.totalVerified > 0 ?`base: ${formatInteger(stats.totalVerified)} verificados` : "aguardando verificações"}</p>
-      </article>
-      <article class="summary-card">
-        <p class="panel-kicker">Aguardando Resultado</p>
-        <strong style="color:var(--sand)">${formatInteger(pendingVerif)}</strong>
-        <p>eventos sem verificação registrada</p>
-      </article>
+    <div class="rep2-kpi-grid">
+      <div class="rep2-kpi-card">
+        <div class="rep2-kpi-icon-wrap" style="background:#dbeafe">
+          <img src="${icons.insem}" width="18" height="18" alt="">
+        </div>
+        <div class="rep2-kpi-value" style="color:#1e40af">${formatInteger(stats.totalInseminacoes)}</div>
+        <div class="rep2-kpi-label">Inseminacoes</div>
+        <div class="rep2-kpi-desc">animais inseminados no periodo</div>
+        <span class="rep2-kpi-badge rep2-blue">IA</span>
+      </div>
+      <div class="rep2-kpi-card">
+        <div class="rep2-kpi-icon-wrap" style="background:#fef9c3">
+          <img src="${icons.entour}" width="18" height="18" alt="">
+        </div>
+        <div class="rep2-kpi-value" style="color:#854d0e">${formatInteger(stats.totalEntouradas)}</div>
+        <div class="rep2-kpi-label">Entouradas</div>
+        <div class="rep2-kpi-desc">animais em cobertura com touro</div>
+        <span class="rep2-kpi-badge rep2-gold">Monta</span>
+      </div>
+      <div class="rep2-kpi-card">
+        <div class="rep2-kpi-icon-wrap" style="background:#d4edda">
+          <img src="${icons.prenha}" width="18" height="18" alt="">
+        </div>
+        <div class="rep2-kpi-value" style="color:#1b6e3e">${formatInteger(stats.totalPegou)}</div>
+        <div class="rep2-kpi-label">Prenhes</div>
+        <div class="rep2-kpi-desc">animais confirmados prenhes</div>
+        <span class="rep2-kpi-badge rep2-ex">Confirmado</span>
+      </div>
+      <div class="rep2-kpi-card">
+        <div class="rep2-kpi-icon-wrap" style="background:#f8d7da">
+          <img src="${icons.falhada}" width="18" height="18" alt="">
+        </div>
+        <div class="rep2-kpi-value" style="color:#c0392b">${formatInteger(stats.totalFalhou)}</div>
+        <div class="rep2-kpi-label">Falhadas</div>
+        <div class="rep2-kpi-desc">animais que nao emprenharam</div>
+        <span class="rep2-kpi-badge rep2-crit">Nao prenhe</span>
+      </div>
+      <div class="rep2-kpi-card">
+        <div class="rep2-kpi-icon-wrap" style="background:#d4edda">
+          <img src="${icons.taxa}" width="18" height="18" alt="">
+        </div>
+        <div class="rep2-kpi-value" style="color:${taxaColor}">${taxaLabel}</div>
+        <div class="rep2-kpi-label">Taxa de Prenhez</div>
+        <div class="rep2-kpi-desc">${stats.totalVerified > 0 ? `base: ${formatInteger(stats.totalVerified)} verificados` : "aguardando verificacoes"}</div>
+        <span class="rep2-kpi-badge ${status.cls}">${status.label}</span>
+      </div>
+      <div class="rep2-kpi-card">
+        <div class="rep2-kpi-icon-wrap" style="background:#fff3cd">
+          <img src="${icons.pend}" width="18" height="18" alt="">
+        </div>
+        <div class="rep2-kpi-value" style="color:#856404">${formatInteger(pending)}</div>
+        <div class="rep2-kpi-label">Aguardando</div>
+        <div class="rep2-kpi-desc">eventos sem diagnostico registrado</div>
+        <span class="rep2-kpi-badge rep2-pend">Pendente</span>
+      </div>
     </div>
   `;
-}
-
-function renderRepCharts() {
-  renderRepBarChart();
-  renderRepDonutChart();
 }
 
 function renderRepBarChart() {
   const canvas = document.getElementById("repBarChart");
   if (!canvas) return;
-
-  if (state.charts.repBar) {
-    state.charts.repBar.destroy();
-    state.charts.repBar = null;
-  }
+  if (state.charts.repBar) { state.charts.repBar.destroy(); state.charts.repBar = null; }
 
   const farms = getAllFarms();
-  const labels = [];
-  const dataInsem = [];
-  const dataEntour = [];
-  const dataPegou = [];
-  const dataFalhou = [];
-
-  const year = state.filters.year;
+  const year  = state.filters.year;
   const month = state.filters.month;
 
-  farms.forEach((farm) => {
-    let recs = getReproductionRecords(farm).map((r) => ({ ...r, farmId: farm.id }));
-    recs = recs.filter((rec) => {
-      const d = rec.date || "";
+  const farmData = farms.map((farm) => {
+    let recs = getReproductionRecords(farm).filter((r) => {
+      const d = r.date || "";
       if (year !== "all" && !d.startsWith(year)) return false;
-      if (month !== "all") {
-        const m = d.slice(5, 7);
-        if (m !== String(month).padStart(2, "0")) return false;
-      }
+      if (month !== "all" && d.slice(5,7) !== String(month).padStart(2,"0")) return false;
       return true;
     });
-    const stats = calcReproductionStats(recs);
-    labels.push(farm.name);
-    dataInsem.push(stats.totalInseminacoes);
-    dataEntour.push(stats.totalEntouradas);
-    dataPegou.push(stats.totalPegou);
-    dataFalhou.push(stats.totalFalhou);
-  });
+    const s = calcReproductionStats(recs);
+    return { name: farm.name, stats: s };
+  }).filter((f) => f.stats.totalInseminacoes > 0 || f.stats.totalEntouradas > 0);
 
-  const hasAnyData = dataInsem.some((v) => v > 0) || dataEntour.some((v) => v > 0);
-  if (!hasAnyData) {
+  if (!farmData.length) {
     canvas.style.display = "none";
-    const existing = canvas.parentElement.querySelector(".rep-empty-note");
-    if (!existing) {
-      const p = document.createElement("p");
-      p.className = "field-note rep-empty-note";
-      p.style.cssText = "text-align:center;padding:24px";
-      p.textContent = "Nenhum evento reprodutivo registrado no período selecionado.";
-      canvas.parentElement.appendChild(p);
+    const p = canvas.parentElement.querySelector(".rep2-empty");
+    if (!p) {
+      const el = document.createElement("div");
+      el.className = "rep2-empty";
+      el.innerHTML = `<div style="font-size:2rem;opacity:.3;margin-bottom:10px">📊</div><div class="rep2-empty-t">Nenhum evento no periodo</div><div class="rep2-empty-s">Registre eventos reprodutivos para visualizar o grafico.</div>`;
+      canvas.parentElement.appendChild(el);
     }
     return;
   }
   canvas.style.display = "";
-  canvas.parentElement.querySelector(".rep-empty-note")?.remove();
+  canvas.parentElement.querySelector(".rep2-empty")?.remove();
 
-  // Plugin: valor + % ao lado direito de cada barra
-  const repBarPctPlugin = {
-    id: "repBarPct",
+  const labels    = farmData.map((f) => f.name);
+  const dataInsem = farmData.map((f) => f.stats.totalInseminacoes);
+  const dataEntou = farmData.map((f) => f.stats.totalEntouradas);
+  const dataPren  = farmData.map((f) => f.stats.totalPegou);
+  const dataFalh  = farmData.map((f) => f.stats.totalFalhou);
+
+  const h = Math.min(480, Math.max(280, labels.length * 60 + 80));
+  canvas.style.setProperty("height", `${h}px`, "important");
+  canvas.style.setProperty("max-height", `${h}px`, "important");
+  canvas.removeAttribute("height");
+  canvas.removeAttribute("width");
+
+  const labelPlugin = {
+    id: "rep2Label",
     afterDatasetsDraw(chart) {
-      const { ctx, data, chartArea } = chart;
-      const insemD  = data.datasets[0]?.data || [];
-      const entourD = data.datasets[1]?.data || [];
-      const totals  = insemD.map((v, i) => (v || 0) + (entourD[i] || 0));
-
-      data.datasets.forEach((dataset, di) => {
+      const { ctx, data } = chart;
+      const insD = data.datasets[0]?.data || [];
+      const enD  = data.datasets[1]?.data || [];
+      const tots = insD.map((v, i) => (v || 0) + (enD[i] || 0));
+      data.datasets.forEach((ds, di) => {
         const meta = chart.getDatasetMeta(di);
         if (meta.hidden) return;
         meta.data.forEach((bar, idx) => {
-          const value = dataset.data[idx];
-          const total = totals[idx];
-          if (!value || !total) return;
-          const pct = Math.round((value / total) * 100);
-          const barW = Math.abs(bar.x - bar.base);
-
+          const val = ds.data[idx];
+          const tot = tots[idx];
+          if (!val || !tot) return;
+          const pct = Math.round((val / tot) * 100);
+          const bw  = Math.abs(bar.x - bar.base);
           ctx.save();
           ctx.textBaseline = "middle";
-
-          if (barW >= 48) {
-            // Label dentro da barra, à direita
-            ctx.textAlign = "right";
-            ctx.font = `bold ${Math.min(11, barW / 6)}px 'Manrope', sans-serif`;
-            ctx.fillStyle = "rgba(255,255,255,0.96)";
-            ctx.fillText(`${value} · ${pct}%`, bar.x - 8, bar.y);
-          } else if (barW >= 10) {
-            // Label fora da barra
-            ctx.textAlign = "left";
-            ctx.font = "bold 10px 'Manrope', sans-serif";
-            ctx.fillStyle = "#222222";
-            ctx.fillText(`${value} · ${pct}%`, bar.x + 6, bar.y);
+          if (bw >= 50) {
+            ctx.textAlign = "right"; ctx.font = `bold 10px Manrope,sans-serif`;
+            ctx.fillStyle = "rgba(255,255,255,.92)";
+            ctx.fillText(`${val} · ${pct}%`, bar.x - 7, bar.y);
+          } else if (bw >= 12) {
+            ctx.textAlign = "left"; ctx.font = "bold 9px Manrope,sans-serif";
+            ctx.fillStyle = "#333";
+            ctx.fillText(`${val}`, bar.x + 5, bar.y);
           }
           ctx.restore();
         });
@@ -11957,149 +12001,238 @@ function renderRepBarChart() {
     }
   };
 
-  // Altura definida no container — evita loop de resize com responsive:true
-  const chartH = Math.min(520, Math.max(300, labels.length * 56 + 96));
-  const chartPanel = canvas.closest(".chart-panel") || canvas.parentElement;
-  chartPanel.style.minHeight = "";
-  canvas.style.setProperty("height", `${chartH}px`, "important");
-  canvas.style.setProperty("max-height", `${chartH}px`, "important");
-  canvas.removeAttribute("height");
-  canvas.removeAttribute("width");
-
   state.charts.repBar = new Chart(canvas, {
     type: "bar",
+    plugins: [labelPlugin],
     data: {
       labels,
       datasets: [
-        { label: "Inseminações", data: dataInsem,  backgroundColor: "#1a5fb4", borderRadius: 5, borderSkipped: false, barThickness: 16 },
-        { label: "Entouradas",   data: dataEntour, backgroundColor: "#c9a84c", borderRadius: 5, borderSkipped: false, barThickness: 16 },
-        { label: "Prenhas",      data: dataPegou,  backgroundColor: "#1b6e3e", borderRadius: 5, borderSkipped: false, barThickness: 16 },
-        { label: "Falhadas",     data: dataFalhou, backgroundColor: "#c0392b", borderRadius: 5, borderSkipped: false, barThickness: 16 },
+        { label: "Inseminacoes", data: dataInsem, backgroundColor: "#2563eb", borderRadius: 5, borderSkipped: false, barThickness: 14 },
+        { label: "Entouradas",   data: dataEntou, backgroundColor: "#d97706", borderRadius: 5, borderSkipped: false, barThickness: 14 },
+        { label: "Prenhas",      data: dataPren,  backgroundColor: "#1b6e3e", borderRadius: 5, borderSkipped: false, barThickness: 14 },
+        { label: "Falhadas",     data: dataFalh,  backgroundColor: "#dc2626", borderRadius: 5, borderSkipped: false, barThickness: 14 },
       ]
     },
-    plugins: [repBarPctPlugin],
     options: {
       indexAxis: "y",
       responsive: true,
       maintainAspectRatio: false,
-      resizeDelay: 120,
-      layout: { padding: { right: 8, top: 8, bottom: 8 } },
+      resizeDelay: 100,
+      layout: { padding: { right: 6, top: 6, bottom: 6 } },
       plugins: {
-        legend: {
-          position: "bottom",
-          labels: {
-            padding: 20,
-            usePointStyle: true,
-            pointStyle: "circle",
-            font: { size: 12 },
-            color: "#444444",
-          }
-        },
+        legend: { position: "bottom", labels: { padding: 18, usePointStyle: true, pointStyle: "circle", font: { size: 12 }, color: "#444" } },
         tooltip: {
-          backgroundColor: "#111111",
-          titleColor: "#ffffff",
-          bodyColor: "rgba(255,255,255,0.80)",
-          padding: 12,
-          cornerRadius: 8,
-          boxPadding: 4,
+          backgroundColor: "#111", titleColor: "#fff", bodyColor: "rgba(255,255,255,.82)",
+          padding: 12, cornerRadius: 8, boxPadding: 4,
           callbacks: {
             label: (ctx) => {
-              const insem  = dataInsem[ctx.dataIndex]  || 0;
-              const entour = dataEntour[ctx.dataIndex] || 0;
-              const total  = insem + entour;
-              const pct = total > 0 ? ` (${Math.round((ctx.parsed.x / total) * 100)}%)` : "";
+              const ins = dataInsem[ctx.dataIndex] || 0;
+              const ent = dataEntou[ctx.dataIndex] || 0;
+              const tot = ins + ent;
+              const pct = tot > 0 ? ` (${Math.round((ctx.parsed.x / tot) * 100)}%)` : "";
               return ` ${ctx.dataset.label}: ${ctx.parsed.x}${pct}`;
+            },
+            afterBody: (items) => {
+              const i = items[0]?.dataIndex;
+              const s = farmData[i]?.stats;
+              if (!s || !s.totalVerified) return [];
+              return [`  Taxa prenhez: ${s.taxaSucesso?.toFixed(1)}%`];
             }
           }
         }
       },
       scales: {
-        x: {
-          beginAtZero: true,
-          ticks: { precision: 0, color: "#aaaaaa", font: { size: 10 } },
-          grid: { color: "rgba(0,0,0,0.05)", drawTicks: false },
-          border: { display: false }
-        },
-        y: {
-          grid: { display: false },
-          border: { display: false },
-          ticks: {
-            color: "#222222",
-            font: { size: 12, weight: "600" },
-            padding: 10,
-          }
-        }
+        x: { beginAtZero: true, ticks: { precision: 0, color: "#aaa", font: { size: 10 } }, grid: { color: "rgba(0,0,0,.05)" }, border: { display: false } },
+        y: { grid: { display: false }, border: { display: false }, ticks: { color: "#222", font: { size: 12, weight: "600" }, padding: 8 } }
       }
     }
   });
 }
 
 function renderRepDonutChart() {
-  const canvas = document.getElementById("repDonutChart");
-  const legendEl = document.getElementById("repDonutLegend");
+  const canvas    = document.getElementById("repDonutChart");
+  const legendEl  = document.getElementById("repDonutLegend");
+  const centerEl  = document.getElementById("repDonutCenter");
   if (!canvas || !legendEl) return;
-
-  if (state.charts.repDonut) {
-    state.charts.repDonut.destroy();
-    state.charts.repDonut = null;
-  }
+  if (state.charts.repDonut) { state.charts.repDonut.destroy(); state.charts.repDonut = null; }
 
   const records = getFilteredReproductionRecords();
-  const stats = calcReproductionStats(records);
+  const stats   = calcReproductionStats(records);
 
   if (!stats.totalVerified) {
-    legendEl.innerHTML = `<p class="field-note" style="text-align:center">Nenhum resultado verificado ainda.</p>`;
+    if (centerEl) centerEl.innerHTML = `<span class="rep2-donut-cvalue" style="font-size:1.1rem;color:var(--muted)">—</span><span class="rep2-donut-clabel">sem dados</span>`;
+    legendEl.innerHTML = `<p style="text-align:center;color:var(--muted);font-size:13px;padding:8px 0">Nenhum resultado verificado ainda.</p>`;
     return;
   }
 
-  const taxaStr = stats.taxaSucesso != null ?`${stats.taxaSucesso.toFixed(1)}%` : "—";
+  const taxaStr = stats.taxaSucesso != null ? `${stats.taxaSucesso.toFixed(1)}%` : "—";
+  const st      = getRepStatus(stats.taxaSucesso);
+
+  if (centerEl) {
+    centerEl.innerHTML = `
+      <span class="rep2-donut-cvalue">${taxaStr}</span>
+      <span class="rep2-donut-clabel">Prenhez</span>
+    `;
+  }
 
   state.charts.repDonut = new Chart(canvas, {
     type: "doughnut",
     data: {
       labels: ["Prenhas", "Falhadas"],
-      datasets: [{
-        data: [stats.totalPegou, stats.totalFalhou],
-        backgroundColor: ["#1b6e3e", "#c0392b"],
-        hoverBackgroundColor: ["#22863a", "#e74c3c"],
-        borderWidth: 3,
-        borderColor: "#ffffff",
-        hoverOffset: 10,
-      }]
+      datasets: [{ data: [stats.totalPegou, stats.totalFalhou], backgroundColor: ["#1b6e3e", "#dc2626"], hoverBackgroundColor: ["#22863a","#e74c3c"], borderWidth: 3, borderColor: "#fff", hoverOffset: 8 }]
     },
     options: {
-      responsive: true,
-      cutout: "72%",
+      responsive: true, cutout: "74%",
       animation: { animateRotate: true, animateScale: true },
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: "#111111",
-          titleColor: "#ffffff",
-          bodyColor: "rgba(255,255,255,0.82)",
-          padding: 12,
-          cornerRadius: 8,
-          boxPadding: 4,
-          callbacks: {
-            label: (ctx) => {
-              const pct = stats.totalVerified > 0 ?((ctx.parsed / stats.totalVerified) * 100).toFixed(1) : 0;
-              return ` ${ctx.label}: ${ctx.parsed} (${pct}%)`;
-            }
-          }
+          backgroundColor: "#111", titleColor: "#fff", bodyColor: "rgba(255,255,255,.82)", padding: 12, cornerRadius: 8,
+          callbacks: { label: (ctx) => { const pct = stats.totalVerified > 0 ? ((ctx.parsed / stats.totalVerified) * 100).toFixed(1) : 0; return ` ${ctx.label}: ${ctx.parsed} (${pct}%)`; } }
         }
       }
     }
   });
 
+  const falhosPct = stats.totalVerified > 0 ? ((stats.totalFalhou / stats.totalVerified) * 100).toFixed(1) : "0.0";
   legendEl.innerHTML = `
-    <div class="rep-donut-legend-items">
-      <span class="rep-legend-dot" style="background:#1b6e3e"></span>
-      <span>Prenhas: <strong>${formatInteger(stats.totalPegou)}</strong></span>
-      <span class="rep-legend-dot" style="background:#c0392b"></span>
-      <span>Falhadas: <strong>${formatInteger(stats.totalFalhou)}</strong></span>
-    </div>
-    <p class="rep-taxa-label">Taxa de Prenhez: <strong>${taxaStr}</strong></p>
+    <div class="rep2-donut-row"><div class="rep2-donut-dot" style="background:#1b6e3e"></div><span>Prenhas: <strong>${formatInteger(stats.totalPegou)}</strong></span></div>
+    <div class="rep2-donut-row"><div class="rep2-donut-dot" style="background:#dc2626"></div><span>Falhadas: <strong>${formatInteger(stats.totalFalhou)}</strong> (${falhosPct}%)</span></div>
+    <div class="rep2-donut-row"><div class="rep2-donut-dot" style="background:#6b7280"></div><span>Verificados: <strong>${formatInteger(stats.totalVerified)}</strong> animais</span></div>
+    <span class="rep2-donut-status ${st.cls}">${st.label}</span>
   `;
+}
+
+function renderRepFarmRanking() {
+  const card = document.getElementById("repRankingCard");
+  if (!card) return;
+
+  const farms = getAllFarms();
+  const year  = state.filters.year;
+  const month = state.filters.month;
+
+  const ranked = farms.map((f) => {
+    let recs = getReproductionRecords(f).filter((r) => {
+      const d = r.date || "";
+      if (year !== "all" && !d.startsWith(year)) return false;
+      if (month !== "all" && d.slice(5,7) !== String(month).padStart(2,"0")) return false;
+      return true;
+    });
+    const s = calcReproductionStats(recs);
+    return { name: f.name, stats: s, totalEvents: s.totalInseminacoes + s.totalEntouradas };
+  }).sort((a, b) => {
+    if (a.stats.taxaSucesso == null && b.stats.taxaSucesso == null) return 0;
+    if (a.stats.taxaSucesso == null) return 1;
+    if (b.stats.taxaSucesso == null) return -1;
+    return b.stats.taxaSucesso - a.stats.taxaSucesso;
+  });
+
+  const posClasses = ["p1","p2","p3","pg","pg"];
+
+  const rows = ranked.map((f, i) => {
+    const st       = getRepStatus(f.stats.taxaSucesso);
+    const taxaStr  = f.stats.taxaSucesso != null ? `${f.stats.taxaSucesso.toFixed(1)}%` : "—";
+    const posClass = posClasses[i] || "pg";
+    return `
+      <div class="rep2-ri">
+        <div class="rep2-ri-pos ${posClass}">${i + 1}</div>
+        <div class="rep2-ri-name" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</div>
+        <div class="rep2-ri-taxa">${taxaStr}</div>
+        <span class="rep2-ri-badge ${st.cls}">${st.label}</span>
+      </div>
+    `;
+  }).join("");
+
+  card.innerHTML = `
+    <div class="rep2-card-hd" style="margin-bottom:14px">
+      <h3>Ranking das Fazendas</h3>
+      <p>Ordenado por taxa de prenhez no periodo</p>
+    </div>
+    <div class="rep2-ranking-list">${rows || '<p class="rep2-empty-s" style="text-align:center;padding:20px 0">Nenhum dado disponivel.</p>'}</div>
+  `;
+}
+
+function renderRepHistoryLineChart() {
+  const canvas = document.getElementById("repHistoryChart");
+  if (!canvas) return;
+  if (state.charts.repHistory) { state.charts.repHistory.destroy(); state.charts.repHistory = null; }
+
+  // Ultimos 12 meses
+  const now    = new Date();
+  const months = [];
+  for (let i = 11; i >= 0; i--) {
+    const d   = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const lbl = d.toLocaleDateString("pt-BR", { month: "short", year: "2-digit" }).replace(".", "");
+    months.push({ key, lbl, insem: 0, entou: 0, pren: 0, falh: 0, verif: 0 });
+  }
+
+  const farms = getAllFarms();
+  const selectedId = state.data.selectedFarmId;
+  const farmsToShow = selectedId === TOTAL_FARM_ID ? farms : farms.filter((f) => f.id === selectedId);
+
+  farmsToShow.forEach((f) => {
+    (f.reproductionRecords || []).forEach((r) => {
+      const key = (r.date || "").slice(0, 7);
+      const bucket = months.find((m) => m.key === key);
+      if (!bucket) return;
+      if (r.type === "inseminacao") bucket.insem += (r.quantity || 0);
+      else bucket.entou += (r.quantity || 0);
+      if (r.verificationDate && r.quantityPegou != null) {
+        bucket.pren  += r.quantityPegou;
+        bucket.falh  += Math.max(0, (r.quantity || 0) - r.quantityPegou);
+        bucket.verif += (r.quantity || 0);
+      }
+    });
+  });
+
+  const hasData = months.some((m) => m.insem > 0 || m.entou > 0);
+  if (!hasData) {
+    canvas.style.display = "none";
+    const p = canvas.parentElement.querySelector(".rep2-empty");
+    if (!p) {
+      const el = document.createElement("div");
+      el.className = "rep2-empty";
+      el.innerHTML = `<div style="font-size:2rem;opacity:.3;margin-bottom:10px">📈</div><div class="rep2-empty-t">Sem historico disponivel</div><div class="rep2-empty-s">Registros apareceram aqui conforme os eventos forem lancados.</div>`;
+      canvas.parentElement.appendChild(el);
+    }
+    return;
+  }
+  canvas.style.display = "";
+  canvas.parentElement.querySelector(".rep2-empty")?.remove();
+
+  canvas.style.setProperty("height", "220px", "important");
+  canvas.style.setProperty("max-height", "220px", "important");
+  canvas.removeAttribute("height");
+  canvas.removeAttribute("width");
+
+  state.charts.repHistory = new Chart(canvas, {
+    type: "line",
+    data: {
+      labels: months.map((m) => m.lbl),
+      datasets: [
+        { label: "Inseminacoes", data: months.map((m) => m.insem), borderColor: "#2563eb", backgroundColor: "rgba(37,99,235,.08)", tension: 0.35, fill: true, pointRadius: 3, pointHoverRadius: 5, borderWidth: 2 },
+        { label: "Entouradas",   data: months.map((m) => m.entou), borderColor: "#d97706", backgroundColor: "rgba(217,119,6,.08)", tension: 0.35, fill: true, pointRadius: 3, pointHoverRadius: 5, borderWidth: 2 },
+        { label: "Prenhas",      data: months.map((m) => m.pren),  borderColor: "#1b6e3e", backgroundColor: "rgba(27,110,62,.10)", tension: 0.35, fill: true, pointRadius: 3, pointHoverRadius: 5, borderWidth: 2 },
+        { label: "Falhadas",     data: months.map((m) => m.falh),  borderColor: "#dc2626", backgroundColor: "rgba(220,38,38,.06)", tension: 0.35, fill: false, pointRadius: 3, pointHoverRadius: 5, borderWidth: 2, borderDash: [4,3] },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, resizeDelay: 100,
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: { position: "bottom", labels: { padding: 16, usePointStyle: true, pointStyle: "circle", font: { size: 11 }, color: "#444" } },
+        tooltip: {
+          backgroundColor: "#111", titleColor: "#fff", bodyColor: "rgba(255,255,255,.82)", padding: 12, cornerRadius: 8,
+          callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${ctx.parsed.y}` }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, border: { display: false }, ticks: { color: "#aaa", font: { size: 10 } } },
+        y: { beginAtZero: true, ticks: { precision: 0, color: "#aaa", font: { size: 10 } }, grid: { color: "rgba(0,0,0,.05)" }, border: { display: false } }
+      }
+    }
+  });
 }
 
 const REP_PAGE_SIZE = 50;
@@ -12108,81 +12241,96 @@ function renderRepHistoryTable() {
   if (!elements.repTableBody) return;
 
   const searchEl = elements.repHistorySearch;
-  const search = (searchEl?.value || "").toLowerCase().trim();
-  let records = getFilteredReproductionRecords();
+  const search   = (searchEl?.value || "").toLowerCase().trim();
+  let records    = getFilteredReproductionRecords();
 
   if (search) {
     records = records.filter((rec) => {
-      const farmName = (rec.farmName || rec.farmId || "").toLowerCase();
-      const code = (rec.code || "").toLowerCase();
-      const category = (rec.categoryName || rec.categoryId || "").toLowerCase();
-      const potreiro = (rec.potreiro || "").toLowerCase();
-      const notes = (rec.notes || "").toLowerCase();
-      const typeLabel = rec.type === "inseminacao" ?"inseminação" : "entourada";
-      return [farmName, code, category, potreiro, notes, typeLabel].some((s) => s.includes(search));
+      const farmName  = (rec.farmName || rec.farmId || "").toLowerCase();
+      const code      = (rec.code || "").toLowerCase();
+      const category  = (rec.categoryName || rec.categoryId || "").toLowerCase();
+      const notes     = (rec.notes || "").toLowerCase();
+      const typeLabel = rec.type === "inseminacao" ? "inseminacao" : "entourada";
+      return [farmName, code, category, notes, typeLabel].some((s) => s.includes(search));
     });
   }
 
-  const total = records.length;
-  const totalPages = Math.max(1, Math.ceil(total / REP_PAGE_SIZE));
-  const page = Math.min(Math.max(0, runtime.repPage || 0), totalPages - 1);
-  runtime.repPage = page;
-  const start = page * REP_PAGE_SIZE;
-  const pageRecords = records.slice(start, start + REP_PAGE_SIZE);
+  // Atualiza contador
+  const countEl = document.getElementById("repTableCountLabel");
+  if (countEl) countEl.textContent = `${records.length} registro${records.length !== 1 ? "s" : ""} encontrado${records.length !== 1 ? "s" : ""}`;
 
-  elements.repTableBody.innerHTML = pageRecords.map((rec) => {
-    const farmId = rec.farmId || state.data.selectedFarmId;
-    const pegou = rec.quantityPegou != null ?formatInteger(rec.quantityPegou) : "—";
-    const qty = Number(rec.quantity || 0);
-    const falhou = rec.verificationDate && rec.quantityPegou != null
-      ?formatInteger(Math.max(0, qty - Number(rec.quantityPegou)))
-      : "—";
-    const taxa = rec.verificationDate && rec.quantityPegou != null && qty > 0
-      ?`${((Number(rec.quantityPegou) / qty) * 100).toFixed(1)}%`
-      : "—";
+  const total      = records.length;
+  const totalPages = Math.max(1, Math.ceil(total / REP_PAGE_SIZE));
+  const page       = Math.min(Math.max(0, runtime.repPage || 0), totalPages - 1);
+  runtime.repPage  = page;
+  const start      = page * REP_PAGE_SIZE;
+  const pageRecs   = records.slice(start, start + REP_PAGE_SIZE);
+
+  elements.repTableBody.innerHTML = pageRecs.map((rec) => {
+    const farmId   = rec.farmId || state.data.selectedFarmId;
+    const qty      = Number(rec.quantity || 0);
+    const pegou    = rec.quantityPegou != null ? formatInteger(rec.quantityPegou) : "—";
+    const falhou   = rec.verificationDate && rec.quantityPegou != null ? formatInteger(Math.max(0, qty - Number(rec.quantityPegou))) : "—";
+    const taxaN    = rec.verificationDate && rec.quantityPegou != null && qty > 0 ? (Number(rec.quantityPegou) / qty) : null;
+    const taxaStr  = taxaN != null ? `${(taxaN * 100).toFixed(1)}%` : "—";
+    const taxaCls  = taxaN == null ? "" : taxaN >= 0.65 ? "rep2-taxa-ok" : "rep2-taxa-low";
+
     const verifCell = rec.verificationDate
-      ?`<div class="rep-verif-result">
-           <span class="rep-verif-date">${formatDate(rec.verificationDate)}</span>
-           <span class="rep-verif-taxa ${rec.quantityPegou != null && qty > 0 ?((Number(rec.quantityPegou)/qty) >= 0.7 ?"taxa-ok" : "taxa-low") : ""}">${taxa !== "—" ?taxa + " prenhez" : ""}</span>
+      ? `<div class="rep2-verif-cell">
+           <span class="rep2-verif-date">${formatDate(rec.verificationDate)}</span>
+           <span class="rep2-taxa-v ${taxaCls}">${taxaStr !== "—" ? taxaStr + " prenhez" : ""}</span>
          </div>`
-      : `<span class="rep-pendente-badge">Aguardando</span>`;
+      : `<span class="rep2-badge-pend">Aguardando</span>`;
+
     const typeTag = rec.type === "inseminacao"
-      ?`<span class="rep-tag rep-tag-insem">Inseminação</span>`
-      : `<span class="rep-tag rep-tag-entour">Entourada</span>`;
-    const farmLabel = rec.farmName || farmId;
+      ? `<span class="rep2-tag rep2-t-insem">IA</span>`
+      : `<span class="rep2-tag rep2-t-entour">Monta</span>`;
+
     const registrarBtn = !rec.verificationDate
-      ?`<button type="button" class="action-row-btn btn-registrar" data-rep-verif-id="${escapeHtml(rec.id)}" data-farm-id="${escapeHtml(farmId)}" title="Registrar resultado">Registrar</button>`
+      ? `<button type="button" class="rep2-ab rep2-ab-reg" data-rep-verif-id="${escapeHtml(rec.id)}" data-farm-id="${escapeHtml(farmId)}" title="Registrar resultado">Registrar</button>`
       : "";
 
+    const pegouCell  = rec.quantityPegou != null ? `<strong class="rep2-n-ok">${pegou}</strong>` : "—";
+    const falhouCell = rec.verificationDate && rec.quantityPegou != null ? `<strong class="rep2-n-fail">${falhou}</strong>` : "—";
+
     return `
-      <tr class="${rec.verificationDate ?"rep-row-done" : "rep-row-pending"}">
-        <td><code class="movement-code">${escapeHtml(rec.code || "—")}</code></td>
-        <td>${escapeHtml(farmLabel)}</td>
+      <tr class="${rec.verificationDate ? "r-done" : "r-pend"}">
+        <td><span class="rep2-code">${escapeHtml(rec.code || "—")}</span></td>
+        <td>${escapeHtml(rec.farmName || farmId)}</td>
         <td>${typeTag}</td>
         <td>${formatDate(rec.date)}</td>
         <td><strong>${escapeHtml(rec.categoryName || rec.categoryId || "—")}</strong></td>
-        <td>${formatInteger(qty)}</td>
+        <td class="rep2-td-r">${formatInteger(qty)}</td>
         <td>${verifCell}</td>
-        <td><strong class="rep-num-ok">${pegou}</strong></td>
-        <td><strong class="rep-num-fail">${falhou}</strong></td>
-        <td title="${escapeHtml(rec.notes || "")}">${escapeHtml((rec.notes || "").slice(0, 25) + (rec.notes?.length > 25 ?"…" : ""))}</td>
-        <td class="rep-actions-cell">
-          <button type="button" class="action-row-btn btn-edit" data-rep-edit-id="${escapeHtml(rec.id)}" data-farm-id="${escapeHtml(farmId)}" title="Editar">Editar</button>
-          ${registrarBtn}
-          <button type="button" class="action-row-btn btn-delete" data-rep-del-id="${escapeHtml(rec.id)}" data-farm-id="${escapeHtml(farmId)}" title="Excluir">Excluir</button>
+        <td class="rep2-td-r">${pegouCell}</td>
+        <td class="rep2-td-r">${falhouCell}</td>
+        <td class="rep2-td-r"><span class="rep2-taxa-v ${taxaCls}">${taxaStr}</span></td>
+        <td title="${escapeHtml(rec.notes || "")}" style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml((rec.notes || "").slice(0, 28) + (rec.notes?.length > 28 ? "…" : ""))}</td>
+        <td>
+          <div class="rep2-acts">
+            <button type="button" class="rep2-ab rep2-ab-edit" data-rep-edit-id="${escapeHtml(rec.id)}" data-farm-id="${escapeHtml(farmId)}">Editar</button>
+            ${registrarBtn}
+            <button type="button" class="rep2-ab rep2-ab-del" data-rep-del-id="${escapeHtml(rec.id)}" data-farm-id="${escapeHtml(farmId)}">Excluir</button>
+          </div>
         </td>
       </tr>
     `;
   }).join("");
 
-  if (!pageRecords.length) {
-    elements.repTableBody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--muted)">Nenhum registro encontrado${search ?" para a busca realizada" : ". Use o botão Editar em uma linha para criar o primeiro evento"}.</td></tr>`;
+  if (!pageRecs.length) {
+    elements.repTableBody.innerHTML = `
+      <tr><td colspan="12">
+        <div class="rep2-empty">
+          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+          <div class="rep2-empty-t">${search ? "Nenhum registro encontrado" : "Nenhum evento cadastrado"}</div>
+          <div class="rep2-empty-s">${search ? "Tente outros termos de busca." : "Use o botao + Novo Evento Reprodutivo para comecar."}</div>
+        </div>
+      </td></tr>
+    `;
   }
 
-  // Pagination
   renderRepPagination(total, page);
 
-  // Table click delegation
   elements.repTableBody.querySelectorAll("[data-rep-edit-id]").forEach((btn) => {
     btn.addEventListener("click", () => openRepDialog(btn.dataset.repEditId, btn.dataset.farmId));
   });
@@ -12198,25 +12346,18 @@ function renderRepPagination(total, page) {
   if (!elements.repHistoryPagination) return;
   const totalPages = Math.ceil(total / REP_PAGE_SIZE);
   if (totalPages <= 1) {
-    elements.repHistoryPagination.innerHTML = total > 0 ?`<span class="pagination-info">${total} registro${total !== 1 ?"s" : ""}</span>` : "";
+    elements.repHistoryPagination.innerHTML = total > 0 ? `<span class="pagination-info">${total} registro${total !== 1 ? "s" : ""}</span>` : "";
     return;
   }
   elements.repHistoryPagination.innerHTML = `
     <span class="pagination-info">${total} registros</span>
-    <button type="button" class="ghost-btn" id="repPagePrev" ${page === 0 ?"disabled" : ""}>&#8592; Anterior</button>
-    <span class="pagination-info">Página ${page + 1} de ${totalPages}</span>
-    <button type="button" class="ghost-btn" id="repPageNext" ${page >= totalPages - 1 ?"disabled" : ""}>Próxima &#8594;</button>
+    <button type="button" class="ghost-btn" id="repPagePrev" ${page === 0 ? "disabled" : ""}>&larr; Anterior</button>
+    <span class="pagination-info">Pagina ${page + 1} de ${totalPages}</span>
+    <button type="button" class="ghost-btn" id="repPageNext" ${page >= totalPages - 1 ? "disabled" : ""}>Proxima &rarr;</button>
   `;
-  document.getElementById("repPagePrev")?.addEventListener("click", () => {
-    runtime.repPage = Math.max(0, (runtime.repPage || 0) - 1);
-    renderRepHistoryTable();
-  });
-  document.getElementById("repPageNext")?.addEventListener("click", () => {
-    runtime.repPage = Math.min(totalPages - 1, (runtime.repPage || 0) + 1);
-    renderRepHistoryTable();
-  });
+  document.getElementById("repPagePrev")?.addEventListener("click", () => { runtime.repPage = Math.max(0, (runtime.repPage || 0) - 1); renderRepHistoryTable(); });
+  document.getElementById("repPageNext")?.addEventListener("click", () => { runtime.repPage = Math.min(totalPages - 1, (runtime.repPage || 0) + 1); renderRepHistoryTable(); });
 }
-
 function openRepDialog(editingId = null, editingFarmId = null) {
   const dlg = elements.reproducaoDlg;
   if (!dlg) return;
