@@ -356,8 +356,11 @@ app.post("/api/data", authMiddleware, async (req, res) => {
 });
 
 // ── Merge server payload + incoming payload ──────────────────────────────────
-// Strategy: server is the base. Incoming adds NEW records only (by ID).
-// Existing records are never overwritten — only new ones are appended.
+// Strategy:
+//   - New records (ID not on server) are always appended.
+//   - Existing records: if incoming has userModified=true AND a newer updatedAt,
+//     the incoming version wins (user edit beats server stale value).
+//   - Otherwise server record is kept unchanged.
 // Code sequences always take the maximum to avoid collisions.
 // AuditLog entries from both sides are merged and deduplicated.
 function mergeServerPayloads(serverPayload, incomingPayload) {
@@ -379,17 +382,29 @@ function mergeServerPayloads(serverPayload, incomingPayload) {
     const sf = merged.farms[farmId];
     const lf = incomingFarms[farmId];
 
-    function appendNewRecords(serverRecs, localRecs) {
+    function mergeRecords(serverRecs, localRecs) {
       if (!Array.isArray(localRecs)) return serverRecs || [];
-      const existing = new Set((serverRecs || []).map((r) => r.id).filter(Boolean));
-      const toAdd = localRecs.filter((r) => r.id && !existing.has(r.id));
-      return [...(serverRecs || []), ...toAdd];
+      const serverMap = new Map((serverRecs || []).map((r) => [r.id, r]));
+      localRecs.forEach((localRec) => {
+        if (!localRec.id) return;
+        if (!serverMap.has(localRec.id)) {
+          serverMap.set(localRec.id, localRec);
+        } else if (localRec.userModified && localRec.updatedAt) {
+          const serverRec = serverMap.get(localRec.id);
+          const serverTs = serverRec.updatedAt ? new Date(serverRec.updatedAt).getTime() : 0;
+          const localTs  = new Date(localRec.updatedAt).getTime();
+          if (localTs > serverTs) {
+            serverMap.set(localRec.id, localRec);
+          }
+        }
+      });
+      return Array.from(serverMap.values());
     }
 
-    sf.movements           = appendNewRecords(sf.movements, lf.movements);
-    sf.sanitaryRecords     = appendNewRecords(sf.sanitaryRecords, lf.sanitaryRecords);
-    sf.reproductionRecords = appendNewRecords(sf.reproductionRecords, lf.reproductionRecords);
-    sf.monthlyRecords      = appendNewRecords(sf.monthlyRecords, lf.monthlyRecords);
+    sf.movements           = mergeRecords(sf.movements, lf.movements);
+    sf.sanitaryRecords     = mergeRecords(sf.sanitaryRecords, lf.sanitaryRecords);
+    sf.reproductionRecords = mergeRecords(sf.reproductionRecords, lf.reproductionRecords);
+    sf.monthlyRecords      = mergeRecords(sf.monthlyRecords, lf.monthlyRecords);
 
     sf.movementCodeSequence      = Math.max(sf.movementCodeSequence || 0, lf.movementCodeSequence || 0);
     sf.sanitaryCodeSequence      = Math.max(sf.sanitaryCodeSequence || 0, lf.sanitaryCodeSequence || 0);

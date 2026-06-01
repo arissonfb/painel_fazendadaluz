@@ -8709,6 +8709,7 @@ async function handleMovementSubmit(event) {
 
   // If editing, revert old movement first then remove it
   const editing = runtime.editingMovement;
+  const editingOriginalId = editing?.movementId || null;
   let editingRollback = null;
   const rollbackEditing = () => {
     if (!editingRollback) return;
@@ -8854,7 +8855,7 @@ async function handleMovementSubmit(event) {
   updatePotreroQuantitiesFromAllocation(farm);
 
   farm.movements.push({
-    id: createMovementId(),
+    id: editingOriginalId || createMovementId(),
     code: generateMovementCode(farm),
     type,
     date,
@@ -8868,7 +8869,9 @@ async function handleMovementSubmit(event) {
     currency: getFarmCurrency(farm.id),
     notes,
     potreiro: selectedPotreiro,
-    photos: movementTypeSupportsPhotos(type) ?runtime.movementPhotoDrafts.map((photo) => ({ ...photo })) : []
+    photos: movementTypeSupportsPhotos(type) ?runtime.movementPhotoDrafts.map((photo) => ({ ...photo })) : [],
+    userModified: true,
+    updatedAt: new Date().toISOString()
   });
 
   if (farm.declaredTotal === 0) {
@@ -10948,6 +10951,7 @@ function ensureDataShape(data, options = {}) {
       photos: normalizeMovementPhotos(movement.photos),
       saleDetails: movement.saleDetails
         ?{
+          ...movement.saleDetails,
           mode: movement.saleDetails.mode || "vivo",
           pricePerKg: Number(movement.saleDetails.pricePerKg || 0),
           weightKg: Number(movement.saleDetails.weightKg || 0)
@@ -10957,6 +10961,7 @@ function ensureDataShape(data, options = {}) {
     ensureSanitaryCodesForFarm(farm);
     ensureMovementCodesForFarm(farm);
     farm.monthlyRecords = farm.monthlyRecords.map((record) => ({
+      ...record,
       id: record.id || createMovementId(),
       sourceId: record.sourceId || "",
       period: record.period || `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`,
@@ -11040,8 +11045,9 @@ function ensureDataShape(data, options = {}) {
             ...movement,
             id: movement.sourceId || createMovementId()
           });
-        } else if (needsMovementUpdate) {
+        } else if (needsMovementUpdate && !farm.movements[existingIdx].userModified) {
           // Update existing movement with corrected values (e.g. USD→BRL conversion)
+          // Skip if user manually edited this movement (userModified flag protects their changes)
           farm.movements[existingIdx] = {
             ...farm.movements[existingIdx],
             value: movement.value,
