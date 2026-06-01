@@ -2038,7 +2038,14 @@ function renderSyncStatus() {
   if (elements.syncRetryButton) {
     elements.syncRetryButton.hidden = !canRetry;
   }
-  setApiNotice(runtime.apiNoticeMessage, runtime.apiNoticeLevel);
+  if (isAuthenticated() && !runtime.cloudToken && runtime.apiNoticeMessage.startsWith("Modo local")) {
+    setApiNotice(runtime.apiNoticeMessage, runtime.apiNoticeLevel, {
+      label: "Sair para reconectar",
+      fn: () => { saveData({ skipCloud: true }); window.location.reload(); }
+    });
+  } else {
+    setApiNotice(runtime.apiNoticeMessage, runtime.apiNoticeLevel);
+  }
 }
 
 function renderAuthState() {
@@ -2505,7 +2512,7 @@ function completaLoginLocal(user) {
   runtime.cloudToken = null;
   runtime.cloudConflict = false;
   runtime.cloudRevision = 0;
-  setApiNotice("Modo local ativo — sincronização com o servidor indisponível. Seus dados locais estão íntegros.", "warn", { label: "Sair para reconectar", fn: handleLogout });
+  setApiNotice("Modo local ativo — sincronização com o servidor indisponível. Seus dados locais estão íntegros.", "warn", { label: "Sair para reconectar", fn: () => { saveData({ skipCloud: true }); window.location.reload(); } });
   state.data.auth.sessionUserId = user.id;
   elements.loginFeedback.hidden = true;
   elements.loginFeedback.textContent = "";
