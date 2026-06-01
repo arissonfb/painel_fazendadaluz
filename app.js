@@ -1,7 +1,7 @@
 ﻿const STORAGE_KEY = "painelPecuario.v2";
 const API_URL = "https://painel-pecuario-api.onrender.com";
 const MOBILE_APP_CONFIG = {
-  androidDownloadUrl: "https://expo.dev/artifacts/eas/vb8ogAiUpRsXSZbgX1iQA2.apk",
+  androidDownloadUrl: "https://expo.dev/artifacts/eas/61BbDC7B4J9BtBTEEW9B7Y.apk",
   iosDownloadUrl: "",
   androidFallbackUrl: "",
   iosFallbackUrl: "",
@@ -3199,10 +3199,10 @@ function bindEvents() {
   elements.vendasNovaBtn?.addEventListener("click", () => openMovementDialog("venda"));
   elements.exportVendasPdfBtn?.addEventListener("click", exportVendasPdfReport);
   elements.vendasHistorySearch?.addEventListener("input", () => { runtime.vendasPage = 0; renderVendasTable(); });
-  elements.vendasFilterFarm?.addEventListener("change", () => { runtime.vendasPage = 0; renderVendasTable(); });
-  elements.vendasFilterDateFrom?.addEventListener("change", () => { runtime.vendasPage = 0; renderVendasTable(); });
-  elements.vendasFilterDateTo?.addEventListener("change", () => { runtime.vendasPage = 0; renderVendasTable(); });
-  elements.vendasFilterCategory?.addEventListener("change", () => { runtime.vendasPage = 0; renderVendasTable(); });
+  elements.vendasFilterFarm?.addEventListener("change", () => { runtime.vendasPage = 0; renderVendasKpiCards(); renderVendasCharts(); renderVendasTable(); });
+  elements.vendasFilterDateFrom?.addEventListener("change", () => { runtime.vendasPage = 0; renderVendasKpiCards(); renderVendasCharts(); renderVendasTable(); });
+  elements.vendasFilterDateTo?.addEventListener("change", () => { runtime.vendasPage = 0; renderVendasKpiCards(); renderVendasCharts(); renderVendasTable(); });
+  elements.vendasFilterCategory?.addEventListener("change", () => { runtime.vendasPage = 0; renderVendasKpiCards(); renderVendasCharts(); renderVendasTable(); });
   elements.clearVendasFiltersBtn?.addEventListener("click", () => {
     if (elements.vendasHistorySearch) elements.vendasHistorySearch.value = "";
     if (elements.vendasFilterFarm) elements.vendasFilterFarm.value = "";
@@ -3210,13 +3210,15 @@ function bindEvents() {
     if (elements.vendasFilterDateTo) elements.vendasFilterDateTo.value = "";
     if (elements.vendasFilterCategory) elements.vendasFilterCategory.value = "";
     runtime.vendasPage = 0;
+    renderVendasKpiCards();
+    renderVendasCharts();
     renderVendasTable();
   });
   elements.comprasHistorySearch?.addEventListener("input", () => { runtime.comprasPage = 0; renderComprasTable(); });
-  elements.comprasFilterFarm?.addEventListener("change", () => { runtime.comprasPage = 0; renderComprasTable(); });
-  elements.comprasFilterDateFrom?.addEventListener("change", () => { runtime.comprasPage = 0; renderComprasTable(); });
-  elements.comprasFilterDateTo?.addEventListener("change", () => { runtime.comprasPage = 0; renderComprasTable(); });
-  elements.comprasFilterCategory?.addEventListener("change", () => { runtime.comprasPage = 0; renderComprasTable(); });
+  elements.comprasFilterFarm?.addEventListener("change", () => { runtime.comprasPage = 0; renderComprasKpiCards(); renderComprasCharts(); renderComprasTable(); });
+  elements.comprasFilterDateFrom?.addEventListener("change", () => { runtime.comprasPage = 0; renderComprasKpiCards(); renderComprasCharts(); renderComprasTable(); });
+  elements.comprasFilterDateTo?.addEventListener("change", () => { runtime.comprasPage = 0; renderComprasKpiCards(); renderComprasCharts(); renderComprasTable(); });
+  elements.comprasFilterCategory?.addEventListener("change", () => { runtime.comprasPage = 0; renderComprasKpiCards(); renderComprasCharts(); renderComprasTable(); });
   elements.clearComprasFiltersBtn?.addEventListener("click", () => {
     if (elements.comprasHistorySearch) elements.comprasHistorySearch.value = "";
     if (elements.comprasFilterFarm) elements.comprasFilterFarm.value = "";
@@ -3224,6 +3226,8 @@ function bindEvents() {
     if (elements.comprasFilterDateTo) elements.comprasFilterDateTo.value = "";
     if (elements.comprasFilterCategory) elements.comprasFilterCategory.value = "";
     runtime.comprasPage = 0;
+    renderComprasKpiCards();
+    renderComprasCharts();
     renderComprasTable();
   });
 
@@ -12805,11 +12809,459 @@ function handleRepVerifSubmit() {
 
 const COMPRAS_PAGE_SIZE = 50;
 
+const COMMERCIAL_CHART_THEME = {
+  compra: {
+    name: "Compras",
+    headLabel: "Cabeças adquiridas",
+    valueLabel: "Valor total",
+    emptyFarm: "Nenhuma compra registrada no período selecionado.",
+    emptyEvolution: "Nenhuma compra registrada no ano selecionado.",
+    primary: "#2f6b4a",
+    primarySoft: "rgba(47, 107, 74, 0.54)",
+    primaryBest: "#1f5a39",
+    accent: "#b89242",
+    accentSoft: "rgba(184, 146, 66, 0.09)",
+  },
+  venda: {
+    name: "Vendas",
+    headLabel: "Cabeças vendidas",
+    valueLabel: "Receita total",
+    emptyFarm: "Nenhuma venda registrada no período selecionado.",
+    emptyEvolution: "Nenhuma venda registrada no ano selecionado.",
+    primary: "#8f3438",
+    primarySoft: "rgba(143, 52, 56, 0.52)",
+    primaryBest: "#6f252a",
+    accent: "#bf9844",
+    accentSoft: "rgba(191, 152, 68, 0.09)",
+  },
+};
+
+const commercialValueFmt = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+  maximumFractionDigits: 0,
+});
+
+const commercialFullValueFmt = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+function formatCommercialMoney(value, compact = false) {
+  const num = Number(value || 0);
+  if (!num) return "—";
+  return compact ? commercialValueFmt.format(num) : commercialFullValueFmt.format(num);
+}
+
+function getCommercialTableFilters(type) {
+  const prefix = type === "compra" ? "compras" : "vendas";
+  return {
+    farm: elements[`${prefix}FilterFarm`]?.value || "",
+    dateFrom: elements[`${prefix}FilterDateFrom`]?.value || "",
+    dateTo: elements[`${prefix}FilterDateTo`]?.value || "",
+    category: elements[`${prefix}FilterCategory`]?.value || "",
+  };
+}
+
+function getCommercialMovements(type, options = {}) {
+  const { includeMonth = true, includeTableFilters = true, filterType = type } = options;
+  const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
+  const selectedFarm = getFarm();
+  const base = isTotalView
+    ? getAllFarms().flatMap((farm) =>
+        (farm.movements || [])
+          .filter((m) => m.type === type)
+          .map((m) => ({ ...m, _farmId: farm.id, _farmName: farm.name }))
+      )
+    : (selectedFarm?.movements || [])
+        .filter((m) => m.type === type)
+        .map((m) => ({ ...m, _farmId: selectedFarm.id, _farmName: selectedFarm.name }));
+
+  const year = state.filters.year;
+  const month = state.filters.month;
+  const tableFilters = includeTableFilters ? getCommercialTableFilters(filterType) : {};
+
+  return base.filter((m) => {
+    const d = String(m.date || "");
+    if (year !== "all" && !d.startsWith(year)) return false;
+    if (includeMonth && month !== "all" && d.slice(5, 7) !== String(month).padStart(2, "0")) return false;
+    if (state.data.selectedFarmId === TOTAL_FARM_ID && tableFilters.farm && m._farmId !== tableFilters.farm) return false;
+    if (tableFilters.dateFrom && d < tableFilters.dateFrom) return false;
+    if (tableFilters.dateTo && d > tableFilters.dateTo) return false;
+    if (tableFilters.category && m.categoryName !== tableFilters.category) return false;
+    return true;
+  });
+}
+
+function summarizeCommercialMovements(movs) {
+  const heads = movs.reduce((sum, m) => sum + Number(m.quantity || 0), 0);
+  const value = movs.reduce((sum, m) => sum + Number(m.value || 0), 0);
+  return {
+    operations: movs.length,
+    heads,
+    value,
+    average: heads > 0 ? value / heads : 0,
+  };
+}
+
+function getTopCommercialFarm(movs) {
+  const byFarm = new Map();
+  movs.forEach((m) => {
+    const item = byFarm.get(m._farmId) || { name: m._farmName || "—", heads: 0, value: 0 };
+    item.heads += Number(m.quantity || 0);
+    item.value += Number(m.value || 0);
+    byFarm.set(m._farmId, item);
+  });
+  return [...byFarm.values()].sort((a, b) => b.heads - a.heads || b.value - a.value)[0] || null;
+}
+
+function renderCommercialKpiCards(container, focusType) {
+  if (!container) return;
+
+  const sales = getCommercialMovements("venda", { filterType: focusType });
+  const purchases = getCommercialMovements("compra", { filterType: focusType });
+  const saleStats = summarizeCommercialMovements(sales);
+  const purchaseStats = summarizeCommercialMovements(purchases);
+  const combinedHeads = saleStats.heads + purchaseStats.heads;
+  const combinedValue = saleStats.value + purchaseStats.value;
+  const ticket = combinedHeads > 0 ? combinedValue / combinedHeads : 0;
+  const topFarm = getTopCommercialFarm(focusType === "compra" ? purchases : sales);
+
+  const card = ({ label, value, desc, tone, badge }) => `
+    <article class="com2-kpi-card com2-kpi-card-${tone}">
+      <div class="com2-kpi-topline">
+        <span class="com2-kpi-dot"></span>
+        <span class="com2-kpi-badge com2-badge-${tone}">${badge}</span>
+      </div>
+      <p class="com2-kpi-label">${label}</p>
+      <p class="com2-kpi-value">${value}</p>
+      <p class="com2-kpi-desc">${desc}</p>
+    </article>`;
+
+  container.innerHTML = `
+    <div class="com2-kpi-grid">
+      ${card({ label: "Cabeças vendidas", value: formatInteger(saleStats.heads), desc: `${formatInteger(saleStats.operations)} operações de venda`, tone: "v", badge: "Saídas" })}
+      ${card({ label: "Receita total", value: formatCommercialMoney(saleStats.value, true), desc: "valor bruto vendido no período", tone: "fin", badge: "Receita" })}
+      ${card({ label: "Cabeças compradas", value: formatInteger(purchaseStats.heads), desc: `${formatInteger(purchaseStats.operations)} operações de compra`, tone: "c", badge: "Entradas" })}
+      ${card({ label: "Valor em compras", value: formatCommercialMoney(purchaseStats.value, true), desc: "capital movimentado em aquisições", tone: "fin", badge: "Investimento" })}
+      ${card({ label: "Ticket médio/cabeça", value: formatCommercialMoney(ticket, true), desc: "média combinada de compras e vendas", tone: "neu", badge: "Média" })}
+      ${card({
+        label: "Maior volume",
+        value: topFarm ? escapeHtml(topFarm.name) : "—",
+        desc: topFarm ? `${formatInteger(topFarm.heads)} cabeças no recorte atual` : "sem movimentação no período",
+        tone: focusType === "compra" ? "c" : "v",
+        badge: focusType === "compra" ? "Compra" : "Venda",
+      })}
+    </div>`;
+}
+
+function buildCommercialFarmSeries(type) {
+  const movs = getCommercialMovements(type);
+  const grouped = new Map();
+  movs.forEach((m) => {
+    const item = grouped.get(m._farmId) || { farmId: m._farmId, farmName: m._farmName, heads: 0, value: 0 };
+    item.heads += Number(m.quantity || 0);
+    item.value += Number(m.value || 0);
+    grouped.set(m._farmId, item);
+  });
+  const rows = [...grouped.values()].filter((item) => item.heads > 0).sort((a, b) => b.heads - a.heads || b.value - a.value);
+  const totalHeads = rows.reduce((sum, item) => sum + item.heads, 0);
+  return rows.map((item, index) => ({
+    ...item,
+    percent: totalHeads > 0 ? (item.heads / totalHeads) * 100 : 0,
+    isLeader: index === 0,
+  }));
+}
+
+function buildCommercialMonthlySeries(type) {
+  const movs = getCommercialMovements(type, { includeMonth: false });
+  const monthly = Array.from({ length: 12 }, (_, index) => ({
+    month: String(index + 1).padStart(2, "0"),
+    label: MONTH_NAMES[index].slice(0, 3),
+    heads: 0,
+    value: 0,
+  }));
+
+  movs.forEach((m) => {
+    const idx = Number(String(m.date || "").slice(5, 7)) - 1;
+    if (idx >= 0 && idx < 12) {
+      monthly[idx].heads += Number(m.quantity || 0);
+      monthly[idx].value += Number(m.value || 0);
+    }
+  });
+
+  const maxHeads = Math.max(...monthly.map((item) => item.heads));
+  const maxValue = Math.max(...monthly.map((item) => item.value));
+  return monthly.map((item) => ({
+    ...item,
+    isPeak: item.heads === maxHeads && maxHeads > 0,
+    isValuePeak: item.value === maxValue && maxValue > 0,
+  }));
+}
+
+function setCommercialEmptyState(canvas, className, message, show) {
+  const parent = canvas.parentElement;
+  if (show) {
+    canvas.style.display = "none";
+    if (!parent.querySelector(`.${className}`)) {
+      const p = document.createElement("p");
+      p.className = `com2-empty ${className}`;
+      p.innerHTML = `<span class="com2-empty-t">${message}</span><span class="com2-empty-s">Ajuste os filtros ou registre uma nova operação.</span>`;
+      parent.appendChild(p);
+    }
+    return;
+  }
+  canvas.style.display = "";
+  parent.querySelector(`.${className}`)?.remove();
+}
+
+const commercialBarLabelPlugin = {
+  id: "commercialBarLabelPlugin",
+  afterDatasetsDraw(chart) {
+    const { ctx } = chart;
+    const meta = chart.getDatasetMeta(0);
+    const rows = chart.config.options.plugins.commercialMeta?.rows || [];
+    ctx.save();
+    ctx.font = "700 11px Inter, Arial, sans-serif";
+    ctx.textBaseline = "middle";
+    meta.data.forEach((bar, index) => {
+      const row = rows[index];
+      if (!row) return;
+      const label = `${formatInteger(row.heads)} cab. · ${row.percent.toFixed(1)}%`;
+      ctx.fillStyle = row.isLeader ? "#1f2937" : "#667085";
+      ctx.textAlign = "right";
+      ctx.fillText(label, chart.chartArea.right - 4, bar.y);
+    });
+    ctx.restore();
+  },
+};
+
+const commercialPeakPlugin = {
+  id: "commercialPeakPlugin",
+  afterDatasetsDraw(chart) {
+    const rows = chart.config.options.plugins.commercialMeta?.rows || [];
+    const type = chart.config.options.plugins.commercialMeta?.type || "venda";
+    const theme = COMMERCIAL_CHART_THEME[type];
+    const { ctx } = chart;
+    const meta = chart.getDatasetMeta(0);
+    ctx.save();
+    meta.data.forEach((bar, index) => {
+      const row = rows[index];
+      if (!row?.isPeak) return;
+      ctx.fillStyle = theme.primaryBest;
+      ctx.font = "700 10px Inter, Arial, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("pico", bar.x, Math.max(12, bar.y - 8));
+    });
+    ctx.restore();
+  },
+};
+
+function renderCommercialFarmBarChart(type, canvasId, chartKey) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const theme = COMMERCIAL_CHART_THEME[type];
+  if (state.charts[chartKey]) {
+    state.charts[chartKey].destroy();
+    state.charts[chartKey] = null;
+  }
+
+  const rows = buildCommercialFarmSeries(type);
+  setCommercialEmptyState(canvas, `${type}-farm-empty`, theme.emptyFarm, !rows.length);
+  if (!rows.length) return;
+
+  const chartH = Math.min(500, Math.max(300, rows.length * 48 + 84));
+  canvas.style.setProperty("height", `${chartH}px`, "important");
+  canvas.style.setProperty("max-height", `${chartH}px`, "important");
+  canvas.removeAttribute("height");
+  canvas.removeAttribute("width");
+
+  state.charts[chartKey] = new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels: rows.map((row) => row.farmName),
+      datasets: [{
+        label: theme.headLabel,
+        data: rows.map((row) => row.heads),
+        backgroundColor: rows.map((row) => row.isLeader ? theme.primaryBest : theme.primarySoft),
+        borderColor: rows.map((row) => row.isLeader ? theme.primaryBest : theme.primary),
+        borderWidth: 1,
+        borderRadius: 8,
+        borderSkipped: false,
+        barThickness: 15,
+      }],
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      maintainAspectRatio: false,
+      resizeDelay: 120,
+      layout: { padding: { right: 122, top: 8, bottom: 8, left: 2 } },
+      plugins: {
+        commercialMeta: { rows },
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: "#111827",
+          titleColor: "#ffffff",
+          bodyColor: "rgba(255,255,255,0.86)",
+          padding: 14,
+          cornerRadius: 10,
+          displayColors: false,
+          callbacks: {
+            title: (items) => rows[items[0].dataIndex]?.farmName || "",
+            label: (ctx) => {
+              const row = rows[ctx.dataIndex];
+              return [
+                `${theme.headLabel}: ${formatInteger(row.heads)}`,
+                `${theme.valueLabel}: ${formatCommercialMoney(row.value)}`,
+                `Ticket médio: ${formatCommercialMoney(row.heads > 0 ? row.value / row.heads : 0)}`,
+                `Participação: ${row.percent.toFixed(1)}%`,
+              ];
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          ticks: { precision: 0, color: "#8a94a3", font: { size: 10.5 } },
+          grid: { color: "rgba(31, 41, 55, 0.032)", drawTicks: false },
+          border: { display: false },
+        },
+        y: {
+          grid: { display: false },
+          border: { display: false },
+          ticks: { color: "#202938", font: { size: 12, weight: "700" }, padding: 12 },
+        },
+      },
+    },
+    plugins: [commercialBarLabelPlugin],
+  });
+}
+
+function renderCommercialEvolutionChart(type, canvasId, chartKey) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const theme = COMMERCIAL_CHART_THEME[type];
+  if (state.charts[chartKey]) {
+    state.charts[chartKey].destroy();
+    state.charts[chartKey] = null;
+  }
+
+  const rows = buildCommercialMonthlySeries(type);
+  const hasData = rows.some((row) => row.heads > 0 || row.value > 0);
+  setCommercialEmptyState(canvas, `${type}-evolution-empty`, theme.emptyEvolution, !hasData);
+  if (!hasData) return;
+
+  canvas.style.setProperty("height", "326px", "important");
+  canvas.style.setProperty("max-height", "326px", "important");
+  canvas.removeAttribute("height");
+  canvas.removeAttribute("width");
+
+  state.charts[chartKey] = new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels: rows.map((row) => row.label),
+      datasets: [
+        {
+          label: theme.headLabel,
+          data: rows.map((row) => row.heads),
+          backgroundColor: rows.map((row) => row.isPeak ? theme.primaryBest : theme.primarySoft),
+          borderRadius: 9,
+          borderSkipped: false,
+          yAxisID: "yLeft",
+          barPercentage: 0.46,
+          categoryPercentage: 0.68,
+        },
+        {
+          type: "line",
+          label: theme.valueLabel,
+          data: rows.map((row) => row.value),
+          borderColor: theme.accent,
+          backgroundColor: theme.accentSoft,
+          pointBackgroundColor: rows.map((row) => row.isValuePeak ? "#7a5c00" : "#ffffff"),
+          pointBorderColor: rows.map((row) => row.isValuePeak ? "#ffffff" : "transparent"),
+          pointBorderWidth: rows.map((row) => row.isValuePeak ? 2 : 0),
+          pointRadius: rows.map((row) => row.isValuePeak ? 5 : 0),
+          pointHoverRadius: 5,
+          tension: 0.38,
+          fill: true,
+          yAxisID: "yRight",
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      resizeDelay: 120,
+      interaction: { mode: "index", intersect: false },
+      layout: { padding: { top: 16, right: 8, left: 2 } },
+      plugins: {
+        commercialMeta: { rows, type },
+        legend: {
+          position: "bottom",
+          labels: { padding: 18, boxWidth: 8, boxHeight: 8, usePointStyle: true, pointStyle: "circle", font: { size: 11, weight: "700" }, color: "#667085" },
+        },
+        tooltip: {
+          backgroundColor: "#111827",
+          titleColor: "#ffffff",
+          bodyColor: "rgba(255,255,255,0.86)",
+          padding: 14,
+          cornerRadius: 10,
+          callbacks: {
+            title: (items) => MONTH_NAMES[items[0].dataIndex],
+            label: (ctx) => {
+              const row = rows[ctx.dataIndex];
+              if (ctx.dataset.yAxisID === "yLeft") return `${theme.headLabel}: ${formatInteger(row.heads)}`;
+              return `${theme.valueLabel}: ${formatCommercialMoney(row.value)}`;
+            },
+            afterBody: (items) => {
+              const row = rows[items[0].dataIndex];
+              const notes = [];
+              if (row.isPeak) notes.push("Maior volume de cabeças no ano");
+              if (row.isValuePeak) notes.push("Maior valor financeiro no ano");
+              return notes;
+            },
+          },
+        },
+      },
+      scales: {
+        yLeft: {
+          beginAtZero: true,
+          position: "left",
+          ticks: { precision: 0, color: theme.primary, font: { size: 10.5, weight: "700" } },
+          grid: { color: "rgba(31, 41, 55, 0.032)" },
+          border: { display: false },
+        },
+        yRight: {
+          beginAtZero: true,
+          position: "right",
+          ticks: {
+            color: theme.accent,
+            font: { size: 10.5, weight: "700" },
+            callback: (v) => v > 0 ? `R$ ${new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 }).format(v).replace("R$", "").trim()}` : "",
+          },
+          grid: { display: false },
+          border: { display: false },
+        },
+        x: {
+          ticks: { color: "#667085", font: { size: 10.5, weight: "700" } },
+          grid: { display: false },
+          border: { display: false },
+        },
+      },
+    },
+    plugins: [commercialPeakPlugin],
+  });
+}
+
 function renderComprasView() {
   renderComprasFarmSwitch();
+  renderComprasFilterSelects();
   renderComprasKpiCards();
   renderComprasCharts();
-  renderComprasFilterSelects();
   renderComprasTable();
 }
 
@@ -12844,52 +13296,7 @@ function getComprasMovements() {
 }
 
 function renderComprasKpiCards() {
-  if (!elements.comprasKpiSection) return;
-
-  const allMovs = getComprasMovements();
-  const year = state.filters.year;
-  const month = state.filters.month;
-
-  const movs = allMovs.filter((m) => {
-    if (year !== "all" && !String(m.date || "").startsWith(year)) return false;
-    if (month !== "all" && String(m.date || "").slice(5, 7) !== String(month).padStart(2, "0")) return false;
-    return true;
-  });
-
-  const allFarmsInView = state.data.selectedFarmId === TOTAL_FARM_ID ? getAllFarms() : [getFarm()].filter(Boolean);
-  const brlFarms = new Set(allFarmsInView.filter((f) => getFarmCurrency(f.id) === "BRL").map((f) => f.id));
-  const usdFarms = new Set(allFarmsInView.filter((f) => getFarmCurrency(f.id) === "USD").map((f) => f.id));
-
-  const totalOps = movs.length;
-  const totalCabecas = movs.reduce((s, m) => s + Number(m.quantity || 0), 0);
-  const totalBRL = movs.filter((m) => brlFarms.has(m._farmId)).reduce((s, m) => s + Number(m.value || 0), 0);
-  const totalUSD = movs.filter((m) => usdFarms.has(m._farmId)).reduce((s, m) => s + Number(m.value || 0), 0);
-  const cabecasBRL = movs.filter((m) => brlFarms.has(m._farmId)).reduce((s, m) => s + Number(m.quantity || 0), 0);
-  const cabecasUSD = movs.filter((m) => usdFarms.has(m._farmId)).reduce((s, m) => s + Number(m.quantity || 0), 0);
-  const avgBRL = cabecasBRL > 0 ? totalBRL / cabecasBRL : 0;
-  const avgUSD = cabecasUSD > 0 ? totalUSD / cabecasUSD : 0;
-  const fmtBRL = (v) => v > 0 ? `R$ ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)}` : "—";
-  const fmtUSD = (v) => v > 0 ? `US$ ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)}` : "—";
-
-  const mostRecentDate = movs.length ? movs.slice().sort((a, b) => new Date(b.date) - new Date(a.date))[0].date : null;
-
-  const kpi = (label, value, sub, cls = "") => `
-    <article class="comercial-kpi-card">
-      <p class="comercial-kpi-label">${label}</p>
-      <p class="comercial-kpi-value ${cls}">${value}</p>
-      <p class="comercial-kpi-sub">${sub}</p>
-    </article>`;
-
-  elements.comprasKpiSection.innerHTML = `
-    <div class="comercial-kpi-grid">
-      ${kpi("Operações", formatInteger(totalOps), "compras no período")}
-      ${kpi("Cabeças adquiridas", formatInteger(totalCabecas), "animais comprados")}
-      ${kpi("Investimento BRL", fmtBRL(totalBRL), "total em reais", "fin")}
-      ${kpi("Investimento USD", fmtUSD(totalUSD), "total em dólares", "fin")}
-      ${kpi("Média/cabeça BRL", fmtBRL(avgBRL), "custo médio (BRL)", "fin")}
-      ${kpi("Média/cabeça USD", fmtUSD(avgUSD), "custo médio (USD)", "fin")}
-    </div>
-  `;
+  renderCommercialKpiCards(elements.comprasKpiSection, "compra");
 }
 
 function renderComprasCharts() {
@@ -12898,235 +13305,11 @@ function renderComprasCharts() {
 }
 
 function renderComprasBarChart() {
-  const canvas = document.getElementById("comprasBarChart");
-  if (!canvas) return;
-
-  if (state.charts.comprasBar) {
-    state.charts.comprasBar.destroy();
-    state.charts.comprasBar = null;
-  }
-
-  const year = state.filters.year;
-  const month = state.filters.month;
-  const farms = getAllFarms();
-  const labels = [];
-  const dataHeads = [];
-  const dataValues = [];
-
-  farms.forEach((farm) => {
-    const movs = farm.movements.filter((m) => {
-      if (m.type !== "compra") return false;
-      const d = m.date || "";
-      if (year !== "all" && !d.startsWith(year)) return false;
-      if (month !== "all" && d.slice(5, 7) !== String(month).padStart(2, "0")) return false;
-      return true;
-    });
-    const heads = movs.reduce((s, m) => s + Number(m.quantity || 0), 0);
-    if (heads > 0) {
-      labels.push(farm.name);
-      dataHeads.push(heads);
-      dataValues.push(movs.reduce((s, m) => s + Number(m.value || 0), 0));
-    }
-  });
-
-  if (!labels.length) {
-    canvas.style.display = "none";
-    const existing = canvas.parentElement.querySelector(".compras-empty-note");
-    if (!existing) {
-      const p = document.createElement("p");
-      p.className = "field-note compras-empty-note";
-      p.style.cssText = "text-align:center;padding:24px";
-      p.textContent = "Nenhuma compra registrada no período selecionado.";
-      canvas.parentElement.appendChild(p);
-    }
-    return;
-  }
-  canvas.style.display = "";
-  canvas.parentElement.querySelector(".compras-empty-note")?.remove();
-
-  const chartH = Math.min(480, Math.max(260, labels.length * 52 + 80));
-  canvas.style.setProperty("height", `${chartH}px`, "important");
-  canvas.style.setProperty("max-height", `${chartH}px`, "important");
-  canvas.removeAttribute("height");
-  canvas.removeAttribute("width");
-
-  state.charts.comprasBar = new Chart(canvas, {
-    type: "bar",
-    data: {
-      labels,
-      datasets: [
-        {
-          label: "Cabeças compradas",
-          data: dataHeads,
-          backgroundColor: "#1b6e3e",
-          borderRadius: 5,
-          borderSkipped: false,
-          barThickness: 18
-        }
-      ]
-    },
-    options: {
-      indexAxis: "y",
-      responsive: true,
-      maintainAspectRatio: false,
-      resizeDelay: 120,
-      layout: { padding: { right: 8, top: 8, bottom: 8 } },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: "#111111",
-          titleColor: "#ffffff",
-          bodyColor: "rgba(255,255,255,0.80)",
-          padding: 12,
-          cornerRadius: 8,
-          callbacks: {
-            label: (ctx) => {
-              const val = dataValues[ctx.dataIndex];
-              const sym = "R$/US$";
-              const fmtV = val > 0 ? ` | Valor: ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val)}` : "";
-              return ` ${ctx.parsed.x} cabeças${fmtV}`;
-            }
-          }
-        }
-      },
-      scales: {
-        x: {
-          beginAtZero: true,
-          ticks: { precision: 0, color: "#aaaaaa", font: { size: 10 } },
-          grid: { color: "rgba(0,0,0,0.05)", drawTicks: false },
-          border: { display: false }
-        },
-        y: {
-          grid: { display: false },
-          border: { display: false },
-          ticks: { color: "#222222", font: { size: 12, weight: "600" }, padding: 10 }
-        }
-      }
-    }
-  });
+  renderCommercialFarmBarChart("compra", "comprasBarChart", "comprasBar");
 }
 
 function renderComprasEvolutionChart() {
-  const canvas = document.getElementById("comprasEvolutionChart");
-  if (!canvas) return;
-
-  if (state.charts.comprasEvolution) {
-    state.charts.comprasEvolution.destroy();
-    state.charts.comprasEvolution = null;
-  }
-
-  const year = state.filters.year;
-  const allMovs = getComprasMovements().filter((m) => {
-    if (year !== "all" && !String(m.date || "").startsWith(year)) return false;
-    return true;
-  });
-
-  const monthlyHeads = {};
-  const monthlyValues = {};
-  for (let i = 1; i <= 12; i++) {
-    const key = String(i).padStart(2, "0");
-    monthlyHeads[key] = 0;
-    monthlyValues[key] = 0;
-  }
-
-  allMovs.forEach((m) => {
-    const mo = String(m.date || "").slice(5, 7);
-    if (monthlyHeads[mo] !== undefined) {
-      monthlyHeads[mo] += Number(m.quantity || 0);
-      monthlyValues[mo] += Number(m.value || 0);
-    }
-  });
-
-  const labels = MONTH_NAMES.map((n) => n.slice(0, 3));
-  const headsData = Object.values(monthlyHeads);
-  const valuesData = Object.values(monthlyValues);
-  const hasData = headsData.some((v) => v > 0);
-
-  if (!hasData) {
-    canvas.style.display = "none";
-    const existing = canvas.parentElement.querySelector(".compras-evo-empty");
-    if (!existing) {
-      const p = document.createElement("p");
-      p.className = "field-note compras-evo-empty";
-      p.style.cssText = "text-align:center;padding:24px";
-      p.textContent = "Nenhuma compra registrada no ano selecionado.";
-      canvas.parentElement.appendChild(p);
-    }
-    return;
-  }
-  canvas.style.display = "";
-  canvas.parentElement.querySelector(".compras-evo-empty")?.remove();
-  canvas.removeAttribute("height");
-  canvas.removeAttribute("width");
-
-  state.charts.comprasEvolution = new Chart(canvas, {
-    type: "bar",
-    data: {
-      labels,
-      datasets: [
-        {
-          label: "Cabeças",
-          data: headsData,
-          backgroundColor: "rgba(27, 110, 62, 0.75)",
-          borderRadius: 4,
-          borderSkipped: false,
-          yAxisID: "yLeft"
-        },
-        {
-          type: "line",
-          label: "Valor total",
-          data: valuesData,
-          borderColor: "#c9a84c",
-          backgroundColor: "rgba(201, 168, 76, 0.12)",
-          pointBackgroundColor: "#c9a84c",
-          tension: 0.35,
-          fill: true,
-          yAxisID: "yRight",
-          pointRadius: 4
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      resizeDelay: 120,
-      layout: { padding: { top: 8 } },
-      plugins: {
-        legend: {
-          position: "bottom",
-          labels: { padding: 16, usePointStyle: true, pointStyle: "circle", font: { size: 11 }, color: "#444" }
-        },
-        tooltip: {
-          backgroundColor: "#111",
-          titleColor: "#fff",
-          bodyColor: "rgba(255,255,255,0.80)",
-          padding: 12,
-          cornerRadius: 8
-        }
-      },
-      scales: {
-        yLeft: {
-          beginAtZero: true,
-          position: "left",
-          ticks: { precision: 0, color: "#1b6e3e", font: { size: 10 } },
-          grid: { color: "rgba(0,0,0,0.05)" },
-          border: { display: false }
-        },
-        yRight: {
-          beginAtZero: true,
-          position: "right",
-          ticks: { color: "#c9a84c", font: { size: 10 }, callback: (v) => v > 0 ? new Intl.NumberFormat("pt-BR", { notation: "compact" }).format(v) : "" },
-          grid: { display: false },
-          border: { display: false }
-        },
-        x: {
-          ticks: { color: "#888", font: { size: 10 } },
-          grid: { display: false },
-          border: { display: false }
-        }
-      }
-    }
-  });
+  renderCommercialEvolutionChart("compra", "comprasEvolutionChart", "comprasEvolution");
 }
 
 function renderComprasFilterSelects() {
@@ -13471,9 +13654,9 @@ const VENDAS_PAGE_SIZE = 50;
 
 function renderVendasView() {
   renderVendasFarmSwitch();
+  renderVendasFilterSelects();
   renderVendasKpiCards();
   renderVendasCharts();
-  renderVendasFilterSelects();
   renderVendasTable();
 }
 
@@ -13508,55 +13691,7 @@ function getVendasMovements() {
 }
 
 function renderVendasKpiCards() {
-  if (!elements.vendasKpiSection) return;
-
-  const allMovs = getVendasMovements();
-  const year = state.filters.year;
-  const month = state.filters.month;
-
-  const movs = allMovs.filter((m) => {
-    const d = m.date || "";
-    if (year !== "all" && !d.startsWith(year)) return false;
-    if (month !== "all" && d.slice(5, 7) !== String(month).padStart(2, "0")) return false;
-    return true;
-  });
-
-  const allFarmsInView = state.data.selectedFarmId === TOTAL_FARM_ID ? getAllFarms() : [getFarm()].filter(Boolean);
-  const brlFarms = new Set(allFarmsInView.filter((f) => getFarmCurrency(f.id) === "BRL").map((f) => f.id));
-  const usdFarms = new Set(allFarmsInView.filter((f) => getFarmCurrency(f.id) === "USD").map((f) => f.id));
-
-  const totalOps = movs.length;
-  const totalCabecas = movs.reduce((s, m) => s + Number(m.quantity || 0), 0);
-  const totalBRL = movs.filter((m) => brlFarms.has(m._farmId)).reduce((s, m) => s + Number(m.value || 0), 0);
-  const totalUSD = movs.filter((m) => usdFarms.has(m._farmId)).reduce((s, m) => s + Number(m.value || 0), 0);
-  const cabsBRL = movs.filter((m) => brlFarms.has(m._farmId)).reduce((s, m) => s + Number(m.quantity || 0), 0);
-  const cabsUSD = movs.filter((m) => usdFarms.has(m._farmId)).reduce((s, m) => s + Number(m.quantity || 0), 0);
-  const avgBRL = cabsBRL > 0 ? totalBRL / cabsBRL : 0;
-  const avgUSD = cabsUSD > 0 ? totalUSD / cabsUSD : 0;
-  const totalKg = movs.reduce((s, m) => s + Number(m.saleDetails?.weightKg || 0), 0);
-
-  const fmtBRL = (v) => v > 0 ? `R$ ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)}` : "—";
-  const fmtUSD = (v) => v > 0 ? `US$ ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)}` : "—";
-  const fmtKg = (v) => v > 0 ? `${new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(v)} kg` : "—";
-
-  const kpi = (label, value, sub, cls = "") => `
-    <article class="comercial-kpi-card">
-      <p class="comercial-kpi-label">${label}</p>
-      <p class="comercial-kpi-value ${cls}">${value}</p>
-      <p class="comercial-kpi-sub">${sub}</p>
-    </article>`;
-
-  elements.vendasKpiSection.innerHTML = `
-    <div class="comercial-kpi-grid">
-      ${kpi("Operações", formatInteger(totalOps), "vendas no período")}
-      ${kpi("Cabeças vendidas", formatInteger(totalCabecas), "animais comercializados")}
-      ${kpi("Receita BRL", fmtBRL(totalBRL), "total em reais", "fin")}
-      ${kpi("Receita USD", fmtUSD(totalUSD), "total em dólares", "fin")}
-      ${kpi("Média/cabeça BRL", fmtBRL(avgBRL), "receita média (BRL)", "fin")}
-      ${kpi("Média/cabeça USD", fmtUSD(avgUSD), "receita média (USD)", "fin")}
-      ${kpi("Kg negociados", fmtKg(totalKg), "peso total negociado")}
-    </div>
-  `;
+  renderCommercialKpiCards(elements.vendasKpiSection, "venda");
 }
 
 function renderVendasCharts() {
@@ -13565,123 +13700,11 @@ function renderVendasCharts() {
 }
 
 function renderVendasBarChart() {
-  const canvas = document.getElementById("vendasBarChart");
-  if (!canvas) return;
-  if (state.charts.vendasBar) { state.charts.vendasBar.destroy(); state.charts.vendasBar = null; }
-
-  const year = state.filters.year;
-  const month = state.filters.month;
-  const labels = [], dataHeads = [], dataValues = [];
-
-  getAllFarms().forEach((farm) => {
-    const movs = farm.movements.filter((m) => {
-      if (m.type !== "venda") return false;
-      const d = m.date || "";
-      if (year !== "all" && !d.startsWith(year)) return false;
-      if (month !== "all" && d.slice(5, 7) !== String(month).padStart(2, "0")) return false;
-      return true;
-    });
-    const heads = movs.reduce((s, m) => s + Number(m.quantity || 0), 0);
-    if (heads > 0) {
-      labels.push(farm.name);
-      dataHeads.push(heads);
-      dataValues.push(movs.reduce((s, m) => s + Number(m.value || 0), 0));
-    }
-  });
-
-  if (!labels.length) {
-    canvas.style.display = "none";
-    if (!canvas.parentElement.querySelector(".vendas-empty-note")) {
-      const p = document.createElement("p");
-      p.className = "field-note vendas-empty-note";
-      p.style.cssText = "text-align:center;padding:24px";
-      p.textContent = "Nenhuma venda registrada no período selecionado.";
-      canvas.parentElement.appendChild(p);
-    }
-    return;
-  }
-  canvas.style.display = "";
-  canvas.parentElement.querySelector(".vendas-empty-note")?.remove();
-
-  const chartH = Math.min(480, Math.max(260, labels.length * 52 + 80));
-  canvas.style.setProperty("height", `${chartH}px`, "important");
-  canvas.style.setProperty("max-height", `${chartH}px`, "important");
-  canvas.removeAttribute("height"); canvas.removeAttribute("width");
-
-  state.charts.vendasBar = new Chart(canvas, {
-    type: "bar",
-    data: {
-      labels,
-      datasets: [{ label: "Cabeças vendidas", data: dataHeads, backgroundColor: "#b83232", borderRadius: 5, borderSkipped: false, barThickness: 18 }]
-    },
-    options: {
-      indexAxis: "y", responsive: true, maintainAspectRatio: false, resizeDelay: 120,
-      layout: { padding: { right: 8, top: 8, bottom: 8 } },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: "#111", titleColor: "#fff", bodyColor: "rgba(255,255,255,0.80)", padding: 12, cornerRadius: 8,
-          callbacks: { label: (ctx) => { const val = dataValues[ctx.dataIndex]; const fmtV = val > 0 ? ` | ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2 }).format(val)}` : ""; return ` ${ctx.parsed.x} cabeças${fmtV}`; } }
-        }
-      },
-      scales: {
-        x: { beginAtZero: true, ticks: { precision: 0, color: "#aaa", font: { size: 10 } }, grid: { color: "rgba(0,0,0,0.05)", drawTicks: false }, border: { display: false } },
-        y: { grid: { display: false }, border: { display: false }, ticks: { color: "#222", font: { size: 12, weight: "600" }, padding: 10 } }
-      }
-    }
-  });
+  renderCommercialFarmBarChart("venda", "vendasBarChart", "vendasBar");
 }
 
 function renderVendasEvolutionChart() {
-  const canvas = document.getElementById("vendasEvolutionChart");
-  if (!canvas) return;
-  if (state.charts.vendasEvolution) { state.charts.vendasEvolution.destroy(); state.charts.vendasEvolution = null; }
-
-  const year = state.filters.year;
-  const allMovs = getVendasMovements().filter((m) => year === "all" || String(m.date || "").startsWith(year));
-  const monthlyHeads = {}, monthlyValues = {};
-  for (let i = 1; i <= 12; i++) { const k = String(i).padStart(2, "0"); monthlyHeads[k] = 0; monthlyValues[k] = 0; }
-  allMovs.forEach((m) => {
-    const mo = String(m.date || "").slice(5, 7);
-    if (monthlyHeads[mo] !== undefined) { monthlyHeads[mo] += Number(m.quantity || 0); monthlyValues[mo] += Number(m.value || 0); }
-  });
-
-  const headsData = Object.values(monthlyHeads);
-  if (!headsData.some((v) => v > 0)) {
-    canvas.style.display = "none";
-    if (!canvas.parentElement.querySelector(".vendas-evo-empty")) {
-      const p = document.createElement("p"); p.className = "field-note vendas-evo-empty";
-      p.style.cssText = "text-align:center;padding:24px"; p.textContent = "Nenhuma venda no ano selecionado.";
-      canvas.parentElement.appendChild(p);
-    }
-    return;
-  }
-  canvas.style.display = ""; canvas.parentElement.querySelector(".vendas-evo-empty")?.remove();
-  canvas.removeAttribute("height"); canvas.removeAttribute("width");
-
-  state.charts.vendasEvolution = new Chart(canvas, {
-    type: "bar",
-    data: {
-      labels: MONTH_NAMES.map((n) => n.slice(0, 3)),
-      datasets: [
-        { label: "Cabeças", data: headsData, backgroundColor: "rgba(184,50,50,0.72)", borderRadius: 4, borderSkipped: false, yAxisID: "yLeft" },
-        { type: "line", label: "Receita total", data: Object.values(monthlyValues), borderColor: "#c9a84c", backgroundColor: "rgba(201,168,76,0.12)", pointBackgroundColor: "#c9a84c", tension: 0.35, fill: true, yAxisID: "yRight", pointRadius: 4 }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false, resizeDelay: 120,
-      layout: { padding: { top: 8 } },
-      plugins: {
-        legend: { position: "bottom", labels: { padding: 16, usePointStyle: true, pointStyle: "circle", font: { size: 11 }, color: "#444" } },
-        tooltip: { backgroundColor: "#111", titleColor: "#fff", bodyColor: "rgba(255,255,255,0.80)", padding: 12, cornerRadius: 8 }
-      },
-      scales: {
-        yLeft: { beginAtZero: true, position: "left", ticks: { precision: 0, color: "#b83232", font: { size: 10 } }, grid: { color: "rgba(0,0,0,0.05)" }, border: { display: false } },
-        yRight: { beginAtZero: true, position: "right", ticks: { color: "#c9a84c", font: { size: 10 }, callback: (v) => v > 0 ? new Intl.NumberFormat("pt-BR", { notation: "compact" }).format(v) : "" }, grid: { display: false }, border: { display: false } },
-        x: { ticks: { color: "#888", font: { size: 10 } }, grid: { display: false }, border: { display: false } }
-      }
-    }
-  });
+  renderCommercialEvolutionChart("venda", "vendasEvolutionChart", "vendasEvolution");
 }
 
 function renderVendasFilterSelects() {

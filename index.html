@@ -639,173 +639,157 @@
         </div>
       </div>
 <div id="comprasView" hidden>
-        <section class="panel sanitary-toolbar">
-          <div class="panel-header">
+        <!-- Header Executivo Compras -->
+        <div class="com2-header">
+          <div class="com2-header-top">
             <div>
-              <p class="panel-kicker">Aquisição de animais</p>
-              <h2>Controle de Compras</h2>
+              <p class="com2-eyebrow c">Aquisicao de animais</p>
+              <h2 class="com2-main-title">Painel de Compras</h2>
+              <p class="com2-subtitle">Acompanhamento de aquisicoes, investimentos e desempenho por fazenda</p>
             </div>
-            <div class="compras-header-actions">
-              <button type="button" class="action-btn pdf" id="exportComprasPdfBtn">Gerar PDF</button>
-              <button type="button" class="register-gold-btn" id="comprasNovaBtn">
-                <span class="register-gold-plus">+</span>
-                Nova Compra
+            <div class="com2-header-acts">
+              <button type="button" class="com2-btn-pdf" id="exportComprasPdfBtn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Gerar PDF
               </button>
+              <button type="button" class="com2-btn-new-c" id="comprasNovaBtn">+ Nova Compra</button>
             </div>
           </div>
           <div class="farm-switch compras-farm-switch" id="comprasFarmSwitch"></div>
-        </section>
+        </div>
 
-        <section class="rep-summary-section" id="comprasKpiSection"></section>
+        <!-- KPI Cards -->
+        <section class="com2-kpi-section" id="comprasKpiSection"></section>
 
-        <section class="content-grid">
-          <article class="panel chart-panel rep-chart-wide">
-            <div class="panel-header">
-              <div>
-                <p class="panel-kicker">Cabeças adquiridas</p>
-                <h2>Compras por fazenda</h2>
-              </div>
+        <!-- Graficos -->
+        <div class="com2-charts-row">
+          <div class="com2-card">
+            <div class="com2-card-hd">
+              <h3>Compras por Fazenda</h3>
+              <p>Cabecas adquiridas e investimento por unidade no periodo selecionado</p>
             </div>
-            <canvas id="comprasBarChart" aria-label="Gráfico de compras por fazenda"></canvas>
-          </article>
-          <article class="panel chart-panel">
-            <div class="panel-header">
-              <div>
-                <p class="panel-kicker">Evolução mensal</p>
-                <h2>Cabeças × Valor</h2>
-              </div>
+            <canvas id="comprasBarChart" aria-label="Compras por fazenda"></canvas>
+          </div>
+          <div class="com2-card">
+            <div class="com2-card-hd">
+              <h3>Evolucao Mensal — Cabecas x Investimento</h3>
+              <p>Comparativo mensal entre volume adquirido e valor investido no ano</p>
             </div>
-            <canvas id="comprasEvolutionChart" aria-label="Gráfico de evolução de compras por mês"></canvas>
-          </article>
-        </section>
+            <canvas id="comprasEvolutionChart" aria-label="Evolucao mensal de compras"></canvas>
+          </div>
+        </div>
 
-        <section class="san-history-section">
-          <article class="panel">
-            <div class="panel-header">
-              <div>
-                <p class="panel-kicker">Histórico de aquisições</p>
-                <h2>Registros de Compra</h2>
-              </div>
+        <!-- Tabela Premium -->
+        <div class="com2-card">
+          <div class="com2-table-hd">
+            <div class="com2-table-hd-left">
+              <h3>Historico de Aquisicoes</h3>
+              <p id="comprasTableCountLabel"></p>
             </div>
-            <div class="san-history-toolbar">
-              <input type="search" id="comprasHistorySearch" class="movements-search-input" placeholder="Buscar por código, categoria, fazenda, origem…">
-              <div class="movements-filter-group san-history-filters">
-                <select id="comprasFilterFarm" class="movements-filter-select" aria-label="Filtrar por fazenda"></select>
-                <input type="date" id="comprasFilterDateFrom" class="movements-filter-select san-history-date" aria-label="Data inicial">
-                <input type="date" id="comprasFilterDateTo" class="movements-filter-select san-history-date" aria-label="Data final">
-                <select id="comprasFilterCategory" class="movements-filter-select" aria-label="Filtrar por categoria"></select>
-                <button type="button" class="ghost-btn san-history-clear-btn" id="clearComprasFiltersBtn">Limpar filtros</button>
-              </div>
+            <div class="com2-table-toolbar">
+              <input type="search" id="comprasHistorySearch" class="com2-search" placeholder="Buscar por codigo, categoria, fazenda, origem...">
               <div class="movements-pagination" id="comprasHistoryPagination"></div>
             </div>
-            <div class="table-wrap">
-              <table class="sanitary-table compras-table">
-                <thead id="comprasTableHead">
-                  <tr>
-                    <th>Código</th>
-                    <th>Fazenda</th>
-                    <th>Data</th>
-                    <th>Categoria</th>
-                    <th class="num-col">Cabeças</th>
-                    <th>Origem / Propriedade</th>
-                    <th class="num-col">Peso Médio</th>
-                    <th class="num-col">Valor Total</th>
-                    <th>Obs.</th>
-                    <th>Ações</th>
-                  </tr>
-                </thead>
-                <tbody id="comprasTableBody"></tbody>
-              </table>
-            </div>
-          </article>
-        </section>
+          </div>
+          <div class="com2-filter-row">
+            <select id="comprasFilterFarm" class="com2-filter-sel" aria-label="Filtrar por fazenda"></select>
+            <input type="date" id="comprasFilterDateFrom" class="com2-filter-date" aria-label="Data inicial">
+            <input type="date" id="comprasFilterDateTo" class="com2-filter-date" aria-label="Data final">
+            <select id="comprasFilterCategory" class="com2-filter-sel" aria-label="Filtrar por categoria"></select>
+            <button type="button" class="com2-clear-btn" id="clearComprasFiltersBtn">Limpar filtros</button>
+          </div>
+          <div class="com2-tw" style="margin-top:14px">
+            <table class="com2-t compras-table">
+              <thead id="comprasTableHead">
+                <tr>
+                  <th>Codigo</th><th>Fazenda</th><th>Data</th><th>Categoria</th>
+                  <th class="rr">Cabecas</th><th>Origem / Propriedade</th>
+                  <th class="rr">Peso Medio</th><th class="rr">Valor Total</th>
+                  <th>Obs.</th><th>Acoes</th>
+                </tr>
+              </thead>
+              <tbody id="comprasTableBody"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <div id="vendasView" hidden>
-        <section class="panel sanitary-toolbar">
-          <div class="panel-header">
+        <!-- Header Executivo Vendas -->
+        <div class="com2-header">
+          <div class="com2-header-top">
             <div>
-              <p class="panel-kicker">Comercialização de animais</p>
-              <h2>Controle de Vendas</h2>
+              <p class="com2-eyebrow v">Comercializacao de animais</p>
+              <h2 class="com2-main-title">Painel de Vendas</h2>
+              <p class="com2-subtitle">Acompanhamento de vendas, receita e desempenho comercial por fazenda</p>
             </div>
-            <div class="comercial-header-actions">
-              <button type="button" class="action-btn pdf" id="exportVendasPdfBtn">Gerar PDF</button>
-              <button type="button" class="register-gold-btn" id="vendasNovaBtn">
-                <span class="register-gold-plus">+</span>
-                Nova Venda
+            <div class="com2-header-acts">
+              <button type="button" class="com2-btn-pdf" id="exportVendasPdfBtn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Gerar PDF
               </button>
+              <button type="button" class="com2-btn-new-v" id="vendasNovaBtn">+ Nova Venda</button>
             </div>
           </div>
           <div class="farm-switch comercial-farm-switch" id="vendasFarmSwitch"></div>
-        </section>
+        </div>
 
-        <section class="rep-summary-section" id="vendasKpiSection"></section>
+        <!-- KPI Cards -->
+        <section class="com2-kpi-section" id="vendasKpiSection"></section>
 
-        <section class="content-grid">
-          <article class="panel chart-panel rep-chart-wide">
-            <div class="panel-header">
-              <div>
-                <p class="panel-kicker">Cabeças comercializadas</p>
-                <h2>Vendas por fazenda</h2>
-              </div>
+        <!-- Graficos -->
+        <div class="com2-charts-row">
+          <div class="com2-card">
+            <div class="com2-card-hd">
+              <h3>Vendas por Fazenda</h3>
+              <p>Cabecas comercializadas e receita gerada por unidade no periodo selecionado</p>
             </div>
-            <canvas id="vendasBarChart" aria-label="Gráfico de vendas por fazenda"></canvas>
-          </article>
-          <article class="panel chart-panel">
-            <div class="panel-header">
-              <div>
-                <p class="panel-kicker">Evolução mensal</p>
-                <h2>Cabeças × Receita</h2>
-              </div>
+            <canvas id="vendasBarChart" aria-label="Vendas por fazenda"></canvas>
+          </div>
+          <div class="com2-card">
+            <div class="com2-card-hd">
+              <h3>Evolucao Mensal — Cabecas x Receita</h3>
+              <p>Comparativo mensal entre volume vendido e receita obtida no ano</p>
             </div>
-            <canvas id="vendasEvolutionChart" aria-label="Gráfico de evolução de vendas por mês"></canvas>
-          </article>
-        </section>
+            <canvas id="vendasEvolutionChart" aria-label="Evolucao mensal de vendas"></canvas>
+          </div>
+        </div>
 
-        <section class="san-history-section">
-          <article class="panel">
-            <div class="panel-header">
-              <div>
-                <p class="panel-kicker">Histórico de vendas</p>
-                <h2>Registros de Venda</h2>
-              </div>
+        <!-- Tabela Premium -->
+        <div class="com2-card">
+          <div class="com2-table-hd">
+            <div class="com2-table-hd-left">
+              <h3>Historico de Vendas</h3>
+              <p id="vendasTableCountLabel"></p>
             </div>
-            <div class="san-history-toolbar">
-              <input type="search" id="vendasHistorySearch" class="movements-search-input" placeholder="Buscar por código, categoria, fazenda, frigorífico…">
-              <div class="movements-filter-group san-history-filters">
-                <select id="vendasFilterFarm" class="movements-filter-select" aria-label="Filtrar por fazenda"></select>
-                <input type="date" id="vendasFilterDateFrom" class="movements-filter-select san-history-date" aria-label="Data inicial">
-                <input type="date" id="vendasFilterDateTo" class="movements-filter-select san-history-date" aria-label="Data final">
-                <select id="vendasFilterCategory" class="movements-filter-select" aria-label="Filtrar por categoria"></select>
-                <button type="button" class="ghost-btn san-history-clear-btn" id="clearVendasFiltersBtn">Limpar filtros</button>
-              </div>
+            <div class="com2-table-toolbar">
+              <input type="search" id="vendasHistorySearch" class="com2-search" placeholder="Buscar por codigo, categoria, fazenda, frigorifico...">
               <div class="movements-pagination" id="vendasHistoryPagination"></div>
             </div>
-            <div class="table-wrap">
-              <table class="sanitary-table vendas-table">
-                <thead id="vendasTableHead">
-                  <tr>
-                    <th>Código</th>
-                    <th>Fazenda</th>
-                    <th>Data</th>
-                    <th>Categoria</th>
-                    <th class="num-col">Cabeças</th>
-                    <th>Frigorífico / Comprador</th>
-                    <th class="num-col">Kg Negociados</th>
-                    <th class="num-col">R$/kg ou US$/kg</th>
-                    <th class="num-col">Valor Total</th>
-                    <th>Obs.</th>
-                    <th>Ações</th>
-                  </tr>
-                </thead>
-                <tbody id="vendasTableBody"></tbody>
-              </table>
-            </div>
-          </article>
-        </section>
+          </div>
+          <div class="com2-filter-row">
+            <select id="vendasFilterFarm" class="com2-filter-sel" aria-label="Filtrar por fazenda"></select>
+            <input type="date" id="vendasFilterDateFrom" class="com2-filter-date" aria-label="Data inicial">
+            <input type="date" id="vendasFilterDateTo" class="com2-filter-date" aria-label="Data final">
+            <select id="vendasFilterCategory" class="com2-filter-sel" aria-label="Filtrar por categoria"></select>
+            <button type="button" class="com2-clear-btn" id="clearVendasFiltersBtn">Limpar filtros</button>
+          </div>
+          <div class="com2-tw" style="margin-top:14px">
+            <table class="com2-t vendas-table">
+              <thead id="vendasTableHead">
+                <tr>
+                  <th>Codigo</th><th>Fazenda</th><th>Data</th><th>Categoria</th>
+                  <th class="rr">Cabecas</th><th>Frigorifico / Comprador</th>
+                  <th class="rr">Kg Negociados</th><th class="rr">Preco/kg</th>
+                  <th class="rr">Valor Total</th><th>Obs.</th><th>Acoes</th>
+                </tr>
+              </thead>
+              <tbody id="vendasTableBody"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
-
-        </main>
+</main>
       </div>
     </div>
   </div>
