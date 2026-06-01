@@ -584,3 +584,16 @@ function renderVendasPagination(total, page) {
   document.getElementById("vendasPageNext")?.addEventListener("click", () => { runtime.vendasPage = Math.min(totalPages-1,(runtime.vendasPage||0)+1); renderVendasTable(); });
 }
 
+// ── Bridges para app.js ───────────────────────────────────────────────────────
+function openComprasDialog(movementId, farmId) {
+  openEditMovementDialog(farmId, movementId);
+}
+
+function openVendasDialog(movementId, farmId) {
+  openEditMovementDialog(farmId, movementId);
+}
+
+function deleteMovementRecord(movementId, farmId) {
+  deleteMovement(farmId, movementId);
+}
+
