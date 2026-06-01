@@ -288,6 +288,15 @@ app.delete("/api/users/:id", authMiddleware, async (req, res) => {
   }
 });
 
+app.get("/api/data/revision", authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query("SELECT revision FROM farm_data WHERE id=1");
+    res.json({ revision: result.rowCount ? Number(result.rows[0].revision || 0) : 0 });
+  } catch (err) {
+    res.status(500).json({ error: "Erro ao verificar revisão." });
+  }
+});
+
 app.get("/api/data", authMiddleware, async (req, res) => {
   try {
     const result = await pool.query("SELECT payload,updated_at,updated_by,revision FROM farm_data WHERE id=1");

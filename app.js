@@ -1308,11 +1308,18 @@ function boot() {
 }
 
 function startAutoSync() {
-  setInterval(() => {
-    if (isAuthenticated() && runtime.cloudToken && !runtime.cloudSyncing) {
-      cloudPull();
+  setInterval(async () => {
+    if (!isAuthenticated() || !runtime.cloudToken || runtime.cloudSyncing) return;
+    try {
+      const res = await apiRequest("/api/data/revision", {}, 8000);
+      const serverRevision = Number(res?.revision || 0);
+      if (serverRevision > runtime.cloudRevision) {
+        cloudPull();
+      }
+    } catch {
+      // silent — next tick will retry
     }
-  }, 5 * 60 * 1000);
+  }, 3000);
 }
 
 function initializeAppShell() {
