@@ -3222,11 +3222,8 @@ function bindEvents() {
   });
 
   elements.comprasShortcut?.addEventListener("click", () => {
-    if (state.activeView !== "compras") {
-      state.data.selectedFarmId = TOTAL_FARM_ID;
-      runtime.comprasPage = 0;
-    }
     state.activeView = "compras";
+    runtime.comprasPage = 0;
     render();
   });
 
@@ -3255,11 +3252,8 @@ function bindEvents() {
 
   // Vendas view
   elements.vendasShortcut?.addEventListener("click", () => {
-    if (state.activeView !== "vendas") {
-      state.data.selectedFarmId = TOTAL_FARM_ID;
-      runtime.vendasPage = 0;
-    }
     state.activeView = "vendas";
+    runtime.vendasPage = 0;
     render();
   });
   elements.vendasNovaBtn?.addEventListener("click", () => openMovementDialog("venda"));
@@ -3628,35 +3622,48 @@ function render() {
   }
 
   const farm = getFarm();
-  syncFilterYearForFarm(farm);
-  populateYearFilter();
-  populatePdfPeriodFilters();
-  renderFarmSwitch();
-  renderOverviewPanel();
-  syncMovementTypeOptions();
-  syncCategoryOptions();
-  syncSanitaryFormOptions();
-  syncMonthlyDataFarmOptions();
-  syncMonthlyDataCategoryOptions();
-  renderHero(farm);
-  renderHeadlineMetrics(farm);
-  renderOpsPanel(farm);
-  renderPrimarySummaryCards(farm);
-  renderDashboardSectionCards(farm);
-  renderDashboardVisualHerdGrid(farm);
-  renderPeriodSummary(farm);
-  renderSalesAnalysis(farm);
-  renderMovementsTable(farm);
-  renderSanitarySummary(farm);
-  renderSanitaryTable(farm);
-  renderSanitaryFarmSwitch();
-  renderSanitaryComposerState(farm);
-  renderMonthlySummary(farm);
-  renderMonthlyProtocol(farm);
-  renderCharts(farm);
+
+  // Funções de dashboard — isoladas para não bloquear a navegação de abas
+  try {
+    syncFilterYearForFarm(farm);
+    populateYearFilter();
+    populatePdfPeriodFilters();
+    renderFarmSwitch();
+    renderOverviewPanel();
+    syncMovementTypeOptions();
+    syncCategoryOptions();
+    syncSanitaryFormOptions();
+    syncMonthlyDataFarmOptions();
+    syncMonthlyDataCategoryOptions();
+    renderHero(farm);
+    renderHeadlineMetrics(farm);
+    renderOpsPanel(farm);
+    renderPrimarySummaryCards(farm);
+    renderDashboardSectionCards(farm);
+    renderDashboardVisualHerdGrid(farm);
+    renderPeriodSummary(farm);
+    renderSalesAnalysis(farm);
+    renderMovementsTable(farm);
+    renderSanitarySummary(farm);
+    renderSanitaryTable(farm);
+    renderSanitaryFarmSwitch();
+    renderSanitaryComposerState(farm);
+    renderMonthlySummary(farm);
+    renderMonthlyProtocol(farm);
+    renderCharts(farm);
+  } catch (err) {
+    console.warn("[render] erro em função de dashboard:", err);
+  }
+
+  // Navegação de abas sempre executa — independente de erros acima
   renderActiveView();
-  renderGeorefState(farm);
-  renderActionButtonsState();
+
+  try {
+    renderGeorefState(farm);
+    renderActionButtonsState();
+  } catch (err) {
+    console.warn("[render] erro pós-view:", err);
+  }
 }
 
 function renderOverviewPanel() {
@@ -4660,8 +4667,8 @@ function renderActiveView() {
   elements.vendasShortcut?.classList.toggle("active", view === "vendas");
   if (view === "potreiros") renderPotreirosView();
   if (view === "reproducao") renderReproducaoView();
-  if (view === "compras") renderComprasView();
-  if (view === "vendas") renderVendasView();
+  if (view === "compras") { try { renderComprasView(); } catch (e) { console.error("[compras] erro ao renderizar:", e); } }
+  if (view === "vendas")   { try { renderVendasView();  } catch (e) { console.error("[vendas] erro ao renderizar:", e); } }
   syncMobileNav(view);
 }
 
