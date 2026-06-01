@@ -1360,7 +1360,7 @@ function saveData(options = {}) {
   }
 }
 
-function setApiNotice(message = "", level = "info") {
+function setApiNotice(message = "", level = "info", action = null) {
   runtime.apiNoticeMessage = message || "";
   runtime.apiNoticeLevel = level;
   if (!elements.apiNotice) return;
@@ -1371,8 +1371,21 @@ function setApiNotice(message = "", level = "info") {
     return;
   }
   elements.apiNotice.hidden = false;
-  elements.apiNotice.textContent = runtime.apiNoticeMessage;
   elements.apiNotice.className = `api-notice notice-${level}`;
+  if (action) {
+    elements.apiNotice.textContent = "";
+    const span = document.createElement("span");
+    span.textContent = runtime.apiNoticeMessage + " ";
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "notice-action-btn";
+    btn.textContent = action.label;
+    btn.addEventListener("click", action.fn);
+    elements.apiNotice.appendChild(span);
+    elements.apiNotice.appendChild(btn);
+  } else {
+    elements.apiNotice.textContent = runtime.apiNoticeMessage;
+  }
 }
 
 function scheduleCloudPush() {
@@ -1718,15 +1731,26 @@ function normalizeApiUser(user) {
   };
 }
 
-async function apiRequest(path, options = {}) {
+async function apiRequest(path, options = {}, timeoutMs = 18000) {
   const headers = { ...(options.headers || {}) };
   if (runtime.cloudToken) {
     headers.Authorization = `Bearer ${runtime.cloudToken}`;
   }
-  const response = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let response;
+  try {
+    response = await fetch(`${API_URL}${path}`, { ...options, headers, signal: controller.signal });
+  } catch (err) {
+    if (err.name === "AbortError") {
+      const e = new Error("O servidor demorou para responder. Ele pode estar acordando — aguarde 30 segundos e tente novamente.");
+      e.isTimeout = true;
+      throw e;
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
   let payload = null;
   try {
     payload = await response.json();
@@ -2481,7 +2505,7 @@ function completaLoginLocal(user) {
   runtime.cloudToken = null;
   runtime.cloudConflict = false;
   runtime.cloudRevision = 0;
-  setApiNotice("Modo local ativo — sincronização com o servidor indisponível. Seus dados locais estão íntegros.", "warn");
+  setApiNotice("Modo local ativo — sincronização com o servidor indisponível. Seus dados locais estão íntegros.", "warn", { label: "Sair para reconectar", fn: handleLogout });
   state.data.auth.sessionUserId = user.id;
   elements.loginFeedback.hidden = true;
   elements.loginFeedback.textContent = "";
@@ -2542,6 +2566,11 @@ async function handleLoginSubmit(event) {
     render();
     checkBackupWarning();
   } catch (error) {
+    if (error.isTimeout) {
+      elements.loginFeedback.hidden = false;
+      elements.loginFeedback.textContent = "O servidor está acordando após inatividade. Aguarde 30 segundos e tente novamente.";
+      return;
+    }
     const isServerError = !error.status
       ? true
       : error.status >= 500;

@@ -601,6 +601,22 @@ body::before {
   color: #6f2323;
 }
 
+.notice-action-btn {
+  display: inline-block;
+  margin-left: 10px;
+  padding: 3px 12px;
+  border: 1px solid currentColor;
+  border-radius: 20px;
+  background: transparent;
+  color: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  opacity: 0.85;
+  transition: opacity 0.15s;
+}
+.notice-action-btn:hover { opacity: 1; }
+
 /* ═══════════════════════════════════════════════════
    AUTH — Dark Glass · Card dividido 50/50
 ═══════════════════════════════════════════════════ */
