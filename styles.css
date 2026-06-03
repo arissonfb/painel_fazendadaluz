@@ -4135,6 +4135,66 @@ th {
   font-size: 0.92rem;
 }
 
+/* ── Bloco de cotação USD ao vivo ─────────────────────────────── */
+.usd-rate-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 10px 14px;
+  background: rgba(30, 64, 175, 0.06);
+  border: 1px solid rgba(30, 64, 175, 0.14);
+  border-radius: 10px;
+}
+
+.usd-rate-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #1e40af;
+}
+
+.usd-rate-live {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.usd-rate-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--muted);
+}
+
+.usd-rate-dot-loading {
+  background: #f59e0b;
+  animation: usd-pulse 1s infinite;
+}
+
+.usd-rate-dot-ok {
+  background: #16a34a;
+}
+
+.usd-rate-dot-error {
+  background: #dc2626;
+}
+
+@keyframes usd-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
+
+/* ── fim cotação USD ──────────────────────────────────────────── */
+
 .sale-input-group {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

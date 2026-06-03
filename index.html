@@ -961,10 +961,20 @@
 
         <!-- Cotação USD — visível apenas para fazendas com moeda USD (Arapey/Chiquita) -->
         <div class="form-span-2" id="movUsdRateWrap" hidden>
+          <div class="usd-rate-header">
+            <span class="usd-rate-label">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              Fazenda em dólar (UY) — cotação de referência
+            </span>
+            <span class="usd-rate-live" id="usdRateLiveStatus">
+              <span class="usd-rate-dot" id="usdRateDot"></span>
+              <span id="usdRateLiveText">buscando cotação...</span>
+            </span>
+          </div>
           <div class="sale-input-group" style="gap:12px">
             <label>
               Cotação USD aplicada (1 US$ = R$)
-              <input type="number" id="movUsdRate" min="0" step="0.0001" placeholder="Ex.: 5.82">
+              <input type="number" id="movUsdRate" min="0" step="0.0001" placeholder="aguardando...">
             </label>
             <label>
               Equivalente em R$ (referência)

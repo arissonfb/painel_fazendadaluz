@@ -3421,7 +3421,10 @@ function bindEvents() {
     }
     updateUsdBrlEquiv();
   });
-  elements.movUsdRate?.addEventListener("input", updateUsdBrlEquiv);
+  elements.movUsdRate?.addEventListener("input", () => {
+    if (elements.movUsdRate) elements.movUsdRate.dataset.userTyped = "1";
+    updateUsdBrlEquiv();
+  });
   elements.movementFarm?.addEventListener("change", syncUsdRateVisibility);
   elements.movementType?.addEventListener("change", syncUsdRateVisibility);
 
@@ -8912,6 +8915,64 @@ function syncUsdRateVisibility() {
   const type  = elements.movementType.value;
   const show  = isUsd && (type === "venda" || type === "compra");
   if (elements.movUsdRateWrap) elements.movUsdRateWrap.hidden = !show;
+  if (show) fetchAndFillUsdRate();
+}
+
+// Cache de cotação (30 min)
+const _usdRateCache = { rate: null, at: 0, label: "" };
+
+async function fetchAndFillUsdRate() {
+  const statusEl  = document.getElementById("usdRateLiveText");
+  const dotEl     = document.getElementById("usdRateDot");
+  const rateInput = elements.movUsdRate;
+  if (!rateInput) return;
+
+  // Se o usuário já digitou um valor, não sobrescreve
+  if (rateInput.value && rateInput.dataset.userTyped === "1") return;
+
+  // Cache válido por 30 minutos
+  const age = (Date.now() - _usdRateCache.at) / 60000;
+  if (_usdRateCache.rate && age < 30) {
+    _applyUsdRate(_usdRateCache.rate, _usdRateCache.label, rateInput, statusEl, dotEl, false);
+    return;
+  }
+
+  _setUsdStatus(statusEl, dotEl, "buscando cotação...", "loading");
+
+  try {
+    const res = await fetch(
+      "https://economia.awesomeapi.com.br/json/last/USD-BRL",
+      { signal: AbortSignal.timeout(6000) }
+    );
+    const json = await res.json();
+    const bid  = Number(json?.USDBRL?.bid || 0);
+    const ts   = json?.USDBRL?.create_date || "";
+    if (bid > 0) {
+      const label = ts ? `Atualizado ${ts.slice(0, 16).replace("T", " ")}` : "Cotação do dia";
+      _usdRateCache.rate = bid;
+      _usdRateCache.at   = Date.now();
+      _usdRateCache.label = label;
+      _applyUsdRate(bid, label, rateInput, statusEl, dotEl, true);
+    } else {
+      _setUsdStatus(statusEl, dotEl, "cotação indisponível — informe manualmente", "error");
+    }
+  } catch {
+    _setUsdStatus(statusEl, dotEl, "sem acesso à cotação — informe manualmente", "error");
+  }
+}
+
+function _applyUsdRate(rate, label, input, statusEl, dotEl, isNew) {
+  if (!input.value || isNew) {
+    input.value = rate.toFixed(4);
+    input.dataset.userTyped = "0";
+    updateUsdBrlEquiv();
+  }
+  _setUsdStatus(statusEl, dotEl, `1 US$ = R$ ${rate.toFixed(4)} · ${label}`, "ok");
+}
+
+function _setUsdStatus(el, dot, text, state) {
+  if (el) el.textContent = text;
+  if (dot) dot.className = `usd-rate-dot usd-rate-dot-${state}`;
 }
 
 function updateSaleComputedValue() {
