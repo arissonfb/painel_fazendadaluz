@@ -859,7 +859,7 @@ const state = {
     year: String(today.getFullYear()),
     month: "all"
   },
-  activeView: "dashboard",
+  activeView: "home",
   charts: {
     inventory: null,
     movement: null,
@@ -900,6 +900,7 @@ const elements = {
   quickVendasBtn: document.getElementById("quickVendasBtn"),
   auditTrailButton: document.getElementById("auditTrailButton"),
   dashboardFarmLabel: document.getElementById("dashboardFarmLabel"),
+  homeView: document.getElementById("homeView"),
   dashboardView: document.getElementById("dashboardView"),
   sanitaryView: document.getElementById("sanitaryView"),
   heroMetrics: document.getElementById("heroMetrics"),
@@ -4095,6 +4096,157 @@ function renderPrimarySummaryCards(farm) {
   }).join("");
 }
 
+function renderHomeView() {
+  const el = elements.homeView;
+  if (!el) return;
+
+  const farm = getFarm();
+  const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
+  const farms = isTotalView ? getAllFarms() : [farm].filter(Boolean);
+  const year = state.filters.year;
+  const month = state.filters.month;
+
+  const totalAnimals = farms.reduce((s, f) => s + getFarmTotal(f), 0);
+  const totalDeclared = farms.reduce((s, f) => s + Number(f.declaredTotal || 0), 0);
+
+  const sanitaryAll = farms.flatMap((f) => f.sanitaryRecords || []);
+  const sanitaryCount = sanitaryAll.length;
+  const recentSanitary = [...sanitaryAll].sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")))[0];
+
+  const repFiltered = getFilteredReproductionRecords();
+  const repVerified = repFiltered.filter((r) => r.verificationDate && r.quantityPegou != null);
+  const repPegou = repVerified.reduce((s, r) => s + Number(r.quantityPegou || 0), 0);
+  const repVerTotal = repVerified.reduce((s, r) => s + Number(r.quantity || 0), 0);
+  const taxaPrenhez = repVerTotal > 0 ? (repPegou / repVerTotal * 100).toFixed(1) : null;
+
+  function filterByPeriod(m) {
+    const d = m.date || "";
+    if (year !== "all" && !d.startsWith(year)) return false;
+    if (month !== "all" && d.slice(5, 7) !== String(month).padStart(2, "0")) return false;
+    return true;
+  }
+
+  const purchases = farms.flatMap((f) => (f.movements || []).filter((m) => m.type === "compra" && filterByPeriod(m)));
+  const purchaseHead = purchases.reduce((s, m) => s + Number(m.quantity || 0), 0);
+  const purchaseValue = purchases.reduce((s, m) => s + Number(m.value || 0), 0);
+
+  const salesMov = farms.flatMap((f) => (f.movements || []).filter((m) => m.type === "venda" && filterByPeriod(m)));
+  const saleHead = salesMov.reduce((s, m) => s + Number(m.quantity || 0), 0);
+  const saleValue = salesMov.reduce((s, m) => s + Number(m.value || 0), 0);
+
+  const potreirosAtivos = farms.flatMap((f) => getPotreroEntries(f)).filter((p) => Number(p.quantity || 0) > 0).length;
+  const allocatedAnimals = farms.reduce((s, f) => s + getRegisteredPotreroAnimals(f), 0);
+
+  const farmLabel = isTotalView ? "Todas as Fazendas" : farm.name;
+  const periodLabel = year === "all" ? "histórico completo" : (month === "all" ? `ano ${year}` : `${MONTH_NAMES[Number(month) - 1]} ${year}`);
+
+  const cards = [
+    {
+      view: "sanitary",
+      icon: `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 2a2 2 0 0 0-2 2v5H4a2 2 0 0 0-2 2v2c0 1.1.9 2 2 2h5v5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2v-5h5a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2h-5V4a2 2 0 0 0-2-2h-2z"/></svg>`,
+      accent: "#1b6e3e", bg: "#d4edda",
+      title: "Manejo Sanitário",
+      metric: formatInteger(sanitaryCount),
+      metricLabel: "registros no histórico",
+      sub: recentSanitary ? `Último em ${formatDate(recentSanitary.date)}` : "Nenhum registro ainda",
+      cta: "Ver registros"
+    },
+    {
+      view: "reproducao",
+      icon: `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`,
+      accent: "#7c1d4f", bg: "#fce4ec",
+      title: "Reprodução",
+      metric: formatInteger(repFiltered.length),
+      metricLabel: `eventos em ${periodLabel}`,
+      sub: taxaPrenhez != null ? `Taxa de prenhez: ${taxaPrenhez}%` : "Verificação pendente",
+      cta: "Ver eventos"
+    },
+    {
+      view: "compras",
+      icon: `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>`,
+      accent: "#0e4f6b", bg: "#cffafe",
+      title: "Compras",
+      metric: formatInteger(purchaseHead),
+      metricLabel: `cabeças em ${periodLabel}`,
+      sub: purchaseValue > 0 ? `Investimento: ${formatCurrency(purchaseValue)}` : "Sem compras no período",
+      cta: "Ver compras"
+    },
+    {
+      view: "vendas",
+      icon: `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`,
+      accent: "#7a4f00", bg: "#fef3c7",
+      title: "Vendas",
+      metric: formatInteger(saleHead),
+      metricLabel: `cabeças em ${periodLabel}`,
+      sub: saleValue > 0 ? `Receita: ${formatCurrency(saleValue)}` : "Sem vendas no período",
+      cta: "Ver vendas"
+    },
+    {
+      view: "potreiros",
+      icon: `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8C8 10 5.9 16.17 3.82 21"/><path d="M9.04 13.4a14.47 14.47 0 0 0-4.8 8.87"/><path d="M22 9c-5.08 2.45-9.3 7.2-10 13"/><path d="M22 9a15.5 15.5 0 0 0-6.47 5.74"/></svg>`,
+      accent: "#134e27", bg: "#dcfce7",
+      title: "Potreiros",
+      metric: formatInteger(potreirosAtivos),
+      metricLabel: "campos com animais",
+      sub: `${formatInteger(allocatedAnimals)} animais alocados`,
+      cta: "Ver potreiros"
+    },
+    {
+      view: "dashboard",
+      icon: `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>`,
+      accent: "#1e3a5f", bg: "#dbeafe",
+      title: "Estoque",
+      metric: formatInteger(totalAnimals),
+      metricLabel: "animais no rebanho",
+      sub: totalDeclared > 0 ? `Declarado: ${formatInteger(totalDeclared)} cabeças` : "Ver distribuição por categoria",
+      cta: "Ver estoque"
+    }
+  ];
+
+  el.innerHTML = `
+    <div class="home-hero">
+      <div class="home-hero-copy">
+        <p class="eyebrow">Gestão do rebanho</p>
+        <h2 class="home-hero-title">${escapeHtml(farmLabel)}</h2>
+        <p class="home-hero-sub">Selecione um módulo para acessar os registros</p>
+      </div>
+      <div class="home-hero-badge">
+        <span class="home-hero-total">${formatInteger(totalAnimals)}</span>
+        <span class="home-hero-unit">animais</span>
+      </div>
+    </div>
+    <div class="home-module-grid">
+      ${cards.map((card) => `
+        <button type="button" class="home-module-card" data-nav-home="${escapeHtml(card.view)}">
+          <div class="hmc-icon" style="background:${card.bg};color:${card.accent}">${card.icon}</div>
+          <div class="hmc-body">
+            <h3 class="hmc-title">${escapeHtml(card.title)}</h3>
+            <div class="hmc-metric">
+              <strong class="hmc-value" style="color:${card.accent}">${escapeHtml(card.metric)}</strong>
+              <span class="hmc-unit">${escapeHtml(card.metricLabel)}</span>
+            </div>
+            <p class="hmc-sub">${escapeHtml(card.sub)}</p>
+          </div>
+          <span class="hmc-cta" style="color:${card.accent}">
+            ${escapeHtml(card.cta)}
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </span>
+        </button>
+      `).join("")}
+    </div>
+  `;
+
+  el.querySelectorAll("[data-nav-home]").forEach((card) => {
+    card.addEventListener("click", () => {
+      const view = card.dataset.navHome;
+      state.activeView = view;
+      if (view === "compras") runtime.comprasPage = 0;
+      if (view === "vendas") runtime.vendasPage = 0;
+      render();
+    });
+  });
+}
+
 function renderDashboardSectionCards(farm) {
   const el = document.getElementById("dashboardSectionCards");
   if (!el) return;
@@ -4555,7 +4707,7 @@ function renderFarmSwitch() {
   totalButton.addEventListener("click", () => {
     state.data.selectedFarmId = TOTAL_FARM_ID;
     if (state.activeView !== "compras" && state.activeView !== "vendas") {
-      state.activeView = "dashboard";
+      state.activeView = "home";
     }
     saveData();
     render();
@@ -4571,7 +4723,7 @@ function renderFarmSwitch() {
     button.addEventListener("click", () => {
       state.data.selectedFarmId = farm.id;
       if (state.activeView !== "compras" && state.activeView !== "vendas") {
-        state.activeView = "dashboard";
+        state.activeView = "home";
         runtime.movementsPage = 0;
         runtime.movementsSearch = "";
         runtime.sanitaryPage = 0;
@@ -4657,17 +4809,19 @@ function renderGlobalSummary() {
 function renderActiveView() {
   const view = state.activeView;
   document.body.dataset.activeView = view;
+  if (elements.homeView) elements.homeView.hidden = view !== "home";
   elements.dashboardView.hidden = view !== "dashboard";
   elements.sanitaryView.hidden = view !== "sanitary";
   elements.potreirosView.hidden = view !== "potreiros";
   elements.reproducaoView.hidden = view !== "reproducao";
   if (elements.comprasView) elements.comprasView.hidden = view !== "compras";
   if (elements.vendasView) elements.vendasView.hidden = view !== "vendas";
-  elements.sanitaryShortcut.classList.toggle("active", view === "sanitary");
-  elements.potreirosShortcut.classList.toggle("active", view === "potreiros");
-  elements.reproducaoShortcut.classList.toggle("active", view === "reproducao");
+  elements.sanitaryShortcut?.classList.toggle("active", view === "sanitary");
+  elements.potreirosShortcut?.classList.toggle("active", view === "potreiros");
+  elements.reproducaoShortcut?.classList.toggle("active", view === "reproducao");
   elements.comprasShortcut?.classList.toggle("active", view === "compras");
   elements.vendasShortcut?.classList.toggle("active", view === "vendas");
+  if (view === "home") renderHomeView();
   if (view === "potreiros") renderPotreirosView();
   if (view === "reproducao") renderReproducaoView();
   if (view === "compras") { try { renderComprasView(); } catch (e) { console.error("[compras] erro ao renderizar:", e); } }
