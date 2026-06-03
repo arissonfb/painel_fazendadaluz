@@ -3655,7 +3655,7 @@ function render() {
     renderSalesAnalysis(farm);
     renderMovementsTable(farm);
     renderSanitarySummary(farm);
-    renderSanitaryFarmBreakdown();
+    try { renderSanitaryFarmBreakdown(); } catch(e) { console.warn("[sanBreakdown]", e); }
     renderSanitaryTable(farm);
     renderSanitaryFarmSwitch();
     renderSanitaryComposerState(farm);
@@ -11992,7 +11992,10 @@ function formatWeight(value) {
 }
 
 function formatDate(dateString) {
-  return new Intl.DateTimeFormat("pt-BR").format(new Date(`${dateString}T00:00:00`));
+  if (!dateString) return "—";
+  const d = new Date(`${dateString}T00:00:00`);
+  if (isNaN(d.getTime())) return String(dateString);
+  return new Intl.DateTimeFormat("pt-BR").format(d);
 }
 
 function formatMonthYear(period) {
