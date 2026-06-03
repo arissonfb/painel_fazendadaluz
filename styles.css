@@ -780,6 +780,211 @@ body::before {
 
 /* ── Fim Home View ─────────────────────────────────────────────── */
 
+/* ── Sanitary Farm Breakdown ───────────────────────────────────── */
+.san-breakdown-panel {
+  margin: 0 0 0;
+}
+
+.san-breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 18px;
+  margin-top: 16px;
+}
+
+.san-farm-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.san-farm-card:hover {
+  box-shadow: 0 4px 18px rgba(0,0,0,.08);
+  border-color: rgba(201,168,76,.25);
+}
+
+.san-farm-card-hd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.san-farm-card-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  flex: 1;
+}
+
+/* KPIs inline */
+.san-farm-kpis {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.san-farm-kpi {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 6px 8px;
+  border-right: 1px solid var(--border);
+  gap: 2px;
+}
+
+.san-farm-kpi:last-child {
+  border-right: none;
+}
+
+.san-kpi-val {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1;
+}
+
+.san-kpi-lbl {
+  font-size: 0.68rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Produto mais aplicado */
+.san-farm-top-prod {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  background: rgba(27,110,62,.07);
+  border-radius: 8px;
+  border-left: 3px solid #1b6e3e;
+}
+
+.san-top-label {
+  font-size: 0.68rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.san-top-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #1b6e3e;
+  line-height: 1.3;
+}
+
+.san-top-count {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+/* Última aplicação */
+.san-farm-last {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.san-last-label {
+  font-size: 0.68rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.san-last-date {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.san-last-prod {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.san-last-potr {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* Histórico recente (linhas) */
+.san-farm-recent {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+.san-recent-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.san-recent-date {
+  flex-shrink: 0;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.san-recent-prod {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.san-recent-qty {
+  flex-shrink: 0;
+}
+
+/* Botão CTA do card */
+.san-farm-cta-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+  margin-top: auto;
+}
+
+.san-farm-cta-btn:hover {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #0a0a0a;
+}
+
+@media (max-width: 700px) {
+  .san-breakdown-grid {
+    grid-template-columns: 1fr;
+  }
+}
+/* ── Fim Sanitary Breakdown ────────────────────────────────────── */
+
 .backup-warning-card {
   display: flex;
   flex-direction: column;

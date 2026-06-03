@@ -3647,6 +3647,7 @@ function render() {
     renderSalesAnalysis(farm);
     renderMovementsTable(farm);
     renderSanitarySummary(farm);
+    renderSanitaryFarmBreakdown();
     renderSanitaryTable(farm);
     renderSanitaryFarmSwitch();
     renderSanitaryComposerState(farm);
@@ -4242,6 +4243,11 @@ function renderHomeView() {
       state.activeView = view;
       if (view === "compras") runtime.comprasPage = 0;
       if (view === "vendas") runtime.vendasPage = 0;
+      if (view === "sanitary") {
+        runtime.sanitaryFarmFilter = "all";
+        runtime.sanitaryPage = 0;
+        runtime.sanitarySearch = "";
+      }
       render();
     });
   });
@@ -6045,6 +6051,123 @@ function renderSanitaryTable(farm) {
       </tr>
     `;
   }).join("");
+}
+
+function renderSanitaryFarmBreakdown() {
+  const el = document.getElementById("sanitaryFarmBreakdown");
+  if (!el) return;
+
+  const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
+  if (!isTotalView) {
+    el.hidden = true;
+    el.innerHTML = "";
+    return;
+  }
+
+  const farms = getAllFarms();
+  el.hidden = false;
+
+  el.innerHTML = `
+    <div class="panel san-breakdown-panel">
+      <div class="panel-header">
+        <div>
+          <p class="panel-kicker">Visão por fazenda</p>
+          <h2>Manejo sanitário — resumo consolidado</h2>
+        </div>
+        <span class="chip">${farms.length} fazendas</span>
+      </div>
+      <div class="san-breakdown-grid">
+        ${farms.map((farm) => renderSanitaryFarmCard(farm)).join("")}
+      </div>
+    </div>
+  `;
+
+  el.querySelectorAll("[data-san-filter-farm]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const farmName = btn.dataset.sanFilterFarm;
+      runtime.sanitaryFarmFilter = farmName;
+      runtime.sanitaryPage = 0;
+      renderSanitaryTable(getFarm());
+      document.querySelector(".san-history-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
+}
+
+function renderSanitaryFarmCard(farm) {
+  const records = farm.sanitaryRecords || [];
+  const sorted = [...records].sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+  const lastRecord = sorted[0];
+  const totalAnimals = records.reduce((s, r) => s + Number(r.quantity || 0), 0);
+
+  const productCount = {};
+  records.forEach((r) => {
+    const p = r.product || "Sem produto";
+    productCount[p] = (productCount[p] || 0) + 1;
+  });
+  const topProduct = Object.entries(productCount).sort((a, b) => b[1] - a[1])[0];
+
+  const currency = FARM_CURRENCY_MAP[farm.id];
+  const country = currency === "USD" ? "UY" : "BR";
+
+  const recentRecords = sorted.slice(0, 3);
+
+  return `
+    <div class="san-farm-card">
+      <div class="san-farm-card-hd">
+        <strong class="san-farm-card-name">${escapeHtml(farm.name)}</strong>
+        <span class="farm-btn-country">${country}</span>
+      </div>
+
+      <div class="san-farm-kpis">
+        <div class="san-farm-kpi">
+          <span class="san-kpi-val">${formatInteger(records.length)}</span>
+          <span class="san-kpi-lbl">registros</span>
+        </div>
+        <div class="san-farm-kpi">
+          <span class="san-kpi-val">${formatInteger(totalAnimals)}</span>
+          <span class="san-kpi-lbl">aplicações</span>
+        </div>
+        <div class="san-farm-kpi">
+          <span class="san-kpi-val">${Object.keys(productCount).length}</span>
+          <span class="san-kpi-lbl">produtos</span>
+        </div>
+      </div>
+
+      ${topProduct ? `
+        <div class="san-farm-top-prod">
+          <span class="san-top-label">Produto mais aplicado</span>
+          <span class="san-top-name">${escapeHtml(topProduct[0])}</span>
+          <span class="san-top-count">${topProduct[1]}× aplicado${topProduct[1] !== 1 ? "s" : ""}</span>
+        </div>
+      ` : ""}
+
+      ${lastRecord ? `
+        <div class="san-farm-last">
+          <span class="san-last-label">Última aplicação</span>
+          <span class="san-last-date">${formatDate(lastRecord.date)}</span>
+          <span class="san-last-prod">${escapeHtml(lastRecord.product || "—")}</span>
+          ${lastRecord.potreiro && lastRecord.potreiro !== "Sem potreiro" ? `<span class="san-last-potr">${escapeHtml(lastRecord.potreiro)}</span>` : ""}
+        </div>
+      ` : `<div class="san-farm-last"><span class="san-last-label">Sem registros</span></div>`}
+
+      ${recentRecords.length > 1 ? `
+        <div class="san-farm-recent">
+          ${recentRecords.slice(1).map((r) => `
+            <div class="san-recent-row">
+              <span class="san-recent-date">${formatDate(r.date)}</span>
+              <span class="san-recent-prod">${escapeHtml(r.product || "—")}</span>
+              <span class="san-recent-qty">${formatInteger(r.quantity)} cab.</span>
+            </div>
+          `).join("")}
+        </div>
+      ` : ""}
+
+      <button type="button" class="san-farm-cta-btn" data-san-filter-farm="${escapeHtml(farm.name)}">
+        Ver todos os registros
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+  `;
 }
 
 function renderSanitaryFarmSwitch() {
