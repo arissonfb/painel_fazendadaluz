@@ -3317,7 +3317,7 @@ function bindEvents() {
   // Mobile bottom nav
   if (elements.mobileNavDashboard) {
     elements.mobileNavDashboard.addEventListener("click", () => {
-      state.activeView = "dashboard";
+      state.activeView = "home";
       render();
     });
     elements.mobileNavSanitary.addEventListener("click", () => {
@@ -4904,7 +4904,7 @@ function syncMobileNav(view) {
   [elements.mobileNavDashboard, elements.mobileNavSanitary, elements.mobileNavPotreiros, elements.mobileNavReproducao, elements.mobileNavFarms].forEach((btn) => {
     if (btn) btn.classList.remove("active");
   });
-  if (view === "dashboard" && elements.mobileNavDashboard) elements.mobileNavDashboard.classList.add("active");
+  if ((view === "home" || view === "dashboard") && elements.mobileNavDashboard) elements.mobileNavDashboard.classList.add("active");
   if (view === "sanitary" && elements.mobileNavSanitary) elements.mobileNavSanitary.classList.add("active");
   if (view === "potreiros" && elements.mobileNavPotreiros) elements.mobileNavPotreiros.classList.add("active");
   if (view === "reproducao" && elements.mobileNavReproducao) elements.mobileNavReproducao.classList.add("active");
