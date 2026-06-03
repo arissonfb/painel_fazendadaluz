@@ -4826,7 +4826,48 @@ function renderActiveView() {
   if (view === "reproducao") renderReproducaoView();
   if (view === "compras") { try { renderComprasView(); } catch (e) { console.error("[compras] erro ao renderizar:", e); } }
   if (view === "vendas")   { try { renderVendasView();  } catch (e) { console.error("[vendas] erro ao renderizar:", e); } }
+  if (view !== "home") injectBackButton(view);
   syncMobileNav(view);
+}
+
+function injectBackButton(view) {
+  const viewMap = {
+    dashboard: elements.dashboardView,
+    sanitary: elements.sanitaryView,
+    potreiros: elements.potreirosView,
+    reproducao: elements.reproducaoView,
+    compras: elements.comprasView,
+    vendas: elements.vendasView
+  };
+  const el = viewMap[view];
+  if (!el) return;
+  if (el.querySelector(".back-to-home-bar")) return;
+
+  const farm = getFarm();
+  const farmLabel = state.data.selectedFarmId === TOTAL_FARM_ID ? "Todas as Fazendas" : farm.name;
+  const viewLabels = {
+    dashboard: "Estoque", sanitary: "Manejo Sanitário", potreiros: "Potreiros",
+    reproducao: "Reprodução", compras: "Compras", vendas: "Vendas"
+  };
+
+  const bar = document.createElement("div");
+  bar.className = "back-to-home-bar";
+  bar.innerHTML = `
+    <button type="button" class="btn-back-home">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+      Painel
+    </button>
+    <span class="back-breadcrumb">
+      <span class="back-farm">${escapeHtml(farmLabel)}</span>
+      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+      <span>${escapeHtml(viewLabels[view] || view)}</span>
+    </span>
+  `;
+  bar.querySelector(".btn-back-home").addEventListener("click", () => {
+    state.activeView = "home";
+    render();
+  });
+  el.insertBefore(bar, el.firstChild);
 }
 
 function syncMobileNav(view) {
