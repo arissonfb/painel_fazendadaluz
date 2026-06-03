@@ -3413,12 +3413,9 @@ function bindEvents() {
   });
   elements.movementValue?.addEventListener("input", () => {
     if (elements.movementType.value === "compra") {
-      const qty = Number(elements.movementQuantity?.value || 0);
-      const total = Number(elements.movementValue.value || 0);
-      if (qty > 0 && total > 0 && elements.movPurchaseValuePerHead) {
-        elements.movPurchaseValuePerHead.value = +(total / qty).toFixed(2);
-      }
+      updatePurchaseComputedValues();
     }
+    refreshMovementValueHint();
     updateUsdBrlEquiv();
   });
   elements.movUsdRate?.addEventListener("input", () => {
@@ -5581,7 +5578,11 @@ function openEditMovementDialog(farmId, movementId) {
     const p = movement.purchaseDetails;
     if (elements.movPurchaseSource) elements.movPurchaseSource.value = p.sourceProperty || "";
     if (elements.movPurchaseAvgWeight) elements.movPurchaseAvgWeight.value = p.avgWeight || "";
-    if (elements.movPurchaseTotalWeight) { elements.movPurchaseTotalWeight.value = p.totalWeight || ""; delete elements.movPurchaseTotalWeight.dataset.manualEdit; }
+    if (elements.movPurchaseTotalWeight) {
+      const tw = Number(p.totalWeight || 0);
+      elements.movPurchaseTotalWeight.value = tw > 0 ? tw.toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + " kg" : "";
+      delete elements.movPurchaseTotalWeight.dataset.manualEdit;
+    }
     if (elements.movPurchasePricePerKg) elements.movPurchasePricePerKg.value = p.pricePerKg || "";
     if (elements.movPurchaseValuePerHead) elements.movPurchaseValuePerHead.value = p.valuePerHead || "";
   }
@@ -8905,7 +8906,9 @@ function updateUsdBrlEquiv() {
   const total = Number(elements.movementValue.value || 0);
   const rate  = Number(elements.movUsdRate?.value || 0);
   if (elements.movUsdBrlEquiv) {
-    elements.movUsdBrlEquiv.value = total > 0 && rate > 0 ? (total * rate).toFixed(2) : "";
+    elements.movUsdBrlEquiv.value = total > 0 && rate > 0
+      ? "R$ " + (total * rate).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      : "";
   }
 }
 
@@ -8991,30 +8994,89 @@ function updateSaleComputedValue() {
 
 function updatePurchaseComputedValues() {
   if (elements.movementType.value !== "compra") return;
-  const qty = Number(elements.movementQuantity.value || 0);
-  const avgWeight = Number(elements.movPurchaseAvgWeight?.value || 0);
+  const qty        = Number(elements.movementQuantity.value || 0);
+  const avgWeight  = Number(elements.movPurchaseAvgWeight?.value || 0);
   const pricePerKg = Number(elements.movPurchasePricePerKg?.value || 0);
+  const farm       = getMovementDialogFarm();
+  const currency   = farm ? getFarmCurrency(farm.id) : "BRL";
+  const sym        = currency === "USD" ? "US$" : "R$";
 
-  // Auto-fill total weight from qty × avgWeight (only if avg was changed)
+  // ── Peso médio hint ──
+  if (document.getElementById("fmtAvgWeight")) {
+    document.getElementById("fmtAvgWeight").textContent =
+      avgWeight > 0 ? avgWeight.toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + " kg/cab." : "";
+  }
+
+  // ── Peso total ──
+  let totalWeight = 0;
   if (qty > 0 && avgWeight > 0) {
     const computed = +(qty * avgWeight).toFixed(1);
     if (elements.movPurchaseTotalWeight && !elements.movPurchaseTotalWeight.dataset.manualEdit) {
-      elements.movPurchaseTotalWeight.value = computed;
+      totalWeight = computed;
+      elements.movPurchaseTotalWeight.value =
+        computed.toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + " kg";
+    } else {
+      totalWeight = parseFloat((elements.movPurchaseTotalWeight?.value || "0").replace(/\./g, "").replace(",", ".")) || 0;
     }
+  } else {
+    totalWeight = parseFloat((elements.movPurchaseTotalWeight?.value || "0").replace(/\./g, "").replace(",", ".")) || 0;
   }
 
-  const totalWeight = Number(elements.movPurchaseTotalWeight?.value || 0);
+  // ── Valor por kg hint ──
+  if (document.getElementById("fmtPricePerKg")) {
+    document.getElementById("fmtPricePerKg").textContent =
+      pricePerKg > 0 ? sym + " " + pricePerKg.toLocaleString("pt-BR", { minimumFractionDigits: 3, maximumFractionDigits: 3 }) + "/kg" : "";
+  }
 
+  // ── Valor total e por animal ──
+  let total = 0;
   if (pricePerKg > 0 && totalWeight > 0) {
-    const total = +(pricePerKg * totalWeight).toFixed(2);
+    total = +(pricePerKg * totalWeight).toFixed(2);
     elements.movementValue.value = total;
     if (qty > 0 && elements.movPurchaseValuePerHead) {
-      elements.movPurchaseValuePerHead.value = +(total / qty).toFixed(2);
+      const perHead = total / qty;
+      elements.movPurchaseValuePerHead.value =
+        sym + " " + perHead.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
   } else if (Number(elements.movementValue.value) > 0 && qty > 0 && elements.movPurchaseValuePerHead) {
-    elements.movPurchaseValuePerHead.value = +(Number(elements.movementValue.value) / qty).toFixed(2);
+    total = Number(elements.movementValue.value);
+    const perHead = total / qty;
+    elements.movPurchaseValuePerHead.value =
+      sym + " " + perHead.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
+
+  // ── Hint valor total ──
+  refreshMovementValueHint(sym);
+
+  // ── Barra de totais ──
+  const bar = document.getElementById("movPurchaseTotalsBar");
+  if (bar) {
+    const hasData = total > 0 || totalWeight > 0;
+    bar.hidden = !hasData;
+    if (hasData) {
+      const fmtTotal     = document.getElementById("fmtPurchaseTotal");
+      const fmtPerHead   = document.getElementById("fmtPurchasePerHead");
+      const fmtTotalWt   = document.getElementById("fmtPurchaseTotalWeight");
+      if (fmtTotal)   fmtTotal.textContent   = total > 0   ? "Total: " + sym + " " + total.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "";
+      if (fmtPerHead) fmtPerHead.textContent = (total > 0 && qty > 0) ? "/ cab.: " + sym + " " + (total / qty).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "";
+      if (fmtTotalWt) fmtTotalWt.textContent = totalWeight > 0 ? totalWeight.toLocaleString("pt-BR", { maximumFractionDigits: 0 }) + " kg total" : "";
+    }
+  }
+
   updateUsdBrlEquiv();
+}
+
+function refreshMovementValueHint(sym) {
+  const hint = document.getElementById("fmtMovementValue");
+  if (!hint) return;
+  const v = Number(elements.movementValue?.value || 0);
+  if (!sym) {
+    const farm = getMovementDialogFarm();
+    sym = farm && getFarmCurrency(farm.id) === "USD" ? "US$" : "R$";
+  }
+  hint.textContent = v > 0
+    ? sym + " " + v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : "";
 }
 
 function syncMovementCategoryOptionsForFarm(farm) {
@@ -9358,10 +9420,14 @@ async function handleMovementSubmit(event) {
 
   if (type === "compra") {
     const sourceProperty = elements.movPurchaseSource?.value?.trim() || "";
-    const avgWeight = Number(elements.movPurchaseAvgWeight?.value) || null;
-    const totalWeight = Number(elements.movPurchaseTotalWeight?.value) || null;
-    const pricePerKg = Number(elements.movPurchasePricePerKg?.value) || null;
-    const valuePerHead = Number(elements.movPurchaseValuePerHead?.value) || null;
+    const avgWeight   = Number(elements.movPurchaseAvgWeight?.value) || null;
+    // movPurchaseTotalWeight agora é type="text" com formato "90.000 kg" — extrai o número
+    const rawTw       = (elements.movPurchaseTotalWeight?.value || "").replace(/[^\d,.]/g, "").replace(/\./g, "").replace(",", ".");
+    const totalWeight = parseFloat(rawTw) || null;
+    const pricePerKg  = Number(elements.movPurchasePricePerKg?.value) || null;
+    // movPurchaseValuePerHead agora é type="text" com prefixo "US$ / R$ " — extrai o número
+    const rawVph      = (elements.movPurchaseValuePerHead?.value || "").replace(/[^\d,.]/g, "").replace(/\./g, "").replace(",", ".");
+    const valuePerHead = parseFloat(rawVph) || null;
     purchaseDetails = { sourceProperty, avgWeight, totalWeight, pricePerKg, valuePerHead, exchangeRate };
   }
 

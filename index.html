@@ -938,24 +938,31 @@
           <div class="purchase-detail-grid">
             <label class="form-span-2">
               Propriedade / Origem
-              <input type="text" id="movPurchaseSource" maxlength="100" placeholder="Ex.: Estância Santa Rosa, Fazenda Modeloâ€¦">
+              <input type="text" id="movPurchaseSource" maxlength="100" placeholder="Ex.: Estância Santa Rosa, Fazenda Modelo…">
             </label>
             <label>
               Peso médio (kg/cabeça)
               <input type="number" id="movPurchaseAvgWeight" min="0" step="0.1" placeholder="0,0">
+              <span class="field-fmt-hint" id="fmtAvgWeight"></span>
             </label>
             <label>
               Peso total (kg)
-              <input type="number" id="movPurchaseTotalWeight" min="0" step="0.1" placeholder="calculado automaticamente">
+              <input type="text" id="movPurchaseTotalWeight" placeholder="calculado automaticamente" readonly>
             </label>
             <label>
               Valor por kg
               <input type="number" id="movPurchasePricePerKg" min="0" step="0.001" placeholder="0,000">
+              <span class="field-fmt-hint" id="fmtPricePerKg"></span>
             </label>
             <label>
               Valor por animal
-              <input type="number" id="movPurchaseValuePerHead" min="0" step="0.01" placeholder="calculado" readonly>
+              <input type="text" id="movPurchaseValuePerHead" placeholder="calculado" readonly>
             </label>
+          </div>
+          <div class="purchase-totals-bar" id="movPurchaseTotalsBar" hidden>
+            <span id="fmtPurchaseTotal"></span>
+            <span id="fmtPurchasePerHead"></span>
+            <span id="fmtPurchaseTotalWeight"></span>
           </div>
         </div>
 
@@ -986,6 +993,7 @@
         <label id="movementValueWrap">
           <span id="movementValueLabel">Valor total (opcional)</span>
           <input type="number" id="movementValue" min="0" step="0.01" placeholder="0,00">
+          <span class="field-fmt-hint" id="fmtMovementValue"></span>
         </label>
         <label>
           Observação

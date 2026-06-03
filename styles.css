@@ -3000,6 +3000,38 @@ input {
   color: var(--muted);
   margin-bottom: 12px;
 }
+/* Hint de valor formatado abaixo dos inputs de compra/venda */
+.field-fmt-hint {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--green, #335c43);
+  min-height: 14px;
+  line-height: 1;
+  letter-spacing: 0.01em;
+}
+
+/* Barra de totais da compra */
+.purchase-totals-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: rgba(55, 91, 67, 0.09);
+  border-radius: 10px;
+  border: 1px solid rgba(55, 91, 67, 0.16);
+}
+
+.purchase-totals-bar span {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #1b5e2e;
+  white-space: nowrap;
+}
+
+.purchase-totals-bar span:empty { display: none; }
+
 .purchase-detail-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
