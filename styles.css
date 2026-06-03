@@ -399,6 +399,31 @@ body::before {
   font-weight: 700;
 }
 
+/* Etiqueta de país (UY / BR) nos botões de fazenda */
+.farm-btn-country {
+  margin-left: auto;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.10);
+  color: rgba(255, 255, 255, 0.55);
+  flex-shrink: 0;
+}
+
+.farm-btn.active .farm-btn-country {
+  background: rgba(0, 0, 0, 0.12);
+  color: inherit;
+  opacity: 0.75;
+}
+
+.sidebar-switch .farm-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .sidebar-shortcut {
   width: 100%;
   text-align: left;
@@ -463,6 +488,30 @@ body::before {
 
 .sidebar-shortcut.backup-btn:hover {
   background: var(--gold-light);
+}
+
+/* Ícones inline nos atalhos do menu lateral */
+.sidebar-shortcut {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sidebar-icon {
+  flex-shrink: 0;
+  opacity: 0.72;
+}
+
+.sidebar-shortcut:hover .sidebar-icon,
+.sidebar-shortcut.active .sidebar-icon {
+  opacity: 1;
+}
+
+/* Seção Administração — separador visual */
+.sidebar-section-admin {
+  border-top: 1px solid rgba(255, 255, 255, 0.09);
+  padding-top: 6px;
+  margin-top: 2px;
 }
 
 .backup-warning-card {

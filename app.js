@@ -1316,6 +1316,7 @@ function boot() {
 }
 
 function startAutoSync() {
+  // Render está sempre ativo (plano pago) — 60s é suficiente para detectar mudanças de outras sessões
   setInterval(async () => {
     if (!isAuthenticated() || !runtime.cloudToken || runtime.cloudSyncing) return;
     try {
@@ -1327,7 +1328,7 @@ function startAutoSync() {
     } catch {
       // silent — next tick will retry
     }
-  }, 3000);
+  }, 60000);
 }
 
 function initializeAppShell() {
@@ -4549,8 +4550,8 @@ function handleRegisterAction(action) {
 function renderFarmSwitch() {
   elements.farmSwitch.innerHTML = "";
   const totalButton = document.createElement("button");
-  totalButton.className = `farm-btn ${TOTAL_FARM_ID === state.data.selectedFarmId ?"active" : ""}`;
-  totalButton.textContent = "Total";
+  totalButton.className = `farm-btn ${TOTAL_FARM_ID === state.data.selectedFarmId ? "active" : ""}`;
+  totalButton.textContent = "Todas as Fazendas";
   totalButton.addEventListener("click", () => {
     state.data.selectedFarmId = TOTAL_FARM_ID;
     if (state.activeView !== "compras" && state.activeView !== "vendas") {
@@ -4563,8 +4564,10 @@ function renderFarmSwitch() {
 
   Object.values(state.data.farms).forEach((farm) => {
     const button = document.createElement("button");
-    button.className = `farm-btn ${farm.id === state.data.selectedFarmId ?"active" : ""}`;
-    button.textContent = farm.name;
+    button.className = `farm-btn ${farm.id === state.data.selectedFarmId ? "active" : ""}`;
+    const currency = FARM_CURRENCY_MAP[farm.id];
+    const countryTag = currency === "USD" ? "UY" : "BR";
+    button.innerHTML = `${escapeHtml(farm.name)} <span class="farm-btn-country">${countryTag}</span>`;
     button.addEventListener("click", () => {
       state.data.selectedFarmId = farm.id;
       if (state.activeView !== "compras" && state.activeView !== "vendas") {
@@ -5744,14 +5747,14 @@ const SANITARY_PAGE_SIZE = 50;
 function renderSanitaryTable(farm) {
   const isTotalView = farm.id === TOTAL_FARM_ID;
 
-  // Build full sorted list with farmId attached
+  // Build full sorted list with farmId attached — sem filtro de ano para exibir todos os registros
   let allRecords;
   if (isTotalView) {
     allRecords = getAllFarms().flatMap((f) =>
-      getFilteredSanitaryRecords(f).map((r) => ({ ...r, _farmId: f.id, _farmName: f.name }))
+      (f.sanitaryRecords || []).map((r) => ({ ...r, _farmId: f.id, _farmName: f.name }))
     );
   } else {
-    allRecords = getFilteredSanitaryRecords(farm).map((r) => ({ ...r, _farmId: farm.id, _farmName: farm.name }));
+    allRecords = (farm.sanitaryRecords || []).map((r) => ({ ...r, _farmId: farm.id, _farmName: farm.name }));
   }
   allRecords = allRecords.sort((a, b) => new Date(b.date) - new Date(a.date));
   syncSanitaryHistoryFilters(allRecords, farm, isTotalView);
@@ -5815,7 +5818,7 @@ function renderSanitaryTable(farm) {
       || runtime.sanitaryPotreroFilter !== "all"
       || runtime.sanitaryCategoryFilter !== "all"
       || runtime.sanitaryProductFilter !== "all";
-    elements.sanitaryTableBody.innerHTML = `<tr><td colspan="9" class="table-empty-cell">${query || hasStructuredFilters ?"Nenhum registro encontrado com os filtros aplicadoss." : "Nenhum registro sanitário no período."}</td></tr>`;
+    elements.sanitaryTableBody.innerHTML = `<tr><td colspan="9" class="table-empty-cell">${query || hasStructuredFilters ? "Nenhum registro encontrado com os filtros aplicados." : "Nenhum registro sanitário cadastrado."}</td></tr>`;
     return;
   }
 
@@ -5856,12 +5859,12 @@ function renderSanitaryFarmSwitch() {
 
   elements.sanitaryFarmSwitch.innerHTML = "";
   [
-    { id: TOTAL_FARM_ID, name: "Total" },
+    { id: TOTAL_FARM_ID, name: "Todas as Fazendas" },
     ...getAllFarms().map((item) => ({ id: item.id, name: item.name }))
   ].forEach((item) => {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = `farm-btn ${item.id === state.data.selectedFarmId ?"active" : ""}`;
+    button.className = `farm-btn ${item.id === state.data.selectedFarmId ? "active" : ""}`;
     button.textContent = item.name;
     button.addEventListener("click", () => {
       state.data.selectedFarmId = item.id;

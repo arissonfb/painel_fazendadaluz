@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Yrsa:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./styles.css?v=20260601b">
+  <link rel="stylesheet" href="./styles.css?v=20260602a">
 </head>
 <body class="login-mode">
   <section class="splash-shell" id="splashShell" aria-label="Tela de abertura">
@@ -102,19 +102,56 @@
         </div>
 
         <div class="sidebar-section">
-          <span class="sidebar-label">Acesso rápido</span>
-          <button type="button" class="sidebar-shortcut" id="sanitaryShortcut">Manejo Sanitário</button>
-          <button type="button" class="sidebar-shortcut" id="potreirosShortcut">Potreiros</button>
-          <button type="button" class="sidebar-shortcut" id="reproducaoShortcut">Reprodução</button>
-          <button type="button" class="sidebar-shortcut shortcut-compras" id="comprasShortcut">Compras</button>
-          <button type="button" class="sidebar-shortcut shortcut-vendas-nav" id="vendasShortcut">Vendas</button>
-          <button type="button" class="sidebar-shortcut" id="manageUsersButton">Usuários</button>
-          <button type="button" class="sidebar-shortcut" id="auditTrailButton">Auditoria</button>
-          <button type="button" class="sidebar-shortcut backup-btn" id="backupButton">Backup dos dados</button>
-          <button type="button" class="sidebar-shortcut subtle" id="restoreButton">Restaurar backup</button>
+          <span class="sidebar-label">Módulos</span>
+          <button type="button" class="sidebar-shortcut" id="sanitaryShortcut">
+            <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 2a2 2 0 0 0-2 2v5H4a2 2 0 0 0-2 2v2c0 1.1.9 2 2 2h5v5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2v-5h5a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2h-5V4a2 2 0 0 0-2-2h-2z"/></svg>
+            Manejo Sanitário
+          </button>
+          <button type="button" class="sidebar-shortcut" id="reproducaoShortcut">
+            <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            Reprodução
+          </button>
+          <button type="button" class="sidebar-shortcut shortcut-compras" id="comprasShortcut">
+            <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+            Compras
+          </button>
+          <button type="button" class="sidebar-shortcut shortcut-vendas-nav" id="vendasShortcut">
+            <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            Vendas
+          </button>
+          <button type="button" class="sidebar-shortcut" id="potreirosShortcut">
+            <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 8C8 10 5.9 16.17 3.82 21"/><path d="M9.04 13.4a14.47 14.47 0 0 0-4.8 8.87"/><path d="M22 9c-5.08 2.45-9.3 7.2-10 13"/><path d="M22 9a15.5 15.5 0 0 0-6.47 5.74"/></svg>
+            Potreiros
+          </button>
+        </div>
+
+        <div class="sidebar-section sidebar-section-admin">
+          <span class="sidebar-label">Administração</span>
+          <button type="button" class="sidebar-shortcut" id="manageUsersButton">
+            <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Usuários
+          </button>
+          <button type="button" class="sidebar-shortcut" id="auditTrailButton">
+            <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            Auditoria
+          </button>
+          <button type="button" class="sidebar-shortcut backup-btn" id="backupButton">
+            <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/></svg>
+            Backup dos dados
+          </button>
+          <button type="button" class="sidebar-shortcut subtle" id="restoreButton">
+            <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>
+            Restaurar backup
+          </button>
           <input type="file" id="restoreFileInput" accept=".json" hidden>
-          <button type="button" class="sidebar-shortcut" id="myAccountBtn" title="Alterar minha senha">Minha conta</button>
-          <button type="button" class="sidebar-shortcut subtle" id="logoutButton">Sair</button>
+          <button type="button" class="sidebar-shortcut" id="myAccountBtn" title="Alterar minha senha">
+            <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Minha conta
+          </button>
+          <button type="button" class="sidebar-shortcut subtle" id="logoutButton">
+            <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 0-2-2V5a2 2 0 0 0 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Sair
+          </button>
         </div>
 
         <div class="sidebar-credit">
@@ -1626,7 +1663,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
-  <script src="./app.js?v=20260601b"></script>
-  <script src="./__commercial_new.js?v=20260601b"></script>
+  <script src="./app.js?v=20260602a"></script>
+  <script src="./__commercial_new.js?v=20260602a"></script>
 </body>
 </html>
