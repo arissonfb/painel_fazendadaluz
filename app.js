@@ -1980,9 +1980,11 @@ async function cloudPull() {
     const cloudJson = JSON.stringify(merged.farms);
     if (localJson !== cloudJson) {
       state.data = merged;
-      const fixedCount = fixSanitaryDates2026Dec();
+      fixSanitaryDates2026Dec();
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
-      if (fixedCount > 0) scheduleCloudPush();
+      // Garante que registros importados (IMPORTED_SANITARY_RECORDS etc.)
+      // sejam persistidos no Render após serem adicionados localmente
+      scheduleCloudPush();
       if (isAuthenticated()) {
         render();
       }
