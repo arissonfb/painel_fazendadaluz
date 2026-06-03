@@ -3221,6 +3221,9 @@ function bindEvents() {
     document.getElementById("changeMyPasswordDlg").close();
   });
   elements.sanitaryShortcut.addEventListener("click", () => {
+    resetSanitaryTableFilters();
+    runtime.sanitaryPage = 0;
+    runtime.sanitarySearch = "";
     state.activeView = "sanitary";
     render();
   });
@@ -3318,6 +3321,9 @@ function bindEvents() {
       render();
     });
     elements.mobileNavSanitary.addEventListener("click", () => {
+      resetSanitaryTableFilters();
+      runtime.sanitaryPage = 0;
+      runtime.sanitarySearch = "";
       state.activeView = "sanitary";
       render();
     });
@@ -4261,7 +4267,7 @@ function renderHomeView() {
       if (view === "compras") runtime.comprasPage = 0;
       if (view === "vendas") runtime.vendasPage = 0;
       if (view === "sanitary") {
-        runtime.sanitaryFarmFilter = "all";
+        resetSanitaryTableFilters();
         runtime.sanitaryPage = 0;
         runtime.sanitarySearch = "";
       }
