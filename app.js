@@ -3584,10 +3584,12 @@ function populateYearFilter() {
   const years = new Set([today.getFullYear()]);
   Object.values(state.data.farms).forEach((farm) => {
     farm.movements.forEach((movement) => {
-      years.add(new Date(movement.date).getFullYear());
+      const y = new Date(movement.date).getFullYear();
+      if (Number.isFinite(y)) years.add(y);
     });
     farm.sanitaryRecords.forEach((record) => {
-      years.add(new Date(record.date).getFullYear());
+      const y = new Date(record.date).getFullYear();
+      if (Number.isFinite(y)) years.add(y);
     });
     farm.monthlyRecords.forEach((record) => {
       const year = Number(String(record.period || "").slice(0, 4));
@@ -5081,19 +5083,26 @@ function renderPeriodSummary(farm) {
 function renderSalesAnalysis(farm) {
   const summary = summarizeSalePeriod(farm, state.filters.year, state.filters.month);
   const isPremiumFarm = isPremiumSaleFarm(farm);
+  const farmCurrency = getFarmCurrency(farm.id);
+  const sym = farmCurrency === "USD" ? "US$" : "R$";
+  const fmtMoney = (v) => {
+    if (!v) return farmCurrency === "USD" ? "US$ 0,00" : formatCurrency(0);
+    if (farmCurrency === "USD") return "US$ " + new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
+    return formatCurrency(v);
+  };
 
   const cards = isPremiumFarm
-    ?[
+    ? [
       { title: "Vendas registradas", value: formatInteger(summary.count), detail: "lançamentos comerciais no período" },
-      { title: "Faturamento", value: formatCurrency(summary.totalValue), detail: "valor calculado das vendas" },
+      { title: "Faturamento", value: fmtMoney(summary.totalValue), detail: "valor calculado das vendas" },
       { title: "Kg vivo", value: formatWeight(summary.liveKg), detail: "peso vivo negociado" },
       { title: "Kg carcaça", value: formatWeight(summary.carcassKg), detail: "peso de carcaça negociado" }
     ]
     : [
       { title: "Vendas registradas", value: formatInteger(summary.count), detail: "lançamentos comerciais no período" },
-      { title: "Faturamento", value: formatCurrency(summary.totalValue), detail: "valor calculado das vendas" },
+      { title: "Faturamento", value: fmtMoney(summary.totalValue), detail: "valor calculado das vendas" },
       { title: "Kg vivo", value: formatWeight(summary.liveKg), detail: "peso vivo negociado" },
-      { title: "Média R$/kg vivo", value: summary.liveKg > 0 ?formatCurrency(summary.totalValue / summary.liveKg) : formatCurrency(0), detail: "preço médio por kg vivo" }
+      { title: `Média ${sym}/kg vivo`, value: summary.liveKg > 0 ? fmtMoney(summary.totalValue / summary.liveKg) : fmtMoney(0), detail: "preço médio por kg vivo" }
     ];
 
   if (elements.salesSummary) {
@@ -5119,10 +5128,10 @@ function renderSalesAnalysis(farm) {
     <tr>
       <td data-label="Data">${formatDate(movement.date)}</td>
       <td data-label="Categoria">${escapeHtml(movement.categoryName)}${getMovementPhotoFlagMarkup(movement)}</td>
-      <td data-label="Base">${movement.saleDetails ?escapeHtml(getSaleModeLabel(movement.saleDetails.mode || "vivo")) : "Relatório mensal"}</td>
-      <td data-label="Kg">${movement.saleDetails ?formatWeight(movement.saleDetails.weightKg || 0) : "-"}</td>
-      <td data-label="R$/kg">${movement.saleDetails ?formatCurrency(movement.saleDetails.pricePerKg || 0) : "-"}</td>
-      <td data-label="Total">${formatCurrency(movement.value || 0)}</td>
+      <td data-label="Base">${movement.saleDetails ? escapeHtml(getSaleModeLabel(movement.saleDetails.mode || "vivo")) : "Relatório mensal"}</td>
+      <td data-label="Kg">${movement.saleDetails ? formatWeight(movement.saleDetails.weightKg || 0) : "-"}</td>
+      <td data-label="${sym}/kg">${movement.saleDetails ? fmtMoney(movement.saleDetails.pricePerKg || 0) : "-"}</td>
+      <td data-label="Total">${fmtMoney(movement.value || 0)}</td>
     </tr>
   `).join("");
 }
@@ -8196,6 +8205,11 @@ function openMovementDialog(initialType) {
   elements.movementNotes.value = "";
   if (elements.movSaleBuyer) elements.movSaleBuyer.value = "";
   if (elements.movSaleYieldPct) elements.movSaleYieldPct.value = "";
+  const saleTotalsBar = document.getElementById("movSaleTotalsBar");
+  if (saleTotalsBar) {
+    saleTotalsBar.hidden = true;
+    ["fmtSaleTotal","fmtSalePerHead","fmtSalePriceKg","fmtSaleAvgWeight"].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = ""; });
+  }
   if (elements.movPurchaseSource) elements.movPurchaseSource.value = "";
   if (elements.movPurchaseAvgWeight) elements.movPurchaseAvgWeight.value = "";
   if (elements.movPurchaseTotalWeight) { elements.movPurchaseTotalWeight.value = ""; delete elements.movPurchaseTotalWeight.dataset.manualEdit; }
@@ -8984,12 +8998,33 @@ function updateSaleComputedValue() {
   }
 
   const farm = getMovementDialogFarm();
-  const saleMode = isPremiumSaleFarm(farm) ?elements.movementSaleMode.value : "vivo";
-  const pricePerKg = Number(saleMode === "carcaca" ?elements.movementCarcassPrice.value : elements.movementLivePrice.value);
-  const weightKg = Number(saleMode === "carcaca" ?elements.movementCarcassKg.value : elements.movementLiveKg.value);
-  const total = Number.isFinite(pricePerKg) && Number.isFinite(weightKg) ?pricePerKg * weightKg : 0;
-  elements.movementValue.value = total > 0 ?total.toFixed(2) : "";
+  const saleMode = isPremiumSaleFarm(farm) ? elements.movementSaleMode.value : "vivo";
+  const pricePerKg = Number(saleMode === "carcaca" ? elements.movementCarcassPrice.value : elements.movementLivePrice.value);
+  const weightKg   = Number(saleMode === "carcaca" ? elements.movementCarcassKg.value    : elements.movementLiveKg.value);
+  const qty        = Number(elements.movementQuantity?.value || 0);
+  const total      = pricePerKg > 0 && weightKg > 0 ? +(pricePerKg * weightKg).toFixed(2) : 0;
+
+  elements.movementValue.value = total > 0 ? total.toFixed(2) : "";
   updateUsdBrlEquiv();
+
+  // ── Barra de análise da venda ──
+  const bar = document.getElementById("movSaleTotalsBar");
+  if (!bar) return;
+
+  const currency  = farm ? getFarmCurrency(farm.id) : "BRL";
+  const sym       = currency === "USD" ? "US$" : "R$";
+  const hasData   = total > 0 || weightKg > 0;
+
+  const fmtTotal     = document.getElementById("fmtSaleTotal");
+  const fmtPerHead   = document.getElementById("fmtSalePerHead");
+  const fmtPriceKg   = document.getElementById("fmtSalePriceKg");
+  const fmtAvgWeight = document.getElementById("fmtSaleAvgWeight");
+
+  if (fmtTotal)     fmtTotal.textContent     = total > 0 ? "Total: " + sym + " " + total.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "";
+  if (fmtPerHead)   fmtPerHead.textContent   = total > 0 && qty > 0 ? "Preço médio/animal: " + sym + " " + (total / qty).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "";
+  if (fmtPriceKg)   fmtPriceKg.textContent   = pricePerKg > 0 ? sym + " " + pricePerKg.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "/kg" : "";
+  if (fmtAvgWeight) fmtAvgWeight.textContent = weightKg > 0 && qty > 0 ? "Peso médio: " + (weightKg / qty).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " kg/cab." : (weightKg > 0 ? "Lote: " + weightKg.toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + " kg" : "");
+  bar.hidden = !hasData;
 }
 
 function updatePurchaseComputedValues() {
@@ -13498,10 +13533,22 @@ const commercialFullValueFmt = new Intl.NumberFormat("pt-BR", {
   maximumFractionDigits: 2,
 });
 
-function formatCommercialMoney(value, compact = false) {
+function formatCommercialMoney(value, compact = false, currency = "BRL") {
   const num = Number(value || 0);
   if (!num) return "—";
+  if (currency === "USD") {
+    const fmt = new Intl.NumberFormat("pt-BR", compact
+      ? { maximumFractionDigits: 0 }
+      : { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return "US$ " + fmt.format(num);
+  }
   return compact ? commercialValueFmt.format(num) : commercialFullValueFmt.format(num);
+}
+
+function getCommercialCurrencyFromMovs(movs) {
+  if (!movs.length) return "BRL";
+  const currencies = new Set(movs.map((m) => m.currency || getFarmCurrency(m._farmId)));
+  return currencies.size === 1 ? [...currencies][0] : "BRL";
 }
 
 function getCommercialTableFilters(type) {
@@ -13578,6 +13625,9 @@ function renderCommercialKpiCards(container, focusType) {
   const ticket = combinedHeads > 0 ? combinedValue / combinedHeads : 0;
   const topFarm = getTopCommercialFarm(focusType === "compra" ? purchases : sales);
 
+  const currency = getCommercialCurrencyFromMovs([...sales, ...purchases]);
+  const fmt = (v, compact = true) => formatCommercialMoney(v, compact, currency);
+
   const card = ({ label, value, desc, tone, badge }) => `
     <article class="com2-kpi-card com2-kpi-card-${tone}">
       <div class="com2-kpi-topline">
@@ -13592,10 +13642,10 @@ function renderCommercialKpiCards(container, focusType) {
   container.innerHTML = `
     <div class="com2-kpi-grid">
       ${card({ label: "Cabeças vendidas", value: formatInteger(saleStats.heads), desc: `${formatInteger(saleStats.operations)} operações de venda`, tone: "v", badge: "Saídas" })}
-      ${card({ label: "Receita total", value: formatCommercialMoney(saleStats.value, true), desc: "valor bruto vendido no período", tone: "fin", badge: "Receita" })}
+      ${card({ label: "Receita total", value: fmt(saleStats.value), desc: "valor bruto vendido no período", tone: "fin", badge: "Receita" })}
       ${card({ label: "Cabeças compradas", value: formatInteger(purchaseStats.heads), desc: `${formatInteger(purchaseStats.operations)} operações de compra`, tone: "c", badge: "Entradas" })}
-      ${card({ label: "Valor em compras", value: formatCommercialMoney(purchaseStats.value, true), desc: "capital movimentado em aquisições", tone: "fin", badge: "Investimento" })}
-      ${card({ label: "Ticket médio/cabeça", value: formatCommercialMoney(ticket, true), desc: "média combinada de compras e vendas", tone: "neu", badge: "Média" })}
+      ${card({ label: "Valor em compras", value: fmt(purchaseStats.value), desc: "capital movimentado em aquisições", tone: "fin", badge: "Investimento" })}
+      ${card({ label: "Ticket médio/cabeça", value: fmt(ticket), desc: "média combinada de compras e vendas", tone: "neu", badge: "Média" })}
       ${card({
         label: "Maior volume",
         value: topFarm ? escapeHtml(topFarm.name) : "—",
@@ -13721,6 +13771,8 @@ function renderCommercialFarmBarChart(type, canvasId, chartKey) {
   setCommercialEmptyState(canvas, `${type}-farm-empty`, theme.emptyFarm, !rows.length);
   if (!rows.length) return;
 
+  const chartCurrency = getCommercialCurrencyFromMovs(getCommercialMovements(type));
+
   const chartH = Math.min(500, Math.max(300, rows.length * 48 + 84));
   canvas.style.setProperty("height", `${chartH}px`, "important");
   canvas.style.setProperty("max-height", `${chartH}px`, "important");
@@ -13764,8 +13816,8 @@ function renderCommercialFarmBarChart(type, canvasId, chartKey) {
               const row = rows[ctx.dataIndex];
               return [
                 `${theme.headLabel}: ${formatInteger(row.heads)}`,
-                `${theme.valueLabel}: ${formatCommercialMoney(row.value)}`,
-                `Ticket médio: ${formatCommercialMoney(row.heads > 0 ? row.value / row.heads : 0)}`,
+                `${theme.valueLabel}: ${formatCommercialMoney(row.value, false, chartCurrency)}`,
+                `Ticket médio: ${formatCommercialMoney(row.heads > 0 ? row.value / row.heads : 0, false, chartCurrency)}`,
                 `Participação: ${row.percent.toFixed(1)}%`,
               ];
             },
@@ -13803,6 +13855,8 @@ function renderCommercialEvolutionChart(type, canvasId, chartKey) {
   const hasData = rows.some((row) => row.heads > 0 || row.value > 0);
   setCommercialEmptyState(canvas, `${type}-evolution-empty`, theme.emptyEvolution, !hasData);
   if (!hasData) return;
+
+  const evolutionCurrency = getCommercialCurrencyFromMovs(getCommercialMovements(type, { includeMonth: false }));
 
   canvas.style.setProperty("height", "326px", "important");
   canvas.style.setProperty("max-height", "326px", "important");
@@ -13864,7 +13918,7 @@ function renderCommercialEvolutionChart(type, canvasId, chartKey) {
             label: (ctx) => {
               const row = rows[ctx.dataIndex];
               if (ctx.dataset.yAxisID === "yLeft") return `${theme.headLabel}: ${formatInteger(row.heads)}`;
-              return `${theme.valueLabel}: ${formatCommercialMoney(row.value)}`;
+              return `${theme.valueLabel}: ${formatCommercialMoney(row.value, false, evolutionCurrency)}`;
             },
             afterBody: (items) => {
               const row = rows[items[0].dataIndex];
@@ -13948,17 +14002,293 @@ function renderComprasKpiCards() {
   renderCommercialKpiCards(elements.comprasKpiSection, "compra");
 }
 
+// ── BI Compras: paleta de categorias ─────────────────────────────────
+const COMPRA_CAT_PALETTE = [
+  "#1b5e2e","#2d7d50","#bf9844","#1e4fa0","#5a3580",
+  "#c76b28","#8f3438","#4a7ab5","#2d8a70","#6b8f3a"
+];
+
+function buildComprasCategorySeries() {
+  const movs = getCommercialMovements("compra", { includeTableFilters: false });
+  const grouped = new Map();
+  movs.forEach((m) => {
+    const cat = m.categoryName || "Sem categoria";
+    const item = grouped.get(cat) || { category: cat, heads: 0, value: 0 };
+    item.heads += Number(m.quantity || 0);
+    item.value += Number(m.value || 0);
+    grouped.set(cat, item);
+  });
+  const rows = [...grouped.values()].filter(r => r.heads > 0).sort((a, b) => b.heads - a.heads);
+  const totalHeads = rows.reduce((s, r) => s + r.heads, 0);
+  return rows.map((r, i) => ({
+    ...r,
+    percent: totalHeads > 0 ? (r.heads / totalHeads) * 100 : 0,
+    color: COMPRA_CAT_PALETTE[i % COMPRA_CAT_PALETTE.length]
+  }));
+}
+
+function buildComprasMonthByCategorySeries() {
+  const movs = getCommercialMovements("compra", { includeMonth: false, includeTableFilters: false });
+  const catTotals = new Map();
+  movs.forEach(m => {
+    const cat = m.categoryName || "Sem categoria";
+    catTotals.set(cat, (catTotals.get(cat) || 0) + Number(m.quantity || 0));
+  });
+  const categories = [...catTotals.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).map(([cat]) => cat);
+  const monthHeads = {};
+  const monthValue = {};
+  categories.forEach(cat => { monthHeads[cat] = new Array(12).fill(0); monthValue[cat] = new Array(12).fill(0); });
+  movs.forEach((m) => {
+    const cat = m.categoryName || "Sem categoria";
+    const idx = Number(String(m.date || "").slice(5, 7)) - 1;
+    if (idx >= 0 && idx < 12 && monthHeads[cat]) {
+      monthHeads[cat][idx] += Number(m.quantity || 0);
+      monthValue[cat][idx] += Number(m.value || 0);
+    }
+  });
+  const monthlyTotals = Array.from({ length: 12 }, (_, i) => categories.reduce((s, cat) => s + monthHeads[cat][i], 0));
+  const peakIdx = monthlyTotals.indexOf(Math.max(...monthlyTotals));
+  return { categories, monthHeads, monthValue, monthlyTotals, peakIdx };
+}
+
+function renderComprasInsightStrip() {
+  const el = document.getElementById("comprasInsightStrip");
+  if (!el) return;
+  const { monthlyTotals, peakIdx } = buildComprasMonthByCategorySeries();
+  const catSeries = buildComprasCategorySeries();
+  const currency = getCommercialCurrencyFromMovs(getCommercialMovements("compra", { includeTableFilters: false }));
+  const sym = currency === "USD" ? "US$" : "R$";
+  const totalHeads = monthlyTotals.reduce((s, v) => s + v, 0);
+  const activeMths = monthlyTotals.filter(v => v > 0).length || 1;
+  const sorted3 = [...monthlyTotals].sort((a, b) => b - a).slice(0, 3).reduce((s, v) => s + v, 0);
+  const conc = totalHeads > 0 ? Math.round((sorted3 / totalHeads) * 100) : 0;
+  const totalValue = catSeries.reduce((s, r) => s + r.value, 0);
+  const ticketMedio = totalHeads > 0 ? totalValue / totalHeads : 0;
+  const numFmt = (v) => new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(v);
+  const chips = [
+    { icon: "📅", label: "Mes de maior aquisicao", value: MONTH_NAMES[peakIdx] || "—",           sub: `${numFmt(monthlyTotals[peakIdx] || 0)} cabecas` },
+    { icon: "🏷️", label: "Categoria mais comprada", value: catSeries[0]?.category || "—",          sub: `${(catSeries[0]?.percent || 0).toFixed(1)}% do volume` },
+    { icon: "📊", label: "Media mensal",             value: `${numFmt(Math.round(totalHeads / activeMths))} cab.`, sub: "nos meses com compra" },
+    { icon: "🎯", label: "Concentracao",             value: `${conc}%`,                              sub: "volume nos top 3 meses" },
+    { icon: "💰", label: "Custo medio/animal",       value: ticketMedio > 0 ? `${sym} ${numFmt(ticketMedio)}` : "—", sub: "investimento medio por cabeca" },
+  ];
+  el.innerHTML = chips.map(c => `
+    <div class="bi-insight-chip bi-insight-chip-c">
+      <span class="bi-chip-icon">${c.icon}</span>
+      <span class="bi-chip-label">${c.label}</span>
+      <span class="bi-chip-value">${escapeHtml(c.value)}</span>
+      <span class="bi-chip-sub">${c.sub}</span>
+    </div>`).join("");
+}
+
+function renderComprasStackedMonthly() {
+  const canvas = document.getElementById("comprasEvolutionChart");
+  if (!canvas) return;
+  if (state.charts["comprasEvolution"]) { state.charts["comprasEvolution"].destroy(); state.charts["comprasEvolution"] = null; }
+  const { categories, monthHeads, monthlyTotals, peakIdx } = buildComprasMonthByCategorySeries();
+  const hasData = monthlyTotals.some(v => v > 0);
+  setCommercialEmptyState(canvas, "compras-stacked-empty", "Nenhuma compra no periodo selecionado", !hasData);
+  if (!hasData) return;
+
+  const labels = MONTH_NAMES.map((m, i) => i === peakIdx ? m.slice(0, 3) + " ▲" : m.slice(0, 3));
+  const datasets = categories.map((cat, i) => ({
+    label: cat,
+    data: monthHeads[cat],
+    backgroundColor: COMPRA_CAT_PALETTE[i % COMPRA_CAT_PALETTE.length] + "d4",
+    borderColor: COMPRA_CAT_PALETTE[i % COMPRA_CAT_PALETTE.length],
+    borderWidth: 0,
+    borderRadius: 0,
+    borderSkipped: false,
+  }));
+
+  canvas.style.setProperty("height", "290px", "important");
+  canvas.style.setProperty("max-height", "290px", "important");
+  canvas.removeAttribute("height"); canvas.removeAttribute("width");
+
+  state.charts["comprasEvolution"] = new Chart(canvas, {
+    type: "bar",
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: "bottom",
+          labels: { padding: 18, boxWidth: 10, boxHeight: 10, usePointStyle: true, pointStyle: "rect", font: { size: 11, weight: "600" }, color: "#555" }
+        },
+        tooltip: {
+          backgroundColor: "#1a1a1a", titleColor: "#fff", bodyColor: "rgba(255,255,255,0.85)",
+          padding: 14, cornerRadius: 10,
+          callbacks: {
+            title: (items) => {
+              const i = items[0].dataIndex;
+              return `${MONTH_NAMES[i]} — ${new Intl.NumberFormat("pt-BR").format(monthlyTotals[i])} cabecas${i === peakIdx ? "  🏆 Pico" : ""}`;
+            },
+            label: (ctx) => {
+              const v = ctx.parsed.y;
+              if (!v) return null;
+              const tot = monthlyTotals[ctx.dataIndex];
+              const pct = tot > 0 ? ((v / tot) * 100).toFixed(1) : "0";
+              return `${ctx.dataset.label}: ${new Intl.NumberFormat("pt-BR").format(v)} cab. (${pct}%)`;
+            },
+            afterBody: (items) => {
+              const i = items[0].dataIndex;
+              return i === peakIdx ? ["", "★ Mes com maior volume do periodo"] : [];
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          stacked: true, grid: { display: false }, border: { display: false },
+          ticks: {
+            color: (ctx) => ctx.index === peakIdx ? "#1b5e2e" : "#888",
+            font: (ctx) => ({ size: 11, weight: ctx.index === peakIdx ? "800" : "500" })
+          }
+        },
+        y: {
+          stacked: true, beginAtZero: true,
+          grid: { color: "rgba(0,0,0,0.035)", drawTicks: false }, border: { display: false },
+          ticks: { precision: 0, color: "#aaa", font: { size: 10.5 }, callback: (v) => new Intl.NumberFormat("pt-BR").format(v) }
+        }
+      }
+    }
+  });
+}
+
+function renderComprasHeatmap() {
+  const el = document.getElementById("comprasHeatmap");
+  if (!el) return;
+  const { categories, monthHeads, monthlyTotals } = buildComprasMonthByCategorySeries();
+  if (!categories.length) {
+    el.innerHTML = `<p style="padding:24px;text-align:center;color:#ccc;font-size:0.8rem;">Sem dados para o periodo</p>`;
+    return;
+  }
+  let maxVal = 0;
+  categories.forEach(cat => monthHeads[cat].forEach(v => { if (v > maxVal) maxVal = v; }));
+  if (!maxVal) maxVal = 1;
+
+  const mo = MONTH_NAMES.map(m => m.slice(0, 3));
+  const cell = (val) => {
+    if (!val) return `<td class="bi-hm-cell" style="background:rgba(230,240,234,0.5);color:#ccc;">—</td>`;
+    const t = Math.sqrt(val / maxVal);
+    const bg = `rgba(27,94,46,${(t * 0.82).toFixed(2)})`;
+    const fg = t > 0.52 ? "#fff" : "#0d3018";
+    return `<td class="bi-hm-cell" style="background:${bg};color:${fg};" title="${val} cabecas">${new Intl.NumberFormat("pt-BR").format(val)}</td>`;
+  };
+
+  const headRow = `<tr>
+    <th class="bi-hm-row-hd">Categoria</th>
+    ${mo.map(m => `<th>${m}</th>`).join("")}
+    <th style="text-align:right;padding-left:8px;color:#999;">Total</th>
+  </tr>`;
+
+  const bodyRows = categories.map((cat, ci) => {
+    const color = COMPRA_CAT_PALETTE[ci % COMPRA_CAT_PALETTE.length];
+    const rowTotal = monthHeads[cat].reduce((s, v) => s + v, 0);
+    return `<tr>
+      <td class="bi-hm-cat-label">
+        <span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${color};margin-right:5px;vertical-align:middle;"></span>${escapeHtml(cat)}
+      </td>
+      ${monthHeads[cat].map(v => cell(v)).join("")}
+      <td style="text-align:right;padding-left:8px;font-size:0.72rem;font-weight:700;color:#1b5e2e;">${new Intl.NumberFormat("pt-BR").format(rowTotal)}</td>
+    </tr>`;
+  }).join("");
+
+  const grandTotal = categories.reduce((s, cat) => s + monthHeads[cat].reduce((a, b) => a + b, 0), 0);
+  const footRow = `<tr>
+    <td class="bi-hm-foot-label">Total</td>
+    ${monthlyTotals.map(v => `<td style="text-align:center;font-size:0.69rem;font-weight:700;color:${v > 0 ? "#333" : "#ddd"};">${v > 0 ? new Intl.NumberFormat("pt-BR").format(v) : "—"}</td>`).join("")}
+    <td class="bi-hm-foot-total" style="color:#1b5e2e;">${new Intl.NumberFormat("pt-BR").format(grandTotal)}</td>
+  </tr>`;
+
+  el.innerHTML = `
+    <table class="bi-heatmap">
+      <thead>${headRow}</thead>
+      <tbody>${bodyRows}</tbody>
+      <tfoot>${footRow}</tfoot>
+    </table>
+    <div class="bi-hm-scale">
+      <span>Menor</span>
+      <div class="bi-hm-scale-bar" style="background:linear-gradient(to right,rgba(27,94,46,0.08),rgba(27,94,46,0.82));"></div>
+      <span>Maior</span>
+    </div>`;
+}
+
+function renderComprasCategoryBar() {
+  const canvas = document.getElementById("comprasBarChart");
+  if (!canvas) return;
+  if (state.charts["comprasBar"]) { state.charts["comprasBar"].destroy(); state.charts["comprasBar"] = null; }
+  const rows = buildComprasCategorySeries();
+  setCommercialEmptyState(canvas, "compras-catbar-empty", "Nenhuma compra no periodo selecionado", !rows.length);
+  if (!rows.length) return;
+
+  const currency = getCommercialCurrencyFromMovs(getCommercialMovements("compra", { includeTableFilters: false }));
+  const sym = currency === "USD" ? "US$" : "R$";
+  const numFmt = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 });
+  const chartH = Math.min(380, Math.max(200, rows.length * 46 + 56));
+  canvas.style.setProperty("height", `${chartH}px`, "important");
+  canvas.style.setProperty("max-height", `${chartH}px`, "important");
+  canvas.removeAttribute("height"); canvas.removeAttribute("width");
+
+  state.charts["comprasBar"] = new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels: rows.map(r => r.category),
+      datasets: [{ label: "Cabecas", data: rows.map(r => r.heads), backgroundColor: rows.map(r => r.color + "cc"), borderColor: rows.map(r => r.color), borderWidth: 1, borderRadius: 8, borderSkipped: false, barThickness: 20 }]
+    },
+    options: {
+      indexAxis: "y", responsive: true, maintainAspectRatio: false,
+      layout: { padding: { right: 108, top: 4, bottom: 4 } },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: "#1a1a1a", titleColor: "#fff", bodyColor: "rgba(255,255,255,0.85)",
+          padding: 14, cornerRadius: 10, displayColors: false,
+          callbacks: {
+            title: (items) => rows[items[0].dataIndex]?.category || "",
+            label: (ctx) => {
+              const r = rows[ctx.dataIndex];
+              return [`Cabecas: ${numFmt.format(r.heads)} (${r.percent.toFixed(1)}%)`, `Investimento: ${sym} ${numFmt.format(r.value)}`, `Custo medio: ${sym} ${numFmt.format(r.heads > 0 ? r.value / r.heads : 0)}`];
+            }
+          }
+        }
+      },
+      scales: {
+        x: { beginAtZero: true, ticks: { precision: 0, color: "#bbb", font: { size: 10 } }, grid: { color: "rgba(0,0,0,0.03)" }, border: { display: false } },
+        y: { grid: { display: false }, border: { display: false }, ticks: { color: "#333", font: { size: 12, weight: "600" }, padding: 8 } }
+      }
+    },
+    plugins: [{
+      id: "catBarLabelsC",
+      afterDatasetsDraw(chart) {
+        const { ctx } = chart;
+        const meta = chart.getDatasetMeta(0);
+        ctx.save();
+        ctx.font = "600 10.5px Inter, Arial, sans-serif";
+        ctx.textBaseline = "middle";
+        meta.data.forEach((bar, idx) => {
+          const r = rows[idx];
+          if (!r) return;
+          ctx.fillStyle = "#666";
+          ctx.textAlign = "left";
+          ctx.fillText(`${numFmt.format(r.heads)}  ${r.percent.toFixed(1)}%`, chart.chartArea.right - 100, bar.y);
+        });
+        ctx.restore();
+      }
+    }]
+  });
+}
+
 function renderComprasCharts() {
-  renderComprasBarChart();
-  renderComprasEvolutionChart();
+  renderComprasInsightStrip();
+  renderComprasStackedMonthly();
+  renderComprasHeatmap();
+  renderComprasCategoryBar();
 }
 
-function renderComprasBarChart() {
-  renderCommercialFarmBarChart("compra", "comprasBarChart", "comprasBar");
-}
-
-function renderComprasEvolutionChart() {
-  renderCommercialEvolutionChart("compra", "comprasEvolutionChart", "comprasEvolution");
+function renderComprasBarChart() { /* substituido por renderComprasCategoryBar */ }
+function renderComprasEvolutionChart() { /* substituido por renderComprasStackedMonthly */
 }
 
 function renderComprasFilterSelects() {
@@ -14016,30 +14346,33 @@ function renderComprasTable() {
   const slice = movs.slice(page * COMPRAS_PAGE_SIZE, (page + 1) * COMPRAS_PAGE_SIZE);
 
   if (!slice.length) {
-    elements.comprasTableBody.innerHTML = `<tr><td colspan="10" class="table-empty-cell">${search || filterFarm || filterCat || filterDateFrom || filterDateTo ? "Nenhum registro encontrado com estes filtros." : "Nenhuma compra registrada ainda."}</td></tr>`;
+    elements.comprasTableBody.innerHTML = `<tr><td colspan="12" class="table-empty-cell">${search || filterFarm || filterCat || filterDateFrom || filterDateTo ? "Nenhum registro encontrado com estes filtros." : "Nenhuma compra registrada ainda."}</td></tr>`;
   } else {
     elements.comprasTableBody.innerHTML = slice.map((m) => {
       const p = m.purchaseDetails || {};
       const currency = m.currency || getFarmCurrency(m._farmId);
       const sym = currency === "USD" ? "US$" : "R$";
-      const fmtVal = (v) => v > 0 ? `${sym} ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)}` : "—";
-      const fmtKg = (v) => v > 0 ? `${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(v)} kg` : "—";
+      const fmtVal = (v) => v > 0 ? `${sym} ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)}` : `<span class="muted-cell">—</span>`;
+      const fmtKg  = (v) => v > 0 ? `${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(v)} kg` : `<span class="muted-cell">—</span>`;
+      const fmtPriceKg = (v) => v > 0 ? `${sym} ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 3, maximumFractionDigits: 3 }).format(v)}` : `<span class="muted-cell">—</span>`;
       const code = m.code
         ? `<span class="movement-code">${escapeHtml(m.code)}</span>`
         : `<span class="movement-code movement-code-legacy">—</span>`;
       const origin = p.sourceProperty ? escapeHtml(p.sourceProperty) : `<span class="muted-cell">—</span>`;
-      const noteSpan = m.notes ? `<span class="muted-cell">${escapeHtml(m.notes)}</span>` : "";
       const currBadge = `<span class="currency-badge ${currency === "USD" ? "usd" : "brl"}">${currency}</span>`;
+      const valuePerHead = p.valuePerHead || (m.quantity > 0 && m.value > 0 ? m.value / m.quantity : 0);
       return `<tr class="mov-record-row mov-record-row-compra">
         <td>${code}</td>
         <td><div class="mov-records-main-cell"><strong>${escapeHtml(m._farmName)}</strong></div></td>
         <td>${formatDate(m.date)}</td>
-        <td><div class="mov-records-main-cell"><strong>${escapeHtml(m.categoryName)}</strong>${noteSpan}</div></td>
+        <td><strong>${escapeHtml(m.categoryName)}</strong></td>
         <td class="num-col"><strong>${formatInteger(m.quantity)}</strong></td>
         <td>${origin}</td>
         <td class="num-col">${fmtKg(p.avgWeight || 0)}</td>
+        <td class="num-col">${fmtKg(p.totalWeight || 0)}</td>
+        <td class="num-col">${fmtPriceKg(p.pricePerKg || 0)}</td>
+        <td class="num-col">${fmtVal(valuePerHead)}</td>
         <td class="num-col fin-value">${currBadge} ${fmtVal(m.value)}</td>
-        <td>${m.notes ? `<span title="${escapeHtml(m.notes)}" class="table-notes-cell">${escapeHtml(m.notes.slice(0, 40))}${m.notes.length > 40 ? "…" : ""}</span>` : `<span class="muted-cell">—</span>`}</td>
         <td class="movement-actions-cell">
           <button class="movement-action-btn edit-btn" data-farm-id="${escapeHtml(m._farmId)}" data-movement-id="${escapeHtml(m.id)}">Editar</button>
           <button class="movement-action-btn delete-btn" data-farm-id="${escapeHtml(m._farmId)}" data-movement-id="${escapeHtml(m.id)}">Excluir</button>
@@ -14190,14 +14523,16 @@ async function exportComprasPdfReport() {
 
     const tableStartY = boxY + boxH + 8;
     const cols = [
-      { header: "Código", w: 24 },
-      { header: "Data", w: 22 },
-      { header: "Categoria", w: 40 },
-      { header: "Cabeças", w: 20, align: "right" },
-      { header: "Origem / Propriedade", w: 60 },
-      { header: "Peso Méd. (kg)", w: 26, align: "right" },
-      { header: `Valor (${currency})`, w: 40, align: "right" },
-      { header: "Obs.", w: 0 }
+      { header: "Código", w: 20 },
+      { header: "Data", w: 18 },
+      { header: "Categoria", w: 34 },
+      { header: "Cab.", w: 14, align: "right" },
+      { header: "Origem / Propriedade", w: 42 },
+      { header: "P.Méd(kg)", w: 20, align: "right" },
+      { header: "P.Lote(kg)", w: 22, align: "right" },
+      { header: `${currency}/kg`, w: 22, align: "right" },
+      { header: `${currency}/Animal`, w: 28, align: "right" },
+      { header: `Valor (${currency})`, w: 0, align: "right" }
     ];
     const lastColW = pageW - margin * 2 - cols.slice(0, -1).reduce((s, c) => s + c.w, 0);
     cols[cols.length - 1].w = Math.max(20, lastColW);
@@ -14246,15 +14581,19 @@ async function exportComprasPdfReport() {
       }
       doc.setTextColor(30, 30, 30);
 
+      const vph = p.valuePerHead || (m.quantity > 0 && m.value > 0 ? m.value / m.quantity : 0);
+      const numFmt = (v, dec = 2) => v > 0 ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: dec, maximumFractionDigits: dec }).format(v) : "—";
       const rowValues = [
         m.code || "—",
         formatDate(m.date),
         m.categoryName || "—",
         formatInteger(m.quantity),
-        (p.sourceProperty || "—").slice(0, 30),
-        p.avgWeight > 0 ? `${Number(p.avgWeight).toFixed(1)}` : "—",
-        m.value > 0 ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(m.value) : "—",
-        (m.notes || "—").slice(0, 28)
+        (p.sourceProperty || "—").slice(0, 26),
+        p.avgWeight > 0 ? numFmt(p.avgWeight, 1) : "—",
+        p.totalWeight > 0 ? numFmt(p.totalWeight, 0) : "—",
+        p.pricePerKg > 0 ? numFmt(p.pricePerKg, 3) : "—",
+        vph > 0 ? numFmt(vph, 2) : "—",
+        m.value > 0 ? numFmt(m.value, 2) : "—"
       ];
 
       curX = margin;
@@ -14343,18 +14682,298 @@ function renderVendasKpiCards() {
   renderCommercialKpiCards(elements.vendasKpiSection, "venda");
 }
 
+// ── BI Vendas: paleta de categorias ──────────────────────────────────
+const VENDA_CAT_PALETTE = [
+  "#8f3438","#bf9844","#1b5e2e","#1e4fa0","#c76b28",
+  "#7a3580","#2d8a70","#c4442a","#4a7ab5","#6b8f3a"
+];
+
+function buildVendasCategorySeries() {
+  const movs = getCommercialMovements("venda", { includeTableFilters: false });
+  const grouped = new Map();
+  movs.forEach((m) => {
+    const cat = m.categoryName || "Sem categoria";
+    const item = grouped.get(cat) || { category: cat, heads: 0, value: 0 };
+    item.heads += Number(m.quantity || 0);
+    item.value += Number(m.value || 0);
+    grouped.set(cat, item);
+  });
+  const rows = [...grouped.values()].filter(r => r.heads > 0).sort((a, b) => b.heads - a.heads);
+  const totalHeads = rows.reduce((s, r) => s + r.heads, 0);
+  return rows.map((r, i) => ({
+    ...r,
+    percent: totalHeads > 0 ? (r.heads / totalHeads) * 100 : 0,
+    color: VENDA_CAT_PALETTE[i % VENDA_CAT_PALETTE.length]
+  }));
+}
+
+function buildVendasMonthByCategorySeries() {
+  const movs = getCommercialMovements("venda", { includeMonth: false, includeTableFilters: false });
+  const catTotals = new Map();
+  movs.forEach(m => {
+    const cat = m.categoryName || "Sem categoria";
+    catTotals.set(cat, (catTotals.get(cat) || 0) + Number(m.quantity || 0));
+  });
+  const categories = [...catTotals.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).map(([cat]) => cat);
+  const monthHeads = {};
+  const monthValue = {};
+  categories.forEach(cat => { monthHeads[cat] = new Array(12).fill(0); monthValue[cat] = new Array(12).fill(0); });
+  movs.forEach((m) => {
+    const cat = m.categoryName || "Sem categoria";
+    const idx = Number(String(m.date || "").slice(5, 7)) - 1;
+    if (idx >= 0 && idx < 12 && monthHeads[cat]) {
+      monthHeads[cat][idx] += Number(m.quantity || 0);
+      monthValue[cat][idx] += Number(m.value || 0);
+    }
+  });
+  const monthlyTotals = Array.from({ length: 12 }, (_, i) => categories.reduce((s, cat) => s + monthHeads[cat][i], 0));
+  const maxTotal = Math.max(...monthlyTotals, 1);
+  const peakIdx = monthlyTotals.indexOf(Math.max(...monthlyTotals));
+  return { categories, monthHeads, monthValue, monthlyTotals, maxTotal, peakIdx };
+}
+
+function renderVendasInsightStrip() {
+  const el = document.getElementById("vendasInsightStrip");
+  if (!el) return;
+  const { categories, monthlyTotals, peakIdx } = buildVendasMonthByCategorySeries();
+  const catSeries = buildVendasCategorySeries();
+  const currency = getCommercialCurrencyFromMovs(getCommercialMovements("venda", { includeTableFilters: false }));
+  const sym = currency === "USD" ? "US$" : "R$";
+  const totalHeads = monthlyTotals.reduce((s, v) => s + v, 0);
+  const activeMths = monthlyTotals.filter(v => v > 0).length || 1;
+  const sorted3 = [...monthlyTotals].sort((a, b) => b - a).slice(0, 3).reduce((s, v) => s + v, 0);
+  const conc = totalHeads > 0 ? Math.round((sorted3 / totalHeads) * 100) : 0;
+  const totalValue = catSeries.reduce((s, r) => s + r.value, 0);
+  const ticketMedio = totalHeads > 0 ? totalValue / totalHeads : 0;
+  const numFmt = (v) => new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(v);
+  const chips = [
+    { icon: "📅", label: "Mes mais forte",    value: MONTH_NAMES[peakIdx] || "—",          sub: `${numFmt(monthlyTotals[peakIdx] || 0)} cabecas` },
+    { icon: "🏷️", label: "Categoria lider",   value: catSeries[0]?.category || "—",         sub: `${(catSeries[0]?.percent || 0).toFixed(1)}% do volume` },
+    { icon: "📊", label: "Media mensal",       value: `${numFmt(Math.round(totalHeads / activeMths))} cab.`, sub: "nos meses com venda" },
+    { icon: "🎯", label: "Concentracao",       value: `${conc}%`,                             sub: "volume nos top 3 meses" },
+    { icon: "💰", label: "Ticket medio/animal", value: ticketMedio > 0 ? `${sym} ${numFmt(ticketMedio)}` : "—", sub: "valor medio por cabeca" },
+  ];
+  el.innerHTML = chips.map(c => `
+    <div class="bi-insight-chip">
+      <span class="bi-chip-icon">${c.icon}</span>
+      <span class="bi-chip-label">${c.label}</span>
+      <span class="bi-chip-value">${escapeHtml(c.value)}</span>
+      <span class="bi-chip-sub">${c.sub}</span>
+    </div>`).join("");
+}
+
+function renderVendasStackedMonthly() {
+  const canvas = document.getElementById("vendasEvolutionChart");
+  if (!canvas) return;
+  if (state.charts["vendasEvolution"]) { state.charts["vendasEvolution"].destroy(); state.charts["vendasEvolution"] = null; }
+  const { categories, monthHeads, monthlyTotals, peakIdx } = buildVendasMonthByCategorySeries();
+  const hasData = monthlyTotals.some(v => v > 0);
+  setCommercialEmptyState(canvas, "vendas-stacked-empty", "Nenhuma venda no periodo selecionado", !hasData);
+  if (!hasData) return;
+
+  const labels = MONTH_NAMES.map((m, i) => i === peakIdx ? m.slice(0, 3) + " ▲" : m.slice(0, 3));
+  const datasets = categories.map((cat, i) => ({
+    label: cat,
+    data: monthHeads[cat],
+    backgroundColor: VENDA_CAT_PALETTE[i % VENDA_CAT_PALETTE.length] + "d4",
+    borderColor: VENDA_CAT_PALETTE[i % VENDA_CAT_PALETTE.length],
+    borderWidth: 0,
+    borderRadius: 0,
+    borderSkipped: false,
+  }));
+
+  canvas.style.setProperty("height", "290px", "important");
+  canvas.style.setProperty("max-height", "290px", "important");
+  canvas.removeAttribute("height"); canvas.removeAttribute("width");
+
+  state.charts["vendasEvolution"] = new Chart(canvas, {
+    type: "bar",
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: "bottom",
+          labels: { padding: 18, boxWidth: 10, boxHeight: 10, usePointStyle: true, pointStyle: "rect", font: { size: 11, weight: "600" }, color: "#555" }
+        },
+        tooltip: {
+          backgroundColor: "#1a1a1a",
+          titleColor: "#fff",
+          bodyColor: "rgba(255,255,255,0.85)",
+          padding: 14, cornerRadius: 10,
+          callbacks: {
+            title: (items) => {
+              const i = items[0].dataIndex;
+              return `${MONTH_NAMES[i]} — ${new Intl.NumberFormat("pt-BR").format(monthlyTotals[i])} cabecas${i === peakIdx ? "  🏆 Pico" : ""}`;
+            },
+            label: (ctx) => {
+              const v = ctx.parsed.y;
+              if (!v) return null;
+              const tot = monthlyTotals[ctx.dataIndex];
+              const pct = tot > 0 ? ((v / tot) * 100).toFixed(1) : "0";
+              return `${ctx.dataset.label}: ${new Intl.NumberFormat("pt-BR").format(v)} cab. (${pct}%)`;
+            },
+            afterBody: (items) => {
+              const i = items[0].dataIndex;
+              if (i !== peakIdx) return [];
+              return ["", "★ Mes com maior volume do periodo"];
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          stacked: true,
+          grid: { display: false },
+          border: { display: false },
+          ticks: {
+            color: (ctx) => ctx.index === peakIdx ? "#8f3438" : "#888",
+            font: (ctx) => ({ size: 11, weight: ctx.index === peakIdx ? "800" : "500" })
+          }
+        },
+        y: {
+          stacked: true, beginAtZero: true,
+          grid: { color: "rgba(0,0,0,0.035)", drawTicks: false },
+          border: { display: false },
+          ticks: { precision: 0, color: "#aaa", font: { size: 10.5 }, callback: (v) => new Intl.NumberFormat("pt-BR").format(v) }
+        }
+      }
+    }
+  });
+}
+
+function renderVendasHeatmap() {
+  const el = document.getElementById("vendasHeatmap");
+  if (!el) return;
+  const { categories, monthHeads, monthlyTotals } = buildVendasMonthByCategorySeries();
+  if (!categories.length) {
+    el.innerHTML = `<p style="padding:24px;text-align:center;color:#ccc;font-size:0.8rem;">Sem dados para o periodo</p>`;
+    return;
+  }
+  let maxVal = 0;
+  categories.forEach(cat => monthHeads[cat].forEach(v => { if (v > maxVal) maxVal = v; }));
+  if (!maxVal) maxVal = 1;
+
+  const mo = MONTH_NAMES.map(m => m.slice(0, 3));
+  const cell = (val) => {
+    if (!val) return `<td class="bi-hm-cell" style="background:rgba(240,234,228,0.5);color:#ddd;">—</td>`;
+    const t = Math.sqrt(val / maxVal);
+    const bg = `rgba(111,37,42,${(t * 0.82).toFixed(2)})`;
+    const fg = t > 0.52 ? "#fff" : "#3a1012";
+    return `<td class="bi-hm-cell" style="background:${bg};color:${fg};" title="${val} cabecas">${new Intl.NumberFormat("pt-BR").format(val)}</td>`;
+  };
+
+  const headRow = `<tr>
+    <th class="bi-hm-row-hd">Categoria</th>
+    ${mo.map(m => `<th>${m}</th>`).join("")}
+    <th style="text-align:right;padding-left:8px;color:#999;">Total</th>
+  </tr>`;
+
+  const bodyRows = categories.map((cat, ci) => {
+    const color = VENDA_CAT_PALETTE[ci % VENDA_CAT_PALETTE.length];
+    const rowTotal = monthHeads[cat].reduce((s, v) => s + v, 0);
+    return `<tr>
+      <td class="bi-hm-cat-label">
+        <span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${color};margin-right:5px;vertical-align:middle;flex-shrink:0;"></span>${escapeHtml(cat)}
+      </td>
+      ${monthHeads[cat].map(v => cell(v)).join("")}
+      <td style="text-align:right;padding-left:8px;font-size:0.72rem;font-weight:700;color:#8f3438;">${new Intl.NumberFormat("pt-BR").format(rowTotal)}</td>
+    </tr>`;
+  }).join("");
+
+  const grandTotal = categories.reduce((s, cat) => s + monthHeads[cat].reduce((a, b) => a + b, 0), 0);
+  const footRow = `<tr>
+    <td class="bi-hm-foot-label">Total</td>
+    ${monthlyTotals.map(v => `<td style="text-align:center;font-size:0.69rem;font-weight:700;color:${v > 0 ? "#333" : "#ddd"};">${v > 0 ? new Intl.NumberFormat("pt-BR").format(v) : "—"}</td>`).join("")}
+    <td class="bi-hm-foot-total">${new Intl.NumberFormat("pt-BR").format(grandTotal)}</td>
+  </tr>`;
+
+  el.innerHTML = `
+    <table class="bi-heatmap">
+      <thead>${headRow}</thead>
+      <tbody>${bodyRows}</tbody>
+      <tfoot>${footRow}</tfoot>
+    </table>
+    <div class="bi-hm-scale">
+      <span>Menor</span><div class="bi-hm-scale-bar"></div><span>Maior</span>
+    </div>`;
+}
+
+function renderVendasCategoryBar() {
+  const canvas = document.getElementById("vendasBarChart");
+  if (!canvas) return;
+  if (state.charts["vendasBar"]) { state.charts["vendasBar"].destroy(); state.charts["vendasBar"] = null; }
+  const rows = buildVendasCategorySeries();
+  setCommercialEmptyState(canvas, "vendas-catbar-empty", "Nenhuma venda no periodo selecionado", !rows.length);
+  if (!rows.length) return;
+
+  const currency = getCommercialCurrencyFromMovs(getCommercialMovements("venda", { includeTableFilters: false }));
+  const sym = currency === "USD" ? "US$" : "R$";
+  const numFmt = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 });
+  const chartH = Math.min(380, Math.max(200, rows.length * 46 + 56));
+  canvas.style.setProperty("height", `${chartH}px`, "important");
+  canvas.style.setProperty("max-height", `${chartH}px`, "important");
+  canvas.removeAttribute("height"); canvas.removeAttribute("width");
+
+  state.charts["vendasBar"] = new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels: rows.map(r => r.category),
+      datasets: [{ label: "Cabecas", data: rows.map(r => r.heads), backgroundColor: rows.map(r => r.color + "cc"), borderColor: rows.map(r => r.color), borderWidth: 1, borderRadius: 8, borderSkipped: false, barThickness: 20 }]
+    },
+    options: {
+      indexAxis: "y", responsive: true, maintainAspectRatio: false,
+      layout: { padding: { right: 108, top: 4, bottom: 4 } },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: "#1a1a1a", titleColor: "#fff", bodyColor: "rgba(255,255,255,0.85)",
+          padding: 14, cornerRadius: 10, displayColors: false,
+          callbacks: {
+            title: (items) => rows[items[0].dataIndex]?.category || "",
+            label: (ctx) => {
+              const r = rows[ctx.dataIndex];
+              return [`Cabecas: ${numFmt.format(r.heads)} (${r.percent.toFixed(1)}%)`, `Receita: ${sym} ${numFmt.format(r.value)}`, `Ticket medio: ${sym} ${numFmt.format(r.heads > 0 ? r.value / r.heads : 0)}`];
+            }
+          }
+        }
+      },
+      scales: {
+        x: { beginAtZero: true, ticks: { precision: 0, color: "#bbb", font: { size: 10 } }, grid: { color: "rgba(0,0,0,0.03)" }, border: { display: false } },
+        y: { grid: { display: false }, border: { display: false }, ticks: { color: "#333", font: { size: 12, weight: "600" }, padding: 8 } }
+      }
+    },
+    plugins: [{
+      id: "catBarLabels",
+      afterDatasetsDraw(chart) {
+        const { ctx } = chart;
+        const meta = chart.getDatasetMeta(0);
+        ctx.save();
+        ctx.font = "600 10.5px Inter, Arial, sans-serif";
+        ctx.textBaseline = "middle";
+        meta.data.forEach((bar, idx) => {
+          const r = rows[idx];
+          if (!r) return;
+          ctx.fillStyle = "#666";
+          ctx.textAlign = "left";
+          ctx.fillText(`${numFmt.format(r.heads)}  ${r.percent.toFixed(1)}%`, chart.chartArea.right - 100, bar.y);
+        });
+        ctx.restore();
+      }
+    }]
+  });
+}
+
 function renderVendasCharts() {
-  renderVendasBarChart();
-  renderVendasEvolutionChart();
+  renderVendasInsightStrip();
+  renderVendasStackedMonthly();
+  renderVendasHeatmap();
+  renderVendasCategoryBar();
 }
 
-function renderVendasBarChart() {
-  renderCommercialFarmBarChart("venda", "vendasBarChart", "vendasBar");
-}
-
-function renderVendasEvolutionChart() {
-  renderCommercialEvolutionChart("venda", "vendasEvolutionChart", "vendasEvolution");
-}
+function renderVendasBarChart() { /* substituido por renderVendasCategoryBar */ }
+function renderVendasEvolutionChart() { /* substituido por renderVendasStackedMonthly */ }
 
 function renderVendasFilterSelects() {
   if (!elements.vendasFilterFarm || !elements.vendasFilterCategory) return;
@@ -14403,21 +15022,23 @@ function renderVendasTable() {
   const slice = movs.slice(page * VENDAS_PAGE_SIZE, (page + 1) * VENDAS_PAGE_SIZE);
 
   if (!slice.length) {
-    elements.vendasTableBody.innerHTML = `<tr><td colspan="11" class="table-empty-cell">${search || filterFarm || filterCat || filterDateFrom || filterDateTo ? "Nenhum registro encontrado com estes filtros." : "Nenhuma venda registrada ainda."}</td></tr>`;
+    elements.vendasTableBody.innerHTML = `<tr><td colspan="13" class="table-empty-cell">${search || filterFarm || filterCat || filterDateFrom || filterDateTo ? "Nenhum registro encontrado com estes filtros." : "Nenhuma venda registrada ainda."}</td></tr>`;
   } else {
     elements.vendasTableBody.innerHTML = slice.map((m) => {
       const d = m.saleDetails || {};
       const currency = m.currency || getFarmCurrency(m._farmId);
       const sym = currency === "USD" ? "US$" : "R$";
-      const fmtVal = (v) => v > 0 ? `${sym} ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)}` : "—";
-      const fmtKg = (v) => v > 0 ? `${new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(v)} kg` : "—";
-      const fmtPriceKg = (v) => v > 0 ? `${sym} ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 3, maximumFractionDigits: 3 }).format(v)}` : "—";
+      const fmtVal      = (v) => v > 0 ? `${sym} ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)}` : `<span class="muted-cell">—</span>`;
+      const fmtKg       = (v) => v > 0 ? `${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(v)} kg` : `<span class="muted-cell">—</span>`;
+      const fmtPriceKg  = (v) => v > 0 ? `${sym} ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 3, maximumFractionDigits: 3 }).format(v)}` : `<span class="muted-cell">—</span>`;
       const code = m.code ? `<span class="movement-code">${escapeHtml(m.code)}</span>` : `<span class="movement-code movement-code-legacy">—</span>`;
       const buyer = d.buyer || extractBuyerFromNotes(m.notes);
       const buyerCell = buyer ? escapeHtml(buyer) : `<span class="muted-cell">—</span>`;
-      const pricePerKg = d.pricePerKg || (d.weightKg > 0 && m.value > 0 ? m.value / d.weightKg : 0);
-      const currBadge = `<span class="currency-badge ${currency === "USD" ? "usd" : "brl"}">${currency}</span>`;
-      const notesTxt = m.notes ? `<span title="${escapeHtml(m.notes)}" class="table-notes-cell">${escapeHtml(m.notes.slice(0, 35))}${m.notes.length > 35 ? "…" : ""}</span>` : `<span class="muted-cell">—</span>`;
+      const pricePerKg  = d.pricePerKg || (d.weightKg > 0 && m.value > 0 ? m.value / d.weightKg : 0);
+      const avgWeight   = d.weightKg > 0 && m.quantity > 0 ? d.weightKg / m.quantity : 0;
+      const valuePerHead = d.valuePerHead || (m.quantity > 0 && m.value > 0 ? m.value / m.quantity : 0);
+      const modeLabel   = d.mode ? getSaleModeLabel(d.mode) : `<span class="muted-cell">—</span>`;
+      const currBadge   = `<span class="currency-badge ${currency === "USD" ? "usd" : "brl"}">${currency}</span>`;
       return `<tr class="mov-record-row mov-record-row-venda">
         <td>${code}</td>
         <td><div class="mov-records-main-cell"><strong>${escapeHtml(m._farmName)}</strong></div></td>
@@ -14425,10 +15046,12 @@ function renderVendasTable() {
         <td><strong>${escapeHtml(m.categoryName)}</strong></td>
         <td class="num-col"><strong>${formatInteger(m.quantity)}</strong></td>
         <td>${buyerCell}</td>
+        <td><span class="sale-mode-badge">${modeLabel}</span></td>
         <td class="num-col">${fmtKg(d.weightKg || 0)}</td>
+        <td class="num-col">${fmtKg(avgWeight)}</td>
         <td class="num-col">${fmtPriceKg(pricePerKg)}</td>
+        <td class="num-col">${fmtVal(valuePerHead)}</td>
         <td class="num-col fin-value">${currBadge} ${fmtVal(m.value)}</td>
-        <td>${notesTxt}</td>
         <td class="movement-actions-cell">
           <button class="movement-action-btn edit-btn" data-farm-id="${escapeHtml(m._farmId)}" data-movement-id="${escapeHtml(m.id)}">Editar</button>
           <button class="movement-action-btn delete-btn" data-farm-id="${escapeHtml(m._farmId)}" data-movement-id="${escapeHtml(m.id)}">Excluir</button>
@@ -14542,10 +15165,12 @@ async function exportVendasPdfReport() {
 
     const tableStartY = boxY + boxH + 8;
     const cols = [
-      { header: "Código", w: 22 }, { header: "Data", w: 20 }, { header: "Categoria", w: 36 },
-      { header: "Cab.", w: 14, align: "right" }, { header: "Frigorífico/Comprador", w: 48 },
-      { header: "Kg", w: 22, align: "right" }, { header: `${sym}/kg`, w: 22, align: "right" },
-      { header: `Valor (${currency})`, w: 38, align: "right" }, { header: "Obs.", w: 0 }
+      { header: "Código", w: 20 }, { header: "Data", w: 18 }, { header: "Categoria", w: 30 },
+      { header: "Cab.", w: 12, align: "right" }, { header: "Frigorífico/Comprador", w: 40 },
+      { header: "Base", w: 16 },
+      { header: "Kg Lote", w: 20, align: "right" }, { header: "P.Méd(kg)", w: 18, align: "right" },
+      { header: `${sym}/kg`, w: 20, align: "right" }, { header: `${sym}/Animal`, w: 26, align: "right" },
+      { header: `Valor (${currency})`, w: 0, align: "right" }
     ];
     cols[cols.length - 1].w = Math.max(18, pageW - margin * 2 - cols.slice(0, -1).reduce((s, c) => s + c.w, 0));
 
@@ -14568,13 +15193,18 @@ async function exportVendasPdfReport() {
       const pricePerKg = sd.pricePerKg || (sd.weightKg > 0 && m.value > 0 ? m.value / sd.weightKg : 0);
       if (idx % 2 === 0) { doc.setFillColor(249, 244, 236); doc.rect(margin, rowY, pageW - margin * 2, rowH, "F"); }
       doc.setTextColor(30, 30, 30);
+      const avgWt  = sd.weightKg > 0 && m.quantity > 0 ? sd.weightKg / m.quantity : 0;
+      const vph    = sd.valuePerHead || (m.quantity > 0 && m.value > 0 ? m.value / m.quantity : 0);
+      const numFmt = (v, dec = 2) => v > 0 ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: dec, maximumFractionDigits: dec }).format(v) : "—";
       const rowVals = [
-        m.code || "—", formatDate(m.date), (m.categoryName || "—").slice(0, 22),
-        formatInteger(m.quantity), buyer.slice(0, 28),
-        sd.weightKg > 0 ? new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(sd.weightKg) : "—",
-        pricePerKg > 0 ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 3, maximumFractionDigits: 3 }).format(pricePerKg) : "—",
-        m.value > 0 ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(m.value) : "—",
-        (m.notes || "—").slice(0, 25)
+        m.code || "—", formatDate(m.date), (m.categoryName || "—").slice(0, 18),
+        formatInteger(m.quantity), buyer.slice(0, 24),
+        sd.mode ? getSaleModeLabel(sd.mode) : "—",
+        sd.weightKg > 0 ? numFmt(sd.weightKg, 0) : "—",
+        avgWt > 0 ? numFmt(avgWt, 1) : "—",
+        pricePerKg > 0 ? numFmt(pricePerKg, 3) : "—",
+        vph > 0 ? numFmt(vph, 2) : "—",
+        m.value > 0 ? numFmt(m.value, 2) : "—"
       ];
       curX = margin;
       rowVals.forEach((val, ci) => {

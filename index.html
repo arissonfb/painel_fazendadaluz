@@ -702,21 +702,46 @@
         <!-- KPI Cards -->
         <section class="com2-kpi-section" id="comprasKpiSection"></section>
 
-        <!-- Graficos -->
-        <div class="com2-charts-row">
-          <div class="com2-card">
-            <div class="com2-card-hd">
-              <h3>Compras por Fazenda</h3>
-              <p>Cabecas adquiridas e investimento por unidade no periodo selecionado</p>
+        <!-- BI Analytics Compras -->
+        <div class="bi-analytics-vendas">
+          <div class="bi-insight-strip" id="comprasInsightStrip"></div>
+
+          <div class="bi-card bi-card-full">
+            <div class="bi-card-hd">
+              <div class="bi-card-hd-text">
+                <p class="bi-eyebrow bi-eyebrow-c">Sazonalidade</p>
+                <h3 class="bi-title">Aquisicoes Mensais por Categoria</h3>
+                <p class="bi-desc">Cabecas compradas por mes, segmentadas por categoria — identifique os meses de maior reposicao de estoque</p>
+              </div>
             </div>
-            <canvas id="comprasBarChart" aria-label="Compras por fazenda"></canvas>
+            <div class="bi-chart-wrap-tall">
+              <canvas id="comprasEvolutionChart" aria-label="Aquisicoes mensais por categoria"></canvas>
+            </div>
           </div>
-          <div class="com2-card">
-            <div class="com2-card-hd">
-              <h3>Evolucao Mensal — Cabecas x Investimento</h3>
-              <p>Comparativo mensal entre volume adquirido e valor investido no ano</p>
+
+          <div class="bi-row-split">
+            <div class="bi-card">
+              <div class="bi-card-hd">
+                <div class="bi-card-hd-text">
+                  <p class="bi-eyebrow bi-eyebrow-c">Padrao Sazonal</p>
+                  <h3 class="bi-title">Mapa de Calor — Categoria × Mes</h3>
+                  <p class="bi-desc">Intensidade de aquisicoes por categoria em cada mes do periodo</p>
+                </div>
+              </div>
+              <div id="comprasHeatmap" class="bi-heatmap-wrap"></div>
             </div>
-            <canvas id="comprasEvolutionChart" aria-label="Evolucao mensal de compras"></canvas>
+            <div class="bi-card">
+              <div class="bi-card-hd">
+                <div class="bi-card-hd-text">
+                  <p class="bi-eyebrow bi-eyebrow-c">Mix de Aquisicoes</p>
+                  <h3 class="bi-title">Participacao por Categoria</h3>
+                  <p class="bi-desc">Volume total e investimento acumulado por tipo de animal no periodo selecionado</p>
+                </div>
+              </div>
+              <div class="bi-chart-wrap">
+                <canvas id="comprasBarChart" aria-label="Participacao por categoria"></canvas>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -745,8 +770,9 @@
                 <tr>
                   <th>Codigo</th><th>Fazenda</th><th>Data</th><th>Categoria</th>
                   <th class="rr">Cabecas</th><th>Origem / Propriedade</th>
-                  <th class="rr">Peso Medio</th><th class="rr">Valor Total</th>
-                  <th>Obs.</th><th>Acoes</th>
+                  <th class="rr">P. Medio</th><th class="rr">P. Lote</th>
+                  <th class="rr">Valor/kg</th><th class="rr">Valor/Animal</th>
+                  <th class="rr">Valor Total</th><th>Acoes</th>
                 </tr>
               </thead>
               <tbody id="comprasTableBody"></tbody>
@@ -778,21 +804,49 @@
         <!-- KPI Cards -->
         <section class="com2-kpi-section" id="vendasKpiSection"></section>
 
-        <!-- Graficos -->
-        <div class="com2-charts-row">
-          <div class="com2-card">
-            <div class="com2-card-hd">
-              <h3>Vendas por Fazenda</h3>
-              <p>Cabecas comercializadas e receita gerada por unidade no periodo selecionado</p>
+        <!-- BI Analytics Vendas -->
+        <div class="bi-analytics-vendas">
+          <!-- Insight Strip -->
+          <div class="bi-insight-strip" id="vendasInsightStrip"></div>
+
+          <!-- Stacked Monthly Volume — full width -->
+          <div class="bi-card bi-card-full">
+            <div class="bi-card-hd">
+              <div class="bi-card-hd-text">
+                <p class="bi-eyebrow">Sazonalidade</p>
+                <h3 class="bi-title">Volume Mensal por Categoria</h3>
+                <p class="bi-desc">Cabecas vendidas por mes, segmentadas por categoria — identifique os meses de maior pressao de venda</p>
+              </div>
             </div>
-            <canvas id="vendasBarChart" aria-label="Vendas por fazenda"></canvas>
+            <div class="bi-chart-wrap-tall">
+              <canvas id="vendasEvolutionChart" aria-label="Volume mensal por categoria"></canvas>
+            </div>
           </div>
-          <div class="com2-card">
-            <div class="com2-card-hd">
-              <h3>Evolucao Mensal — Cabecas x Receita</h3>
-              <p>Comparativo mensal entre volume vendido e receita obtida no ano</p>
+
+          <!-- Heatmap + Category Bar -->
+          <div class="bi-row-split">
+            <div class="bi-card">
+              <div class="bi-card-hd">
+                <div class="bi-card-hd-text">
+                  <p class="bi-eyebrow">Padrao Sazonal</p>
+                  <h3 class="bi-title">Mapa de Calor — Categoria × Mes</h3>
+                  <p class="bi-desc">Intensidade de vendas por categoria em cada mes do periodo</p>
+                </div>
+              </div>
+              <div id="vendasHeatmap" class="bi-heatmap-wrap"></div>
             </div>
-            <canvas id="vendasEvolutionChart" aria-label="Evolucao mensal de vendas"></canvas>
+            <div class="bi-card">
+              <div class="bi-card-hd">
+                <div class="bi-card-hd-text">
+                  <p class="bi-eyebrow">Mix de Produtos</p>
+                  <h3 class="bi-title">Participacao por Categoria</h3>
+                  <p class="bi-desc">Volume total e receita acumulada por tipo de animal no periodo selecionado</p>
+                </div>
+              </div>
+              <div class="bi-chart-wrap">
+                <canvas id="vendasBarChart" aria-label="Participacao por categoria"></canvas>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -821,8 +875,9 @@
                 <tr>
                   <th>Codigo</th><th>Fazenda</th><th>Data</th><th>Categoria</th>
                   <th class="rr">Cabecas</th><th>Frigorifico / Comprador</th>
-                  <th class="rr">Kg Negociados</th><th class="rr">Preco/kg</th>
-                  <th class="rr">Valor Total</th><th>Obs.</th><th>Acoes</th>
+                  <th>Base</th><th class="rr">Kg Negociados</th>
+                  <th class="rr">P. Medio</th><th class="rr">Preco/kg</th>
+                  <th class="rr">Valor/Animal</th><th class="rr">Valor Total</th><th>Acoes</th>
                 </tr>
               </thead>
               <tbody id="vendasTableBody"></tbody>
@@ -897,28 +952,32 @@
         </label>
         <div class="sale-input-group form-span-2" id="movementLiveFields" hidden>
           <label>
-            Valor kg vivo
+            Preço/kg vivo
             <input type="number" id="movementLivePrice" min="0" step="0.01" placeholder="0,00">
           </label>
           <label>
-            Kg vivo
+            Peso do lote (kg vivo)
             <input type="number" id="movementLiveKg" min="0" step="0.01" placeholder="0,00">
           </label>
         </div>
         <div class="sale-input-group form-span-2" id="movementCarcassFields" hidden>
           <label>
-            Valor kg carcaça
+            Preço/kg carcaça
             <input type="number" id="movementCarcassPrice" min="0" step="0.01" placeholder="0,00">
           </label>
           <label>
-            Kg carcaça
+            Peso do lote (kg carcaça)
             <input type="number" id="movementCarcassKg" min="0" step="0.01" placeholder="0,00">
           </label>
         </div>
-        <label class="form-span-2" id="movementSaleHint" hidden>
-          Análise da venda
-          <span class="field-note">O total será calculado automaticamente a partir do valor por kg e do peso informado.</span>
-        </label>
+        <div class="form-span-2 sale-analysis-wrap" id="movementSaleHint" hidden>
+          <div class="sale-totals-bar" id="movSaleTotalsBar">
+            <span id="fmtSaleTotal"></span>
+            <span id="fmtSalePerHead"></span>
+            <span id="fmtSalePriceKg"></span>
+            <span id="fmtSaleAvgWeight"></span>
+          </div>
+        </div>
 
         <!-- VENDA: frigorífico + rendimento -->
         <div class="sale-input-group form-span-2" id="movSaleExtraWrap" hidden>
@@ -966,29 +1025,7 @@
           </div>
         </div>
 
-        <!-- Cotação USD — visível apenas para fazendas com moeda USD (Arapey/Chiquita) -->
-        <div class="form-span-2" id="movUsdRateWrap" hidden>
-          <div class="usd-rate-header">
-            <span class="usd-rate-label">
-              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              Fazenda em dólar (UY) — cotação de referência
-            </span>
-            <span class="usd-rate-live" id="usdRateLiveStatus">
-              <span class="usd-rate-dot" id="usdRateDot"></span>
-              <span id="usdRateLiveText">buscando cotação...</span>
-            </span>
-          </div>
-          <div class="sale-input-group" style="gap:12px">
-            <label>
-              Cotação USD aplicada (1 US$ = R$)
-              <input type="number" id="movUsdRate" min="0" step="0.0001" placeholder="aguardando...">
-            </label>
-            <label>
-              Equivalente em R$ (referência)
-              <input type="number" id="movUsdBrlEquiv" placeholder="calculado automaticamente" readonly style="background:rgba(0,0,0,.04);color:var(--muted)">
-            </label>
-          </div>
-        </div>
+        <!-- movUsdRateWrap removido -->
 
         <label id="movementValueWrap">
           <span id="movementValueLabel">Valor total (opcional)</span>
