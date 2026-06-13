@@ -5534,6 +5534,33 @@ function revertMovementEffect(farm, movement) {
   updatePotreroQuantitiesFromAllocation(farm);
 }
 
+// Inverso de revertMovementEffect — aplica (ou reaplica) o efeito de uma movimentação no estoque
+function applyMovementEffect(farm, movement) {
+  let category = farm.categories.find((c) => c.id === movement.categoryId);
+  if (!category && movement.categoryName) {
+    category = farm.categories.find((c) => c.name.toLowerCase() === movement.categoryName.toLowerCase());
+  }
+  if (!category) return;
+
+  if (movement.type === "transferencia") {
+    ensureCategoryAllocation(category);
+    const originId = movement.potreiro || UNALLOCATED_POTREIRO_KEY;
+    const destId = movement.potreiroDest || UNALLOCATED_POTREIRO_KEY;
+    category.allocation[originId] = Math.max(0, (Number(category.allocation[originId] || 0)) - movement.quantity);
+    category.allocation[destId] = (Number(category.allocation[destId] || 0)) + movement.quantity;
+  } else if (movement.delta !== 0) {
+    category.quantity += movement.delta;
+    ensureCategoryAllocation(category);
+    const potreirosId = movement.potreiro || UNALLOCATED_POTREIRO_KEY;
+    if (movement.delta > 0) {
+      category.allocation[potreirosId] = (Number(category.allocation[potreirosId] || 0)) + movement.quantity;
+    } else {
+      category.allocation[potreirosId] = Math.max(0, (Number(category.allocation[potreirosId] || 0)) - movement.quantity);
+    }
+  }
+  updatePotreroQuantitiesFromAllocation(farm);
+}
+
 function deleteMovement(farmId, movementId) {
   const farm = state.data.farms[farmId];
   if (!farm) return;
@@ -5642,15 +5669,13 @@ function openEditMovementDialog(farmId, movementId) {
     elements.movementValue.value = movement.value || "";
   }
 
-  // Tipo sempre travado; categoria só trava se foi resolvida
-  elements.movementType.classList.add("select-locked");
+  // Tipo, categoria e quantidade ficam editáveis — alterações recalculam o estoque no envio
+  elements.movementType.classList.remove("select-locked");
   if (elements.movementCategory) {
-    if (categoryResolved) {
-      elements.movementCategory.classList.add("select-locked");
-    } else {
-      elements.movementCategory.classList.remove("select-locked");
-    }
+    elements.movementCategory.classList.remove("select-locked");
   }
+  elements.movementQuantity.classList.remove("select-locked");
+  elements.movementQuantity.readOnly = false;
 
   // Aviso quando a categoria original não existe mais nas categorias da fazenda
   const catHintWrap = document.getElementById("movCategoryTotalWrap");
@@ -5659,10 +5684,6 @@ function openEditMovementDialog(farmId, movementId) {
     catHint.innerHTML = `<span style="color:#b45309">⚠ Categoria original "<strong>${escapeHtml(movement.categoryName)}</strong>" não encontrada — selecione a equivalente acima.</span>`;
     catHintWrap.hidden = false;
   }
-
-  // Bloqueia quantidade — edição não altera estoque
-  elements.movementQuantity.classList.add("select-locked");
-  elements.movementQuantity.readOnly = true;
 
   // Aviso de modo edição
   const editNotice = document.getElementById("movEditNotice");
@@ -9335,7 +9356,7 @@ async function handleMovementSubmit(event) {
     return;
   }
 
-  // ── MODO EDIÇÃO: atualiza apenas campos financeiros/descritivos, sem tocar no estoque ──
+  // ── MODO EDIÇÃO: tipo, categoria e quantidade podem mudar — estoque é revertido e reaplicado ──
   const editing = runtime.editingMovement;
   if (editing) {
     const editFarm = state.data.farms[editing.farmId];
@@ -9343,41 +9364,113 @@ async function handleMovementSubmit(event) {
     if (!editFarm || oldIdx === -1) { runtime.editingMovement = null; return; }
 
     const oldMov = editFarm.movements[oldIdx];
-    const date  = elements.movementDate.value;
+    const type = elements.movementType.value;
+    const date = elements.movementDate.value;
+    const categoryId = elements.movementCategory.value;
+    const category = editFarm.categories.find((c) => c.id === categoryId);
+    const quantity = Number(elements.movementQuantity.value);
+    const adjustDirection = elements.adjustDirection.value;
     const notes = elements.movementNotes.value.trim();
+    const sameType = type === oldMov.type;
+
+    if (!category || !date || !quantity || quantity < 1) {
+      alert("Preencha tipo, categoria, quantidade e data corretamente.");
+      return;
+    }
+
+    const exchangeRate = (!elements.movUsdRateWrap?.hidden && elements.movUsdRate?.value)
+      ? Number(elements.movUsdRate.value) || null
+      : null;
+
     let value = Number(elements.movementValue.value || 0);
-    let saleDetails = oldMov.saleDetails;
-    let purchaseDetails = oldMov.purchaseDetails;
+    let saleDetails = null;
+    let purchaseDetails = null;
 
-    if (oldMov.type === "venda" && oldMov.saleDetails) {
-      const saleMode = isPremiumSaleFarm(editFarm) ? elements.movementSaleMode.value : (oldMov.saleDetails.mode || "vivo");
-      const pricePerKg = Number(saleMode === "carcaca" ? elements.movementCarcassPrice.value : elements.movementLivePrice.value) || oldMov.saleDetails.pricePerKg;
-      const weightKg   = Number(saleMode === "carcaca" ? elements.movementCarcassKg.value   : elements.movementLiveKg.value)   || oldMov.saleDetails.weightKg;
-      const buyer = elements.movSaleBuyer?.value?.trim() || oldMov.saleDetails.buyer || "";
-      const yieldPct = Number(elements.movSaleYieldPct?.value) || oldMov.saleDetails.yieldPct || null;
+    if (type === "compra") {
+      const fb = sameType ? (oldMov.purchaseDetails || {}) : {};
+      const sourceProperty = elements.movPurchaseSource?.value?.trim() || fb.sourceProperty || "";
+      const avgWeight   = Number(elements.movPurchaseAvgWeight?.value) || fb.avgWeight || null;
+      const rawTw       = (elements.movPurchaseTotalWeight?.value || "").replace(/[^\d,.]/g, "").replace(/\./g, "").replace(",", ".");
+      const totalWeight = parseFloat(rawTw) || fb.totalWeight || null;
+      const pricePerKg  = Number(elements.movPurchasePricePerKg?.value) || fb.pricePerKg || null;
+      const rawVph      = (elements.movPurchaseValuePerHead?.value || "").replace(/[^\d,.]/g, "").replace(/\./g, "").replace(",", ".");
+      const valuePerHead = parseFloat(rawVph) || fb.valuePerHead || null;
+      purchaseDetails = { sourceProperty, avgWeight, totalWeight, pricePerKg, valuePerHead, exchangeRate: exchangeRate || fb.exchangeRate || null };
+    }
+
+    if (type === "venda") {
+      const fb = sameType ? (oldMov.saleDetails || {}) : {};
+      const saleMode = isPremiumSaleFarm(editFarm) ? elements.movementSaleMode.value : (fb.mode || "vivo");
+      const pricePerKg = Number(saleMode === "carcaca" ? elements.movementCarcassPrice.value : elements.movementLivePrice.value) || fb.pricePerKg || 0;
+      const weightKg   = Number(saleMode === "carcaca" ? elements.movementCarcassKg.value   : elements.movementLiveKg.value)   || fb.weightKg || 0;
+
+      if (!pricePerKg || !weightKg) {
+        alert("Preencha o valor por kg e o peso da venda para calcular o total.");
+        return;
+      }
+
       value = pricePerKg * weightKg;
-      saleDetails = { ...oldMov.saleDetails, mode: saleMode, pricePerKg, weightKg, buyer, yieldPct, valuePerHead: oldMov.quantity > 0 ? +(value / oldMov.quantity).toFixed(2) : null };
-    }
-    if (oldMov.type === "compra") {
-      const sourceProperty = elements.movPurchaseSource?.value?.trim() || oldMov.purchaseDetails?.sourceProperty || "";
-      const pricePerKg = Number(elements.movPurchasePricePerKg?.value) || oldMov.purchaseDetails?.pricePerKg || null;
-      const valuePerHead = Number(elements.movPurchaseValuePerHead?.value) || oldMov.purchaseDetails?.valuePerHead || null;
-      purchaseDetails = { ...oldMov.purchaseDetails, sourceProperty, pricePerKg, valuePerHead };
+      const buyer = elements.movSaleBuyer?.value?.trim() || fb.buyer || "";
+      const yieldPct = Number(elements.movSaleYieldPct?.value) || fb.yieldPct || null;
+      const valuePerHead = quantity > 0 ? +(value / quantity).toFixed(2) : null;
+      saleDetails = { mode: saleMode, pricePerKg, weightKg, buyer, yieldPct, valuePerHead, exchangeRate: exchangeRate || fb.exchangeRate || null };
     }
 
-    editFarm.movements[oldIdx] = {
-      ...oldMov,
-      date,
-      value,
-      saleDetails,
-      purchaseDetails,
-      notes,
-      userModified: true,
-      updatedAt: new Date().toISOString()
-    };
+    let newMov;
+    if (type === "transferencia") {
+      const originId = elements.movementPotreiro?.value || UNALLOCATED_POTREIRO_KEY;
+      const destId = elements.movementPotreiroDest?.value || UNALLOCATED_POTREIRO_KEY;
+      if (originId === destId) {
+        alert("Selecione potreiros de origem e destino diferentes para a transferência.");
+        return;
+      }
+
+      revertMovementEffect(editFarm, oldMov);
+      ensureCategoryAllocation(category);
+      const originQty = Number(category.allocation[originId] || 0);
+      if (originQty < quantity) {
+        applyMovementEffect(editFarm, oldMov);
+        const originName = originId === UNALLOCATED_POTREIRO_KEY ? "Sem potreiro" : (editFarm.potreiros.find((p) => p.id === originId)?.name || originId);
+        alert(`Apenas ${formatInteger(originQty)} animais estão alocados em "${originName}" para essa categoria.`);
+        return;
+      }
+
+      newMov = {
+        ...oldMov, type, date, categoryId, categoryName: category.name, quantity,
+        delta: 0, value: 0, saleDetails: null, purchaseDetails: null, notes,
+        potreiro: originId, potreiroDest: destId,
+        userModified: true, updatedAt: new Date().toISOString()
+      };
+    } else {
+      const newDelta = getMovementDelta(type, quantity, adjustDirection);
+      if (!Number.isFinite(newDelta)) return;
+
+      revertMovementEffect(editFarm, oldMov);
+
+      if (category.quantity + newDelta < 0) {
+        applyMovementEffect(editFarm, oldMov);
+        alert("A quantidade informada deixa o estoque negativo para essa categoria.");
+        return;
+      }
+
+      const selectedPotreiro = (!elements.movementPotreiroWrap?.hidden && elements.movementPotreiro?.value)
+        ? elements.movementPotreiro.value
+        : UNALLOCATED_POTREIRO_KEY;
+
+      newMov = {
+        ...oldMov, type, date, categoryId, categoryName: category.name, quantity,
+        delta: newDelta, value, saleDetails, purchaseDetails, notes,
+        potreiro: selectedPotreiro,
+        userModified: true, updatedAt: new Date().toISOString()
+      };
+      delete newMov.potreiroDest;
+    }
+
+    applyMovementEffect(editFarm, newMov);
+    editFarm.movements[oldIdx] = newMov;
 
     runtime.editingMovement = null;
-    logAuditEvent("Edição", "movimentação", `Valores ajustados: ${capitalize(oldMov.type)} - ${oldMov.categoryName || ""}`, {
+    logAuditEvent("Edição", "movimentação", `Lançamento editado: ${capitalize(type)} de ${formatInteger(quantity)} ${category.name}`, {
       farmId: editFarm.id, farmName: editFarm.name, recordCode: oldMov.code || ""
     });
     saveData();

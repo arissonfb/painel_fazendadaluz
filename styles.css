@@ -8291,6 +8291,19 @@ body[data-active-view="sanitary"] .hero {
 .com2-t tbody tr.rv  { background:#fff9f9; }
 .com2-t tbody tr.rc  { background:#f9fff9; }
 .com2-t tbody tr:hover td { background:#f8faf8!important; }
+
+/* Coluna "Acoes" fixa na borda direita ao rolar a tabela horizontalmente */
+.com2-t thead th:last-child,
+.com2-t tbody td:last-child {
+  position: sticky;
+  right: 0;
+  box-shadow: -6px 0 6px -6px rgba(0,0,0,.18);
+}
+.com2-t thead th:last-child { background:#f8f9fa; z-index: 2; }
+.com2-t tbody td:last-child { background:#fff; z-index: 1; }
+.com2-t tbody tr.rv td:last-child { background:#fff9f9; }
+.com2-t tbody tr.rc td:last-child { background:#f9fff9; }
+.com2-t tbody tr:hover td:last-child { background:#f8faf8!important; }
 .com2-td-r { text-align:right; }
 .com2-code { font-family:monospace;font-size:11px;color:var(--muted);font-weight:600;background:#f3f4f6;padding:2px 6px;border-radius:4px; }
 .com2-v-fin { color:#8b1a1a;font-weight:700; }
