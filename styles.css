@@ -7762,18 +7762,18 @@ body[data-active-view="sanitary"] .hero {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: #fff;
-  color: var(--text);
-  border: 1.5px solid var(--border);
+  background: var(--green);
+  color: #fff;
+  border: none;
   border-radius: 10px;
   padding: 9px 18px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: border-color .15s, background .15s;
+  transition: filter .15s;
   font-family: inherit;
 }
-.rep2-btn-secondary:hover { border-color: var(--green); background: #f6faf6; }
+.rep2-btn-secondary:hover { filter: brightness(1.1); }
 
 /* --- KPI Grid --- */
 .rep2-kpi-section { margin-bottom: 18px; }
@@ -8175,11 +8175,11 @@ body[data-active-view="sanitary"] .hero {
 .com2-subtitle { font-size:.85rem;color:var(--muted);max-width:540px;line-height:1.5;margin:0; }
 .com2-header-acts { display:flex;gap:10px;flex-shrink:0;flex-wrap:wrap; }
 .com2-btn-pdf {
-  display:inline-flex;align-items:center;gap:6px;background:#fff;color:var(--text);
-  border:1.5px solid var(--border);border-radius:10px;padding:9px 18px;font-size:13px;
-  font-weight:600;cursor:pointer;transition:border-color .15s,background .15s;font-family:inherit;
+  display:inline-flex;align-items:center;gap:6px;background:var(--green);color:#fff;
+  border:none;border-radius:10px;padding:9px 18px;font-size:13px;
+  font-weight:600;cursor:pointer;transition:filter .15s;font-family:inherit;
 }
-.com2-btn-pdf:hover { border-color:var(--green);background:#f6faf6; }
+.com2-btn-pdf:hover { filter:brightness(1.1); }
 .com2-btn-new-v {
   display:inline-flex;align-items:center;gap:6px;background:#8b1a1a;color:#fff;
   border:none;border-radius:10px;padding:10px 20px;font-size:14px;font-weight:700;
