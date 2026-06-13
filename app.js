@@ -140,6 +140,13 @@ const STANDARD_FARM_CATEGORIES = [
   { id: "vacas-entouradas", name: "Vacas entouradas" }
 ];
 
+// Migração: categorias legadas que devem ser incorporadas à categoria "Novilhos"
+const LEGACY_CATEGORY_MERGE_VERSION = 1;
+const LEGACY_CATEGORY_MERGES = {
+  arapey: ["Bois cerrillada", "Bois de abate"],
+  chiquita: ["Bois", "Novilhos 2 a 3"]
+};
+
 const MONTHLY_REPORT_CATEGORIES = [
   { value: "estoque", label: "Controle de estoque animal" },
   { value: "sanitario", label: "Atividades sanitárias" },
@@ -11636,6 +11643,7 @@ function ensureDataShape(data, options = {}) {
     }));
     pruneLegacyPotreiros(farm);
     applyImportedFarmBaseline(farm);
+    mergeLegacyCategoriesIntoNovilhos(farm);
   });
 
   // Always apply sanitary imports — idempotent (sourceId check prevents duplicates)
@@ -11755,6 +11763,49 @@ function applyImportedFarmBaseline(farm) {
     quantity: Number(category.quantity || 0)
   }));
   farm.importedBaselineVersion = IMPORTED_FARM_BASELINE_VERSION;
+}
+
+function mergeLegacyCategoriesIntoNovilhos(farm) {
+  const sourceNames = LEGACY_CATEGORY_MERGES[farm.id];
+  if (!sourceNames || Number(farm.categoryMergeVersion || 0) >= LEGACY_CATEGORY_MERGE_VERSION) {
+    return;
+  }
+
+  const normalizedSourceNames = new Set(sourceNames.map((name) => normalizeText(name).trim()));
+  const matched = farm.categories.filter((category) => normalizedSourceNames.has(normalizeText(category.name).trim()));
+
+  if (matched.length) {
+    let target = farm.categories.find((category) => normalizeText(category.name).trim() === "novilhos");
+    if (!target) {
+      target = { id: "novilhos", name: "Novilhos", quantity: 0, allocation: {} };
+      farm.categories.push(target);
+    }
+    ensureCategoryAllocation(target);
+
+    const mergedIds = new Set();
+    matched.forEach((category) => {
+      mergedIds.add(category.id);
+      target.quantity = Number(target.quantity || 0) + Number(category.quantity || 0);
+      ensureCategoryAllocation(category);
+      Object.entries(category.allocation).forEach(([potreroKey, value]) => {
+        target.allocation[potreroKey] = Number(target.allocation[potreroKey] || 0) + Number(value || 0);
+      });
+    });
+
+    farm.categories = farm.categories.filter((category) => category === target || !mergedIds.has(category.id));
+
+    const retarget = (record) => {
+      if (record.categoryId && mergedIds.has(record.categoryId)) {
+        record.categoryId = target.id;
+        record.categoryName = target.name;
+      }
+    };
+    farm.movements.forEach(retarget);
+    farm.sanitaryRecords.forEach(retarget);
+    farm.reproductionRecords.forEach(retarget);
+  }
+
+  farm.categoryMergeVersion = LEGACY_CATEGORY_MERGE_VERSION;
 }
 
 function isPlaceholderInventory(farm) {
