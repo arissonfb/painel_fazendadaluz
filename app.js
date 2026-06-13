@@ -14368,6 +14368,7 @@ function renderComprasTable() {
 
   const year = state.filters.year;
   const month = state.filters.month;
+  const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
   const search = (elements.comprasHistorySearch?.value || "").trim().toLowerCase();
   const filterFarm = elements.comprasFilterFarm?.value || "";
   const filterDateFrom = elements.comprasFilterDateFrom?.value || "";
@@ -14378,7 +14379,7 @@ function renderComprasTable() {
     const d = m.date || "";
     if (year !== "all" && !d.startsWith(year)) return false;
     if (month !== "all" && d.slice(5, 7) !== String(month).padStart(2, "0")) return false;
-    if (filterFarm && m._farmId !== filterFarm) return false;
+    if (isTotalView && filterFarm && m._farmId !== filterFarm) return false;
     if (filterDateFrom && d < filterDateFrom) return false;
     if (filterDateTo && d > filterDateTo) return false;
     if (filterCat && m.categoryName !== filterCat) return false;
@@ -14397,7 +14398,7 @@ function renderComprasTable() {
   const slice = movs.slice(page * COMPRAS_PAGE_SIZE, (page + 1) * COMPRAS_PAGE_SIZE);
 
   if (!slice.length) {
-    elements.comprasTableBody.innerHTML = `<tr><td colspan="12" class="table-empty-cell">${search || filterFarm || filterCat || filterDateFrom || filterDateTo ? "Nenhum registro encontrado com estes filtros." : "Nenhuma compra registrada ainda."}</td></tr>`;
+    elements.comprasTableBody.innerHTML = `<tr><td colspan="12" class="table-empty-cell">${search || (isTotalView && filterFarm) || filterCat || filterDateFrom || filterDateTo ? "Nenhum registro encontrado com estes filtros." : "Nenhuma compra registrada ainda."}</td></tr>`;
   } else {
     elements.comprasTableBody.innerHTML = slice.map((m) => {
       const p = m.purchaseDetails || {};
@@ -15044,6 +15045,7 @@ function renderVendasTable() {
   if (!elements.vendasTableBody) return;
   const year = state.filters.year;
   const month = state.filters.month;
+  const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
   const search = (elements.vendasHistorySearch?.value || "").trim().toLowerCase();
   const filterFarm = elements.vendasFilterFarm?.value || "";
   const filterDateFrom = elements.vendasFilterDateFrom?.value || "";
@@ -15054,7 +15056,7 @@ function renderVendasTable() {
     const d = m.date || "";
     if (year !== "all" && !d.startsWith(year)) return false;
     if (month !== "all" && d.slice(5, 7) !== String(month).padStart(2, "0")) return false;
-    if (filterFarm && m._farmId !== filterFarm) return false;
+    if (isTotalView && filterFarm && m._farmId !== filterFarm) return false;
     if (filterDateFrom && d < filterDateFrom) return false;
     if (filterDateTo && d > filterDateTo) return false;
     if (filterCat && m.categoryName !== filterCat) return false;
@@ -15073,7 +15075,7 @@ function renderVendasTable() {
   const slice = movs.slice(page * VENDAS_PAGE_SIZE, (page + 1) * VENDAS_PAGE_SIZE);
 
   if (!slice.length) {
-    elements.vendasTableBody.innerHTML = `<tr><td colspan="13" class="table-empty-cell">${search || filterFarm || filterCat || filterDateFrom || filterDateTo ? "Nenhum registro encontrado com estes filtros." : "Nenhuma venda registrada ainda."}</td></tr>`;
+    elements.vendasTableBody.innerHTML = `<tr><td colspan="13" class="table-empty-cell">${search || (isTotalView && filterFarm) || filterCat || filterDateFrom || filterDateTo ? "Nenhum registro encontrado com estes filtros." : "Nenhuma venda registrada ainda."}</td></tr>`;
   } else {
     elements.vendasTableBody.innerHTML = slice.map((m) => {
       const d = m.saleDetails || {};
