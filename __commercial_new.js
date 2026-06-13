@@ -1,7 +1,4 @@
 
-const COMPRAS_PAGE_SIZE = 50;
-const VENDAS_PAGE_SIZE  = 50;
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function com2FmtVal(v, currency) {
   if (!v && v !== 0) return "—";
