@@ -7639,6 +7639,16 @@ tr:last-child td { border-bottom: none; }
   font-size: 0.72rem;
 }
 
+.ops-farm-card .chip-entry {
+  background: #ffffff;
+  color: #0f5e4f;
+}
+
+.ops-farm-card .chip-exit {
+  background: #ffffff;
+  color: #7d3c32;
+}
+
 .ops-farm-metrics {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
