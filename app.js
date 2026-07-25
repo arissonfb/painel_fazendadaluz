@@ -3719,36 +3719,8 @@ function renderOverviewPanel() {
   elements.globalPanelTitle.textContent = isTotalView ?"Manejo total das fazendas" : `Manejo de ${selectedFarm?.name || "fazenda"}`;
   elements.globalPanelChip.textContent = isTotalView ?"Grupo Da Luz" : selectedFarm?.name || "Fazenda";
 
-  const cards = [
-    {
-      title: "Manejo / estoque",
-      value: formatInteger(totals.stock),
-      detail: `${formatInteger(totals.potreiros)} campos | ${formatInteger(totals.potreroAnimals)} cabeças alocadas`
-    },
-    {
-      title: "Receita de Vendas",
-      value: formatCurrency(movementTotals.salesValue),
-      detail: `${formatInteger(movementTotals.saleAnimals)} animais vendidos no período`
-    },
-    {
-      title: "Sanitário",
-      value: formatInteger(totals.sanitary),
-      detail: "registros no período filtrado"
-    },
-    {
-      title: "Reprodução",
-      value: repStats.taxaSucesso != null ?`${repStats.taxaSucesso.toFixed(1)}%` : "-",
-      detail: `${formatInteger(repStats.totalPegou)} prenhas | ${formatInteger(pendingRep)} pendentes`
-    }
-  ];
-
-  elements.globalSummaryGrid.innerHTML = cards.map((card) => `
-    <article class="summary-card ops-card">
-      <p class="panel-kicker">${card.title}</p>
-      <strong>${card.value}</strong>
-      <p>${card.detail}</p>
-    </article>
-  `).join("");
+  elements.globalSummaryGrid.innerHTML = "";
+  elements.globalSummaryGrid.hidden = true;
 
   elements.globalFarmBreakdown.innerHTML = farms.map((farm) => {
     const movements = summarizePeriod(farm, state.filters.year, state.filters.month);
@@ -3756,12 +3728,16 @@ function renderOverviewPanel() {
     const purchases = summarizePurchasePeriod(farm, state.filters.year, state.filters.month);
     const balance = sales.totalValue - purchases.totalValue;
     const total = getFarmTotal(farm);
+    const saleAnimals = sales.movements.reduce((sum, movement) => sum + Number(movement.quantity || 0), 0);
     return `
       <article class="global-farm-card ops-farm-card">
         <div class="farm-card-header">
           <div>
-            <p class="panel-kicker">${escapeHtml(farm.name)}</p>
-            <strong class="farm-card-total">${formatInteger(total)}</strong>
+            <p class="farm-card-name">${escapeHtml(farm.name)}</p>
+            <div class="farm-card-total-row">
+              <strong class="farm-card-total">${formatInteger(total)}</strong>
+              <span>animais</span>
+            </div>
           </div>
           <div class="farm-card-chips">
             <span class="chip chip-entry">+${formatInteger(movements.byType.compra + movements.byType.nascimento)} ent.</span>
@@ -3773,6 +3749,13 @@ function renderOverviewPanel() {
           <span>Compra<strong>${formatCurrency(purchases.totalValue)}</strong></span>
           <span>Saldo<strong>${formatCurrency(balance)}</strong></span>
           <span>Campos<strong>${formatInteger(getPotreroTotals(farm).totalPotreiros || 0)}</strong></span>
+        </div>
+        <div class="farm-card-complement">
+          <span>Compras: ${formatInteger(purchases.totalAnimals)} animais</span>
+          <span>Vendas: ${formatInteger(saleAnimals)} animais</span>
+          <span>Nascimentos: ${formatInteger(movements.byType.nascimento)}</span>
+          <span>Mortes: ${formatInteger(movements.byType.morte)}</span>
+          <span>Sanitário: ${formatInteger(getFilteredSanitaryRecords(farm).length)} registros</span>
         </div>
       </article>
     `;
@@ -4796,49 +4779,44 @@ function renderGlobalSummary() {
   elements.globalPanelTitle.textContent = isTotalView ?"Consolidado das fazendas" : `Resumo de ${selectedFarm?.name || "fazenda"}`;
   elements.globalPanelChip.textContent = isTotalView ?"Grupo Da Luz" : selectedFarm?.name || "Fazenda";
 
-  const cards = [
-    {
-      title: isTotalView ?"Estoque consolidado" : "Estoque atual",
-      value: formatInteger(totals.animais),
-      detail: isTotalView ?"estoque consolidado do grupo" : `estoque atual de ${selectedFarm?.name || "fazenda"}`
-    },
-    {
-      title: isTotalView ?"Entradas consolidadas" : "Entradas no período",
-      value: formatInteger(totals.declaredTotal),
-      detail: totals.declaredTotal === totals.animais
-        ?"estoque alinhado ao total declarado"
-        : `${formatInteger(totals.declaredTotal - totals.animais)} animais de diferenca`
-    },
-    {
-      title: isTotalView ?"Saídas consolidadas" : "Saídas no período",
-      value: formatInteger(totals.saidas),
-      detail: isTotalView ?"vendas, mortes, consumo e ajustes negativos" : "vendas, mortes, consumo e ajustes negativos"
-    },
-    {
-      title: "Registros sanitários",
-      value: formatInteger(totals.sanitario),
-      detail: isTotalView ?"manejos sanitários no período filtrado" : `manejos sanitários de ${selectedFarm?.name || "fazenda"}`
-    }
-  ];
-
-  elements.globalSummaryGrid.innerHTML = cards.map((card) => `
-    <article class="summary-card">
-      <p class="panel-kicker">${card.title}</p>
-      <strong>${card.value}</strong>
-      <p>${card.detail}</p>
-    </article>
-  `).join("");
+  elements.globalSummaryGrid.innerHTML = "";
+  elements.globalSummaryGrid.hidden = true;
 
   elements.globalFarmBreakdown.innerHTML = farms.map((farm) => {
     const summary = summarizePeriod(farm, state.filters.year, state.filters.month);
+    const sales = summarizeSalePeriod(farm, state.filters.year, state.filters.month);
+    const purchases = summarizePurchasePeriod(farm, state.filters.year, state.filters.month);
     const sanitaryCount = getFilteredSanitaryRecords(farm).length;
+    const balance = sales.totalValue - purchases.totalValue;
+    const total = getFarmTotal(farm);
     return `
-      <article class="global-farm-card">
-        <p class="panel-kicker">${escapeHtml(farm.name)}</p>
-        <strong>${formatInteger(getFarmTotal(farm))}</strong>
-        <p>Compra ${formatInteger(summary.byType.compra)} | Venda ${formatInteger(summary.byType.venda)}</p>
-        <p>Nasc. ${formatInteger(summary.byType.nascimento)} | Mortes ${formatInteger(summary.byType.morte)}</p>
-        <span>${formatInteger(sanitaryCount)} registro(s) sanitários no período</span>
+      <article class="global-farm-card ops-farm-card">
+        <div class="farm-card-header">
+          <div>
+            <p class="farm-card-name">${escapeHtml(farm.name)}</p>
+            <div class="farm-card-total-row">
+              <strong class="farm-card-total">${formatInteger(total)}</strong>
+              <span>animais</span>
+            </div>
+          </div>
+          <div class="farm-card-chips">
+            <span class="chip chip-entry">+${formatInteger(summary.byType.compra + summary.byType.nascimento)} ent.</span>
+            <span class="chip chip-exit">-${formatInteger(summary.byType.venda + summary.byType.morte + summary.byType.consumo)} saí.</span>
+          </div>
+        </div>
+        <div class="ops-farm-metrics">
+          <span>Venda<strong>${formatCurrency(sales.totalValue)}</strong></span>
+          <span>Compra<strong>${formatCurrency(purchases.totalValue)}</strong></span>
+          <span>Saldo<strong>${formatCurrency(balance)}</strong></span>
+          <span>Campos<strong>${formatInteger(getPotreroTotals(farm).totalPotreiros || 0)}</strong></span>
+        </div>
+        <div class="farm-card-complement">
+          <span>Compras: ${formatInteger(purchases.totalAnimals)} animais</span>
+          <span>Vendas: ${formatInteger(sales.movements.reduce((sum, movement) => sum + Number(movement.quantity || 0), 0))} animais</span>
+          <span>Nascimentos: ${formatInteger(summary.byType.nascimento)}</span>
+          <span>Mortes: ${formatInteger(summary.byType.morte)}</span>
+          <span>Sanitário: ${formatInteger(sanitaryCount)} registros</span>
+        </div>
       </article>
     `;
   }).join("");
