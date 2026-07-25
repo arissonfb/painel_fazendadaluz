@@ -5584,8 +5584,8 @@ th {
 }
 
 .chip-entry {
-  background: rgba(60, 220, 120, 0.25);
-  color: #b6ffda;
+  background: rgba(255, 255, 255, 0.9);
+  color: #155c4f;
   font-size: 0.72rem;
   padding: 3px 9px;
   border-radius: 20px;
@@ -5593,8 +5593,8 @@ th {
 }
 
 .chip-exit {
-  background: rgba(255, 100, 80, 0.22);
-  color: #ffc9c0;
+  background: rgba(255, 255, 255, 0.9);
+  color: #794236;
   font-size: 0.72rem;
   padding: 3px 9px;
   border-radius: 20px;
@@ -7633,8 +7633,9 @@ tr:last-child td { border-bottom: none; }
 
 .ops-farm-card .chip-entry,
 .ops-farm-card .chip-exit {
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.88);
   border-radius: 999px;
+  box-shadow: 0 6px 14px rgba(6, 40, 39, 0.14);
   font-size: 0.72rem;
 }
 
