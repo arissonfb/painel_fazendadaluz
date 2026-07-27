@@ -4869,9 +4869,14 @@ function renderFarmSwitch() {
   totalButton.textContent = "Todas as Fazendas";
   totalButton.addEventListener("click", () => {
     state.data.selectedFarmId = TOTAL_FARM_ID;
-    if (state.activeView !== "compras" && state.activeView !== "vendas") {
-      state.activeView = "home";
-    }
+    runtime.movementsPage = 0;
+    runtime.movementsSearch = "";
+    runtime.sanitaryPage = 0;
+    runtime.sanitarySearch = "";
+    runtime.repPage = 0;
+    runtime.comprasPage = 0;
+    runtime.vendasPage = 0;
+    resetSanitaryTableFilters();
     saveData();
     render();
   });
@@ -4885,14 +4890,14 @@ function renderFarmSwitch() {
     button.innerHTML = `${escapeHtml(farm.name)} <span class="farm-btn-country">${countryTag}</span>`;
     button.addEventListener("click", () => {
       state.data.selectedFarmId = farm.id;
-      if (state.activeView !== "compras" && state.activeView !== "vendas") {
-        state.activeView = "home";
-        runtime.movementsPage = 0;
-        runtime.movementsSearch = "";
-        runtime.sanitaryPage = 0;
-        runtime.sanitarySearch = "";
-        resetSanitaryTableFilters();
-      }
+      runtime.movementsPage = 0;
+      runtime.movementsSearch = "";
+      runtime.sanitaryPage = 0;
+      runtime.sanitarySearch = "";
+      runtime.repPage = 0;
+      runtime.comprasPage = 0;
+      runtime.vendasPage = 0;
+      resetSanitaryTableFilters();
       saveData();
       render();
     });
@@ -5016,7 +5021,6 @@ function injectBackButton(view) {
   };
   const el = viewMap[view];
   if (!el) return;
-  if (el.querySelector(".back-to-home-bar")) return;
 
   const farm = getFarm();
   const farmLabel = state.data.selectedFarmId === TOTAL_FARM_ID ? "Todas as Fazendas" : farm.name;
@@ -5024,6 +5028,13 @@ function injectBackButton(view) {
     dashboard: "Estoque", sanitary: "Manejo Sanitário", potreiros: "Potreiros",
     reproducao: "Reprodução", compras: "Compras", vendas: "Vendas"
   };
+
+  const existingBar = el.querySelector(".back-to-home-bar");
+  if (existingBar) {
+    const farmEl = existingBar.querySelector(".back-farm");
+    if (farmEl) farmEl.textContent = farmLabel;
+    return;
+  }
 
   const bar = document.createElement("div");
   bar.className = "back-to-home-bar";
@@ -5068,7 +5079,14 @@ function renderMobileFarmDrawer() {
   elements.mobileFarmSwitchList.querySelectorAll("[data-farm-id]").forEach((btn) => {
     btn.addEventListener("click", () => {
       state.data.selectedFarmId = btn.dataset.farmId;
-      state.activeView = "dashboard";
+      runtime.movementsPage = 0;
+      runtime.movementsSearch = "";
+      runtime.sanitaryPage = 0;
+      runtime.sanitarySearch = "";
+      runtime.repPage = 0;
+      runtime.comprasPage = 0;
+      runtime.vendasPage = 0;
+      resetSanitaryTableFilters();
       elements.mobileFarmDrawer.hidden = true;
       saveData();
       render();
