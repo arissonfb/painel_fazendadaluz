@@ -13,7 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useData } from "../context/DataContext";
 import { createUUID, generateSanCode, todayISO } from "../utils/farmUtils";
 import { colors, spacing, radius } from "../theme";
-import { getFarmCategoryOptions, getFarmPotreiroOptions, SANITARY_VIAS } from "../utils/livestock";
+import { getFarmCategoryOptions, getFarmPotreiroOptions, SANITARY_VIAS, SPECIES_OPTIONS, DEFAULT_SPECIES, normalizeSpecies } from "../utils/livestock";
 import { getAttachmentLabelCount, pickMediaAsset, uploadAssetToCloudinary } from "../utils/media";
 import { Field, ModalPicker, OptionRow, Section, StyledInput } from "../components/MobileUI";
 
@@ -26,6 +26,12 @@ export default function SanitarioFormScreen({ route, navigation }) {
   const [date, setDate] = useState(editRecord?.date || todayISO());
   const [name, setName] = useState(editRecord?.name || "");
   const [categoryName, setCategoryName] = useState(editRecord?.categoryName || "");
+  const [species, setSpecies] = useState(() => {
+    if (editRecord?.species) return normalizeSpecies(editRecord.species);
+    const farm = farms.find((f) => f.id === (editRecord?.farmId || selectedFarmId));
+    const cat = farm?.categories?.find((c) => c.id === editRecord?.categoryId || c.name === editRecord?.categoryName);
+    return normalizeSpecies(cat?.species || DEFAULT_SPECIES);
+  });
   const [potreiro, setPotreiro] = useState(editRecord?.potreiro || "");
   const [quantity, setQuantity] = useState(String(editRecord?.quantity || ""));
   const [product, setProduct] = useState(editRecord?.product || "");
@@ -38,7 +44,7 @@ export default function SanitarioFormScreen({ route, navigation }) {
   const [uploading, setUploading] = useState(false);
 
   const selectedFarm = farms.find((farm) => farm.id === farmId);
-  const categoryOptions = getFarmCategoryOptions(selectedFarm).map((item) => ({ value: item.label, label: item.label }));
+  const categoryOptions = getFarmCategoryOptions(selectedFarm, [], species).map((item) => ({ value: item.label, label: item.label }));
   const productOptions = (selectedFarm?.sanitaryProducts || []).map((item) => ({ value: item, label: item }));
   const productOptionsWithOther = productOptions.concat({ value: "__other__", label: "Outros" });
   const selectedProductOption = productOptions.some((item) => item.value === product) ? product : "__other__";
@@ -79,6 +85,7 @@ export default function SanitarioFormScreen({ route, navigation }) {
         name: name.trim() || product.trim() || "Manejo sanitário",
         categoryName: categoryName.trim(),
         categoryId: categoryName.trim(),
+        species,
         potreiro: potreiro.trim(),
         quantity: Number(quantity) || 0,
         product: product.trim(),
@@ -145,6 +152,10 @@ export default function SanitarioFormScreen({ route, navigation }) {
               </Field>
             </View>
           </View>
+
+          <Field label="Espécie">
+            <OptionRow options={SPECIES_OPTIONS} selected={species} onSelect={(s) => { setSpecies(s); setCategoryName(""); }} />
+          </Field>
 
           <View style={styles.row}>
             <View style={styles.col}>

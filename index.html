@@ -481,6 +481,10 @@
                   Quantidade de animais
                   <input type="number" id="sanitaryQuantity" min="1" step="1" required>
                 </label>
+                <div class="form-span-2" id="sanitarySpeciesSwitchWrap">
+                  <span class="panel-kicker">Espécie</span>
+                  <div class="species-switch" id="sanitarySpeciesSwitch"></div>
+                </div>
                 <label>
                   Categoria
                   <select id="sanitaryCategory" required></select>
@@ -918,6 +922,10 @@
           Data
           <input type="date" id="movementDate" required>
         </label>
+        <div class="form-span-2" id="movementSpeciesSwitchWrap">
+          <span class="panel-kicker">Espécie</span>
+          <div class="species-switch" id="movementSpeciesSwitch"></div>
+        </div>
         <label>
           Categoria
           <select id="movementCategory" required></select>
@@ -1075,6 +1083,10 @@
           <select id="categoryFarm" required></select>
         </label>
         <label>
+          Espécie
+          <select id="categorySpecies" required></select>
+        </label>
+        <label>
           Nome da categoria
           <input type="text" id="categoryName" maxlength="60" required placeholder="Ex.: Vacas em terminação">
         </label>
@@ -1114,6 +1126,7 @@
       </div>
 
       <div class="stock-panel" id="stockPanelCategorias">
+        <div class="species-switch" id="stockCategorySpeciesSwitch"></div>
         <div class="stock-accordion" id="stockCategoryAccordion"></div>
       </div>
 
@@ -1231,6 +1244,23 @@
           <div>
             <strong>Por seleção</strong>
             <span>Permite escolher manualmente quais fazendas entram no relatório.</span>
+          </div>
+        </label>
+      </div>
+
+      <div class="pdf-scope-group">
+        <label class="scope-option">
+          <input type="radio" name="pdfSpecies" value="bovino" checked>
+          <div>
+            <strong>Bovinos</strong>
+            <span>Relatório com as categorias de gado bovino.</span>
+          </div>
+        </label>
+        <label class="scope-option">
+          <input type="radio" name="pdfSpecies" value="ovino">
+          <div>
+            <strong>Ovinos</strong>
+            <span>Relatório com as categorias de ovinos.</span>
           </div>
         </label>
       </div>
@@ -1715,6 +1745,10 @@
           Data do evento
           <input type="date" id="repDate" required>
         </label>
+        <div class="form-span-2" id="repSpeciesSwitchWrap">
+          <span class="panel-kicker">Espécie</span>
+          <div class="species-switch" id="repSpeciesSwitch"></div>
+        </div>
         <label>
           Categoria dos animais
           <select id="repCategory" required></select>

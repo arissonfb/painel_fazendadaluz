@@ -19,6 +19,9 @@ import {
   MOVEMENT_TYPES,
   upsertMovementInData,
   MEDIA_SUPPORTED_MOVEMENT_TYPES,
+  SPECIES_OPTIONS,
+  DEFAULT_SPECIES,
+  normalizeSpecies,
 } from "../utils/livestock";
 import { getAttachmentLabelCount, pickMediaAsset, uploadAssetToCloudinary } from "../utils/media";
 import { Field, FarmSelectorCard, ModalPicker, OptionRow, Section, StyledInput } from "../components/MobileUI";
@@ -32,6 +35,12 @@ export default function MovimentacaoFormScreen({ route, navigation }) {
   const [type, setType] = useState(editRecord?.type || "compra");
   const [date, setDate] = useState(editRecord?.date || todayISO());
   const [categoryName, setCategoryName] = useState(editRecord?.categoryName || "");
+  const [species, setSpecies] = useState(() => {
+    if (editRecord?.species) return normalizeSpecies(editRecord.species);
+    const farm = farms.find((f) => f.id === (editRecord?.farmId || selectedFarmId));
+    const cat = farm?.categories?.find((c) => c.id === editRecord?.categoryId || c.name === editRecord?.categoryName);
+    return normalizeSpecies(cat?.species || DEFAULT_SPECIES);
+  });
   const [quantity, setQuantity] = useState(String(editRecord?.quantity || ""));
   const [destinationFarmId, setDestinationFarmId] = useState(editRecord?.transferDetails?.destinationFarmId || "");
   const [origin, setOrigin] = useState(editRecord?.purchaseDetails?.origin || "");
@@ -50,7 +59,7 @@ export default function MovimentacaoFormScreen({ route, navigation }) {
   const selectedFarm = farms.find((farm) => farm.id === farmId);
   const destinationFarm = farms.find((farm) => farm.id === destinationFarmId);
   const preset = MOVEMENT_REFERENCE_PRESETS[type] || MOVEMENT_REFERENCE_PRESETS.compra;
-  const rawCategoryOptions = getFarmCategoryOptions(selectedFarm, preset.categories);
+  const rawCategoryOptions = getFarmCategoryOptions(selectedFarm, preset.categories, species);
   const categoryPickerOptions = rawCategoryOptions.map((o) => ({
     value: o.label,
     label: o.label,
@@ -129,6 +138,7 @@ export default function MovimentacaoFormScreen({ route, navigation }) {
         date,
         categoryName: categoryName.trim(),
         categoryId: categoryName.trim(),
+        species,
         quantity: quantityNumber,
         weight: weightNumber || null,
         valuePerKg: Number(valuePerKg || 0) || null,
@@ -195,6 +205,9 @@ export default function MovimentacaoFormScreen({ route, navigation }) {
         />
 
         <Section title="Evento" subtitle={preset.detailTitle}>
+          <Field label="Espécie">
+            <OptionRow options={SPECIES_OPTIONS} selected={species} onSelect={(s) => { setSpecies(s); setCategoryName(""); }} tone="accent" />
+          </Field>
           <Field label="Tipo">
             <OptionRow options={movementTypeOptions} selected={type} onSelect={(t) => { setType(t); setCategoryName(""); setDestinationFarmId(""); }} tone="accent" />
           </Field>

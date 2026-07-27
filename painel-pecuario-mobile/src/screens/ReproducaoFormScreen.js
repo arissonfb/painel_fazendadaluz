@@ -13,8 +13,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useData } from "../context/DataContext";
 import { createUUID, currentTimeHM, generateRepCode, todayISO } from "../utils/farmUtils";
 import { colors, spacing, radius } from "../theme";
-import { REPRODUCTION_CATEGORIES } from "../utils/livestock";
-import { Field, ModalPicker, Section, StyledInput } from "../components/MobileUI";
+import { getFarmCategoryOptions, SPECIES_OPTIONS, DEFAULT_SPECIES, normalizeSpecies } from "../utils/livestock";
+import { Field, ModalPicker, OptionRow, Section, StyledInput } from "../components/MobileUI";
 
 export default function ReproducaoFormScreen({ route, navigation }) {
   const { editRecord, farms = [], selectedFarmId, mode = "event" } = route.params || {};
@@ -27,6 +27,12 @@ export default function ReproducaoFormScreen({ route, navigation }) {
   const [date, setDate] = useState(editRecord?.date || todayISO());
   const [time, setTime] = useState(editRecord?.time || currentTimeHM());
   const [categoryName, setCategoryName] = useState(editRecord?.categoryName || "");
+  const [species, setSpecies] = useState(() => {
+    if (editRecord?.species) return normalizeSpecies(editRecord.species);
+    const farm = farms.find((f) => f.id === (editRecord?.farmId || selectedFarmId));
+    const cat = farm?.categories?.find((c) => c.id === editRecord?.categoryId || c.name === editRecord?.categoryName);
+    return normalizeSpecies(cat?.species || DEFAULT_SPECIES);
+  });
   const [quantity, setQuantity] = useState(String(editRecord?.quantity || ""));
   const [bullInfo, setBullInfo] = useState(editRecord?.bullInfo || "");
   const [techInfo, setTechInfo] = useState(editRecord?.techInfo || "");
@@ -38,7 +44,7 @@ export default function ReproducaoFormScreen({ route, navigation }) {
   const [saving, setSaving] = useState(false);
 
   const selectedFarm = farms.find((farm) => farm.id === farmId);
-  const categoryOptions = REPRODUCTION_CATEGORIES.map((label) => ({ value: label, label }));
+  const categoryOptions = getFarmCategoryOptions(selectedFarm, [], species).map((item) => ({ value: item.label, label: item.label }));
 
   const quantityNum = verificationOnly ? Number(editRecord?.quantity || 0) : Number(quantity) || 0;
   const quantityPrenhaNum = Number(quantityPrenha) || 0;
@@ -66,6 +72,7 @@ export default function ReproducaoFormScreen({ route, navigation }) {
         time: verificationOnly ? (editRecord?.time || currentTimeHM()) : time,
         categoryName: verificationOnly ? editRecord?.categoryName : categoryName.trim(),
         categoryId: verificationOnly ? editRecord?.categoryName : categoryName.trim(),
+        species: verificationOnly ? (editRecord?.species || species) : species,
         quantity: quantityNum,
         bullInfo: verificationOnly ? (editRecord?.bullInfo || "") : (type === "entourada" ? bullInfo.trim() : ""),
         techInfo: verificationOnly ? (editRecord?.techInfo || "") : (type === "inseminacao" ? techInfo.trim() : ""),
@@ -124,6 +131,10 @@ export default function ReproducaoFormScreen({ route, navigation }) {
                 onChange={setFarmId}
                 placeholder="Selecione a fazenda"
               />
+            </Field>
+
+            <Field label="Espécie">
+              <OptionRow options={SPECIES_OPTIONS} selected={species} onSelect={(s) => { setSpecies(s); setCategoryName(""); }} />
             </Field>
 
             <Field label="Tipo de evento">

@@ -12,6 +12,7 @@ import SanitarioFormScreen from "../screens/SanitarioFormScreen";
 import MovimentacoesScreen from "../screens/MovimentacoesScreen";
 import MovimentacaoFormScreen from "../screens/MovimentacaoFormScreen";
 import PerfilScreen from "../screens/PerfilScreen";
+import EstoqueScreen from "../screens/EstoqueScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -67,6 +68,15 @@ function MovimentacoesStack() {
   );
 }
 
+function PerfilStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="PerfilList" component={PerfilScreen} />
+      <Stack.Screen name="Estoque" component={EstoqueScreen} options={{ presentation: "modal" }} />
+    </Stack.Navigator>
+  );
+}
+
 export default function Navigator() {
   return (
     <Tab.Navigator
@@ -93,7 +103,7 @@ export default function Navigator() {
       <Tab.Screen name="Reproducao" component={ReproducaoStack} options={{ tabBarLabel: "Reprodução" }} />
       <Tab.Screen name="Sanitario" component={SanitarioStack} options={{ tabBarLabel: "Sanitário" }} />
       <Tab.Screen name="Movimentacoes" component={MovimentacoesStack} options={{ tabBarLabel: "Moviment." }} />
-      <Tab.Screen name="Perfil" component={PerfilScreen} options={{ tabBarLabel: "Perfil" }} />
+      <Tab.Screen name="Perfil" component={PerfilStack} options={{ tabBarLabel: "Perfil" }} />
     </Tab.Navigator>
   );
 }

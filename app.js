@@ -126,19 +126,45 @@ const CATEGORY_VISUALS = {
   vaca: "./assets/cow.svg",
   terneiro: "./assets/calf.svg",
   touro: "./assets/bull.svg",
-  rebanho: "./assets/herd.svg"
+  rebanho: "./assets/herd.svg",
+  ovino: "./assets/sheep.svg"
 };
 
-const STANDARD_FARM_CATEGORIES = [
-  { id: "vacas-cria", name: "Vacas de cria" },
-  { id: "terneiros-machos", name: "Terneiros 1 a 2 anos - machos" },
-  { id: "terneiros-femeas", name: "Terneiros 1 a 2 anos - fêmeas" },
-  { id: "bois-abate", name: "Bois de abate" },
-  { id: "novilhas-entouradas", name: "Novilhas entouradas" },
-  { id: "touros", name: "Touros" },
-  { id: "vacas-invernar", name: "Vacas de invernar" },
-  { id: "vacas-entouradas", name: "Vacas entouradas" }
+const SPECIES_OPTIONS = [
+  { value: "bovino", label: "Bovinos" },
+  { value: "ovino", label: "Ovinos" }
 ];
+const DEFAULT_SPECIES = "bovino";
+
+function normalizeSpecies(species) {
+  return species === "ovino" ? "ovino" : "bovino";
+}
+
+const STANDARD_FARM_CATEGORIES = [
+  { id: "vacas-cria", name: "Vacas de cria", species: "bovino" },
+  { id: "terneiros-machos", name: "Terneiros 1 a 2 anos - machos", species: "bovino" },
+  { id: "terneiros-femeas", name: "Terneiros 1 a 2 anos - fêmeas", species: "bovino" },
+  { id: "bois-abate", name: "Bois de abate", species: "bovino" },
+  { id: "novilhas-entouradas", name: "Novilhas entouradas", species: "bovino" },
+  { id: "touros", name: "Touros", species: "bovino" },
+  { id: "vacas-invernar", name: "Vacas de invernar", species: "bovino" },
+  { id: "vacas-entouradas", name: "Vacas entouradas", species: "bovino" }
+];
+
+// Categorias padrão de ovinos, criadas com quantidade 0 em todas as fazendas (uma única vez, ver OVINO_CATEGORY_SEED_VERSION)
+const STANDARD_OVINO_CATEGORIES = [
+  { id: "borregas", name: "Borregas", species: "ovino" },
+  { id: "borregos", name: "Borregos", species: "ovino" },
+  { id: "capao", name: "Capão", species: "ovino" },
+  { id: "carneiro", name: "Carneiro", species: "ovino" },
+  { id: "carneiro-descarte", name: "Carneiro Descarte", species: "ovino" },
+  { id: "cordeira", name: "Cordeira", species: "ovino" },
+  { id: "cordeiro", name: "Cordeiro", species: "ovino" },
+  { id: "ovelha-cria", name: "Ovelha Cria", species: "ovino" },
+  { id: "ovelha-descarte", name: "Ovelha Descarte", species: "ovino" },
+  { id: "cordeiros-mf", name: "Cordeiros M/F", species: "ovino" }
+];
+const OVINO_CATEGORY_SEED_VERSION = 1;
 
 // Migração: categorias legadas que devem ser incorporadas à categoria "Novilhos"
 const LEGACY_CATEGORY_MERGE_VERSION = 1;
@@ -822,6 +848,14 @@ const runtime = {
   movementPhotoDrafts: [],
   editStockContextFarmId: TOTAL_FARM_ID,
   pdfContextFarmId: TOTAL_FARM_ID,
+  dashboardSpecies: DEFAULT_SPECIES,
+  editStockSpecies: DEFAULT_SPECIES,
+  movementSpecies: DEFAULT_SPECIES,
+  sanitarySpecies: DEFAULT_SPECIES,
+  repSpecies: DEFAULT_SPECIES,
+  pdfSpecies: DEFAULT_SPECIES,
+  comprasSpecies: DEFAULT_SPECIES,
+  vendasSpecies: DEFAULT_SPECIES,
   arapeyKmlData: null,
   arapeyKmlPromise: null,
   georefDraft: null,
@@ -988,6 +1022,7 @@ const elements = {
   categoryDialog: document.getElementById("categoryDialog"),
   categoryForm: document.getElementById("categoryForm"),
   categoryFarm: document.getElementById("categoryFarm"),
+  categorySpecies: document.getElementById("categorySpecies"),
   categoryName: document.getElementById("categoryName"),
   categoryInitialQuantity: document.getElementById("categoryInitialQuantity"),
   categoryPotreiro: document.getElementById("categoryPotreiro"),
@@ -3110,16 +3145,27 @@ function hasMeaningfulMonthlyData(summary) {
   return Boolean(summary?.count || summary?.totalQuantity || summary?.totalValue);
 }
 
-function getFarmTotal(farm) {
+function getFarmTotal(farm, species = DEFAULT_SPECIES) {
+  return farm.categories
+    .filter((category) => normalizeSpecies(category.species) === normalizeSpecies(species))
+    .reduce((sum, category) => sum + Number(category.quantity || 0), 0);
+}
+
+function getFarmTotalAllSpecies(farm) {
   return farm.categories.reduce((sum, category) => sum + Number(category.quantity || 0), 0);
 }
 
-function getDominantCategory(farm) {
-  return [...farm.categories].sort((a, b) => b.quantity - a.quantity)[0];
+function getDominantCategory(farm, species = DEFAULT_SPECIES) {
+  return [...farm.categories]
+    .filter((category) => normalizeSpecies(category.species) === normalizeSpecies(species))
+    .sort((a, b) => b.quantity - a.quantity)[0];
 }
 
-function getDiscrepancy(farm) {
-  return Number(farm.declaredTotal || 0) - getFarmTotal(farm);
+function getDiscrepancy(farm, species = DEFAULT_SPECIES) {
+  const declared = species === "ovino"
+    ? Number(farm.declaredTotalBySpecies?.ovino || 0)
+    : Number(farm.declaredTotal || 0);
+  return declared - getFarmTotal(farm, species);
 }
 
 function getPreferredYearForFarm(farm) {
@@ -3172,14 +3218,22 @@ function createStandardFarm(id, name) {
     id,
     name,
     declaredTotal: 0,
+    declaredTotalBySpecies: { bovino: 0, ovino: 0 },
     note: "Estrutura pronta para receber o inventario inicial e futuras mudancas de manejo.",
     importedBaselineVersion: 0,
+    ovinoSeedVersion: OVINO_CATEGORY_SEED_VERSION,
     sanitaryProducts: [...DEFAULT_SANITARY_PRODUCTS],
     potreiros: normalizePotreroEntries([], DEFAULT_POTREIROS),
-    categories: STANDARD_FARM_CATEGORIES.map((category) => ({
-      ...category,
-      quantity: 0
-    })),
+    categories: [
+      ...STANDARD_FARM_CATEGORIES.map((category) => ({
+        ...category,
+        quantity: 0
+      })),
+      ...STANDARD_OVINO_CATEGORIES.map((category) => ({
+        ...category,
+        quantity: 0
+      }))
+    ],
     movements: [],
     sanitaryRecords: [],
     monthlyRecords: [],
@@ -3270,7 +3324,10 @@ function bindEvents() {
   });
 
   // Compras view
-  elements.comprasNovaBtn?.addEventListener("click", () => openMovementDialog("compra"));
+  elements.comprasNovaBtn?.addEventListener("click", () => {
+    runtime.movementSpecies = normalizeSpecies(runtime.comprasSpecies);
+    openMovementDialog("compra");
+  });
   elements.exportComprasPdfBtn?.addEventListener("click", exportComprasPdfReport);
 
   // Vendas view
@@ -3279,7 +3336,10 @@ function bindEvents() {
     runtime.vendasPage = 0;
     render();
   });
-  elements.vendasNovaBtn?.addEventListener("click", () => openMovementDialog("venda"));
+  elements.vendasNovaBtn?.addEventListener("click", () => {
+    runtime.movementSpecies = normalizeSpecies(runtime.vendasSpecies);
+    openMovementDialog("venda");
+  });
   elements.exportVendasPdfBtn?.addEventListener("click", exportVendasPdfReport);
   elements.vendasHistorySearch?.addEventListener("input", () => { runtime.vendasPage = 0; renderVendasTable(); });
   elements.vendasFilterFarm?.addEventListener("change", () => { runtime.vendasPage = 0; renderVendasKpiCards(); renderVendasCharts(); renderVendasTable(); });
@@ -3782,10 +3842,13 @@ function renderConsolidatedCategories(farms, isTotalView) {
   elements.globalCategoryBreakdown.hidden = !isTotalView;
   if (!isTotalView) return;
 
+  const species = normalizeSpecies(runtime.dashboardSpecies);
   const categoryMap = new Map();
   farms.forEach((farm) => {
     farm.categories.forEach((cat) => {
-      const key = cat.name.trim().toLowerCase();
+      if (normalizeSpecies(cat.species) !== species) return;
+      // Chave inclui espécie para não misturar categorias de nomes iguais entre bovino/ovino
+      const key = `${species}|${cat.name.trim().toLowerCase()}`;
       const existing = categoryMap.get(key);
       if (existing) {
         existing.quantity += Number(cat.quantity || 0);
@@ -3799,12 +3862,21 @@ function renderConsolidatedCategories(farms, isTotalView) {
   const sorted = [...categoryMap.values()].filter((c) => c.quantity > 0).sort((a, b) => b.quantity - a.quantity);
   const grandTotal = sorted.reduce((s, c) => s + c.quantity, 0);
 
+  const speciesSwitchHtml = `<div class="species-switch" id="globalCategorySpeciesSwitch"></div>`;
+
   if (!sorted.length) {
-    elements.globalCategoryBreakdown.innerHTML = `<p class="field-note" style="padding:12px 0">Nenhuma categoria com animais no estoque.</p>`;
+    elements.globalCategoryBreakdown.innerHTML = `
+      ${speciesSwitchHtml}
+      <p class="field-note" style="padding:12px 0">Nenhuma categoria com animais no estoque.</p>`;
+    renderSpeciesSwitch(document.getElementById("globalCategorySpeciesSwitch"), runtime.dashboardSpecies, (next) => {
+      runtime.dashboardSpecies = next;
+      renderConsolidatedCategories(farms, isTotalView);
+    });
     return;
   }
 
   elements.globalCategoryBreakdown.innerHTML = `
+    ${speciesSwitchHtml}
     <div class="cat-collapse-card">
       <div class="cat-collapse-header">
         <div class="cat-collapse-info">
@@ -3840,6 +3912,11 @@ function renderConsolidatedCategories(farms, isTotalView) {
       </div>
     </div>
   `;
+
+  renderSpeciesSwitch(document.getElementById("globalCategorySpeciesSwitch"), runtime.dashboardSpecies, (next) => {
+    runtime.dashboardSpecies = next;
+    renderConsolidatedCategories(farms, isTotalView);
+  });
 
   const btn = elements.globalCategoryBreakdown.querySelector(".cat-expand-btn");
   const body = elements.globalCategoryBreakdown.querySelector(".cat-collapse-body");
@@ -4817,6 +4894,23 @@ function renderFarmSwitch() {
   });
 }
 
+function renderSpeciesSwitch(container, currentSpecies, onChange) {
+  if (!container) return;
+  container.innerHTML = "";
+  const normalizedCurrent = normalizeSpecies(currentSpecies);
+  SPECIES_OPTIONS.forEach((option) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `species-btn ${option.value === normalizedCurrent ? "active" : ""}`;
+    button.textContent = option.label;
+    button.addEventListener("click", () => {
+      if (option.value === normalizedCurrent) return;
+      onChange(option.value);
+    });
+    container.appendChild(button);
+  });
+}
+
 function renderGlobalSummary() {
   const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
   const farms = isTotalView ?getAllFarms() : [state.data.farms[state.data.selectedFarmId]].filter(Boolean);
@@ -5074,8 +5168,10 @@ function renderSummaryCards(farm) {
 }
 
 function renderVisualHerdGrid(farm) {
-  const total = Math.max(getFarmTotal(farm), 1);
-  const categories = [...farm.categories]
+  const species = normalizeSpecies(runtime.dashboardSpecies);
+  const total = Math.max(getFarmTotal(farm, species), 1);
+  const categories = farm.categories
+    .filter((category) => normalizeSpecies(category.species) === species)
     .sort((a, b) => b.quantity - a.quantity)
     .slice(0, 4);
 
@@ -5084,12 +5180,12 @@ function renderVisualHerdGrid(farm) {
     return `
       <article class="visual-card">
         <div class="visual-card-image">
-          <img src="${getCategoryImage(category.name)}" alt="${escapeHtml(category.name)}">
+          <img src="${getCategoryImage(category.name, category.species)}" alt="${escapeHtml(category.name)}">
         </div>
         <div class="visual-card-copy">
           <div class="visual-card-topline">
             <div>
-              <p class="panel-kicker">${escapeHtml(getCategoryFamily(category.name))}</p>
+              <p class="panel-kicker">${escapeHtml(getCategoryFamily(category.name, category.species))}</p>
               <strong>${escapeHtml(category.name)}</strong>
             </div>
             <span class="visual-card-share">${share}%</span>
@@ -5626,12 +5722,17 @@ function openEditMovementDialog(farmId, movementId) {
 
   runtime.editingMovement = { farmId, movementId };
 
+  const movementCategoryRecord = farm.categories.find((c) => c.id === movement.categoryId)
+    || farm.categories.find((c) => c.name.toLowerCase() === String(movement.categoryName || "").toLowerCase());
+  runtime.movementSpecies = normalizeSpecies(movementCategoryRecord?.species);
+
   syncMovementFarmOptions(farmId);
   if (elements.movementFarmWrap) {
     elements.movementFarmWrap.hidden = true;
   }
   // Popula opções sem definir os valores ainda — updateMovementFormForType pode sobrescrever
   syncMovementTypeOptions(movement.type);
+  renderMovementSpeciesSwitch();
   syncMovementCategoryOptionsForFarm(farm);
   syncMovementPotreirosOptions();
 
@@ -5738,12 +5839,19 @@ function openEditMovementDialog(farmId, movementId) {
   elements.movementDialog.showModal();
 }
 
-function getFilteredSaleMovements(farm, year, month) {
+function movementMatchesSpecies(farm, movement, species) {
+  if (!species) return true;
+  const category = farm.categories.find((c) => c.id === movement.categoryId);
+  return normalizeSpecies(category?.species) === normalizeSpecies(species);
+}
+
+function getFilteredSaleMovements(farm, year, month, species = null) {
   return farm.movements
     .filter((movement) => {
       if (movement.type !== "venda") {
         return false;
       }
+      if (!movementMatchesSpecies(farm, movement, species)) return false;
 
       const movementDate = new Date(movement.date);
       const movementYear = String(movementDate.getFullYear());
@@ -5766,8 +5874,8 @@ function getSanitarySummary(farm, year = state.filters.year, month = state.filte
   };
 }
 
-function summarizeSalePeriod(farm, year, month) {
-  const movements = getFilteredSaleMovements(farm, year, month);
+function summarizeSalePeriod(farm, year, month, species = null) {
+  const movements = getFilteredSaleMovements(farm, year, month, species);
   return movements.reduce((summary, movement) => {
     const detail = movement.saleDetails || {};
     summary.count += 1;
@@ -5782,10 +5890,11 @@ function summarizeSalePeriod(farm, year, month) {
   }, { count: 0, totalValue: 0, liveKg: 0, carcassKg: 0, movements: [] });
 }
 
-function getFilteredPurchaseMovements(farm, year, month) {
+function getFilteredPurchaseMovements(farm, year, month, species = null) {
   return farm.movements
     .filter((movement) => {
       if (movement.type !== "compra") return false;
+      if (!movementMatchesSpecies(farm, movement, species)) return false;
       const movementDate = new Date(movement.date);
       const movementYear = String(movementDate.getFullYear());
       const movementMonth = String(movementDate.getMonth() + 1).padStart(2, "0");
@@ -5796,8 +5905,8 @@ function getFilteredPurchaseMovements(farm, year, month) {
     .sort((a, b) => new Date(b.date) - new Date(a.date));
 }
 
-function summarizePurchasePeriod(farm, year, month) {
-  const movements = getFilteredPurchaseMovements(farm, year, month);
+function summarizePurchasePeriod(farm, year, month, species = null) {
+  const movements = getFilteredPurchaseMovements(farm, year, month, species);
   return movements.reduce((summary, movement) => {
     summary.count += 1;
     summary.totalAnimals += Number(movement.quantity || 0);
@@ -8256,6 +8365,7 @@ function openMovementDialog(initialType) {
   if (catHintWrap) catHintWrap.hidden = true;
   syncMovementFarmOptions();
   syncMovementTypeOptions(initialType);
+  renderMovementSpeciesSwitch();
   syncMovementCategoryOptionsForFarm(getMovementDialogFarm());
   syncMovementPotreirosOptions();
   elements.movementDate.value = new Date().toISOString().slice(0, 10);
@@ -8411,6 +8521,9 @@ function openCategoryDialog() {
   elements.categoryFarm.innerHTML = farms.map((f) =>
     `<option value="${escapeHtml(f.id)}" ${f.id === defaultFarmId ? "selected" : ""}>${escapeHtml(f.name)}</option>`
   ).join("");
+  elements.categorySpecies.innerHTML = SPECIES_OPTIONS.map((option) =>
+    `<option value="${option.value}" ${option.value === runtime.editStockSpecies ? "selected" : ""}>${escapeHtml(option.label)}</option>`
+  ).join("");
   elements.categoryName.value = "";
   elements.categoryInitialQuantity.value = "0";
   syncCategoryPotreirosOptions();
@@ -8489,11 +8602,22 @@ function openMonthlyDataEditorForFarm(recordId, farmId) {
 // ── Stock Editor ──────────────────────────────────────────────────────────
 
 function openEditStockDialog() {
+  renderStockCategorySpeciesSwitch();
   renderStockCategoryAccordion();
   renderStockPotreirosAccordion();
   setStockEditorTab("categorias");
   updateStockEditorHint();
   elements.editStockDialog.showModal();
+}
+
+function renderStockCategorySpeciesSwitch() {
+  const container = document.getElementById("stockCategorySpeciesSwitch");
+  renderSpeciesSwitch(container, runtime.editStockSpecies, (species) => {
+    runtime.editStockSpecies = species;
+    renderStockCategorySpeciesSwitch();
+    renderStockCategoryAccordion();
+    updateStockEditorHint();
+  });
 }
 
 function setStockEditorTab(tab) {
@@ -8508,13 +8632,13 @@ function updateStockEditorHint() {
   const hint = document.getElementById("stockEditorHint");
   if (!hint) return;
   const farms = getAllFarms();
-  const total = farms.reduce((s, f) => s + getFarmTotal(f), 0);
-  hint.textContent = `${farms.length} fazenda(s) · ${formatInteger(total)} animais no sistema`;
+  const total = farms.reduce((s, f) => s + getFarmTotalAllSpecies(f), 0);
+  hint.textContent = `${farms.length} fazenda(s) · ${formatInteger(total)} animais no sistema (todas as espécies)`;
 }
 
 function stockCategoryRowHtml(farmId, cat) {
   return `
-    <tr data-cat-row="${escapeHtml(cat.id)}" data-farm-id="${escapeHtml(farmId)}">
+    <tr data-cat-row="${escapeHtml(cat.id)}" data-farm-id="${escapeHtml(farmId)}" data-cat-species="${escapeHtml(normalizeSpecies(cat.species))}">
       <td><input type="text" class="stock-input" value="${escapeHtml(cat.name)}"
           data-cat-name="${escapeHtml(cat.id)}" maxlength="80" placeholder="Nome da categoria" required></td>
       <td><input type="number" class="stock-input stock-qty" value="${Number(cat.quantity || 0)}"
@@ -8538,10 +8662,14 @@ function stockPotreirosRowHtml(farmId, p) {
 
 function renderStockCategoryAccordion() {
   const farms = getAllFarms();
+  const species = normalizeSpecies(runtime.editStockSpecies);
   const el = document.getElementById("stockCategoryAccordion");
   el.innerHTML = farms.map((farm, i) => {
-    const total = getFarmTotal(farm);
-    const declared = farm.declaredTotal || total;
+    const categories = farm.categories.filter((cat) => normalizeSpecies(cat.species) === species);
+    const total = getFarmTotal(farm, species);
+    const declared = species === "ovino"
+      ? Number(farm.declaredTotalBySpecies?.ovino || 0) || total
+      : Number(farm.declaredTotal || 0) || total;
     const diff = declared - total;
     const diffLabel = diff === 0
       ?'<span class="stock-ok">✓ Alinhado</span>'
@@ -8550,7 +8678,7 @@ function renderStockCategoryAccordion() {
       <div class="stock-accordion-item" data-cat-farm="${escapeHtml(farm.id)}">
         <button type="button" class="stock-accordion-hdr" data-toggle-cat="${escapeHtml(farm.id)}">
           <span class="stock-farm-name">${escapeHtml(farm.name)}</span>
-          <span class="stock-farm-meta">${farm.categories.length} categoria(s) · ${formatInteger(total)} animais ${diffLabel}</span>
+          <span class="stock-farm-meta">${categories.length} categoria(s) · ${formatInteger(total)} animais ${diffLabel}</span>
           <span class="stock-chevron">${i === 0 ?"▲" : "▼"}</span>
         </button>
         <div class="stock-accordion-body" ${i > 0 ?"hidden" : ""} data-cat-body="${escapeHtml(farm.id)}">
@@ -8563,8 +8691,8 @@ function renderStockCategoryAccordion() {
           </div>
           <table class="stock-table">
             <thead><tr><th>Categoria</th><th>Quantidade</th><th></th></tr></thead>
-            <tbody data-cat-tbody="${escapeHtml(farm.id)}">
-              ${farm.categories.map((cat) => stockCategoryRowHtml(farm.id, cat)).join("")}
+            <tbody data-cat-tbody="${escapeHtml(farm.id)}" data-cat-species="${escapeHtml(species)}">
+              ${categories.map((cat) => stockCategoryRowHtml(farm.id, cat)).join("")}
             </tbody>
           </table>
           <button type="button" class="stock-add-btn" data-add-cat="${escapeHtml(farm.id)}">+ Adicionar categoria</button>
@@ -8644,6 +8772,7 @@ function handleStockCategoryAccordionClick(e) {
       const newRow = document.createElement("tr");
       newRow.dataset.catRow = newId;
       newRow.dataset.farmId = farmId;
+      newRow.dataset.catSpecies = tbody.dataset.catSpecies || DEFAULT_SPECIES;
       newRow.innerHTML = `
         <td><input type="text" class="stock-input" value="" data-cat-name="${newId}" maxlength="80" placeholder="Nome da categoria" required></td>
         <td><input type="number" class="stock-input stock-qty" value="0" min="0" step="1" data-cat-qty="${newId}"></td>
@@ -8696,8 +8825,9 @@ function handleStockPotreirosAccordionClick(e) {
 function handleSaveStockEdit() {
   const farms = getAllFarms();
   const errors = [];
+  const activeSpecies = normalizeSpecies(runtime.editStockSpecies);
 
-  // Validate & collect categories
+  // Validate & collect categories (apenas da espécie ativa na aba de categorias)
   const catUpdates = {};
   for (const farm of farms) {
     const tbody = document.querySelector(`[data-cat-tbody="${farm.id}"]`);
@@ -8718,7 +8848,7 @@ function handleSaveStockEdit() {
     }
     const declaredInput = document.querySelector(`[data-declared="${farm.id}"]`);
     const declared = Number(declaredInput?.value);
-    catUpdates[farm.id] = { cats, declared: Number.isFinite(declared) && declared >= 0 ?declared : getFarmTotal(farm) };
+    catUpdates[farm.id] = { cats, declared: Number.isFinite(declared) && declared >= 0 ?declared : getFarmTotal(farm, activeSpecies) };
   }
 
   // Validate & collect potreiros
@@ -8769,15 +8899,22 @@ function handleSaveStockEdit() {
       } else {
         // Nova categoria — id definitivo baseado no nome
         const newId = slugify(`${name}-${Date.now()}`);
-        farm.categories.push({ id: newId, name, quantity: qty });
+        farm.categories.push({ id: newId, name, species: activeSpecies, quantity: qty, allocation: {} });
         newCatIds.add(newId);
       }
     }
-    // Remove categorias excluídas, preservando as recém-criadas
+    // Remove categorias excluídas da espécie ativa, preservando as recém-criadas
+    // e todas as categorias da OUTRA espécie (não tocadas nesta aba/salvamento)
     const keptIds = new Set([...cats.map((c) => c.id), ...newCatIds]);
-    farm.categories = farm.categories.filter((c) => keptIds.has(c.id));
+    farm.categories = farm.categories.filter((c) => normalizeSpecies(c.species) !== activeSpecies || keptIds.has(c.id));
 
-    farm.declaredTotal = declared;
+    if (!farm.declaredTotalBySpecies || typeof farm.declaredTotalBySpecies !== "object") {
+      farm.declaredTotalBySpecies = { bovino: Number(farm.declaredTotal || 0), ovino: 0 };
+    }
+    farm.declaredTotalBySpecies[activeSpecies] = declared;
+    if (activeSpecies === "bovino") {
+      farm.declaredTotal = declared;
+    }
     farm.potreiros = potrUpdates[farm.id] || farm.potreiros;
   }
 
@@ -8871,6 +9008,9 @@ function openSanitaryEditor(recordId) {
   if (!record) {
     return;
   }
+
+  const recordCategory = farm.categories.find((c) => c.id === record.categoryId);
+  runtime.sanitarySpecies = normalizeSpecies(recordCategory?.species);
 
   state.activeView = "sanitary";
   renderActiveView();
@@ -9179,6 +9319,15 @@ function refreshMovementValueHint(sym) {
     : "";
 }
 
+function renderMovementSpeciesSwitch() {
+  const container = document.getElementById("movementSpeciesSwitch");
+  renderSpeciesSwitch(container, runtime.movementSpecies, (species) => {
+    runtime.movementSpecies = species;
+    renderMovementSpeciesSwitch();
+    syncCategoryOptions();
+  });
+}
+
 function syncMovementCategoryOptionsForFarm(farm) {
   if (!farm) {
     elements.movementCategory.innerHTML = '<option value="">Selecione uma fazenda primeiro</option>';
@@ -9187,7 +9336,9 @@ function syncMovementCategoryOptionsForFarm(farm) {
     updateMovementCategoryTotal();
     return;
   }
-  elements.movementCategory.innerHTML = farm.categories.map((category) => `
+  const species = normalizeSpecies(runtime.movementSpecies);
+  const categories = farm.categories.filter((category) => normalizeSpecies(category.species) === species);
+  elements.movementCategory.innerHTML = categories.map((category) => `
     <option value="${category.id}">${escapeHtml(category.name)} — ${formatInteger(category.quantity)} cab.</option>
   `).join("");
   syncMovementPotreirosOptions();
@@ -9206,7 +9357,8 @@ function updateMovementCategoryTotal() {
   }
   const cat = farm.categories.find((c) => c.id === catId);
   if (!cat) { wrapEl.hidden = true; return; }
-  hintEl.innerHTML = `<span class="cat-total-icon">🐄</span> <strong>${escapeHtml(cat.name)}</strong> — estoque atual: <strong>${formatInteger(cat.quantity)} cabeças</strong> em ${escapeHtml(farm.name)}`;
+  const icon = normalizeSpecies(cat.species) === "ovino" ? "🐑" : "🐄";
+  hintEl.innerHTML = `<span class="cat-total-icon">${icon}</span> <strong>${escapeHtml(cat.name)}</strong> — estoque atual: <strong>${formatInteger(cat.quantity)} cabeças</strong> em ${escapeHtml(farm.name)}`;
   wrapEl.hidden = false;
 }
 
@@ -9290,11 +9442,22 @@ function updatePotreroQuantitiesFromAllocation(farm) {
   });
 }
 
+function renderSanitarySpeciesSwitch() {
+  const container = document.getElementById("sanitarySpeciesSwitch");
+  renderSpeciesSwitch(container, runtime.sanitarySpecies, (species) => {
+    runtime.sanitarySpecies = species;
+    renderSanitarySpeciesSwitch();
+    syncSanitaryFormOptions();
+  });
+}
+
 function syncSanitaryFormOptions() {
   const availableFarms = getAllFarms();
   if (!availableFarms.length) {
     return;
   }
+
+  renderSanitarySpeciesSwitch();
 
   const currentFarmId = (elements.sanitaryFarm?.value && state.data.farms[elements.sanitaryFarm.value])
     ?elements.sanitaryFarm.value
@@ -9308,7 +9471,7 @@ function syncSanitaryFormOptions() {
     <option value="${item.id}" ${item.id === farm.id ?"selected" : ""}>${escapeHtml(item.name)}</option>
   `).join("");
 
-  elements.sanitaryCategory.innerHTML = getSanitaryCategoryOptions(farm).map((category) => `
+  elements.sanitaryCategory.innerHTML = getSanitaryCategoryOptions(farm, runtime.sanitarySpecies).map((category) => `
     <option value="${category.id}" ${category.id === selectedCategory ?"selected" : ""}>${escapeHtml(category.name)}</option>
   `).join("");
 
@@ -9341,16 +9504,21 @@ function syncSanitaryFormOptions() {
   updateSanitaryPotreroMode();
 }
 
-function getSanitaryCategoryOptions(farm) {
+function getSanitaryCategoryOptions(farm, species = DEFAULT_SPECIES) {
+  const normalizedSpecies = normalizeSpecies(species);
   const categoryMap = new Map();
   farm.categories.forEach((category) => {
+    if (normalizeSpecies(category.species) !== normalizedSpecies) return;
     categoryMap.set(category.id, { id: category.id, name: category.name });
   });
-  farm.sanitaryRecords.forEach((record) => {
-    if (!categoryMap.has(record.categoryId)) {
-      categoryMap.set(record.categoryId, { id: record.categoryId, name: record.categoryName });
-    }
-  });
+  // Categorias legadas (referenciadas só em registros sanitários históricos) são sempre bovino
+  if (normalizedSpecies === "bovino") {
+    farm.sanitaryRecords.forEach((record) => {
+      if (!categoryMap.has(record.categoryId)) {
+        categoryMap.set(record.categoryId, { id: record.categoryId, name: record.categoryName });
+      }
+    });
+  }
   return [...categoryMap.values()];
 }
 
@@ -9697,12 +9865,13 @@ function handleCategorySubmit(event) {
   const farm = state.data.farms[farmId];
   if (!farm) return;
   const name = elements.categoryName.value.trim();
+  const species = normalizeSpecies(elements.categorySpecies?.value);
   const quantity = Number(elements.categoryInitialQuantity.value || 0);
   const potreirosId = elements.categoryPotreiro?.value || "";
 
   if (!name) return;
 
-  farm.categories.push({ id: slugify(`${name}-${Date.now()}`), name, quantity });
+  farm.categories.push({ id: slugify(`${name}-${Date.now()}`), name, species, quantity, allocation: {} });
 
   if (potreirosId && quantity > 0) {
     const potrero = getPotreroEntries(farm).find((p) => p.id === potreirosId);
@@ -10555,6 +10724,10 @@ function getPdfScopeSelection() {
   return elements.pdfOptionsForm.querySelector('input[name="pdfScope"]:checked')?.value || "current";
 }
 
+function getPdfSpeciesSelection() {
+  return normalizeSpecies(elements.pdfOptionsForm.querySelector('input[name="pdfSpecies"]:checked')?.value);
+}
+
 function updatePdfScopeMode() {
   const scope = getPdfScopeSelection();
   elements.pdfFarmList.hidden = scope !== "custom";
@@ -10597,6 +10770,7 @@ function handlePdfOptionsSubmit(event) {
   event.preventDefault();
   const farmIds = getSelectedPdfFarmIds();
   const period = getPdfPeriodSelection();
+  const species = getPdfSpeciesSelection();
 
   if (!farmIds.length) {
     alert("Selecione pelo menos uma fazenda para gerar o PDF.");
@@ -10604,7 +10778,7 @@ function handlePdfOptionsSubmit(event) {
   }
 
   elements.pdfOptionsDialog.close();
-  exportPdfReport(farmIds, period);
+  exportPdfReport(farmIds, period, species);
 }
 
 async function addPdfHeader(doc, farm, periodLabel, monthly) {
@@ -11255,13 +11429,15 @@ function appendPdfSectionTitle(doc, title, startY) {
   });
 }
 
-function appendInventoryWithPercentTable(doc, farm) {
-  const total = getFarmTotal(farm);
-  const rows = farm.categories.map((cat) => [
-    cat.name,
-    formatInteger(cat.quantity),
-    total > 0 ?`${((cat.quantity / total) * 100).toFixed(1)}%` : "0,0%"
-  ]);
+function appendInventoryWithPercentTable(doc, farm, species = DEFAULT_SPECIES) {
+  const total = getFarmTotal(farm, species);
+  const rows = farm.categories
+    .filter((cat) => normalizeSpecies(cat.species) === normalizeSpecies(species))
+    .map((cat) => [
+      cat.name,
+      formatInteger(cat.quantity),
+      total > 0 ?`${((cat.quantity / total) * 100).toFixed(1)}%` : "0,0%"
+    ]);
   if (!rows.length) rows.push(["Sem categorias cadastradas", "0", "0,0%"]);
   doc.autoTable({
     startY: doc.lastAutoTable ?doc.lastAutoTable.finalY + 2 : 55,
@@ -11420,12 +11596,12 @@ function appendSanitaryByProductPdfTable(doc, sanitaryRecords) {
   });
 }
 
-function appendConsolidatedPdfIntro(doc, farms, periodLabel, year, month) {
+function appendConsolidatedPdfIntro(doc, farms, periodLabel, year, month, species = DEFAULT_SPECIES) {
   const totals = farms.reduce((acc, farm) => {
-    const sale = summarizeSalePeriod(farm, year, month);
-    const purchase = summarizePurchasePeriod(farm, year, month);
+    const sale = summarizeSalePeriod(farm, year, month, species);
+    const purchase = summarizePurchasePeriod(farm, year, month, species);
     const sanitary = getSanitarySummary(farm, year, month);
-    acc.animals += getFarmTotal(farm);
+    acc.animals += getFarmTotal(farm, species);
     acc.salesValue += sale.totalValue;
     acc.salesQty += sale.count;
     acc.purchasesValue += purchase.totalValue;
@@ -11500,13 +11676,13 @@ function appendConsolidatedPdfIntro(doc, farms, periodLabel, year, month) {
     startY: tableY + 4,
     head: [["Fazenda", "Animais", "Compras (op.)", "Custo compras", "Vendas (op.)", "Receita vendas", "Saldo", "Sanitário"]],
     body: farms.map((farm) => {
-      const sale = summarizeSalePeriod(farm, year, month);
-      const purchase = summarizePurchasePeriod(farm, year, month);
+      const sale = summarizeSalePeriod(farm, year, month, species);
+      const purchase = summarizePurchasePeriod(farm, year, month, species);
       const sanitary = getSanitarySummary(farm, year, month);
       const farmSaldo = sale.totalValue - purchase.totalValue;
       return [
         farm.name,
-        formatInteger(getFarmTotal(farm)),
+        formatInteger(getFarmTotal(farm, species)),
         formatInteger(purchase.count),
         formatCurrency(purchase.totalValue),
         formatInteger(sale.count),
@@ -11523,17 +11699,17 @@ function appendConsolidatedPdfIntro(doc, farms, periodLabel, year, month) {
   });
 }
 
-async function appendFarmPdfSection(doc, farm, periodLabel, year, month) {
+async function appendFarmPdfSection(doc, farm, periodLabel, year, month, species = DEFAULT_SPECIES) {
   const monthly = summarizePeriod(farm, year, month);
-  const saleSummary = summarizeSalePeriod(farm, year, month);
-  const purchaseSummary = summarizePurchasePeriod(farm, year, month);
+  const saleSummary = summarizeSalePeriod(farm, year, month, species);
+  const purchaseSummary = summarizePurchasePeriod(farm, year, month, species);
   const topY = await addPdfHeader(doc, farm, periodLabel, monthly);
 
   const { width } = getPdfPageSize(doc);
   const margin = 14;
   const saldo = saleSummary.totalValue - purchaseSummary.totalValue;
   const kpis = [
-    { label: "Estoque atual", value: `${formatInteger(getFarmTotal(farm))} animais`, color: [37, 88, 58] },
+    { label: "Estoque atual", value: `${formatInteger(getFarmTotal(farm, species))} animais`, color: [37, 88, 58] },
     { label: "Receita de vendas", value: formatCurrency(saleSummary.totalValue), color: [195, 130, 65] },
     { label: "Custo de compras", value: formatCurrency(purchaseSummary.totalValue), color: [79, 115, 168] },
     { label: "Saldo financeiro", value: formatCurrency(Math.abs(saldo)), sub: saldo >= 0 ?"positivo" : "negativo", color: saldo >= 0 ?[55, 91, 67] : [140, 60, 50] }
@@ -11563,7 +11739,7 @@ async function appendFarmPdfSection(doc, farm, periodLabel, year, month) {
   const afterCardsY = topY + cardH + 6;
 
   appendPdfSectionTitle(doc, "Estoque por Categoria", afterCardsY);
-  appendInventoryWithPercentTable(doc, farm);
+  appendInventoryWithPercentTable(doc, farm, species);
   appendPdfSectionTitle(doc, "Campos / Potreiros");
   appendPotreroPdfTable(doc, getPotreroTotals(farm));
 
@@ -12040,7 +12216,7 @@ function getPdfFileName(farms, year, month) {
   return `relatorio-fazendas-da-luz-${periodSuffix}.pdf`;
 }
 
-async function exportPdfReport(farmIds = [state.data.selectedFarmId], period = { year: state.filters.year, month: state.filters.month }) {
+async function exportPdfReport(farmIds = [state.data.selectedFarmId], period = { year: state.filters.year, month: state.filters.month }, species = DEFAULT_SPECIES) {
   const farms = farmIds.map((farmId) => state.data.farms[farmId]).filter(Boolean);
   if (!farms.length) {
     alert("Nenhuma fazenda válida foi selecionada para o PDF.");
@@ -12067,14 +12243,14 @@ async function exportPdfReport(farmIds = [state.data.selectedFarmId], period = {
 
   if (farms.length > 1) {
     doc.addPage();
-    appendConsolidatedPdfIntro(doc, farms, periodLabel, year, month);
+    appendConsolidatedPdfIntro(doc, farms, periodLabel, year, month, species);
   }
 
   for (const [index, farm] of farms.entries()) {
     doc.addPage();
     appendFarmDividerPage(doc, farm, periodLabel, year, month, index + 1, farms.length);
     doc.addPage();
-    await appendFarmPdfSection(doc, farm, periodLabel, year, month);
+    await appendFarmPdfSection(doc, farm, periodLabel, year, month, species);
     await appendMovementPhotoPages(doc, farm, year, month);
   }
 
@@ -12195,10 +12371,27 @@ function ensureDataShape(data, options = {}) {
       }
     });
     farm.categories.forEach((category) => {
+      category.species = normalizeSpecies(category.species);
       if (!category.allocation || typeof category.allocation !== "object") {
         category.allocation = { [UNALLOCATED_POTREIRO_KEY]: Number(category.quantity || 0) };
       }
     });
+    farm.ovinoSeedVersion = Number(farm.ovinoSeedVersion || 0);
+    if (farm.ovinoSeedVersion < OVINO_CATEGORY_SEED_VERSION) {
+      STANDARD_OVINO_CATEGORIES.forEach((template) => {
+        if (!farm.categories.some((category) => category.id === template.id)) {
+          farm.categories.push({
+            ...template,
+            quantity: 0,
+            allocation: { [UNALLOCATED_POTREIRO_KEY]: 0 }
+          });
+        }
+      });
+      farm.ovinoSeedVersion = OVINO_CATEGORY_SEED_VERSION;
+    }
+    if (!farm.declaredTotalBySpecies || typeof farm.declaredTotalBySpecies !== "object") {
+      farm.declaredTotalBySpecies = { bovino: Number(farm.declaredTotal || 0), ovino: 0 };
+    }
     farm.sanitaryRecords = farm.sanitaryRecords.map((record) => ({
       ...record,
       id: record.id || record.sourceId || createMovementId(),
@@ -12355,12 +12548,21 @@ function applyImportedFarmBaseline(farm) {
   }
 
   farm.declaredTotal = Number(imported.declaredTotal || 0);
+  if (!farm.declaredTotalBySpecies || typeof farm.declaredTotalBySpecies !== "object") {
+    farm.declaredTotalBySpecies = { bovino: 0, ovino: 0 };
+  }
+  farm.declaredTotalBySpecies.bovino = farm.declaredTotal;
   farm.note = imported.note || farm.note;
-  farm.categories = imported.categories.map((category) => ({
-    id: category.id || slugify(category.name || "categoria"),
-    name: category.name || "Categoria",
-    quantity: Number(category.quantity || 0)
-  }));
+  const existingOvinoCategories = (farm.categories || []).filter((category) => normalizeSpecies(category.species) === "ovino");
+  farm.categories = [
+    ...imported.categories.map((category) => ({
+      id: category.id || slugify(category.name || "categoria"),
+      name: category.name || "Categoria",
+      species: "bovino",
+      quantity: Number(category.quantity || 0)
+    })),
+    ...existingOvinoCategories
+  ];
   farm.importedBaselineVersion = IMPORTED_FARM_BASELINE_VERSION;
 }
 
@@ -12376,7 +12578,7 @@ function mergeLegacyCategoriesIntoNovilhos(farm) {
   if (matched.length) {
     let target = farm.categories.find((category) => normalizeText(category.name).trim() === "novilhos");
     if (!target) {
-      target = { id: "novilhos", name: "Novilhos", quantity: 0, allocation: {} };
+      target = { id: "novilhos", name: "Novilhos", species: "bovino", quantity: 0, allocation: {} };
       farm.categories.push(target);
     }
     ensureCategoryAllocation(target);
@@ -12410,7 +12612,7 @@ function mergeLegacyCategoriesIntoNovilhos(farm) {
 function isPlaceholderInventory(farm) {
   const categories = Array.isArray(farm.categories) ?farm.categories : [];
   const hasAnyCategoryValue = categories.some((category) => Number(category.quantity || 0) > 0);
-  const usesOnlyStandardCategories = categories.every((category) => STANDARD_FARM_CATEGORIES.some((template) => template.id === category.id));
+  const usesOnlyStandardCategories = categories.every((category) => STANDARD_FARM_CATEGORIES.some((template) => template.id === category.id) || STANDARD_OVINO_CATEGORIES.some((template) => template.id === category.id));
   const hasOperationalHistory = (farm.movements?.length || 0) > 0
     || getPotreroEntries(farm).some((potrero) => normalizePotreroQuantity(potrero.quantity) > 0);
   const normalizedNote = normalizeText(farm.note || "");
@@ -12820,7 +13022,10 @@ function formatMonthYear(period) {
   return `${MONTH_NAMES[monthIndex]}/${year}`;
 }
 
-function getCategoryImage(categoryName) {
+function getCategoryImage(categoryName, species = DEFAULT_SPECIES) {
+  if (normalizeSpecies(species) === "ovino") {
+    return CATEGORY_VISUALS.ovino;
+  }
   const normalized = normalizeText(categoryName);
   if (normalized.includes("touro")) {
     return CATEGORY_VISUALS.touro;
@@ -12834,7 +13039,10 @@ function getCategoryImage(categoryName) {
   return CATEGORY_VISUALS.rebanho;
 }
 
-function getCategoryFamily(categoryName) {
+function getCategoryFamily(categoryName, species = DEFAULT_SPECIES) {
+  if (normalizeSpecies(species) === "ovino") {
+    return "Ovinos";
+  }
   const normalized = normalizeText(categoryName);
   if (normalized.includes("touro")) {
     return "Reprodutores";
@@ -13768,6 +13976,8 @@ function openRepDialog(editingId = null, editingFarmId = null) {
     bullEl.value = rec.bullInfo || "";
     techEl.value = rec.techInfo || "";
     notesEl.value = rec.notes || "";
+    const recCategory = state.data.farms[farmId]?.categories.find((c) => c.id === rec.categoryId);
+    runtime.repSpecies = normalizeSpecies(recCategory?.species);
     syncRepFarmFields();
     setTimeout(() => {
       catEl.value = rec.categoryId || "";
@@ -13792,6 +14002,15 @@ function openRepDialog(editingId = null, editingFarmId = null) {
   dlg.showModal();
 }
 
+function renderRepSpeciesSwitch() {
+  const container = document.getElementById("repSpeciesSwitch");
+  renderSpeciesSwitch(container, runtime.repSpecies, (species) => {
+    runtime.repSpecies = species;
+    renderRepSpeciesSwitch();
+    syncRepFarmFields();
+  });
+}
+
 function syncRepFarmFields() {
   const farmEl = document.getElementById("repFarm");
   const catEl = document.getElementById("repCategory");
@@ -13800,7 +14019,11 @@ function syncRepFarmFields() {
   const farm = state.data.farms[farmEl.value];
   if (!farm) return;
 
-  catEl.innerHTML = farm.categories.map((c) => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join("");
+  renderRepSpeciesSwitch();
+  const species = normalizeSpecies(runtime.repSpecies);
+  catEl.innerHTML = farm.categories
+    .filter((c) => normalizeSpecies(c.species) === species)
+    .map((c) => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join("");
   syncRepStockHint();
 }
 
@@ -13813,7 +14036,7 @@ function syncRepStockHint() {
   const farm = state.data.farms[farmEl.value];
   if (!farm) { hintEl.hidden = true; return; }
 
-  const farmTotal = getFarmTotal(farm);
+  const farmTotal = getFarmTotal(farm, runtime.repSpecies);
   const catId = catEl?.value;
   const catObj = farm.categories.find((c) => c.id === catId);
   const catTotal = catObj ? catObj.quantity : null;
@@ -14209,6 +14432,24 @@ function getCommercialTableFilters(type) {
     dateTo: elements[`${prefix}FilterDateTo`]?.value || "",
     category: elements[`${prefix}FilterCategory`]?.value || "",
   };
+}
+
+function getMovementSpecies(movement) {
+  const farm = state.data.farms[movement._farmId || movement.farmId];
+  const category = farm?.categories.find((c) => c.id === movement.categoryId);
+  return normalizeSpecies(category?.species);
+}
+
+function ensureChartSpeciesSwitch(canvas, switchId, currentSpecies, onChange) {
+  if (!canvas) return;
+  let container = document.getElementById(switchId);
+  if (!container) {
+    container = document.createElement("div");
+    container.id = switchId;
+    container.className = "species-switch";
+    canvas.parentElement?.insertBefore(container, canvas);
+  }
+  renderSpeciesSwitch(container, currentSpecies, onChange);
 }
 
 function getCommercialMovements(type, options = {}) {
@@ -14659,7 +14900,8 @@ const COMPRA_CAT_PALETTE = [
 ];
 
 function buildComprasCategorySeries() {
-  const movs = getCommercialMovements("compra", { includeTableFilters: false });
+  const species = normalizeSpecies(runtime.comprasSpecies);
+  const movs = getCommercialMovements("compra", { includeTableFilters: false }).filter((m) => getMovementSpecies(m) === species);
   const grouped = new Map();
   movs.forEach((m) => {
     const cat = m.categoryName || "Sem categoria";
@@ -14678,7 +14920,8 @@ function buildComprasCategorySeries() {
 }
 
 function buildComprasMonthByCategorySeries() {
-  const movs = getCommercialMovements("compra", { includeMonth: false, includeTableFilters: false });
+  const species = normalizeSpecies(runtime.comprasSpecies);
+  const movs = getCommercialMovements("compra", { includeMonth: false, includeTableFilters: false }).filter((m) => getMovementSpecies(m) === species);
   const catTotals = new Map();
   movs.forEach(m => {
     const cat = m.categoryName || "Sem categoria";
@@ -14868,6 +15111,10 @@ function renderComprasHeatmap() {
 function renderComprasCategoryBar() {
   const canvas = document.getElementById("comprasBarChart");
   if (!canvas) return;
+  ensureChartSpeciesSwitch(canvas, "comprasCategorySpeciesSwitch", runtime.comprasSpecies, (species) => {
+    runtime.comprasSpecies = species;
+    renderComprasCategoryBar();
+  });
   if (state.charts["comprasBar"]) { state.charts["comprasBar"].destroy(); state.charts["comprasBar"] = null; }
   const rows = buildComprasCategorySeries();
   setCommercialEmptyState(canvas, "compras-catbar-empty", "Nenhuma compra no periodo selecionado", !rows.length);
@@ -15097,6 +15344,7 @@ async function exportComprasPdfReport() {
 
     const compras = farm.movements.filter((m) => {
       if (m.type !== "compra") return false;
+      if (!movementMatchesSpecies(farm, m, runtime.comprasSpecies)) return false;
       const d = m.date || "";
       if (!d.startsWith(year)) return false;
       if (month !== "all" && d.slice(5, 7) !== String(month).padStart(2, "0")) return false;
@@ -15340,7 +15588,8 @@ const VENDA_CAT_PALETTE = [
 ];
 
 function buildVendasCategorySeries() {
-  const movs = getCommercialMovements("venda", { includeTableFilters: false });
+  const species = normalizeSpecies(runtime.vendasSpecies);
+  const movs = getCommercialMovements("venda", { includeTableFilters: false }).filter((m) => getMovementSpecies(m) === species);
   const grouped = new Map();
   movs.forEach((m) => {
     const cat = m.categoryName || "Sem categoria";
@@ -15359,7 +15608,8 @@ function buildVendasCategorySeries() {
 }
 
 function buildVendasMonthByCategorySeries() {
-  const movs = getCommercialMovements("venda", { includeMonth: false, includeTableFilters: false });
+  const species = normalizeSpecies(runtime.vendasSpecies);
+  const movs = getCommercialMovements("venda", { includeMonth: false, includeTableFilters: false }).filter((m) => getMovementSpecies(m) === species);
   const catTotals = new Map();
   movs.forEach(m => {
     const cat = m.categoryName || "Sem categoria";
@@ -15554,6 +15804,10 @@ function renderVendasHeatmap() {
 function renderVendasCategoryBar() {
   const canvas = document.getElementById("vendasBarChart");
   if (!canvas) return;
+  ensureChartSpeciesSwitch(canvas, "vendasCategorySpeciesSwitch", runtime.vendasSpecies, (species) => {
+    runtime.vendasSpecies = species;
+    renderVendasCategoryBar();
+  });
   if (state.charts["vendasBar"]) { state.charts["vendasBar"].destroy(); state.charts["vendasBar"] = null; }
   const rows = buildVendasCategorySeries();
   setCommercialEmptyState(canvas, "vendas-catbar-empty", "Nenhuma venda no periodo selecionado", !rows.length);
@@ -15762,6 +16016,7 @@ async function exportVendasPdfReport() {
 
     const vendas = farm.movements.filter((m) => {
       if (m.type !== "venda") return false;
+      if (!movementMatchesSpecies(farm, m, runtime.vendasSpecies)) return false;
       const d = m.date || "";
       if (!d.startsWith(year)) return false;
       if (month !== "all" && d.slice(5, 7) !== String(month).padStart(2, "0")) return false;

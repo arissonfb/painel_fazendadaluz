@@ -1,13 +1,38 @@
-const STANDARD_FARM_CATEGORIES = [
-  { id: "vacas-cria", name: "Vacas de cria" },
-  { id: "terneiros-machos", name: "Terneiros 1 a 2 anos - machos" },
-  { id: "terneiros-femeas", name: "Terneiros 1 a 2 anos - fêmeas" },
-  { id: "bois-abate", name: "Bois de abate" },
-  { id: "novilhas-entouradas", name: "Novilhas entouradas" },
-  { id: "touros", name: "Touros" },
-  { id: "vacas-invernar", name: "Vacas de invernar" },
-  { id: "vacas-entouradas", name: "Vacas entouradas" },
+export const STANDARD_FARM_CATEGORIES = [
+  { id: "vacas-cria", name: "Vacas de cria", species: "bovino" },
+  { id: "terneiros-machos", name: "Terneiros 1 a 2 anos - machos", species: "bovino" },
+  { id: "terneiros-femeas", name: "Terneiros 1 a 2 anos - fêmeas", species: "bovino" },
+  { id: "bois-abate", name: "Bois de abate", species: "bovino" },
+  { id: "novilhas-entouradas", name: "Novilhas entouradas", species: "bovino" },
+  { id: "touros", name: "Touros", species: "bovino" },
+  { id: "vacas-invernar", name: "Vacas de invernar", species: "bovino" },
+  { id: "vacas-entouradas", name: "Vacas entouradas", species: "bovino" },
 ];
+
+// Categorias padrão de ovinos, criadas com quantidade 0 uma única vez por fazenda (ver OVINO_CATEGORY_SEED_VERSION)
+export const STANDARD_OVINO_CATEGORIES = [
+  { id: "borregas", name: "Borregas", species: "ovino" },
+  { id: "borregos", name: "Borregos", species: "ovino" },
+  { id: "capao", name: "Capão", species: "ovino" },
+  { id: "carneiro", name: "Carneiro", species: "ovino" },
+  { id: "carneiro-descarte", name: "Carneiro Descarte", species: "ovino" },
+  { id: "cordeira", name: "Cordeira", species: "ovino" },
+  { id: "cordeiro", name: "Cordeiro", species: "ovino" },
+  { id: "ovelha-cria", name: "Ovelha Cria", species: "ovino" },
+  { id: "ovelha-descarte", name: "Ovelha Descarte", species: "ovino" },
+  { id: "cordeiros-mf", name: "Cordeiros M/F", species: "ovino" },
+];
+export const OVINO_CATEGORY_SEED_VERSION = 1;
+
+export const SPECIES_OPTIONS = [
+  { value: "bovino", label: "Bovinos" },
+  { value: "ovino", label: "Ovinos" },
+];
+export const DEFAULT_SPECIES = "bovino";
+
+export function normalizeSpecies(species) {
+  return species === "ovino" ? "ovino" : "bovino";
+}
 
 const DEFAULT_SANITARY_PRODUCTS = [
   "Vacina aftosa",
@@ -83,15 +108,6 @@ export const MOVEMENT_REFERENCE_PRESETS = {
   },
 };
 
-export const REPRODUCTION_CATEGORIES = [
-  "Vaca de cria",
-  "Vaca solteira",
-  "Vaca falhada",
-  "Vaca de invernar",
-  "Vaquilhona 1 e 2 anos",
-  "Novilhas",
-];
-
 export const SANITARY_VIAS = [
   "Subcutânea",
   "Intramuscular",
@@ -120,14 +136,26 @@ export function normalizeFarmReferences(farm) {
     farm.categories = STANDARD_FARM_CATEGORIES.map((category) => ({
       id: category.id,
       name: category.name,
+      species: category.species,
       quantity: 0,
     }));
   } else {
     farm.categories = farm.categories.map((category, index) => ({
       id: category?.id || slugify(category?.name || `categoria-${index + 1}`),
       name: category?.name || `Categoria ${index + 1}`,
+      species: normalizeSpecies(category?.species),
       quantity: Number(category?.quantity || 0),
     }));
+  }
+
+  farm.ovinoSeedVersion = Number(farm.ovinoSeedVersion || 0);
+  if (farm.ovinoSeedVersion < OVINO_CATEGORY_SEED_VERSION) {
+    STANDARD_OVINO_CATEGORIES.forEach((template) => {
+      if (!farm.categories.some((category) => category.id === template.id)) {
+        farm.categories.push({ id: template.id, name: template.name, species: template.species, quantity: 0 });
+      }
+    });
+    farm.ovinoSeedVersion = OVINO_CATEGORY_SEED_VERSION;
   }
 
   const uniqueProducts = new Set(DEFAULT_SANITARY_PRODUCTS);
@@ -191,11 +219,13 @@ export function normalizeFarmReferences(farm) {
   return farm;
 }
 
-export function getFarmCategoryOptions(farm, extraLabels = []) {
+export function getFarmCategoryOptions(farm, extraLabels = [], species = DEFAULT_SPECIES) {
   const seen = new Set();
   const items = [];
+  const normalizedSpecies = normalizeSpecies(species);
 
   (farm?.categories || []).forEach((category) => {
+    if (normalizeSpecies(category?.species) !== normalizedSpecies) return;
     const name = String(category?.name || "").trim();
     if (!name) return;
     const key = name.toLowerCase();
@@ -204,14 +234,17 @@ export function getFarmCategoryOptions(farm, extraLabels = []) {
     items.push({ value: category.id || slugify(name), label: name, source: "farm", quantity: category.quantity || 0 });
   });
 
-  extraLabels.forEach((label) => {
-    const name = String(label || "").trim();
-    if (!name) return;
-    const key = name.toLowerCase();
-    if (seen.has(key)) return;
-    seen.add(key);
-    items.push({ value: slugify(name), label: name, source: "preset", quantity: 0 });
-  });
+  // Presets de sugestão (MOVEMENT_REFERENCE_PRESETS) são todos voltados a bovinos
+  if (normalizedSpecies === "bovino") {
+    extraLabels.forEach((label) => {
+      const name = String(label || "").trim();
+      if (!name) return;
+      const key = name.toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+      items.push({ value: slugify(name), label: name, source: "preset", quantity: 0 });
+    });
+  }
 
   return items;
 }
@@ -223,7 +256,7 @@ export function getFarmPotreiroOptions(farm) {
   }));
 }
 
-export function ensureCategoryRecord(farm, categoryName, fallbackId) {
+export function ensureCategoryRecord(farm, categoryName, fallbackId, species = DEFAULT_SPECIES) {
   const cleanName = String(categoryName || "").trim();
   if (!cleanName) return null;
 
@@ -233,6 +266,7 @@ export function ensureCategoryRecord(farm, categoryName, fallbackId) {
     category = {
       id: fallbackId || slugify(cleanName),
       name: cleanName,
+      species: normalizeSpecies(species),
       quantity: 0,
     };
     farm.categories.push(category);
@@ -255,7 +289,7 @@ export function calculateMovementDelta(record) {
 
 export function applyMovementToFarm(farm, record, multiplier = 1) {
   if (!farm || !record) return;
-  const category = ensureCategoryRecord(farm, record.categoryName, record.categoryId);
+  const category = ensureCategoryRecord(farm, record.categoryName, record.categoryId, record.species);
   if (!category) return;
   const delta = calculateMovementDelta(record) * multiplier;
   category.quantity = Math.max(0, Number(category.quantity || 0) + delta);
@@ -273,11 +307,11 @@ export function upsertMovementInData(payload, nextRecord, previousRecord = null)
     if (previousFarm) {
       previousFarm.movements = (previousFarm.movements || []).filter((item) => item.id !== previousRecord.id);
       if (previousRecord.type === "transferencia" && previousRecord.transferDetails?.destinationFarmId) {
-        const prevOriginCat = ensureCategoryRecord(previousFarm, previousRecord.categoryName, previousRecord.categoryId);
+        const prevOriginCat = ensureCategoryRecord(previousFarm, previousRecord.categoryName, previousRecord.categoryId, previousRecord.species);
         if (prevOriginCat) prevOriginCat.quantity = Math.max(0, prevOriginCat.quantity + Number(previousRecord.quantity || 0));
         const prevDestFarm = farms.find((f) => f.id === previousRecord.transferDetails.destinationFarmId);
         if (prevDestFarm) {
-          const prevDestCat = ensureCategoryRecord(prevDestFarm, previousRecord.categoryName, previousRecord.categoryId);
+          const prevDestCat = ensureCategoryRecord(prevDestFarm, previousRecord.categoryName, previousRecord.categoryId, previousRecord.species);
           if (prevDestCat) prevDestCat.quantity = Math.max(0, prevDestCat.quantity - Number(previousRecord.quantity || 0));
         }
       } else {
@@ -295,11 +329,11 @@ export function upsertMovementInData(payload, nextRecord, previousRecord = null)
   }
 
   if (nextRecord.type === "transferencia" && nextRecord.transferDetails?.destinationFarmId) {
-    const originCat = ensureCategoryRecord(nextFarm, nextRecord.categoryName, nextRecord.categoryId);
+    const originCat = ensureCategoryRecord(nextFarm, nextRecord.categoryName, nextRecord.categoryId, nextRecord.species);
     if (originCat) originCat.quantity = Math.max(0, originCat.quantity - Number(nextRecord.quantity || 0));
     const destFarm = farms.find((f) => f.id === nextRecord.transferDetails.destinationFarmId);
     if (destFarm) {
-      const destCat = ensureCategoryRecord(destFarm, nextRecord.categoryName, nextRecord.categoryId);
+      const destCat = ensureCategoryRecord(destFarm, nextRecord.categoryName, nextRecord.categoryId, nextRecord.species);
       if (destCat) destCat.quantity = Math.max(0, destCat.quantity + Number(nextRecord.quantity || 0));
     }
   } else {
@@ -312,11 +346,11 @@ export function deleteMovementFromData(payload, record) {
   if (!farm) return;
   farm.movements = (farm.movements || []).filter((item) => item.id !== record.id);
   if (record.type === "transferencia" && record.transferDetails?.destinationFarmId) {
-    const originCat = ensureCategoryRecord(farm, record.categoryName, record.categoryId);
+    const originCat = ensureCategoryRecord(farm, record.categoryName, record.categoryId, record.species);
     if (originCat) originCat.quantity = Math.max(0, originCat.quantity + Number(record.quantity || 0));
     const destFarm = payload?.farms?.find((f) => f.id === record.transferDetails.destinationFarmId);
     if (destFarm) {
-      const destCat = ensureCategoryRecord(destFarm, record.categoryName, record.categoryId);
+      const destCat = ensureCategoryRecord(destFarm, record.categoryName, record.categoryId, record.species);
       if (destCat) destCat.quantity = Math.max(0, destCat.quantity - Number(record.quantity || 0));
     }
   } else {

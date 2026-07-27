@@ -17,7 +17,7 @@ import { calcReproStats, calcStockTotal } from "../utils/farmUtils";
 import { shareFarmReport, shareSanitaryReport } from "../utils/reports";
 import { SummaryCard } from "../components/MobileUI";
 
-export default function PerfilScreen() {
+export default function PerfilScreen({ navigation }) {
   const { user, logout } = useAuth();
   const { data, lastSync, syncing, pull } = useData();
   const [loggingOut, setLoggingOut] = useState(false);
@@ -126,6 +126,14 @@ export default function PerfilScreen() {
             color={colors.primary}
             loading={syncing || syncingNow}
             onPress={handleSync}
+          />
+          <Divider />
+          <ActionRow
+            icon="layers-outline"
+            label="Gerenciar estoque"
+            helper="Categorias e quantidades de bovinos e ovinos"
+            color={colors.primary}
+            onPress={() => navigation.navigate("Estoque", { farms, selectedFarmId: farms[0]?.id || "" })}
           />
           <Divider />
           <ActionRow

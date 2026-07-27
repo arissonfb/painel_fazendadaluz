@@ -15,7 +15,15 @@ export function calcReproStats(records) {
   return { totalInsem, totalEntour, totalPrenha, totalFalhada, taxa, aguardando };
 }
 
-export function calcStockTotal(farm) {
+export function calcStockTotal(farm, species = "bovino") {
+  if (!farm || !Array.isArray(farm.categories)) return 0;
+  const normalized = species === "ovino" ? "ovino" : "bovino";
+  return farm.categories
+    .filter((category) => (category.species === "ovino" ? "ovino" : "bovino") === normalized)
+    .reduce((sum, category) => sum + (category.quantity || 0), 0);
+}
+
+export function calcStockTotalAllSpecies(farm) {
   if (!farm || !Array.isArray(farm.categories)) return 0;
   return farm.categories.reduce((sum, category) => sum + (category.quantity || 0), 0);
 }
