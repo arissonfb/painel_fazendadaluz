@@ -5879,6 +5879,35 @@ th {
   }
 }
 
+/* ─── Relatório Mensal (planilha inline no dashboard) ────────────────────── */
+.monthly-inventory-card {
+  grid-column: span 2;
+}
+
+.monthly-inventory-panel .table-wrap {
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.monthly-inventory-table th,
+.monthly-inventory-table td {
+  padding: 8px 10px;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.monthly-inventory-table tfoot td {
+  border-top: 2px solid rgba(75, 56, 34, 0.18);
+  border-bottom: none;
+  font-weight: 700;
+}
+
+@media (max-width: 960px) {
+  .monthly-inventory-card {
+    grid-column: 1 / -1;
+  }
+}
+
 /* ─── Inventory Ranked List (replaces donut) ─────────────────────────────── */
 .inventory-ranked-list {
   display: flex;

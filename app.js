@@ -95,6 +95,10 @@ const MOVEMENT_TYPES = [
   { value: "transferencia", label: "Transferência", direction: 0 }
 ];
 
+// Tipos cujos cards/atalhos já definem a operação de forma inequívoca —
+// o campo Tipo é travado nessa única opção em vez de listar todas as operações
+const LOCKED_MOVEMENT_TYPES = new Set(["nascimento", "morte", "consumo"]);
+
 const MONTH_NAMES = [
   "Janeiro",
   "Fevereiro",
@@ -1200,6 +1204,8 @@ const elements = {
   pdfFarmList: document.getElementById("pdfFarmList"),
   pdfYearFilter: document.getElementById("pdfYearFilter"),
   pdfMonthFilter: document.getElementById("pdfMonthFilter"),
+  monthlyInventoryPanelTitle: document.getElementById("monthlyInventoryPanelTitle"),
+  monthlyInventoryPanelBody: document.getElementById("monthlyInventoryPanelBody"),
   monthlyInventoryReportDialog: document.getElementById("monthlyInventoryReportDialog"),
   monthlyInventoryReportForm: document.getElementById("monthlyInventoryReportForm"),
   closeMonthlyInventoryReportDialog: document.getElementById("closeMonthlyInventoryReportDialog"),
@@ -7792,6 +7798,7 @@ function renderInsights(farm) {
 }
 
 function renderCharts(farm) {
+  renderMonthlyInventoryPanel(farm);
   renderInventoryRankedList(farm);
   if (state.charts.movement) {
     state.charts.movement.destroy();
@@ -7803,6 +7810,70 @@ function renderCharts(farm) {
   }
   document.getElementById("movementChart")?.closest(".chart-panel")?.setAttribute("hidden", "");
   document.getElementById("monthlyEvolutionChart")?.closest(".chart-panel")?.setAttribute("hidden", "");
+}
+
+function renderMonthlyInventoryPanel(farm) {
+  if (!elements.monthlyInventoryPanelBody) return;
+
+  if (state.data.selectedFarmId === TOTAL_FARM_ID) {
+    elements.monthlyInventoryPanelTitle.textContent = "Planilha do mês";
+    elements.monthlyInventoryPanelBody.innerHTML = `<p class="chart-fallback-msg">Selecione uma fazenda para visualizar a planilha mensal.</p>`;
+    return;
+  }
+
+  const year = state.filters.year;
+  const month = state.filters.month === "all" ? String(today.getMonth() + 1).padStart(2, "0") : state.filters.month;
+  const categories = farm.categories.map((cat) => cat.name);
+  const operations = MONTHLY_INVENTORY_OPERATIONS.map((op) => op.value);
+  const selectedOperations = new Set(operations);
+  const rows = buildMonthlyInventoryRows(farm, { categories, operations, year, month });
+
+  elements.monthlyInventoryPanelTitle.textContent = `${farm.name} · ${getShortMonthYearLabel(year, month)}`;
+
+  if (!rows.length) {
+    elements.monthlyInventoryPanelBody.innerHTML = `<p class="chart-fallback-msg">Sem dados de estoque para o período selecionado.</p>`;
+    return;
+  }
+
+  const totals = rows.reduce((acc, row) => {
+    acc.opening += row.opening;
+    acc.saldo += getMonthlyInventorySaldo(row, selectedOperations);
+    MONTHLY_INVENTORY_OPERATIONS.forEach((op) => { acc[op.value] += Number(row.totals[op.value] || 0); });
+    return acc;
+  }, { opening: 0, saldo: 0, compra: 0, venda: 0, morte: 0, nascimento: 0 });
+
+  elements.monthlyInventoryPanelBody.innerHTML = `
+    <div class="table-wrap">
+      <table class="monthly-inventory-table">
+        <thead>
+          <tr>
+            <th>Categoria</th>
+            <th>Cabeças</th>
+            ${MONTHLY_INVENTORY_OPERATIONS.map((op) => `<th>${escapeHtml(op.label)}</th>`).join("")}
+            <th>Saldo</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map((row) => `
+            <tr>
+              <td>${escapeHtml(row.category)}</td>
+              <td>${formatInteger(row.opening)}</td>
+              ${MONTHLY_INVENTORY_OPERATIONS.map((op) => `<td>${row.totals[op.value] ? formatInteger(row.totals[op.value]) : "—"}</td>`).join("")}
+              <td><strong>${formatInteger(getMonthlyInventorySaldo(row, selectedOperations))}</strong></td>
+            </tr>
+          `).join("")}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td>Soma</td>
+            <td>${formatInteger(totals.opening)}</td>
+            ${MONTHLY_INVENTORY_OPERATIONS.map((op) => `<td>${formatInteger(totals[op.value])}</td>`).join("")}
+            <td><strong>${formatInteger(totals.saldo)}</strong></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  `;
 }
 
 function renderInventoryRankedList(farm) {
@@ -8364,7 +8435,7 @@ function openMovementDialog(initialType) {
   const catHintWrap = document.getElementById("movCategoryTotalWrap");
   if (catHintWrap) catHintWrap.hidden = true;
   syncMovementFarmOptions();
-  syncMovementTypeOptions(initialType);
+  syncMovementTypeOptions(initialType, { lock: true });
   renderMovementSpeciesSwitch();
   syncMovementCategoryOptionsForFarm(getMovementDialogFarm());
   syncMovementPotreirosOptions();
@@ -9036,7 +9107,14 @@ function openSanitaryEditor(recordId) {
   elements.sanitaryDialog?.showModal();
 }
 
-function syncMovementTypeOptions(selectedType = elements.movementType.value || "compra") {
+function syncMovementTypeOptions(selectedType = elements.movementType.value || "compra", { lock = false } = {}) {
+  if (lock && LOCKED_MOVEMENT_TYPES.has(selectedType)) {
+    const typeMeta = MOVEMENT_TYPES.find((type) => type.value === selectedType);
+    elements.movementType.innerHTML = `<option value="${selectedType}" selected>${typeMeta.label}</option>`;
+    elements.movementType.classList.add("select-locked");
+    return;
+  }
+  elements.movementType.classList.remove("select-locked");
   elements.movementType.innerHTML = MOVEMENT_TYPES.map((type) => `
     <option value="${type.value}" ${type.value === selectedType ?"selected" : ""}>${type.label}</option>
   `).join("");
