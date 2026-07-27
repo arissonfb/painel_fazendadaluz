@@ -4150,6 +4150,13 @@ function renderHomeView() {
   const saleHead = salesMov.reduce((s, m) => s + Number(m.quantity || 0), 0);
   const saleValue = salesMov.reduce((s, m) => s + Number(m.value || 0), 0);
 
+  const births = farms.flatMap((f) => (f.movements || []).filter((m) => m.type === "nascimento" && filterByPeriod(m)));
+  const birthHead = births.reduce((s, m) => s + Number(m.quantity || 0), 0);
+
+  const deathsAndSlaughter = farms.flatMap((f) => (f.movements || []).filter((m) => (m.type === "morte" || m.type === "consumo") && filterByPeriod(m)));
+  const deathHead = deathsAndSlaughter.filter((m) => m.type === "morte").reduce((s, m) => s + Number(m.quantity || 0), 0);
+  const slaughterHead = deathsAndSlaughter.filter((m) => m.type === "consumo").reduce((s, m) => s + Number(m.quantity || 0), 0);
+
   const allPotreiros = farms.flatMap((f) => getPotreroEntries(f));
   const totalPotreiros = allPotreiros.length;
   const allocatedAnimals = farms.reduce((s, f) => s + getRegisteredPotreroAnimals(f), 0);
@@ -4204,6 +4211,33 @@ function renderHomeView() {
       actions: ["Nova venda", "Ver vendas"]
     },
     {
+      action: "nascimento",
+      pdfType: "nascimento",
+      icon: `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c2.8 2.3 5 5.4 5 9a5 5 0 0 1-10 0c0-3.6 2.2-6.7 5-9z"/><path d="M9 13h6"/><path d="M12 10v6"/></svg>`,
+      accent: "#287a45", bg: "#dcfce7",
+      title: "Nascimentos",
+      desc: "Registro direto das crias nascidas, por fazenda, categoria, potreiro e observações",
+      metric: formatInteger(birthHead),
+      metricLabel: `cabeças em ${periodLabel}`,
+      badge: births.length ? `${formatInteger(births.length)} registros` : null,
+      actions: ["Registrar nascimento"],
+      pdfLabel: "PDF nascimento"
+    },
+    {
+      action: "morte",
+      secondaryAction: "consumo",
+      pdfType: "morte-abate",
+      icon: `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8l3 5-7 11L5 9z"/><path d="M9.5 9h5"/><path d="M12 6.5v5"/></svg>`,
+      accent: "#8a4b38", bg: "#fee2e2",
+      title: "Morte / Abate",
+      desc: "Baixas por óbito, abate ou consumo interno, com categoria, quantidade e fotos quando houver",
+      metric: formatInteger(deathHead + slaughterHead),
+      metricLabel: `cabeças em ${periodLabel}`,
+      badge: deathHead || slaughterHead ? `Mortes ${formatInteger(deathHead)} | Abates ${formatInteger(slaughterHead)}` : null,
+      actions: ["Registrar morte", "Registrar abate"],
+      pdfLabel: "PDF morte/abate"
+    },
+    {
       view: "potreiros",
       icon: `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8C8 10 5.9 16.17 3.82 21"/><path d="M9.04 13.4a14.47 14.47 0 0 0-4.8 8.87"/><path d="M22 9c-5.08 2.45-9.3 7.2-10 13"/><path d="M22 9a15.5 15.5 0 0 0-6.47 5.74"/></svg>`,
       accent: "#134e27", bg: "#dcfce7",
@@ -4241,7 +4275,7 @@ function renderHomeView() {
     </div>
     <div class="home-module-grid">
       ${cards.map((card) => `
-        <div class="home-module-card" data-nav-home="${escapeHtml(card.view)}" tabindex="0" role="button">
+        <div class="home-module-card" ${card.view ?`data-nav-home="${escapeHtml(card.view)}"` : ""} ${card.action ?`data-home-action="${escapeHtml(card.action)}"` : ""} tabindex="0" role="button">
           <div class="hmc-top">
             <div class="hmc-icon" style="background:${card.bg};color:${card.accent}">${card.icon}</div>
             ${card.badge ? `<span class="hmc-badge" style="color:${card.accent};background:${card.bg}">${escapeHtml(card.badge)}</span>` : ""}
@@ -4255,8 +4289,9 @@ function renderHomeView() {
             </div>
           </div>
           <div class="hmc-actions">
-            <button type="button" class="hmc-btn-primary" style="background:${card.accent}" data-nav-home="${escapeHtml(card.view)}">${escapeHtml(card.actions[0])}</button>
-            <button type="button" class="hmc-btn-secondary" data-nav-home="${escapeHtml(card.view)}">${escapeHtml(card.actions[1])}</button>
+            <button type="button" class="hmc-btn-primary" style="background:${card.accent}" ${card.view ?`data-nav-home="${escapeHtml(card.view)}"` : `data-home-action="${escapeHtml(card.action)}"`}>${escapeHtml(card.actions[0])}</button>
+            ${card.secondaryAction ?`<button type="button" class="hmc-btn-secondary" data-home-action="${escapeHtml(card.secondaryAction)}">${escapeHtml(card.actions[1])}</button>` : ""}
+            <button type="button" class="hmc-btn-secondary" ${card.pdfType ?`data-home-pdf="${escapeHtml(card.pdfType)}"` : `data-nav-home="${escapeHtml(card.view)}"`}>${escapeHtml(card.pdfLabel || card.actions[1])}</button>
           </div>
         </div>
       `).join("")}
@@ -4276,6 +4311,18 @@ function renderHomeView() {
         runtime.sanitarySearch = "";
       }
       render();
+    });
+  });
+  el.querySelectorAll("[data-home-action]").forEach((trigger) => {
+    trigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openMovementDialog(trigger.dataset.homeAction);
+    });
+  });
+  el.querySelectorAll("[data-home-pdf]").forEach((trigger) => {
+    trigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      exportMovementTypePdfReport(trigger.dataset.homePdf);
     });
   });
 }
@@ -10291,6 +10338,190 @@ async function exportMonthlyInventoryReport(selection) {
 
   addPdfFooters(doc, { coverPage: true });
   doc.save(`relatorio-mensal-estoque-${farms.length === 1 ?slugify(farms[0].name) : "todas-fazendas"}-${selection.year}-${selection.month}.pdf`);
+}
+
+function getMovementTypePdfConfig(reportType) {
+  if (reportType === "morte-abate") {
+    return {
+      title: "Relatório de Morte / Abate",
+      subtitle: "Relatório de baixas por óbito, abate e consumo interno",
+      filePrefix: "morte-abate",
+      types: ["morte", "consumo"],
+      accent: [138, 75, 56],
+      light: [254, 242, 242]
+    };
+  }
+
+  return {
+    title: "Relatório de Nascimentos",
+    subtitle: "Relatório de nascimentos registrados no rebanho",
+    filePrefix: "nascimentos",
+    types: ["nascimento"],
+    accent: [40, 122, 69],
+    light: [240, 253, 244]
+  };
+}
+
+function getMovementsForTypeReport(farm, config, year, month) {
+  return (farm.movements || [])
+    .filter((movement) => config.types.includes(movement.type))
+    .filter((movement) => {
+      const date = String(movement.date || "");
+      if (year !== "all" && !date.startsWith(String(year))) return false;
+      if (month !== "all" && date.slice(5, 7) !== String(month).padStart(2, "0")) return false;
+      return true;
+    })
+    .sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
+}
+
+function buildMovementTypeCategorySummary(movements) {
+  const summary = new Map();
+  movements.forEach((movement) => {
+    const category = movement.categoryName || "Sem categoria";
+    if (!summary.has(category)) {
+      summary.set(category, { category, quantity: 0, records: 0, morte: 0, consumo: 0, nascimento: 0 });
+    }
+    const row = summary.get(category);
+    const qty = Number(movement.quantity || 0);
+    row.quantity += qty;
+    row.records += 1;
+    if (row[movement.type] != null) row[movement.type] += qty;
+  });
+  return [...summary.values()].sort((a, b) => b.quantity - a.quantity || normalizeText(a.category).localeCompare(normalizeText(b.category)));
+}
+
+function appendMovementTypePdfFarmPage(doc, farm, config, movements, periodLabel, index, count) {
+  const margin = 14;
+  const { width } = getPdfPageSize(doc);
+  const totalHeads = movements.reduce((sum, movement) => sum + Number(movement.quantity || 0), 0);
+  const totalPhotos = movements.reduce((sum, movement) => sum + getMovementPhotoCount(movement), 0);
+  const typeTotals = config.types.map((type) => {
+    const label = MOVEMENT_TYPES.find((item) => item.value === type)?.label || capitalize(type);
+    const quantity = movements.filter((movement) => movement.type === type).reduce((sum, movement) => sum + Number(movement.quantity || 0), 0);
+    return { label, quantity };
+  });
+
+  doc.setFillColor(255, 252, 245);
+  doc.rect(0, 0, width, 210, "F");
+
+  doc.setFillColor(...config.accent);
+  doc.rect(0, 0, width, 25, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(15);
+  doc.setTextColor(255, 252, 245);
+  doc.text(config.title, margin, 11);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9.5);
+  doc.text(`${farm.name} | ${periodLabel} | Fazenda ${formatInteger(index)} de ${formatInteger(count)}`, margin, 19);
+
+  const kpis = [
+    { label: "Registros", value: formatInteger(movements.length) },
+    { label: "Cabeças", value: formatInteger(totalHeads) },
+    { label: "Fotos", value: formatInteger(totalPhotos) },
+    ...typeTotals.map((item) => ({ label: item.label, value: formatInteger(item.quantity) }))
+  ].slice(0, 5);
+
+  const gap = 6;
+  const cardW = (width - margin * 2 - gap * (kpis.length - 1)) / kpis.length;
+  kpis.forEach((kpi, kpiIndex) => {
+    const x = margin + kpiIndex * (cardW + gap);
+    doc.setFillColor(...config.light);
+    doc.roundedRect(x, 32, cardW, 18, 2, 2, "F");
+    doc.setDrawColor(...config.accent);
+    doc.roundedRect(x, 32, cardW, 18, 2, 2, "S");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(...config.accent);
+    doc.text(kpi.value, x + cardW / 2, 39, { align: "center" });
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+    doc.setTextColor(87, 69, 52);
+    doc.text(kpi.label, x + cardW / 2, 46, { align: "center" });
+  });
+
+  const categorySummary = buildMovementTypeCategorySummary(movements);
+  doc.autoTable({
+    startY: 58,
+    head: [["Categoria", "Cabeças", "Registros", "Morte", "Abate", "Nascimento"]],
+    body: categorySummary.length
+      ?categorySummary.map((row) => [
+        row.category,
+        formatInteger(row.quantity),
+        formatInteger(row.records),
+        row.morte ?formatInteger(row.morte) : "-",
+        row.consumo ?formatInteger(row.consumo) : "-",
+        row.nascimento ?formatInteger(row.nascimento) : "-"
+      ])
+      : [["Sem registros no período", "0", "0", "-", "-", "-"]],
+    theme: "striped",
+    margin: { left: margin, right: margin },
+    headStyles: { fillColor: config.accent, textColor: [255, 255, 255] },
+    alternateRowStyles: { fillColor: config.light },
+    styles: { fontSize: 8.2, cellPadding: 2 },
+    columnStyles: { 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" } }
+  });
+
+  doc.autoTable({
+    startY: doc.lastAutoTable.finalY + 8,
+    head: [["Código", "Data", "Operação", "Categoria", "Qtd.", "Potreiro", "Fotos", "Observações"]],
+    body: movements.length
+      ?movements.map((movement) => [
+        movement.code || "-",
+        formatDate(movement.date),
+        MOVEMENT_TYPES.find((item) => item.value === movement.type)?.label || capitalize(movement.type),
+        movement.categoryName || "-",
+        formatInteger(movement.quantity),
+        movement.potreiro || "-",
+        formatMovementPhotoCount(movement),
+        getMovementNotes(movement) || "-"
+      ])
+      : [["-", "-", "-", "-", "-", "-", "-", "Sem registros no período"]],
+    theme: "grid",
+    margin: { left: margin, right: margin },
+    headStyles: { fillColor: config.accent, textColor: [255, 255, 255] },
+    styles: { fontSize: 7.5, cellPadding: 1.8, overflow: "linebreak" },
+    columnStyles: {
+      0: { cellWidth: 21 },
+      1: { cellWidth: 19 },
+      2: { cellWidth: 22 },
+      3: { cellWidth: 34 },
+      4: { cellWidth: 14, halign: "right" },
+      5: { cellWidth: 27 },
+      6: { cellWidth: 16, halign: "center" }
+    }
+  });
+}
+
+async function exportMovementTypePdfReport(reportType) {
+  const config = getMovementTypePdfConfig(reportType);
+  if (!window.jspdf || typeof window.jspdf.jsPDF !== "function") {
+    alert("A biblioteca de PDF não foi carregada. Verifique sua conexão e tente novamente.");
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  if (typeof doc.autoTable !== "function") {
+    alert("O módulo de tabela do PDF não foi carregado. Verifique sua conexão e tente novamente.");
+    return;
+  }
+
+  const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
+  const farms = isTotalView ?getAllFarms() : [getFarm()].filter(Boolean);
+  const year = String(state.filters.year || today.getFullYear());
+  const month = state.filters.month || "all";
+  const periodLabel = month === "all" ?`Ano ${year}` : `${MONTH_NAMES[Number(month) - 1]}/${year}`;
+
+  await appendPdfCoverPage(doc, farms, periodLabel, config.subtitle);
+
+  farms.forEach((farm, index) => {
+    doc.addPage();
+    const movements = getMovementsForTypeReport(farm, config, year, month);
+    appendMovementTypePdfFarmPage(doc, farm, config, movements, periodLabel, index + 1, farms.length);
+  });
+
+  addPdfFooters(doc, { coverPage: true });
+  doc.save(`${config.filePrefix}-${isTotalView ?"todas-fazendas" : slugify(farms[0]?.name || "fazenda")}-${month === "all" ?year : `${year}-${month}`}.pdf`);
 }
 
 function openPdfOptionsDialog() {
