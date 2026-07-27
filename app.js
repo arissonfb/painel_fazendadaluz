@@ -1100,6 +1100,7 @@ const elements = {
   potrManejSubmit: document.getElementById("potrManejSubmit"),
   editStockDialog: document.getElementById("editStockDialog"),
   editStockButton: document.getElementById("editStockButton"),
+  monthlyInventoryReportButton: document.getElementById("monthlyInventoryReportButton"),
   closeEditStockDialog: document.getElementById("closeEditStockDialog"),
   georefButton: document.getElementById("georefButton"),
   georefDialog: document.getElementById("georefDialog"),
@@ -1164,6 +1165,14 @@ const elements = {
   pdfFarmList: document.getElementById("pdfFarmList"),
   pdfYearFilter: document.getElementById("pdfYearFilter"),
   pdfMonthFilter: document.getElementById("pdfMonthFilter"),
+  monthlyInventoryReportDialog: document.getElementById("monthlyInventoryReportDialog"),
+  monthlyInventoryReportForm: document.getElementById("monthlyInventoryReportForm"),
+  closeMonthlyInventoryReportDialog: document.getElementById("closeMonthlyInventoryReportDialog"),
+  monthlyInventoryYearFilter: document.getElementById("monthlyInventoryYearFilter"),
+  monthlyInventoryMonthFilter: document.getElementById("monthlyInventoryMonthFilter"),
+  monthlyInventoryFarmList: document.getElementById("monthlyInventoryFarmList"),
+  monthlyInventoryCategoryList: document.getElementById("monthlyInventoryCategoryList"),
+  monthlyInventoryOperationList: document.getElementById("monthlyInventoryOperationList"),
   monthlyDataDialog: document.getElementById("monthlyDataDialog"),
   monthlyDataForm: document.getElementById("monthlyDataForm"),
   closeMonthlyDataDialog: document.getElementById("closeMonthlyDataDialog"),
@@ -3563,6 +3572,9 @@ function bindEvents() {
   elements.closeGeorefDialog.addEventListener("click", () => elements.georefDialog.close());
   elements.georefDialog.addEventListener("close", clearGeorefDraft);
   elements.closeMonthlyDataDialog.addEventListener("click", () => elements.monthlyDataDialog.close());
+  elements.monthlyInventoryReportButton?.addEventListener("click", openMonthlyInventoryReportDialog);
+  elements.closeMonthlyInventoryReportDialog?.addEventListener("click", () => elements.monthlyInventoryReportDialog.close());
+  elements.monthlyInventoryReportForm?.addEventListener("submit", handleMonthlyInventoryReportSubmit);
   elements.exportPdfButton.addEventListener("click", openPdfOptionsDialog);
   elements.closePdfOptionsDialog.addEventListener("click", () => elements.pdfOptionsDialog.close());
   elements.pdfOptionsForm.addEventListener("submit", handlePdfOptionsSubmit);
@@ -9994,6 +10006,291 @@ function getDiscrepancyText(farm) {
   }
 
   return `Atenção: o total declarado para ${farm.name} é ${formatInteger(farm.declaredTotal)} animais, mas o estoque atual mostra ${formatInteger(computedTotal)}. Diferença de ${formatInteger(difference)} animais.`;
+}
+
+const MONTHLY_INVENTORY_OPERATIONS = [
+  { value: "venda", label: "Venda", sign: -1 },
+  { value: "morte", label: "Morte", sign: -1 },
+  { value: "nascimento", label: "Nascimento", sign: 1 },
+  { value: "compra", label: "Compra", sign: 1 }
+];
+
+function openMonthlyInventoryReportDialog() {
+  if (!elements.monthlyInventoryReportDialog) return;
+  elements.monthlyInventoryReportForm.reset();
+  populateMonthlyInventoryPeriodFilters();
+  renderMonthlyInventoryFarmOptions();
+  renderMonthlyInventoryCategoryOptions();
+  elements.monthlyInventoryReportDialog.showModal();
+}
+
+function populateMonthlyInventoryPeriodFilters() {
+  if (!elements.monthlyInventoryYearFilter || !elements.monthlyInventoryMonthFilter) return;
+  const currentMonth = String(today.getMonth() + 1).padStart(2, "0");
+  const selectedMonth = state.filters.month === "all" ?currentMonth : state.filters.month;
+
+  elements.monthlyInventoryYearFilter.innerHTML = elements.yearFilter.innerHTML;
+  [...elements.monthlyInventoryYearFilter.options].forEach((option) => {
+    option.selected = option.value === String(state.filters.year);
+  });
+
+  elements.monthlyInventoryMonthFilter.innerHTML = "";
+  MONTH_NAMES.forEach((name, index) => {
+    const option = document.createElement("option");
+    option.value = String(index + 1).padStart(2, "0");
+    option.textContent = name;
+    option.selected = option.value === selectedMonth;
+    elements.monthlyInventoryMonthFilter.appendChild(option);
+  });
+}
+
+function renderMonthlyInventoryFarmOptions() {
+  elements.monthlyInventoryFarmList.innerHTML = getAllFarms().map((farm) => `
+    <label class="user-row pdf-farm-row">
+      <input type="checkbox" name="monthlyInventoryFarmIds" value="${escapeHtml(farm.id)}" checked>
+      <div>
+        <strong>${escapeHtml(farm.name)}</strong>
+        <span>${formatInteger(getFarmTotal(farm))} animais em estoque atualmente</span>
+      </div>
+    </label>
+  `).join("");
+}
+
+function getMonthlyInventoryCategoryNames() {
+  const names = new Set();
+  getAllFarms().forEach((farm) => {
+    farm.categories.forEach((category) => names.add(category.name));
+    farm.movements.forEach((movement) => {
+      if (movement.categoryName) names.add(movement.categoryName);
+    });
+  });
+  return [...names].sort((a, b) => normalizeText(a).localeCompare(normalizeText(b)));
+}
+
+function renderMonthlyInventoryCategoryOptions() {
+  elements.monthlyInventoryCategoryList.innerHTML = getMonthlyInventoryCategoryNames().map((name) => `
+    <label class="user-row pdf-farm-row">
+      <input type="checkbox" name="monthlyInventoryCategories" value="${escapeHtml(name)}" checked>
+      <div>
+        <strong>${escapeHtml(name)}</strong>
+        <span>Incluir esta categoria no relatório mensal</span>
+      </div>
+    </label>
+  `).join("");
+}
+
+function getMonthlyInventoryReportSelection() {
+  return {
+    farmIds: [...elements.monthlyInventoryFarmList.querySelectorAll('input[name="monthlyInventoryFarmIds"]:checked')].map((input) => input.value),
+    categories: [...elements.monthlyInventoryCategoryList.querySelectorAll('input[name="monthlyInventoryCategories"]:checked')].map((input) => input.value),
+    operations: [...elements.monthlyInventoryOperationList.querySelectorAll('input[name="monthlyInventoryOperations"]:checked')].map((input) => input.value),
+    year: elements.monthlyInventoryYearFilter.value || state.filters.year,
+    month: elements.monthlyInventoryMonthFilter.value || String(today.getMonth() + 1).padStart(2, "0")
+  };
+}
+
+function handleMonthlyInventoryReportSubmit(event) {
+  event.preventDefault();
+  const selection = getMonthlyInventoryReportSelection();
+  if (!selection.farmIds.length) {
+    alert("Selecione pelo menos uma fazenda para gerar o relatório mensal.");
+    return;
+  }
+  if (!selection.categories.length) {
+    alert("Selecione pelo menos uma categoria para gerar o relatório mensal.");
+    return;
+  }
+  if (!selection.operations.length) {
+    alert("Selecione pelo menos uma operação para gerar o relatório mensal.");
+    return;
+  }
+  elements.monthlyInventoryReportDialog.close();
+  exportMonthlyInventoryReport(selection);
+}
+
+function matchesMonthlyInventoryPeriod(movement, year, month) {
+  const date = String(movement.date || "");
+  return date.slice(0, 4) === String(year) && date.slice(5, 7) === String(month);
+}
+
+function buildMonthlyInventoryRows(farm, selection) {
+  const selectedCategories = new Set(selection.categories);
+  const selectedOperations = new Set(selection.operations);
+  const allOperations = new Set(MONTHLY_INVENTORY_OPERATIONS.map((item) => item.value));
+  const rowsByCategory = new Map();
+
+  function ensureRow(name) {
+    if (!rowsByCategory.has(name)) {
+      rowsByCategory.set(name, {
+        category: name,
+        current: 0,
+        opening: 0,
+        totals: { compra: 0, venda: 0, morte: 0, nascimento: 0 },
+        allTotals: { compra: 0, venda: 0, morte: 0, nascimento: 0 },
+        deathNotes: []
+      });
+    }
+    return rowsByCategory.get(name);
+  }
+
+  farm.categories.forEach((category) => {
+    if (!selectedCategories.has(category.name)) return;
+    const row = ensureRow(category.name);
+    row.current = Number(category.quantity || 0);
+  });
+
+  farm.movements
+    .filter((movement) => matchesMonthlyInventoryPeriod(movement, selection.year, selection.month))
+    .filter((movement) => allOperations.has(movement.type))
+    .forEach((movement) => {
+      const categoryName = movement.categoryName || "Sem categoria";
+      if (!selectedCategories.has(categoryName)) return;
+      const quantity = Number(movement.quantity || 0);
+      const row = ensureRow(categoryName);
+      row.allTotals[movement.type] += quantity;
+      if (selectedOperations.has(movement.type)) {
+        row.totals[movement.type] += quantity;
+        if (movement.type === "morte" && movement.notes) {
+          row.deathNotes.push(movement.notes);
+        }
+      }
+    });
+
+  rowsByCategory.forEach((row) => {
+    row.opening = row.current
+      - row.allTotals.compra
+      - row.allTotals.nascimento
+      + row.allTotals.venda
+      + row.allTotals.morte;
+  });
+
+  return [...rowsByCategory.values()]
+    .filter((row) => row.current > 0 || row.opening > 0 || Object.values(row.totals).some((value) => value > 0))
+    .sort((a, b) => b.opening - a.opening || normalizeText(a.category).localeCompare(normalizeText(b.category)));
+}
+
+function getMonthlyInventorySaldo(row, selectedOperations) {
+  return row.opening + MONTHLY_INVENTORY_OPERATIONS.reduce((total, operation) => {
+    if (!selectedOperations.has(operation.value)) return total;
+    return total + (operation.sign * Number(row.totals[operation.value] || 0));
+  }, 0);
+}
+
+function getShortMonthYearLabel(year, month) {
+  return `${MONTH_NAMES[Number(month) - 1].slice(0, 3).toLowerCase()}/${String(year).slice(-2)}`;
+}
+
+function appendMonthlyInventoryFarmPage(doc, farm, selection, periodLabel) {
+  const selectedOperations = new Set(selection.operations);
+  const rows = buildMonthlyInventoryRows(farm, selection);
+  const margin = 12;
+  const { width } = getPdfPageSize(doc);
+  const operationColumns = MONTHLY_INVENTORY_OPERATIONS.filter((operation) => selectedOperations.has(operation.value));
+  const head = [[getShortMonthYearLabel(selection.year, selection.month), "Cabeças"]];
+  operationColumns.forEach((operation) => {
+    head[0].push(operation.label);
+    if (operation.value === "morte") head[0].push("Obs Morte");
+  });
+  head[0].push("Saldo");
+
+  const body = rows.length
+    ?rows.map((row) => {
+      const values = [row.category, formatInteger(row.opening)];
+      operationColumns.forEach((operation) => {
+        values.push(row.totals[operation.value] ?formatInteger(row.totals[operation.value]) : "");
+        if (operation.value === "morte") {
+          values.push(row.deathNotes.length ?row.deathNotes.join("; ") : "");
+        }
+      });
+      values.push(formatInteger(getMonthlyInventorySaldo(row, selectedOperations)));
+      return values;
+    })
+    : [["Sem categorias no filtro", "0", ...operationColumns.flatMap((operation) => operation.value === "morte" ?["", ""] : [""]), "0"]];
+
+  const totals = rows.reduce((acc, row) => {
+    acc.opening += row.opening;
+    acc.saldo += getMonthlyInventorySaldo(row, selectedOperations);
+    MONTHLY_INVENTORY_OPERATIONS.forEach((operation) => {
+      acc[operation.value] += Number(row.totals[operation.value] || 0);
+    });
+    return acc;
+  }, { opening: 0, saldo: 0, compra: 0, venda: 0, morte: 0, nascimento: 0 });
+
+  const foot = [["Soma", formatInteger(totals.opening)]];
+  operationColumns.forEach((operation) => {
+    foot[0].push(formatInteger(totals[operation.value]));
+    if (operation.value === "morte") foot[0].push("");
+  });
+  foot[0].push(formatInteger(totals.saldo));
+
+  doc.setFillColor(255, 252, 245);
+  doc.rect(0, 0, width, 210, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.setTextColor(37, 88, 58);
+  doc.text(`Relatório Mensal - ${farm.name}`, margin, 16);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(87, 69, 52);
+  doc.text(`Competência: ${periodLabel}`, margin, 23);
+  doc.text(`Categorias selecionadas: ${formatInteger(selection.categories.length)} | Operações: ${operationColumns.map((op) => op.label).join(", ")}`, margin, 29);
+
+  doc.autoTable({
+    startY: 36,
+    head,
+    body,
+    foot,
+    theme: "grid",
+    margin: { left: margin, right: margin },
+    styles: { fontSize: 8.2, cellPadding: 2, textColor: [28, 40, 55], lineColor: [185, 191, 205], lineWidth: 0.15 },
+    headStyles: { fillColor: [232, 196, 83], textColor: [28, 40, 80], fontStyle: "bold", halign: "center" },
+    footStyles: { fillColor: [232, 196, 83], textColor: [28, 40, 80], fontStyle: "bold", halign: "center" },
+    columnStyles: {
+      0: { cellWidth: 52, fontStyle: "bold", halign: "center" },
+      1: { halign: "center" }
+    },
+    didParseCell(data) {
+      if (data.section === "head" && data.column.index === data.table.columns.length - 1) {
+        data.cell.styles.fillColor = [181, 111, 73];
+      }
+      if (data.section === "body" && data.column.index > 0) {
+        data.cell.styles.halign = "center";
+      }
+      if (data.section === "foot") {
+        data.cell.styles.halign = data.column.index === 0 ?"center" : "center";
+      }
+    }
+  });
+}
+
+async function exportMonthlyInventoryReport(selection) {
+  const farms = selection.farmIds.map((farmId) => state.data.farms[farmId]).filter(Boolean);
+  if (!farms.length) {
+    alert("Nenhuma fazenda válida foi selecionada para o relatório mensal.");
+    return;
+  }
+  if (!window.jspdf || typeof window.jspdf.jsPDF !== "function") {
+    alert("A biblioteca de PDF não foi carregada. Verifique sua conexão e tente novamente.");
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  if (typeof doc.autoTable !== "function") {
+    alert("O módulo de tabela do PDF não foi carregado. Verifique sua conexão e tente novamente.");
+    return;
+  }
+
+  const periodLabel = `${MONTH_NAMES[Number(selection.month) - 1]} de ${selection.year}`;
+  await appendPdfCoverPage(doc, farms, periodLabel, "Relatório Mensal de Estoque");
+
+  farms.forEach((farm) => {
+    doc.addPage();
+    appendMonthlyInventoryFarmPage(doc, farm, selection, periodLabel);
+  });
+
+  addPdfFooters(doc, { coverPage: true });
+  doc.save(`relatorio-mensal-estoque-${farms.length === 1 ?slugify(farms[0].name) : "todas-fazendas"}-${selection.year}-${selection.month}.pdf`);
 }
 
 function openPdfOptionsDialog() {

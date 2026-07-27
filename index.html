@@ -289,6 +289,7 @@
           <div class="actions-secondary">
             <button type="button" class="action-btn secondary" id="editStockButton">Editar estoque</button>
             <button type="button" class="action-btn secondary" id="georefButton" hidden>Georreferenciamento</button>
+            <button type="button" class="action-btn pdf" id="monthlyInventoryReportButton">Relatório Mensal</button>
             <button type="button" class="action-btn pdf" id="exportPdfButton">Gerar PDF</button>
             <button type="button" class="action-btn pdf" id="exportSanitaryPdfMainBtn">PDF Sanitário</button>
             <button type="button" class="action-btn pdf" id="exportRepPdfMainBtn">PDF Reprodução</button>
@@ -1251,6 +1252,66 @@
 
       <div class="modal-actions user-actions">
         <button type="submit" class="action-btn pdf">Gerar relatório</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="monthlyInventoryReportDialog" class="modal">
+    <form method="dialog" id="monthlyInventoryReportForm" class="modal-card">
+      <div class="modal-header">
+        <div>
+          <p class="panel-kicker">Relatório Mensal</p>
+          <h2>Filtros do estoque</h2>
+        </div>
+        <button type="button" class="ghost-btn" id="closeMonthlyInventoryReportDialog">Fechar</button>
+      </div>
+
+      <div class="form-grid pdf-period-grid">
+        <label>
+          Ano
+          <select id="monthlyInventoryYearFilter"></select>
+        </label>
+        <label>
+          Mês
+          <select id="monthlyInventoryMonthFilter"></select>
+        </label>
+      </div>
+
+      <div class="pdf-scope-group">
+        <div>
+          <p class="panel-kicker">Fazendas</p>
+          <div class="user-list pdf-farm-list" id="monthlyInventoryFarmList"></div>
+        </div>
+        <div>
+          <p class="panel-kicker">Categorias</p>
+          <div class="user-list pdf-farm-list" id="monthlyInventoryCategoryList"></div>
+        </div>
+      </div>
+
+      <div>
+        <p class="panel-kicker">Operações</p>
+        <div class="pdf-scope-group" id="monthlyInventoryOperationList">
+          <label class="scope-option">
+            <input type="checkbox" name="monthlyInventoryOperations" value="compra" checked>
+            <div><strong>Compra</strong><span>Entradas compradas no período.</span></div>
+          </label>
+          <label class="scope-option">
+            <input type="checkbox" name="monthlyInventoryOperations" value="venda" checked>
+            <div><strong>Venda</strong><span>Saídas comerciais no período.</span></div>
+          </label>
+          <label class="scope-option">
+            <input type="checkbox" name="monthlyInventoryOperations" value="morte" checked>
+            <div><strong>Morte</strong><span>Baixas por óbito e observações.</span></div>
+          </label>
+          <label class="scope-option">
+            <input type="checkbox" name="monthlyInventoryOperations" value="nascimento" checked>
+            <div><strong>Nascimento</strong><span>Novas cabeças nascidas no período.</span></div>
+          </label>
+        </div>
+      </div>
+
+      <div class="modal-actions user-actions">
+        <button type="submit" class="action-btn pdf">Gerar PDF mensal</button>
       </div>
     </form>
   </dialog>
