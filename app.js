@@ -10360,11 +10360,16 @@ function populateMonthlyInventoryPeriodFilters() {
   });
 
   elements.monthlyInventoryMonthFilter.innerHTML = "";
+  const allMonthsOption = document.createElement("option");
+  allMonthsOption.value = "all";
+  allMonthsOption.textContent = "Todos os meses";
+  allMonthsOption.selected = state.filters.month === "all";
+  elements.monthlyInventoryMonthFilter.appendChild(allMonthsOption);
   MONTH_NAMES.forEach((name, index) => {
     const option = document.createElement("option");
     option.value = String(index + 1).padStart(2, "0");
     option.textContent = name;
-    option.selected = option.value === selectedMonth;
+    option.selected = option.value === selectedMonth && state.filters.month !== "all";
     elements.monthlyInventoryMonthFilter.appendChild(option);
   });
 }
@@ -10623,7 +10628,9 @@ async function exportMonthlyInventoryReport(selection) {
     return;
   }
 
-  const periodLabel = `${MONTH_NAMES[Number(selection.month) - 1]} de ${selection.year}`;
+  const periodLabel = selection.month === "all"
+    ? `Ano de ${selection.year}`
+    : `${MONTH_NAMES[Number(selection.month) - 1]} de ${selection.year}`;
   await appendPdfCoverPage(doc, farms, periodLabel, "Relatório Mensal de Estoque");
 
   farms.forEach((farm) => {
@@ -10632,7 +10639,8 @@ async function exportMonthlyInventoryReport(selection) {
   });
 
   addPdfFooters(doc, { coverPage: true });
-  doc.save(`relatorio-mensal-estoque-${farms.length === 1 ?slugify(farms[0].name) : "todas-fazendas"}-${selection.year}-${selection.month}.pdf`);
+  const monthSlug = selection.month === "all" ? "todos-os-meses" : selection.month;
+  doc.save(`relatorio-mensal-estoque-${farms.length === 1 ?slugify(farms[0].name) : "todas-fazendas"}-${selection.year}-${monthSlug}.pdf`);
 }
 
 function getMovementTypePdfConfig(reportType) {
