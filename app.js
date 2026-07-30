@@ -7858,7 +7858,10 @@ function renderMonthlyInventoryPanel(farm) {
     acc.saldo += getMonthlyInventorySaldo(row, selectedOperations);
     MONTHLY_INVENTORY_OPERATIONS.forEach((op) => { acc[op.value] += Number(row.totals[op.value] || 0); });
     return acc;
-  }, { opening: 0, saldo: 0, compra: 0, venda: 0, morte: 0, nascimento: 0 });
+  }, { opening: 0, saldo: 0, compra: 0, venda: 0, morte: 0, consumo: 0, nascimento: 0 });
+
+  const columnCount = 2 + MONTHLY_INVENTORY_OPERATIONS.length + 1;
+  let lastSpecies = null;
 
   elements.monthlyInventoryPanelBody.innerHTML = `
     <div class="table-wrap">
@@ -7872,14 +7875,21 @@ function renderMonthlyInventoryPanel(farm) {
           </tr>
         </thead>
         <tbody>
-          ${rows.map((row) => `
+          ${rows.map((row) => {
+            const speciesHeader = row.species !== lastSpecies
+              ? `<tr class="monthly-inventory-species-row"><td colspan="${columnCount}">${row.species === "ovino" ? "Ovinos" : "Bovinos"}</td></tr>`
+              : "";
+            lastSpecies = row.species;
+            return `
+            ${speciesHeader}
             <tr>
               <td>${escapeHtml(row.category)}</td>
               <td>${formatInteger(row.opening)}</td>
               ${MONTHLY_INVENTORY_OPERATIONS.map((op) => `<td>${row.totals[op.value] ? formatInteger(row.totals[op.value]) : "—"}</td>`).join("")}
               <td><strong>${formatInteger(getMonthlyInventorySaldo(row, selectedOperations))}</strong></td>
             </tr>
-          `).join("")}
+          `;
+          }).join("")}
         </tbody>
         <tfoot>
           <tr>
@@ -10323,6 +10333,7 @@ function getDiscrepancyText(farm) {
 const MONTHLY_INVENTORY_OPERATIONS = [
   { value: "venda", label: "Venda", sign: -1 },
   { value: "morte", label: "Morte", sign: -1 },
+  { value: "consumo", label: "Abate/Consumo", sign: -1 },
   { value: "nascimento", label: "Nascimento", sign: 1 },
   { value: "compra", label: "Compra", sign: 1 }
 ];
@@ -10430,15 +10441,18 @@ function buildMonthlyInventoryRows(farm, selection) {
   const selectedOperations = new Set(selection.operations);
   const allOperations = new Set(MONTHLY_INVENTORY_OPERATIONS.map((item) => item.value));
   const rowsByCategory = new Map();
+  const speciesByName = new Map();
+  farm.categories.forEach((category) => speciesByName.set(category.name, normalizeSpecies(category.species)));
 
   function ensureRow(name) {
     if (!rowsByCategory.has(name)) {
       rowsByCategory.set(name, {
         category: name,
+        species: speciesByName.get(name) || DEFAULT_SPECIES,
         current: 0,
         opening: 0,
-        totals: { compra: 0, venda: 0, morte: 0, nascimento: 0 },
-        allTotals: { compra: 0, venda: 0, morte: 0, nascimento: 0 },
+        totals: { compra: 0, venda: 0, morte: 0, consumo: 0, nascimento: 0 },
+        allTotals: { compra: 0, venda: 0, morte: 0, consumo: 0, nascimento: 0 },
         deathNotes: []
       });
     }
@@ -10473,12 +10487,16 @@ function buildMonthlyInventoryRows(farm, selection) {
       - row.allTotals.compra
       - row.allTotals.nascimento
       + row.allTotals.venda
-      + row.allTotals.morte;
+      + row.allTotals.morte
+      + row.allTotals.consumo;
   });
 
   return [...rowsByCategory.values()]
     .filter((row) => row.current > 0 || row.opening > 0 || Object.values(row.totals).some((value) => value > 0))
-    .sort((a, b) => b.opening - a.opening || normalizeText(a.category).localeCompare(normalizeText(b.category)));
+    .sort((a, b) => {
+      if (a.species !== b.species) return a.species === "ovino" ? 1 : -1;
+      return b.opening - a.opening || normalizeText(a.category).localeCompare(normalizeText(b.category));
+    });
 }
 
 function getMonthlyInventorySaldo(row, selectedOperations) {
@@ -10505,8 +10523,10 @@ function appendMonthlyInventoryFarmPage(doc, farm, selection, periodLabel) {
   });
   head[0].push("Saldo");
 
+  const columnCount = head[0].length;
+  let lastSpecies = null;
   const body = rows.length
-    ?rows.map((row) => {
+    ?rows.flatMap((row) => {
       const values = [row.category, formatInteger(row.opening)];
       operationColumns.forEach((operation) => {
         values.push(row.totals[operation.value] ?formatInteger(row.totals[operation.value]) : "");
@@ -10515,7 +10535,12 @@ function appendMonthlyInventoryFarmPage(doc, farm, selection, periodLabel) {
         }
       });
       values.push(formatInteger(getMonthlyInventorySaldo(row, selectedOperations)));
-      return values;
+
+      const speciesRow = row.species !== lastSpecies
+        ? [{ content: row.species === "ovino" ?"Ovinos" : "Bovinos", colSpan: columnCount, styles: { halign: "left", fontStyle: "bold", fillColor: [240, 235, 222], textColor: [87, 69, 52] } }]
+        : null;
+      lastSpecies = row.species;
+      return speciesRow ? [speciesRow, values] : [values];
     })
     : [["Sem categorias no filtro", "0", ...operationColumns.flatMap((operation) => operation.value === "morte" ?["", ""] : [""]), "0"]];
 
@@ -10526,7 +10551,7 @@ function appendMonthlyInventoryFarmPage(doc, farm, selection, periodLabel) {
       acc[operation.value] += Number(row.totals[operation.value] || 0);
     });
     return acc;
-  }, { opening: 0, saldo: 0, compra: 0, venda: 0, morte: 0, nascimento: 0 });
+  }, { opening: 0, saldo: 0, compra: 0, venda: 0, morte: 0, consumo: 0, nascimento: 0 });
 
   const foot = [["Soma", formatInteger(totals.opening)]];
   operationColumns.forEach((operation) => {
