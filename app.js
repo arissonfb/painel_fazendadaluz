@@ -7840,7 +7840,7 @@ function renderMonthlyInventoryPanel(farm) {
   }
 
   const year = state.filters.year;
-  const month = state.filters.month === "all" ? String(today.getMonth() + 1).padStart(2, "0") : state.filters.month;
+  const month = state.filters.month;
   const categoryNames = new Set(farm.categories.map((cat) => cat.name));
   farm.movements.forEach((movement) => { if (movement.categoryName) categoryNames.add(movement.categoryName); });
   const categories = [...categoryNames];
@@ -10435,7 +10435,9 @@ function handleMonthlyInventoryReportSubmit(event) {
 
 function matchesMonthlyInventoryPeriod(movement, year, month) {
   const date = String(movement.date || "");
-  return date.slice(0, 4) === String(year) && date.slice(5, 7) === String(month);
+  if (date.slice(0, 4) !== String(year)) return false;
+  if (month === "all") return true;
+  return date.slice(5, 7) === String(month);
 }
 
 function buildMonthlyInventoryRows(farm, selection) {
@@ -10509,6 +10511,7 @@ function getMonthlyInventorySaldo(row, selectedOperations) {
 }
 
 function getShortMonthYearLabel(year, month) {
+  if (month === "all") return `ano ${year}`;
   return `${MONTH_NAMES[Number(month) - 1].slice(0, 3).toLowerCase()}/${String(year).slice(-2)}`;
 }
 
