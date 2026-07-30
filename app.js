@@ -7841,7 +7841,9 @@ function renderMonthlyInventoryPanel(farm) {
 
   const year = state.filters.year;
   const month = state.filters.month === "all" ? String(today.getMonth() + 1).padStart(2, "0") : state.filters.month;
-  const categories = farm.categories.map((cat) => cat.name);
+  const categoryNames = new Set(farm.categories.map((cat) => cat.name));
+  farm.movements.forEach((movement) => { if (movement.categoryName) categoryNames.add(movement.categoryName); });
+  const categories = [...categoryNames];
   const operations = MONTHLY_INVENTORY_OPERATIONS.map((op) => op.value);
   const selectedOperations = new Set(operations);
   const rows = buildMonthlyInventoryRows(farm, { categories, operations, year, month });
