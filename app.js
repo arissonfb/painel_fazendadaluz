@@ -2667,19 +2667,19 @@ async function handleLoginSubmit(event) {
       ? true
       : error.status >= 500;
     if (isServerError) {
-      // Servidor indisponível ou iniciando — mostrar opção de tentar novamente
+      // Servidor indisponível ou iniciando — só permite entrar offline se a senha
+      // digitada confere com o hash salvo neste dispositivo em um login anterior.
+      // Nunca logar apenas por encontrar o username em cache (isso seria um bypass
+      // de autenticação para quem conseguir fazer o app achar que o servidor caiu).
       const localUser = await checkLocalCredential(login, password);
-      const cachedUser = localUser || state.data.auth.users.find(
-        (u) => (u.login || "").toLowerCase() === login.toLowerCase()
-      );
-      if (cachedUser) {
+      if (localUser) {
         const ok = confirm(
           `O servidor está iniciando. Aguarde 30 segundos e tente novamente.\n\n` +
           `» Clique em OK para tentar sincronizar agora.\n\n` +
           `» Clique em CANCELAR para entrar sem sincronização (modo offline).`
         );
         if (!ok) {
-          completaLoginLocal(cachedUser);
+          completaLoginLocal(localUser);
           return;
         }
         elements.loginFeedback.hidden = false;
@@ -2850,8 +2850,8 @@ async function handleManageUsersSubmit(event) {
   const role = elements.newUserRole?.value || "usuario";
 
   if (!login || !password) return;
-  if (password.length < 4) {
-    alert("A senha precisa ter pelo menos 4 caracteres.");
+  if (password.length < 8) {
+    alert("A senha precisa ter pelo menos 8 caracteres.");
     return;
   }
 
@@ -2879,9 +2879,9 @@ async function handleChangeMyPasswordSubmit(event) {
   const confirm = document.getElementById("changeMyPasswordConfirm").value;
   const feedback = document.getElementById("changeMyPasswordFeedback");
 
-  if (next.length < 4) {
+  if (next.length < 8) {
     feedback.hidden = false;
-    feedback.textContent = "A nova senha deve ter pelo menos 4 caracteres.";
+    feedback.textContent = "A nova senha deve ter pelo menos 8 caracteres.";
     return;
   }
   if (next !== confirm) {

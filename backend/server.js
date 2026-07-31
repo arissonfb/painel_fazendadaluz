@@ -3,11 +3,23 @@ const { Pool } = require("pg");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
+const crypto = require("crypto");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const JWT_SECRET = process.env.JWT_SECRET || "painel-pecuario-secret-2026";
+const MIN_PASSWORD_LENGTH = 8;
 const ADMIN_BOOTSTRAP_PASSWORD = process.env.ADMIN_BOOTSTRAP_PASSWORD || "";
+
+let JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("JWT_SECRET nao configurado. Defina a variavel de ambiente antes de iniciar em producao.");
+  }
+  JWT_SECRET = crypto.randomBytes(32).toString("hex");
+  console.warn("AVISO: JWT_SECRET nao definido — gerado um segredo temporario para este processo (uso local apenas). Sessoes serao invalidadas a cada reinicio.");
+}
 
 const isExternal = (process.env.DATABASE_URL || "").includes(".render.com");
 const pool = new Pool({
@@ -21,8 +33,49 @@ pool.on("error", (err) => {
   console.error("Pool error:", err.message);
 });
 
-app.use(cors({ origin: "*", methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], allowedHeaders: ["Content-Type", "Authorization"] }));
+// Render fica atras de um proxy/load balancer — necessario para o rate limiter
+// enxergar o IP real do cliente em vez do IP interno do proxy.
+app.set("trust proxy", 1);
+
+app.use(helmet());
+
+const DEFAULT_ALLOWED_ORIGINS = ["https://fazenda-daluz.onrender.com"];
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+const originAllowlist = allowedOrigins.length ? allowedOrigins : DEFAULT_ALLOWED_ORIGINS;
+
+app.use(cors({
+  origin(origin, callback) {
+    // Sem "origin" = chamada nao-navegador (app mobile, curl, health check) — permitido.
+    if (!origin || originAllowlist.includes(origin)) return callback(null, true);
+    return callback(new Error("Origem nao permitida pelo CORS."));
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}));
 app.use(express.json({ limit: "50mb" }));
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Muitas tentativas de login. Tente novamente em alguns minutos." },
+});
+
+const passwordLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Muitas tentativas. Tente novamente mais tarde." },
+});
+
+function isWeakPassword(password) {
+  return String(password || "").length < MIN_PASSWORD_LENGTH;
+}
 
 function normalizeRole(role) {
   return role === "admin" ? "admin" : "usuario";
@@ -74,7 +127,7 @@ app.get("/api/health", async (req, res) => {
   }
 });
 
-app.post("/api/auth/login", async (req, res) => {
+app.post("/api/auth/login", loginLimiter, async (req, res) => {
   const { username, password } = req.body || {};
   if (!username || !password) {
     return res.status(400).json({ error: "Login e senha obrigatorios." });
@@ -82,9 +135,10 @@ app.post("/api/auth/login", async (req, res) => {
 
   try {
     const normalizedUsername = String(username).trim();
-    if (normalizedUsername === "admin" && ADMIN_BOOTSTRAP_PASSWORD) {
-      await ensureBootstrapAdmin(pool);
-    }
+    // ensureBootstrapAdmin roda apenas na inicializacao do servidor (initDB), nunca aqui.
+    // Rodar a cada tentativa de login reescreveria a senha do admin para
+    // ADMIN_BOOTSTRAP_PASSWORD a cada tentativa (certa ou errada, de qualquer pessoa),
+    // impedindo o admin de manter uma senha propria trocada.
 
     const result = await pool.query("SELECT id,username,password_hash,role,created_at FROM users WHERE username=$1", [normalizedUsername]);
     if (!result.rowCount) {
@@ -134,13 +188,13 @@ app.get("/api/auth/me", authMiddleware, async (req, res) => {
   }
 });
 
-app.put("/api/auth/change-password", authMiddleware, async (req, res) => {
+app.put("/api/auth/change-password", authMiddleware, passwordLimiter, async (req, res) => {
   const { currentPassword, newPassword } = req.body || {};
   if (!currentPassword || !newPassword) {
     return res.status(400).json({ error: "Senha atual e nova senha sao obrigatorias." });
   }
-  if (String(newPassword).length < 4) {
-    return res.status(400).json({ error: "A nova senha deve ter pelo menos 4 caracteres." });
+  if (isWeakPassword(newPassword)) {
+    return res.status(400).json({ error: `A nova senha deve ter pelo menos ${MIN_PASSWORD_LENGTH} caracteres.` });
   }
 
   try {
@@ -192,6 +246,9 @@ app.post("/api/users", authMiddleware, async (req, res) => {
   if (!username || !password) {
     return res.status(400).json({ error: "Campos obrigatorios." });
   }
+  if (isWeakPassword(password)) {
+    return res.status(400).json({ error: `A senha deve ter pelo menos ${MIN_PASSWORD_LENGTH} caracteres.` });
+  }
 
   try {
     const passwordHash = await bcrypt.hash(password, 10);
@@ -223,6 +280,9 @@ app.put("/api/users/:id", authMiddleware, async (req, res) => {
   const { username, password, role = "usuario" } = req.body || {};
   if (!username) {
     return res.status(400).json({ error: "Login obrigatorio." });
+  }
+  if (password && isWeakPassword(password)) {
+    return res.status(400).json({ error: `A senha deve ter pelo menos ${MIN_PASSWORD_LENGTH} caracteres.` });
   }
 
   try {
@@ -506,6 +566,15 @@ async function initDB() {
     client.release();
   }
 }
+
+// Handler de erro global — evita vazar stack trace nas respostas.
+app.use((err, req, res, next) => {
+  if (err && err.message === "Origem nao permitida pelo CORS.") {
+    return res.status(403).json({ error: "Origem nao permitida." });
+  }
+  console.error("Erro nao tratado:", err && err.message);
+  res.status(500).json({ error: "Erro interno do servidor." });
+});
 
 app.listen(PORT, () => {
   console.log(`Painel Pecuario API porta ${PORT}`);
