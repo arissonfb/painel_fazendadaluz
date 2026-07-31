@@ -5881,7 +5881,7 @@ th {
 
 /* ─── Relatório Mensal (planilha inline no dashboard) ────────────────────── */
 .monthly-inventory-card {
-  grid-column: span 2;
+  grid-column: 1 / -1;
 }
 
 .monthly-inventory-panel .table-wrap {
@@ -5900,6 +5900,22 @@ th {
   border-top: 2px solid rgba(75, 56, 34, 0.18);
   border-bottom: none;
   font-weight: 700;
+}
+
+.monthly-inventory-species-row td {
+  padding: 8px 10px 6px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  background: rgba(118, 110, 94, 0.08);
+  border-bottom: 1px solid rgba(118, 110, 94, 0.18);
+  white-space: nowrap;
+}
+
+.monthly-inventory-species-row:first-child td {
+  border-top: none;
 }
 
 @media (max-width: 960px) {

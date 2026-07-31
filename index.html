@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Yrsa:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./styles.css?v=20260603d">
+  <link rel="stylesheet" href="./styles.css?v=20260730d">
 </head>
 <body class="login-mode">
   <section class="splash-shell" id="splashShell" aria-label="Tela de abertura">
@@ -327,16 +327,6 @@
           <article class="panel chart-panel">
           <div class="panel-header">
             <div>
-              <p class="panel-kicker">Estoque atual</p>
-              <h2>Distribuição por categoria</h2>
-            </div>
-          </div>
-          <div id="inventoryChart" class="inventory-ranked-list" aria-label="Distribuição do estoque por categoria"></div>
-          </article>
-
-          <article class="panel chart-panel">
-          <div class="panel-header">
-            <div>
               <p class="panel-kicker">Análise anual</p>
               <h2>Entradas, saídas e saldo</h2>
             </div>
@@ -352,6 +342,16 @@
             </div>
           </div>
           <div id="opsManejoList" class="ops-manejo-list"></div>
+          </article>
+
+          <article class="panel chart-panel">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">Estoque atual</p>
+              <h2>Distribuição por categoria</h2>
+            </div>
+          </div>
+          <div id="inventoryChart" class="inventory-ranked-list" aria-label="Distribuição do estoque por categoria"></div>
           </article>
 
         </section>
@@ -1347,6 +1347,10 @@
             <input type="checkbox" name="monthlyInventoryOperations" value="nascimento" checked>
             <div><strong>Nascimento</strong><span>Novas cabeças nascidas no período.</span></div>
           </label>
+          <label class="scope-option">
+            <input type="checkbox" name="monthlyInventoryOperations" value="consumo" checked>
+            <div><strong>Abate/Consumo</strong><span>Baixas por abate ou consumo interno.</span></div>
+          </label>
         </div>
       </div>
 
@@ -1827,6 +1831,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
   <script src="./assets/jspdf.umd.min.js"></script>
   <script src="./assets/jspdf.autotable.min.js"></script>
-  <script src="./app.js?v=20260603e"></script>
+  <script src="./app.js?v=20260730d"></script>
 </body>
 </html>
