@@ -8484,6 +8484,31 @@ body[data-active-view="sanitary"] .hero {
 .com2-empty-t { font-size:15px;font-weight:800;color:#1f2933; }
 .com2-empty-s { font-size:13px; }
 
+/* Declaração Jurada */
+.decl-total-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: rgba(245, 235, 218, 0.5);
+  margin-right: 10px;
+}
+.decl-total-chip strong { color: var(--text); font-size: 0.92rem; }
+.decl-totals, .declaracao-totals { margin-top: 10px; }
+
+.decl-diff-row td { background: rgba(90, 53, 128, 0.04); padding: 14px 18px; }
+.decl-diff-panel { display: flex; flex-direction: column; gap: 8px; }
+.decl-diff-title { font-size: 0.82rem; font-weight: 700; color: #5a3580; margin: 0; }
+.decl-diff-table th { background: rgba(90, 53, 128, 0.08); }
+.decl-diff-table tfoot td { font-weight: 700; border-top: 1.5px solid rgba(90, 53, 128, 0.25); }
+.decl-diff-up { color: var(--green); font-weight: 700; }
+.decl-diff-down { color: var(--red); font-weight: 700; }
+.decl-diff-flat { color: var(--muted); font-weight: 600; }
+
 /* Responsive */
 @media (max-width:1280px) { .com2-kpi-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
 @media (max-width:900px)  { .com2-charts-row { grid-template-columns:1fr; } .com2-kpi-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }

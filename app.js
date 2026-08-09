@@ -39,6 +39,12 @@ function generateReproductionCode(farm) {
   return `REP-${prefix}-${String(farm.reproductionCodeSequence).padStart(5, "0")}`;
 }
 
+function generateDeclaracaoCode(farm) {
+  farm.declaracaoCodeSequence = (farm.declaracaoCodeSequence || 0) + 1;
+  const prefix = getFarmCodePrefix(farm.id);
+  return `DJ-${prefix}-${String(farm.declaracaoCodeSequence).padStart(5, "0")}`;
+}
+
 function extractMovementCodeSequence(code, farmId) {
   if (typeof code !== "string" || !code.trim()) return 0;
   const prefix = getFarmCodePrefix(farmId);
@@ -187,6 +193,7 @@ const MONTHLY_REPORT_CATEGORIES = [
 
 const DEFAULT_SANITARY_PRODUCTS = ["Vacina aftosa", "Vermífugo", "Ivermectina"];
 const DEFAULT_POTREIROS = [];
+const DECLARACAO_OWNERS = ["LUIZ ALBERTO", "ANGELA", "ALINE", "FERNANDO"];
 const LEGACY_POTREIRO_PLACEHOLDERS = ["Potreiro 1", "Potreiro 2", "Potreiro Norte"];
 const PREMIUM_SALE_FARMS = new Set(["arapey", "chiquita"]);
 // Farms that operate in USD (Uruguay-based); all others use BRL
@@ -890,6 +897,12 @@ const runtime = {
   repSearch: "",
   comprasPage: 0,
   vendasPage: 0,
+  declaracaoEntries: [],
+  declaracaoOpenDiffId: null,
+  declaracaoFilterFarm: "all",
+  declaracaoFilterOwner: "all",
+  declaracaoFilterYear: "all",
+  declaracaoSearch: "",
   auditSearch: "",
   auditPage: 0,
   auditSessionId: "",
@@ -1099,6 +1112,32 @@ const elements = {
   vendasFilterDateTo: document.getElementById("vendasFilterDateTo"),
   vendasFilterCategory: document.getElementById("vendasFilterCategory"),
   clearVendasFiltersBtn: document.getElementById("clearVendasFiltersBtn"),
+  declaracaoJuradaView: document.getElementById("declaracaoJuradaView"),
+  declaracaoFarmSwitch: document.getElementById("declaracaoFarmSwitch"),
+  declaracaoKpiSection: document.getElementById("declaracaoKpiSection"),
+  declaracaoNovaBtn: document.getElementById("declaracaoNovaBtn"),
+  declaracaoHistorySearch: document.getElementById("declaracaoHistorySearch"),
+  declaracaoTableBody: document.getElementById("declaracaoTableBody"),
+  declaracaoTableCountLabel: document.getElementById("declaracaoTableCountLabel"),
+  declaracaoFilterFarm: document.getElementById("declaracaoFilterFarm"),
+  declaracaoFilterOwner: document.getElementById("declaracaoFilterOwner"),
+  declaracaoFilterYear: document.getElementById("declaracaoFilterYear"),
+  clearDeclaracaoFiltersBtn: document.getElementById("clearDeclaracaoFiltersBtn"),
+  declaracaoDialog: document.getElementById("declaracaoDialog"),
+  declaracaoForm: document.getElementById("declaracaoForm"),
+  declaracaoDialogTitle: document.getElementById("declaracaoDialogTitle"),
+  closeDeclaracaoDialog: document.getElementById("closeDeclaracaoDialog"),
+  declaracaoEditingId: document.getElementById("declaracaoEditingId"),
+  declaracaoFarm: document.getElementById("declaracaoFarm"),
+  declaracaoOwner: document.getElementById("declaracaoOwner"),
+  declaracaoYear: document.getElementById("declaracaoYear"),
+  declaracaoDate: document.getElementById("declaracaoDate"),
+  declaracaoNotes: document.getElementById("declaracaoNotes"),
+  declaracaoEntriesTbody: document.getElementById("declaracaoEntriesTbody"),
+  declaracaoAddEntryBtn: document.getElementById("declaracaoAddEntryBtn"),
+  declaracaoTotalsRow: document.getElementById("declaracaoTotalsRow"),
+  declaracaoFeedback: document.getElementById("declaracaoFeedback"),
+  declaracaoSubmitBtn: document.getElementById("declaracaoSubmitBtn"),
   movTypeRecordsDlg: document.getElementById("movTypeRecordsDlg"),
   maximizeMovTypeRecordsDlg: document.getElementById("maximizeMovTypeRecordsDlg"),
   closeMovTypeRecordsDlg: document.getElementById("closeMovTypeRecordsDlg"),
@@ -3038,6 +3077,65 @@ function clonePotreroEntries(entries = []) {
   }));
 }
 
+function createDeclaracaoEntryId() {
+  return `decl-item-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+}
+
+function getDeclaracoesJuradas(farm) {
+  return Array.isArray(farm?.declaracoesJuradas) ?farm.declaracoesJuradas : [];
+}
+
+function getAllDeclaracoesJuradas() {
+  const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
+  const farms = isTotalView ?getAllFarms() : [getFarm()].filter(Boolean);
+  return farms.flatMap((farm) =>
+    getDeclaracoesJuradas(farm).map((record) => ({ ...record, _farmId: farm.id, _farmName: farm.name }))
+  );
+}
+
+function getDeclaracaoEntryTotals(entries) {
+  const totals = { bovino: 0, ovino: 0 };
+  (Array.isArray(entries) ?entries : []).forEach((entry) => {
+    const species = normalizeSpecies(entry.species);
+    totals[species] = (totals[species] || 0) + (Number(entry.quantity) || 0);
+  });
+  return totals;
+}
+
+function findDeclaracaoJurada(farm, owner, year, excludeId = null) {
+  return getDeclaracoesJuradas(farm).find((record) =>
+    record.owner === owner && Number(record.year) === Number(year) && record.id !== excludeId
+  ) || null;
+}
+
+function getPreviousDeclaracaoJurada(farm, owner, year, excludeId = null) {
+  const candidates = getDeclaracoesJuradas(farm).filter((record) =>
+    record.owner === owner && Number(record.year) < Number(year) && record.id !== excludeId
+  );
+  if (!candidates.length) return null;
+  return candidates.sort((a, b) => Number(b.year) - Number(a.year))[0];
+}
+
+function computeDeclaracaoDiff(currentEntries, previousEntries) {
+  const rows = new Map();
+  (currentEntries || []).forEach((entry) => {
+    const key = `${normalizeSpecies(entry.species)}::${normalizeText(entry.category)}`;
+    rows.set(key, { species: normalizeSpecies(entry.species), category: entry.category, current: Number(entry.quantity) || 0, previous: 0 });
+  });
+  (previousEntries || []).forEach((entry) => {
+    const key = `${normalizeSpecies(entry.species)}::${normalizeText(entry.category)}`;
+    const existing = rows.get(key);
+    if (existing) {
+      existing.previous = Number(entry.quantity) || 0;
+    } else {
+      rows.set(key, { species: normalizeSpecies(entry.species), category: entry.category, current: 0, previous: Number(entry.quantity) || 0 });
+    }
+  });
+  return [...rows.values()]
+    .map((row) => ({ ...row, diff: row.current - row.previous }))
+    .sort((a, b) => a.species.localeCompare(b.species) || a.category.localeCompare(b.category));
+}
+
 function clearGeorefDraft() {
   runtime.georefDraft = null;
 }
@@ -3244,7 +3342,9 @@ function createStandardFarm(id, name) {
     sanitaryRecords: [],
     monthlyRecords: [],
     reproductionRecords: [],
-    reproductionCodeSequence: 0
+    reproductionCodeSequence: 0,
+    declaracoesJuradas: [],
+    declaracaoCodeSequence: 0
   };
 }
 
@@ -3378,6 +3478,41 @@ function bindEvents() {
     renderComprasKpiCards();
     renderComprasCharts();
     renderComprasTable();
+  });
+
+  // Declaração Jurada
+  elements.declaracaoNovaBtn?.addEventListener("click", () => openDeclaracaoDialog());
+  elements.closeDeclaracaoDialog?.addEventListener("click", () => elements.declaracaoDialog.close());
+  elements.declaracaoSubmitBtn?.addEventListener("click", handleDeclaracaoSubmit);
+  elements.declaracaoAddEntryBtn?.addEventListener("click", addDeclaracaoEntryRow);
+  elements.declaracaoEntriesTbody?.addEventListener("click", handleDeclaracaoEntriesClick);
+  elements.declaracaoEntriesTbody?.addEventListener("input", updateDeclaracaoTotalsDisplay);
+  elements.declaracaoEntriesTbody?.addEventListener("change", updateDeclaracaoTotalsDisplay);
+  elements.declaracaoTableBody?.addEventListener("click", handleDeclaracaoTableClick);
+  elements.declaracaoHistorySearch?.addEventListener("input", (event) => {
+    runtime.declaracaoSearch = event.target.value;
+    renderDeclaracaoTable();
+  });
+  elements.declaracaoFilterFarm?.addEventListener("change", (event) => {
+    runtime.declaracaoFilterFarm = event.target.value;
+    renderDeclaracaoTable();
+  });
+  elements.declaracaoFilterOwner?.addEventListener("change", (event) => {
+    runtime.declaracaoFilterOwner = event.target.value;
+    renderDeclaracaoTable();
+  });
+  elements.declaracaoFilterYear?.addEventListener("change", (event) => {
+    runtime.declaracaoFilterYear = event.target.value;
+    renderDeclaracaoTable();
+  });
+  elements.clearDeclaracaoFiltersBtn?.addEventListener("click", () => {
+    runtime.declaracaoFilterFarm = "all";
+    runtime.declaracaoFilterOwner = "all";
+    runtime.declaracaoFilterYear = "all";
+    runtime.declaracaoSearch = "";
+    if (elements.declaracaoHistorySearch) elements.declaracaoHistorySearch.value = "";
+    renderDeclaracaoFilterSelects();
+    renderDeclaracaoTable();
   });
 
   // Reproduction dialogs
@@ -4244,6 +4379,9 @@ function renderHomeView() {
   const totalPotreiros = allPotreiros.length;
   const allocatedAnimals = farms.reduce((s, f) => s + getRegisteredPotreroAnimals(f), 0);
 
+  const declaracoesAll = farms.flatMap((f) => getDeclaracoesJuradas(f));
+  const declaracoesYear = year === "all" ?declaracoesAll : declaracoesAll.filter((d) => String(d.year) === String(year));
+
   const farmContext = isTotalView
     ? `Todas as Fazendas · ${farms.length} unidades`
     : `${farm.name} · ${FARM_CURRENCY_MAP[farm.id] === "USD" ? "Uruguay" : "Brasil"}`;
@@ -4330,6 +4468,17 @@ function renderHomeView() {
       metricLabel: "potreiros cadastrados",
       badge: allocatedAnimals > 0 ? `${formatInteger(allocatedAnimals)} animais alocados` : null,
       actions: ["Distribuir animais", "Ver potreiros"]
+    },
+    {
+      view: "declaracaoJurada",
+      icon: `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>`,
+      accent: "#5a3580", bg: "#ede9fe",
+      title: "Declaração Jurada",
+      desc: "Categorias e quantidades de bovinos e ovinos declaradas por proprietário, ano a ano e por fazenda — independente do estoque do sistema",
+      metric: formatInteger(declaracoesYear.length),
+      metricLabel: `declaraç${declaracoesYear.length === 1 ? "ão" : "ões"} em ${year === "all" ? "todos os anos" : year}`,
+      badge: declaracoesAll.length ? `${formatInteger(declaracoesAll.length)} no total` : null,
+      actions: ["Nova declaração", "Ver declarações"]
     },
     {
       view: "dashboard",
@@ -4996,6 +5145,7 @@ function renderActiveView() {
   elements.reproducaoView.hidden = view !== "reproducao";
   if (elements.comprasView) elements.comprasView.hidden = view !== "compras";
   if (elements.vendasView) elements.vendasView.hidden = view !== "vendas";
+  if (elements.declaracaoJuradaView) elements.declaracaoJuradaView.hidden = view !== "declaracaoJurada";
   elements.sanitaryShortcut?.classList.toggle("active", view === "sanitary");
   elements.potreirosShortcut?.classList.toggle("active", view === "potreiros");
   elements.reproducaoShortcut?.classList.toggle("active", view === "reproducao");
@@ -5006,6 +5156,7 @@ function renderActiveView() {
   if (view === "reproducao") renderReproducaoView();
   if (view === "compras") { try { renderComprasView(); } catch (e) { console.error("[compras] erro ao renderizar:", e); } }
   if (view === "vendas")   { try { renderVendasView();  } catch (e) { console.error("[vendas] erro ao renderizar:", e); } }
+  if (view === "declaracaoJurada") { try { renderDeclaracaoJuradaView(); } catch (e) { console.error("[declaracao jurada] erro ao renderizar:", e); } }
   if (view !== "home") injectBackButton(view);
   syncMobileNav(view);
 }
@@ -5017,7 +5168,8 @@ function injectBackButton(view) {
     potreiros: elements.potreirosView,
     reproducao: elements.reproducaoView,
     compras: elements.comprasView,
-    vendas: elements.vendasView
+    vendas: elements.vendasView,
+    declaracaoJurada: elements.declaracaoJuradaView
   };
   const el = viewMap[view];
   if (!el) return;
@@ -5026,7 +5178,7 @@ function injectBackButton(view) {
   const farmLabel = state.data.selectedFarmId === TOTAL_FARM_ID ? "Todas as Fazendas" : farm.name;
   const viewLabels = {
     dashboard: "Estoque", sanitary: "Manejo Sanitário", potreiros: "Potreiros",
-    reproducao: "Reprodução", compras: "Compras", vendas: "Vendas"
+    reproducao: "Reprodução", compras: "Compras", vendas: "Vendas", declaracaoJurada: "Declaração Jurada"
   };
 
   const existingBar = el.querySelector(".back-to-home-bar");
@@ -12499,6 +12651,27 @@ function ensureDataShape(data, options = {}) {
     } else {
       farm.potreiros = normalizePotreroEntries(farm.potreiros);
     }
+    if (!Array.isArray(farm.declaracoesJuradas)) {
+      farm.declaracoesJuradas = [];
+    }
+    farm.declaracoesJuradas = farm.declaracoesJuradas.map((record) => ({
+      ...record,
+      id: record.id || createDeclaracaoEntryId(),
+      code: record.code || "",
+      year: Number(record.year) || new Date().getFullYear(),
+      owner: record.owner || DECLARACAO_OWNERS[0],
+      entries: Array.isArray(record.entries)
+        ?record.entries.map((entry) => ({
+          id: entry.id || createDeclaracaoEntryId(),
+          species: normalizeSpecies(entry.species),
+          category: String(entry.category || "").trim(),
+          quantity: Number(entry.quantity) || 0
+        }))
+        : []
+    }));
+    if (typeof farm.declaracaoCodeSequence !== "number") {
+      farm.declaracaoCodeSequence = farm.declaracoesJuradas.length;
+    }
     STANDARD_FARM_CATEGORIES.forEach((template) => {
       if (!farm.categories.some((category) => category.id === template.id)) {
         farm.categories.push({ ...template, quantity: 0 });
@@ -14983,6 +15156,530 @@ function renderCommercialEvolutionChart(type, canvasId, chartKey) {
     },
     plugins: [commercialPeakPlugin],
   });
+}
+
+// ── Declaração Jurada ────────────────────────────────────────────────────────
+
+function renderDeclaracaoJuradaView() {
+  renderDeclaracaoFarmSwitch();
+  renderDeclaracaoFilterSelects();
+  renderDeclaracaoKpiCards();
+  renderDeclaracaoTable();
+}
+
+function renderDeclaracaoFarmSwitch() {
+  if (!elements.declaracaoFarmSwitch) return;
+  elements.declaracaoFarmSwitch.innerHTML = "";
+  const items = [{ id: TOTAL_FARM_ID, name: "Todas as fazendas" }, ...getAllFarms()];
+  items.forEach((item) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `farm-btn ${item.id === state.data.selectedFarmId ?"active" : ""}`;
+    btn.textContent = item.name;
+    btn.addEventListener("click", () => {
+      state.data.selectedFarmId = item.id;
+      saveData();
+      renderDeclaracaoJuradaView();
+    });
+    elements.declaracaoFarmSwitch.appendChild(btn);
+  });
+}
+
+function renderDeclaracaoFilterSelects() {
+  const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
+  if (elements.declaracaoFilterFarm) {
+    elements.declaracaoFilterFarm.hidden = !isTotalView;
+    const current = runtime.declaracaoFilterFarm;
+    elements.declaracaoFilterFarm.innerHTML = `<option value="all">Todas as fazendas</option>` +
+      getAllFarms().map((f) => `<option value="${escapeHtml(f.id)}">${escapeHtml(f.name)}</option>`).join("");
+    elements.declaracaoFilterFarm.value = current;
+  }
+  if (elements.declaracaoFilterOwner) {
+    const current = runtime.declaracaoFilterOwner;
+    elements.declaracaoFilterOwner.innerHTML = `<option value="all">Todos os proprietários</option>` +
+      DECLARACAO_OWNERS.map((owner) => `<option value="${escapeHtml(owner)}">${escapeHtml(owner)}</option>`).join("");
+    elements.declaracaoFilterOwner.value = current;
+  }
+  if (elements.declaracaoFilterYear) {
+    const current = runtime.declaracaoFilterYear;
+    const years = [...new Set(getAllFarms().flatMap((f) => getDeclaracoesJuradas(f).map((d) => Number(d.year))))].sort((a, b) => b - a);
+    elements.declaracaoFilterYear.innerHTML = `<option value="all">Todos os anos</option>` +
+      years.map((y) => `<option value="${y}">${y}</option>`).join("");
+    elements.declaracaoFilterYear.value = current;
+  }
+}
+
+function renderDeclaracaoKpiCards() {
+  if (!elements.declaracaoKpiSection) return;
+  const records = getAllDeclaracoesJuradas();
+  const year = state.filters.year;
+  const filtered = year === "all" ?records : records.filter((r) => String(r.year) === String(year));
+  const totals = filtered.reduce((acc, r) => {
+    const t = getDeclaracaoEntryTotals(r.entries);
+    acc.bovino += t.bovino;
+    acc.ovino += t.ovino;
+    return acc;
+  }, { bovino: 0, ovino: 0 });
+  const owners = new Set(filtered.map((r) => r.owner));
+
+  const card = ({ label, value, desc, tone, badge }) => `
+    <article class="com2-kpi-card com2-kpi-card-${tone}">
+      <div class="com2-kpi-topline">
+        <span class="com2-kpi-dot"></span>
+        <span class="com2-kpi-badge com2-badge-${tone}">${badge}</span>
+      </div>
+      <p class="com2-kpi-label">${label}</p>
+      <p class="com2-kpi-value">${value}</p>
+      <p class="com2-kpi-desc">${desc}</p>
+    </article>`;
+
+  elements.declaracaoKpiSection.innerHTML = `
+    <div class="com2-kpi-grid">
+      ${card({ label: "Total Bovino declarado", value: formatInteger(totals.bovino), desc: `${filtered.length} declaraç${filtered.length === 1 ?"ão" : "ões"} no período`, tone: "neu", badge: "Bovinos" })}
+      ${card({ label: "Total Ovino declarado", value: formatInteger(totals.ovino), desc: `${filtered.length} declaraç${filtered.length === 1 ?"ão" : "ões"} no período`, tone: "c", badge: "Ovinos" })}
+      ${card({ label: "Declarações registradas", value: formatInteger(filtered.length), desc: year === "all" ?"em todos os anos" : `no ano ${year}`, tone: "v", badge: "Registros" })}
+      ${card({ label: "Proprietários declarantes", value: formatInteger(owners.size), desc: `de ${DECLARACAO_OWNERS.length} cadastrados`, tone: "fin", badge: "Propriet." })}
+    </div>`;
+}
+
+function renderDeclaracaoTable() {
+  if (!elements.declaracaoTableBody) return;
+  const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
+
+  let records = getAllDeclaracoesJuradas();
+
+  if (isTotalView && runtime.declaracaoFilterFarm !== "all") {
+    records = records.filter((r) => r._farmId === runtime.declaracaoFilterFarm);
+  }
+  if (runtime.declaracaoFilterOwner !== "all") {
+    records = records.filter((r) => r.owner === runtime.declaracaoFilterOwner);
+  }
+  if (runtime.declaracaoFilterYear !== "all") {
+    records = records.filter((r) => String(r.year) === String(runtime.declaracaoFilterYear));
+  }
+  const query = runtime.declaracaoSearch.trim().toLowerCase();
+  if (query) {
+    records = records.filter((r) => [r.code, r.owner, r._farmName, String(r.year)].some((v) => String(v || "").toLowerCase().includes(query)));
+  }
+
+  records = records.slice().sort((a, b) => Number(b.year) - Number(a.year) || String(b.date || "").localeCompare(String(a.date || "")));
+
+  if (elements.declaracaoTableCountLabel) {
+    elements.declaracaoTableCountLabel.textContent = `${records.length} declaraç${records.length === 1 ?"ão" : "ões"}`;
+  }
+
+  if (!records.length) {
+    elements.declaracaoTableBody.innerHTML = `<tr><td colspan="8" class="table-empty-cell">${query || runtime.declaracaoFilterOwner !== "all" || runtime.declaracaoFilterYear !== "all" || (isTotalView && runtime.declaracaoFilterFarm !== "all") ?"Nenhuma declaração encontrada com estes filtros." : "Nenhuma declaração jurada registrada ainda."}</td></tr>`;
+    return;
+  }
+
+  elements.declaracaoTableBody.innerHTML = records.map((record) => {
+    const totals = getDeclaracaoEntryTotals(record.entries);
+    const farm = state.data.farms[record._farmId];
+    const previous = farm ?getPreviousDeclaracaoJurada(farm, record.owner, record.year, record.id) : null;
+    const rowHtml = `
+      <tr data-decl-record-row="${escapeHtml(record.id)}">
+        <td>${escapeHtml(record.code || "—")}</td>
+        <td>${escapeHtml(String(record.year))}</td>
+        <td>${escapeHtml(record._farmName)}</td>
+        <td>${escapeHtml(record.owner)}</td>
+        <td class="rr">${formatInteger(totals.bovino)}</td>
+        <td class="rr">${formatInteger(totals.ovino)}</td>
+        <td>${formatDate(record.date)}</td>
+        <td class="com2-acts">
+          ${previous ?`<button type="button" class="movement-action-btn" data-decl-toggle-diff="${escapeHtml(record.id)}" title="Comparar com ${escapeHtml(String(previous.year))}">${runtime.declaracaoOpenDiffId === record.id ?"Ocultar" : "Comparar"}</button>` : ""}
+          <button type="button" class="movement-action-btn" data-decl-pdf="${escapeHtml(record.id)}" data-decl-farm="${escapeHtml(record._farmId)}" title="Gerar PDF">PDF</button>
+          <button type="button" class="movement-action-btn edit-btn" data-decl-edit="${escapeHtml(record.id)}" data-decl-farm="${escapeHtml(record._farmId)}" title="Editar">Editar</button>
+          <button type="button" class="movement-action-btn delete-btn" data-decl-delete="${escapeHtml(record.id)}" data-decl-farm="${escapeHtml(record._farmId)}" title="Excluir">Excluir</button>
+        </td>
+      </tr>`;
+    const diffHtml = previous && runtime.declaracaoOpenDiffId === record.id
+      ?`<tr class="decl-diff-row"><td colspan="8">${buildDeclaracaoDiffHtml(record, previous)}</td></tr>`
+      : "";
+    return rowHtml + diffHtml;
+  }).join("");
+}
+
+function buildDeclaracaoDiffHtml(record, previous) {
+  const diffRows = computeDeclaracaoDiff(record.entries, previous.entries);
+  const currentTotals = getDeclaracaoEntryTotals(record.entries);
+  const previousTotals = getDeclaracaoEntryTotals(previous.entries);
+  const diffCell = (diff) => {
+    const cls = diff > 0 ?"decl-diff-up" : diff < 0 ?"decl-diff-down" : "decl-diff-flat";
+    return `<td class="rr ${cls}">${diff > 0 ?"+" : ""}${formatInteger(diff)}</td>`;
+  };
+  const rowsHtml = diffRows.map((row) => `
+    <tr>
+      <td>${row.species === "ovino" ?"Ovino" : "Bovino"}</td>
+      <td>${escapeHtml(row.category)}</td>
+      <td class="rr">${formatInteger(row.previous)}</td>
+      <td class="rr">${formatInteger(row.current)}</td>
+      ${diffCell(row.diff)}
+    </tr>`).join("");
+  return `
+    <div class="decl-diff-panel">
+      <p class="decl-diff-title">Comparativo ${escapeHtml(String(previous.year))} → ${escapeHtml(String(record.year))}</p>
+      <table class="com2-t decl-diff-table">
+        <thead><tr><th>Espécie</th><th>Categoria</th><th class="rr">${escapeHtml(String(previous.year))}</th><th class="rr">${escapeHtml(String(record.year))}</th><th class="rr">Diferença</th></tr></thead>
+        <tbody>${rowsHtml}</tbody>
+        <tfoot>
+          <tr><td colspan="2">Total Bovino</td><td class="rr">${formatInteger(previousTotals.bovino)}</td><td class="rr">${formatInteger(currentTotals.bovino)}</td>${diffCell(currentTotals.bovino - previousTotals.bovino)}</tr>
+          <tr><td colspan="2">Total Ovino</td><td class="rr">${formatInteger(previousTotals.ovino)}</td><td class="rr">${formatInteger(currentTotals.ovino)}</td>${diffCell(currentTotals.ovino - previousTotals.ovino)}</tr>
+        </tfoot>
+      </table>
+    </div>`;
+}
+
+function toggleDeclaracaoDiffRow(id) {
+  runtime.declaracaoOpenDiffId = runtime.declaracaoOpenDiffId === id ?null : id;
+  renderDeclaracaoTable();
+}
+
+function handleDeclaracaoTableClick(e) {
+  const editBtn = e.target.closest("[data-decl-edit]");
+  if (editBtn) { openDeclaracaoDialog(editBtn.dataset.declFarm, editBtn.dataset.declEdit); return; }
+
+  const deleteBtn = e.target.closest("[data-decl-delete]");
+  if (deleteBtn) { deleteDeclaracaoJurada(deleteBtn.dataset.declFarm, deleteBtn.dataset.declDelete); return; }
+
+  const pdfBtn = e.target.closest("[data-decl-pdf]");
+  if (pdfBtn) { exportDeclaracaoPdf(pdfBtn.dataset.declFarm, pdfBtn.dataset.declPdf); return; }
+
+  const diffBtn = e.target.closest("[data-decl-toggle-diff]");
+  if (diffBtn) { toggleDeclaracaoDiffRow(diffBtn.dataset.declToggleDiff); return; }
+}
+
+function populateDeclaracaoFarmOptions() {
+  if (!elements.declaracaoFarm) return;
+  elements.declaracaoFarm.innerHTML = getAllFarms().map((f) => `<option value="${escapeHtml(f.id)}">${escapeHtml(f.name)}</option>`).join("");
+}
+
+function populateDeclaracaoOwnerOptions() {
+  if (!elements.declaracaoOwner) return;
+  elements.declaracaoOwner.innerHTML = DECLARACAO_OWNERS.map((owner) => `<option value="${escapeHtml(owner)}">${escapeHtml(owner)}</option>`).join("");
+}
+
+function declaracaoEntryRowHtml(entry) {
+  return `
+    <tr data-decl-entry-row="${escapeHtml(entry.id)}">
+      <td>
+        <select class="stock-input" data-decl-entry-species="${escapeHtml(entry.id)}">
+          <option value="bovino" ${entry.species === "bovino" ?"selected" : ""}>Bovino</option>
+          <option value="ovino" ${entry.species === "ovino" ?"selected" : ""}>Ovino</option>
+        </select>
+      </td>
+      <td><input type="text" class="stock-input" value="${escapeHtml(entry.category)}"
+          data-decl-entry-category="${escapeHtml(entry.id)}" maxlength="80" placeholder="Nome da categoria" required></td>
+      <td><input type="number" class="stock-input stock-qty" value="${Number(entry.quantity || 0)}"
+          min="0" step="1" data-decl-entry-qty="${escapeHtml(entry.id)}"></td>
+      <td><button type="button" class="stock-remove-btn" title="Remover categoria"
+          data-decl-entry-remove="${escapeHtml(entry.id)}">&#x2715;</button></td>
+    </tr>`;
+}
+
+function renderDeclaracaoEntriesTable() {
+  if (!elements.declaracaoEntriesTbody) return;
+  elements.declaracaoEntriesTbody.innerHTML = runtime.declaracaoEntries.map(declaracaoEntryRowHtml).join("");
+  updateDeclaracaoTotalsDisplay();
+}
+
+function updateDeclaracaoTotalsDisplay() {
+  if (!elements.declaracaoTotalsRow) return;
+  const totals = { bovino: 0, ovino: 0 };
+  elements.declaracaoEntriesTbody?.querySelectorAll("[data-decl-entry-row]").forEach((row) => {
+    const species = row.querySelector("[data-decl-entry-species]")?.value === "ovino" ?"ovino" : "bovino";
+    const qty = Number(row.querySelector("[data-decl-entry-qty]")?.value) || 0;
+    totals[species] += qty;
+  });
+  elements.declaracaoTotalsRow.innerHTML = `
+    <span class="decl-total-chip decl-total-bovino">Total Bovino: <strong>${formatInteger(totals.bovino)}</strong></span>
+    <span class="decl-total-chip decl-total-ovino">Total Ovino: <strong>${formatInteger(totals.ovino)}</strong></span>`;
+}
+
+function handleDeclaracaoEntriesClick(e) {
+  const removeBtn = e.target.closest("[data-decl-entry-remove]");
+  if (removeBtn) {
+    removeBtn.closest("[data-decl-entry-row]")?.remove();
+    updateDeclaracaoTotalsDisplay();
+  }
+}
+
+function addDeclaracaoEntryRow() {
+  if (!elements.declaracaoEntriesTbody) return;
+  const entry = { id: createDeclaracaoEntryId(), species: "bovino", category: "", quantity: 0 };
+  const row = document.createElement("tr");
+  row.dataset.declEntryRow = entry.id;
+  row.innerHTML = `
+    <td>
+      <select class="stock-input" data-decl-entry-species="${entry.id}">
+        <option value="bovino" selected>Bovino</option>
+        <option value="ovino">Ovino</option>
+      </select>
+    </td>
+    <td><input type="text" class="stock-input" value="" data-decl-entry-category="${entry.id}" maxlength="80" placeholder="Nome da categoria" required></td>
+    <td><input type="number" class="stock-input stock-qty" value="0" min="0" step="1" data-decl-entry-qty="${entry.id}"></td>
+    <td><button type="button" class="stock-remove-btn" data-decl-entry-remove="${entry.id}">&#x2715;</button></td>`;
+  elements.declaracaoEntriesTbody.appendChild(row);
+  row.querySelector("[data-decl-entry-category]")?.focus();
+}
+
+function openDeclaracaoDialog(farmId = null, recordId = null) {
+  const targetFarmId = farmId || (state.data.selectedFarmId !== TOTAL_FARM_ID ?state.data.selectedFarmId : getAllFarms()[0]?.id);
+  const farm = targetFarmId ?state.data.farms[targetFarmId] : null;
+  if (!farm) { alert("Selecione uma fazenda válida."); return; }
+  const record = recordId ?getDeclaracoesJuradas(farm).find((d) => d.id === recordId) : null;
+
+  populateDeclaracaoFarmOptions();
+  populateDeclaracaoOwnerOptions();
+
+  elements.declaracaoEditingId.value = record?.id || "";
+  elements.declaracaoFarm.value = farm.id;
+  elements.declaracaoFarm.disabled = Boolean(record);
+  elements.declaracaoOwner.value = record?.owner || DECLARACAO_OWNERS[0];
+  elements.declaracaoYear.value = record?.year || new Date().getFullYear();
+  elements.declaracaoDate.value = record?.date || new Date().toISOString().slice(0, 10);
+  elements.declaracaoNotes.value = record?.notes || "";
+
+  runtime.declaracaoEntries = record
+    ?record.entries.map((entry) => ({ ...entry }))
+    : [{ id: createDeclaracaoEntryId(), species: "bovino", category: "", quantity: 0 }];
+
+  elements.declaracaoDialogTitle.textContent = record ?"Editar Declaração" : "Nova Declaração";
+  renderDeclaracaoEntriesTable();
+  elements.declaracaoFeedback.hidden = true;
+  elements.declaracaoDialog.showModal();
+}
+
+function showDeclaracaoFeedback(message) {
+  if (!elements.declaracaoFeedback) { alert(message); return; }
+  elements.declaracaoFeedback.hidden = false;
+  elements.declaracaoFeedback.textContent = message;
+}
+
+function handleDeclaracaoSubmit() {
+  const editingId = elements.declaracaoEditingId.value || null;
+  const farmId = elements.declaracaoFarm.value;
+  const farm = state.data.farms[farmId];
+  if (!farm) { showDeclaracaoFeedback("Selecione uma fazenda válida."); return; }
+
+  const owner = elements.declaracaoOwner.value;
+  if (!DECLARACAO_OWNERS.includes(owner)) { showDeclaracaoFeedback("Selecione um proprietário válido."); return; }
+
+  const year = Number(elements.declaracaoYear.value);
+  if (!Number.isInteger(year) || year < 2000 || year > 2100) { showDeclaracaoFeedback("Informe um ano de referência válido."); return; }
+
+  const date = elements.declaracaoDate.value;
+  if (!date) { showDeclaracaoFeedback("Informe a data de registro."); return; }
+
+  const rows = [...(elements.declaracaoEntriesTbody?.querySelectorAll("[data-decl-entry-row]") || [])];
+  if (!rows.length) { showDeclaracaoFeedback("Adicione ao menos uma categoria."); return; }
+
+  const seen = new Set();
+  const entries = [];
+  for (const row of rows) {
+    const entryId = row.dataset.declEntryRow;
+    const species = normalizeSpecies(row.querySelector("[data-decl-entry-species]")?.value);
+    const category = row.querySelector("[data-decl-entry-category]")?.value.trim() || "";
+    const quantity = Number(row.querySelector("[data-decl-entry-qty]")?.value);
+    if (!category) { showDeclaracaoFeedback("Preencha o nome de todas as categorias."); return; }
+    if (!Number.isFinite(quantity) || quantity < 0) { showDeclaracaoFeedback(`Quantidade inválida em "${category}".`); return; }
+    const key = `${species}::${normalizeText(category)}`;
+    if (seen.has(key)) { showDeclaracaoFeedback(`Categoria "${category}" (${species === "ovino" ?"Ovino" : "Bovino"}) duplicada.`); return; }
+    seen.add(key);
+    entries.push({ id: entryId, species, category, quantity: Math.round(quantity) });
+  }
+
+  const duplicate = findDeclaracaoJurada(farm, owner, year, editingId);
+  if (duplicate) {
+    showDeclaracaoFeedback(`Já existe uma declaração de ${owner} para ${farm.name} no ano ${year} (código ${duplicate.code}). Edite o registro existente em vez de criar um novo.`);
+    return;
+  }
+
+  if (editingId) {
+    const existing = getDeclaracoesJuradas(farm).find((d) => d.id === editingId);
+    if (!existing) { showDeclaracaoFeedback("Registro não encontrado."); return; }
+    existing.owner = owner;
+    existing.year = year;
+    existing.date = date;
+    existing.notes = elements.declaracaoNotes.value.trim();
+    existing.entries = entries;
+    existing.updatedAt = new Date().toISOString();
+    logAuditEvent("Edição", "declaração jurada", `Declaração ${existing.code} (${owner}, ${year}) atualizada`, { farmId: farm.id, farmName: farm.name, recordCode: existing.code });
+  } else {
+    const record = {
+      id: createDeclaracaoEntryId(),
+      code: generateDeclaracaoCode(farm),
+      owner,
+      year,
+      date,
+      notes: elements.declaracaoNotes.value.trim(),
+      entries,
+      userModified: true,
+      updatedAt: new Date().toISOString()
+    };
+    if (!Array.isArray(farm.declaracoesJuradas)) farm.declaracoesJuradas = [];
+    farm.declaracoesJuradas.push(record);
+    logAuditEvent("Adição", "declaração jurada", `Declaração ${record.code} (${owner}, ${year}) registrada`, { farmId: farm.id, farmName: farm.name, recordCode: record.code });
+  }
+
+  saveData();
+  elements.declaracaoDialog.close();
+  renderDeclaracaoJuradaView();
+}
+
+function deleteDeclaracaoJurada(farmId, id) {
+  const farm = state.data.farms[farmId];
+  if (!farm) return;
+  const record = getDeclaracoesJuradas(farm).find((d) => d.id === id);
+  if (!record) return;
+  if (!confirm(`Excluir a declaração ${record.code} de ${record.owner} (${record.year})? Esta ação não pode ser desfeita.`)) return;
+  const totals = getDeclaracaoEntryTotals(record.entries);
+  farm.declaracoesJuradas = getDeclaracoesJuradas(farm).filter((d) => d.id !== id);
+  logAuditEvent("Exclusão", "declaração jurada", `Declaração ${record.code} (${record.owner}, ${record.year}, Bovino ${totals.bovino} / Ovino ${totals.ovino}) excluída`, { farmId: farm.id, farmName: farm.name, recordCode: record.code });
+  saveData();
+  renderDeclaracaoJuradaView();
+}
+
+async function exportDeclaracaoPdf(farmId, id) {
+  if (!window.jspdf || typeof window.jspdf.jsPDF !== "function") {
+    alert("A biblioteca de PDF não foi carregada. Verifique sua conexão e tente novamente.");
+    return;
+  }
+  const farm = state.data.farms[farmId];
+  const record = farm ?getDeclaracoesJuradas(farm).find((d) => d.id === id) : null;
+  if (!farm || !record) { alert("Declaração não encontrada."); return; }
+
+  const previous = getPreviousDeclaracaoJurada(farm, record.owner, record.year, record.id);
+  const totals = getDeclaracaoEntryTotals(record.entries);
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const margin = 16;
+
+  try {
+    const logoData = await loadLogoForPdf("#ffffff");
+    doc.addImage(logoData, "JPEG", margin, 10, 20, 20);
+  } catch (e) { /* logo indisponível, segue sem imagem */ }
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.setTextColor(45, 35, 25);
+  doc.text("DECLARAÇÃO JURADA DE REBANHO", margin + 24, 18);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(87, 69, 52);
+  doc.text(`Código: ${record.code}   Ano de referência: ${record.year}`, margin + 24, 25);
+
+  doc.setDrawColor(140, 80, 45);
+  doc.setLineWidth(0.6);
+  doc.line(margin, 34, pageW - margin, 34);
+
+  doc.setFontSize(10.5);
+  doc.setTextColor(45, 35, 25);
+  let y = 42;
+  const infoLines = [
+    ["Fazenda:", farm.name],
+    ["Proprietário:", record.owner],
+    ["Data de registro:", formatDate(record.date)]
+  ];
+  infoLines.forEach(([label, value]) => {
+    doc.setFont("helvetica", "bold");
+    doc.text(label, margin, y);
+    doc.setFont("helvetica", "normal");
+    doc.text(String(value), margin + 40, y);
+    y += 7;
+  });
+  if (record.notes) {
+    doc.setFont("helvetica", "bold");
+    doc.text("Observações:", margin, y);
+    doc.setFont("helvetica", "normal");
+    const notesLines = doc.splitTextToSize(record.notes, pageW - margin * 2 - 40);
+    doc.text(notesLines, margin + 40, y);
+    y += notesLines.length * 5 + 2;
+  }
+
+  y += 4;
+  doc.autoTable({
+    startY: y,
+    margin: { left: margin, right: margin },
+    head: [["Espécie", "Categoria", "Quantidade"]],
+    body: record.entries
+      .slice()
+      .sort((a, b) => a.species.localeCompare(b.species) || a.category.localeCompare(b.category))
+      .map((entry) => [entry.species === "ovino" ?"Ovino" : "Bovino", entry.category, formatInteger(entry.quantity)]),
+    foot: [
+      ["", "Total Bovino", formatInteger(totals.bovino)],
+      ["", "Total Ovino", formatInteger(totals.ovino)]
+    ],
+    headStyles: { fillColor: [90, 53, 128], textColor: 255, fontStyle: "bold" },
+    footStyles: { fillColor: [237, 233, 254], textColor: [45, 35, 25], fontStyle: "bold" },
+    styles: { fontSize: 9.5, cellPadding: 2.4 },
+    columnStyles: { 2: { halign: "right" } }
+  });
+
+  let finalY = doc.lastAutoTable.finalY + 10;
+
+  if (previous) {
+    const diffRows = computeDeclaracaoDiff(record.entries, previous.entries);
+    if (finalY > pageH - 90) { doc.addPage(); finalY = 20; }
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(45, 35, 25);
+    doc.text(`Comparativo com a declaração anterior (${previous.year})`, margin, finalY);
+    finalY += 4;
+    doc.autoTable({
+      startY: finalY,
+      margin: { left: margin, right: margin },
+      head: [["Espécie", "Categoria", String(previous.year), String(record.year), "Diferença"]],
+      body: diffRows.map((row) => [
+        row.species === "ovino" ?"Ovino" : "Bovino",
+        row.category,
+        formatInteger(row.previous),
+        formatInteger(row.current),
+        `${row.diff > 0 ?"+" : ""}${formatInteger(row.diff)}`
+      ]),
+      styles: { fontSize: 9, cellPadding: 2.2 },
+      headStyles: { fillColor: [70, 70, 70], textColor: 255, fontStyle: "bold" },
+      columnStyles: { 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" } }
+    });
+    finalY = doc.lastAutoTable.finalY + 10;
+  }
+
+  if (finalY > pageH - 60) {
+    doc.addPage();
+    finalY = 24;
+  }
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(45, 35, 25);
+  const declText = `Eu, ${record.owner}, declaro para os devidos fins que as quantidades e categorias de animais acima relacionadas refletem fielmente o rebanho existente na propriedade ${farm.name} referente ao ano de ${record.year}, assumindo integral responsabilidade pela veracidade das informações prestadas.`;
+  const declLines = doc.splitTextToSize(declText, pageW - margin * 2);
+  doc.text(declLines, margin, finalY);
+  finalY += declLines.length * 5.5 + 20;
+
+  doc.setDrawColor(120, 120, 120);
+  doc.setLineWidth(0.3);
+  doc.line(margin, finalY, margin + 80, finalY);
+  doc.setFontSize(9);
+  doc.text(`${record.owner} — Declarante`, margin, finalY + 5);
+
+  doc.line(pageW - margin - 60, finalY, pageW - margin, finalY);
+  doc.text("Data", pageW - margin - 60, finalY + 5);
+
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(140, 140, 140);
+    doc.text(`Fazendas Da Luz — Declaração Jurada — ${record.code}`, margin, pageH - 8);
+    doc.text(`Página ${i} de ${pageCount}`, pageW - margin, pageH - 8, { align: "right" });
+  }
+
+  doc.save(`declaracao-jurada-${record.code}-${record.year}.pdf`);
 }
 
 function renderComprasView() {

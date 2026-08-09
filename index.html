@@ -900,6 +900,54 @@
           </div>
         </div>
       </div>
+
+      <div id="declaracaoJuradaView" hidden>
+        <div class="com2-header">
+          <div class="com2-header-top">
+            <div>
+              <p class="com2-eyebrow c">Documento declarat&oacute;rio</p>
+              <h2 class="com2-main-title">Declara&ccedil;&atilde;o Jurada</h2>
+              <p class="com2-subtitle">Declara&ccedil;&atilde;o anual de categorias e quantidades de bovinos e ovinos por propriet&aacute;rio, independente do estoque do sistema</p>
+            </div>
+            <div class="com2-header-acts">
+              <button type="button" class="com2-btn-new-c" id="declaracaoNovaBtn">+ Nova Declara&ccedil;&atilde;o</button>
+            </div>
+          </div>
+          <div class="farm-switch declaracao-farm-switch" id="declaracaoFarmSwitch"></div>
+        </div>
+
+        <section class="com2-kpi-section" id="declaracaoKpiSection"></section>
+
+        <div class="com2-card">
+          <div class="com2-table-hd">
+            <div class="com2-table-hd-left">
+              <h3>Declara&ccedil;&otilde;es Registradas</h3>
+              <p id="declaracaoTableCountLabel"></p>
+            </div>
+            <div class="com2-table-toolbar">
+              <input type="search" id="declaracaoHistorySearch" class="com2-search" placeholder="Buscar por propriet&aacute;rio, fazenda, ano...">
+            </div>
+          </div>
+          <div class="com2-filter-row">
+            <select id="declaracaoFilterFarm" class="com2-filter-sel" aria-label="Filtrar por fazenda"></select>
+            <select id="declaracaoFilterOwner" class="com2-filter-sel" aria-label="Filtrar por propriet&aacute;rio"></select>
+            <select id="declaracaoFilterYear" class="com2-filter-sel" aria-label="Filtrar por ano"></select>
+            <button type="button" class="com2-clear-btn" id="clearDeclaracaoFiltersBtn">Limpar filtros</button>
+          </div>
+          <div class="com2-tw" style="margin-top:14px">
+            <table class="com2-t declaracao-table">
+              <thead>
+                <tr>
+                  <th>C&oacute;digo</th><th>Ano</th><th>Fazenda</th><th>Propriet&aacute;rio</th>
+                  <th class="rr">Total Bovino</th><th class="rr">Total Ovino</th>
+                  <th>Registrado em</th><th>A&ccedil;&otilde;es</th>
+                </tr>
+              </thead>
+              <tbody id="declaracaoTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
 </main>
       </div>
     </div>
@@ -1828,9 +1876,65 @@
     </div>
   </dialog>
 
+  <dialog id="declaracaoDialog" class="modal">
+    <form method="dialog" id="declaracaoForm" class="modal-card" style="max-width:760px">
+      <div class="modal-header">
+        <div>
+          <p class="panel-kicker">Declara&ccedil;&atilde;o Jurada</p>
+          <h2 id="declaracaoDialogTitle">Nova Declara&ccedil;&atilde;o</h2>
+        </div>
+        <button type="button" class="modal-close" id="closeDeclaracaoDialog" aria-label="Fechar">&#x2715;</button>
+      </div>
+
+      <input type="hidden" id="declaracaoEditingId">
+
+      <div class="form-grid">
+        <label>
+          Fazenda
+          <select id="declaracaoFarm" required></select>
+        </label>
+        <label>
+          Propriet&aacute;rio
+          <select id="declaracaoOwner" required></select>
+        </label>
+        <label>
+          Ano de refer&ecirc;ncia
+          <input type="number" id="declaracaoYear" min="2000" max="2100" step="1" required>
+        </label>
+        <label>
+          Data de registro
+          <input type="date" id="declaracaoDate" required>
+        </label>
+        <label class="form-span-2">
+          Observa&ccedil;&otilde;es
+          <input type="text" id="declaracaoNotes" maxlength="200" placeholder="Opcional">
+        </label>
+      </div>
+
+      <div class="stock-accordion-item" style="margin-top:14px">
+        <div class="stock-accordion-hdr" style="cursor:default">
+          <span class="stock-farm-name">Categorias declaradas</span>
+        </div>
+        <div class="stock-accordion-body">
+          <table class="stock-table">
+            <thead><tr><th>Esp&eacute;cie</th><th>Categoria</th><th>Quantidade</th><th></th></tr></thead>
+            <tbody id="declaracaoEntriesTbody"></tbody>
+          </table>
+          <button type="button" class="stock-add-btn" id="declaracaoAddEntryBtn">+ Adicionar categoria</button>
+          <div class="declaracao-totals" id="declaracaoTotalsRow"></div>
+        </div>
+      </div>
+
+      <p class="auth-feedback" id="declaracaoFeedback" hidden></p>
+      <div class="modal-actions">
+        <button type="button" class="action-btn purchase" id="declaracaoSubmitBtn">Salvar declara&ccedil;&atilde;o</button>
+      </div>
+    </form>
+  </dialog>
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
   <script src="./assets/jspdf.umd.min.js"></script>
   <script src="./assets/jspdf.autotable.min.js"></script>
-  <script src="./app.js?v=20260730d"></script>
+  <script src="./app.js?v=20260809a"></script>
 </body>
 </html>
