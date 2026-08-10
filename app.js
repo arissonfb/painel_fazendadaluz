@@ -15647,28 +15647,6 @@ async function exportDeclaracaoPdf(farmId, id) {
     finalY = doc.lastAutoTable.finalY + 10;
   }
 
-  if (finalY > pageH - 60) {
-    doc.addPage();
-    finalY = 24;
-  }
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.setTextColor(45, 35, 25);
-  const declText = `Eu, ${record.owner}, declaro para os devidos fins que as quantidades e categorias de animais acima relacionadas refletem fielmente o rebanho existente na propriedade ${farm.name} referente ao ano de ${record.year}, assumindo integral responsabilidade pela veracidade das informações prestadas.`;
-  const declLines = doc.splitTextToSize(declText, pageW - margin * 2);
-  doc.text(declLines, margin, finalY);
-  finalY += declLines.length * 5.5 + 20;
-
-  doc.setDrawColor(120, 120, 120);
-  doc.setLineWidth(0.3);
-  doc.line(margin, finalY, margin + 80, finalY);
-  doc.setFontSize(9);
-  doc.text(`${record.owner} — Declarante`, margin, finalY + 5);
-
-  doc.line(pageW - margin - 60, finalY, pageW - margin, finalY);
-  doc.text("Data", pageW - margin - 60, finalY + 5);
-
   const pageCount = doc.internal.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
