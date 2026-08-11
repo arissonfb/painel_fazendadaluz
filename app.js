@@ -1116,6 +1116,7 @@ const elements = {
   declaracaoFarmSwitch: document.getElementById("declaracaoFarmSwitch"),
   declaracaoKpiSection: document.getElementById("declaracaoKpiSection"),
   declaracaoNovaBtn: document.getElementById("declaracaoNovaBtn"),
+  declaracaoExportPdfBtn: document.getElementById("declaracaoExportPdfBtn"),
   declaracaoHistorySearch: document.getElementById("declaracaoHistorySearch"),
   declaracaoTableBody: document.getElementById("declaracaoTableBody"),
   declaracaoTableCountLabel: document.getElementById("declaracaoTableCountLabel"),
@@ -3482,6 +3483,7 @@ function bindEvents() {
 
   // Declaração Jurada
   elements.declaracaoNovaBtn?.addEventListener("click", () => openDeclaracaoDialog());
+  elements.declaracaoExportPdfBtn?.addEventListener("click", exportDeclaracoesPdf);
   elements.closeDeclaracaoDialog?.addEventListener("click", () => elements.declaracaoDialog.close());
   elements.declaracaoSubmitBtn?.addEventListener("click", handleDeclaracaoSubmit);
   elements.declaracaoAddEntryBtn?.addEventListener("click", addDeclaracaoEntryRow);
@@ -15242,8 +15244,7 @@ function renderDeclaracaoKpiCards() {
     </div>`;
 }
 
-function renderDeclaracaoTable() {
-  if (!elements.declaracaoTableBody) return;
+function getFilteredDeclaracoes() {
   const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
 
   let records = getAllDeclaracoesJuradas();
@@ -15262,7 +15263,15 @@ function renderDeclaracaoTable() {
     records = records.filter((r) => [r.code, r.owner, r._farmName, String(r.year)].some((v) => String(v || "").toLowerCase().includes(query)));
   }
 
-  records = records.slice().sort((a, b) => Number(b.year) - Number(a.year) || String(b.date || "").localeCompare(String(a.date || "")));
+  return records.slice().sort((a, b) => Number(b.year) - Number(a.year) || String(b.date || "").localeCompare(String(a.date || "")));
+}
+
+function renderDeclaracaoTable() {
+  if (!elements.declaracaoTableBody) return;
+  const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
+  const query = runtime.declaracaoSearch.trim().toLowerCase();
+
+  const records = getFilteredDeclaracoes();
 
   if (elements.declaracaoTableCountLabel) {
     elements.declaracaoTableCountLabel.textContent = `${records.length} declaraç${records.length === 1 ?"ão" : "ões"}`;
@@ -15658,6 +15667,141 @@ async function exportDeclaracaoPdf(farmId, id) {
   }
 
   doc.save(`declaracao-jurada-${record.code}-${record.year}.pdf`);
+}
+
+async function exportDeclaracoesPdf() {
+  if (!window.jspdf || typeof window.jspdf.jsPDF !== "function") {
+    alert("A biblioteca de PDF não foi carregada. Verifique sua conexão e tente novamente.");
+    return;
+  }
+  const records = getFilteredDeclaracoes();
+  if (!records.length) { alert("Nenhuma declaração encontrada com os filtros atuais."); return; }
+
+  const isTotalView = state.data.selectedFarmId === TOTAL_FARM_ID;
+  const farmLabel = isTotalView
+    ?(runtime.declaracaoFilterFarm !== "all" ?(state.data.farms[runtime.declaracaoFilterFarm]?.name || "—") : "Todas as fazendas")
+    : getFarm().name;
+  const ownerLabel = runtime.declaracaoFilterOwner !== "all" ?runtime.declaracaoFilterOwner : "Todos";
+  const yearLabel = runtime.declaracaoFilterYear !== "all" ?String(runtime.declaracaoFilterYear) : "Todos";
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const margin = 16;
+
+  try {
+    const logoData = await loadLogoForPdf("#ffffff");
+    doc.addImage(logoData, "JPEG", margin, 10, 20, 20);
+  } catch (e) { /* logo indisponível, segue sem imagem */ }
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.setTextColor(45, 35, 25);
+  doc.text("RELATÓRIO DE DECLARAÇÕES JURADAS", margin + 24, 18);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9.5);
+  doc.setTextColor(87, 69, 52);
+  doc.text(`Fazenda: ${farmLabel}   Proprietário: ${ownerLabel}   Ano: ${yearLabel}   Registros: ${records.length}`, margin + 24, 25);
+
+  doc.setDrawColor(140, 80, 45);
+  doc.setLineWidth(0.6);
+  doc.line(margin, 32, pageW - margin, 32);
+
+  let y = 40;
+  doc.autoTable({
+    startY: y,
+    margin: { left: margin, right: margin },
+    head: [["Código", "Fazenda", "Proprietário", "Ano", "Total Bovino", "Total Ovino", "Data"]],
+    body: records.map((r) => {
+      const t = getDeclaracaoEntryTotals(r.entries);
+      return [r.code || "—", r._farmName, r.owner, String(r.year), formatInteger(t.bovino), formatInteger(t.ovino), formatDate(r.date)];
+    }),
+    headStyles: { fillColor: [90, 53, 128], textColor: 255, fontStyle: "bold" },
+    styles: { fontSize: 9, cellPadding: 2.2 },
+    columnStyles: { 3: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" } }
+  });
+  y = doc.lastAutoTable.finalY + 10;
+
+  const categoryMap = new Map();
+  records.forEach((record) => {
+    (record.entries || []).forEach((entry) => {
+      const species = normalizeSpecies(entry.species);
+      const key = `${species}::${normalizeText(entry.category)}`;
+      const existing = categoryMap.get(key);
+      if (existing) {
+        existing.quantity += Number(entry.quantity) || 0;
+      } else {
+        categoryMap.set(key, { species, category: entry.category, quantity: Number(entry.quantity) || 0 });
+      }
+    });
+  });
+  const categoryRows = [...categoryMap.values()].sort((a, b) => a.species.localeCompare(b.species) || a.category.localeCompare(b.category));
+  const grandTotals = getDeclaracaoEntryTotals(records.flatMap((r) => r.entries || []));
+
+  if (y > pageH - 60) { doc.addPage(); y = 20; }
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.setTextColor(45, 35, 25);
+  doc.text("Categorias declaradas (consolidado)", margin, y);
+  y += 5;
+  doc.autoTable({
+    startY: y,
+    margin: { left: margin, right: margin },
+    head: [["Espécie", "Categoria", "Quantidade total"]],
+    body: categoryRows.map((row) => [row.species === "ovino" ?"Ovino" : "Bovino", row.category, formatInteger(row.quantity)]),
+    foot: [
+      ["", "Total Bovino", formatInteger(grandTotals.bovino)],
+      ["", "Total Ovino", formatInteger(grandTotals.ovino)]
+    ],
+    headStyles: { fillColor: [90, 53, 128], textColor: 255, fontStyle: "bold" },
+    footStyles: { fillColor: [237, 233, 254], textColor: [45, 35, 25], fontStyle: "bold" },
+    styles: { fontSize: 9, cellPadding: 2.2 },
+    columnStyles: { 2: { halign: "right" } }
+  });
+  y = doc.lastAutoTable.finalY + 12;
+
+  for (const record of records) {
+    const totals = getDeclaracaoEntryTotals(record.entries);
+    if (y > pageH - 50) { doc.addPage(); y = 20; }
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10.5);
+    doc.setTextColor(45, 35, 25);
+    doc.text(`${record.code || "—"} — ${record._farmName} — ${record.owner} — ${record.year}`, margin, y);
+    y += 5;
+    doc.autoTable({
+      startY: y,
+      margin: { left: margin, right: margin },
+      head: [["Espécie", "Categoria", "Quantidade"]],
+      body: (record.entries || [])
+        .slice()
+        .sort((a, b) => a.species.localeCompare(b.species) || a.category.localeCompare(b.category))
+        .map((entry) => [entry.species === "ovino" ?"Ovino" : "Bovino", entry.category, formatInteger(entry.quantity)]),
+      foot: [
+        ["", "Total Bovino", formatInteger(totals.bovino)],
+        ["", "Total Ovino", formatInteger(totals.ovino)]
+      ],
+      headStyles: { fillColor: [70, 70, 70], textColor: 255, fontStyle: "bold" },
+      footStyles: { fillColor: [237, 237, 237], textColor: [45, 35, 25], fontStyle: "bold" },
+      styles: { fontSize: 8.5, cellPadding: 1.8 },
+      columnStyles: { 2: { halign: "right" } }
+    });
+    y = doc.lastAutoTable.finalY + 10;
+  }
+
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(140, 140, 140);
+    doc.text("Fazendas Da Luz — Relatório de Declarações Juradas", margin, pageH - 8);
+    doc.text(`Página ${i} de ${pageCount}`, pageW - margin, pageH - 8, { align: "right" });
+  }
+
+  const fileOwner = ownerLabel === "Todos" ?"todos" : slugify(ownerLabel);
+  const fileYear = yearLabel === "Todos" ?"todos-os-anos" : yearLabel;
+  doc.save(`relatorio-declaracoes-juradas-${fileOwner}-${fileYear}.pdf`);
 }
 
 function renderComprasView() {
