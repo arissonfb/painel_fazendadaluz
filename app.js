@@ -5997,7 +5997,7 @@ function openEditMovementDialog(farmId, movementId) {
   const catHintWrap = document.getElementById("movCategoryTotalWrap");
   const catHint = document.getElementById("movCategoryTotalHint");
   if (!categoryResolved && catHintWrap && catHint && movement.categoryName) {
-    catHint.innerHTML = `<span style="color:#b45309">⚠ Categoria original "<strong>${escapeHtml(movement.categoryName)}</strong>" não encontrada — selecione a equivalente acima.</span>`;
+    catHint.innerHTML = `<span style="color:#b45309">⚠ Categoria original "<strong>${escapeHtml(movement.categoryName)}</strong>" não existe mais na lista atual. Não é necessário selecionar outra — ao salvar, a categoria original será mantida no registro. Só escolha uma acima se quiser reclassificar este lançamento.</span>`;
     catHintWrap.hidden = false;
   }
 
@@ -9833,8 +9833,16 @@ async function handleMovementSubmit(event) {
     const oldMov = editFarm.movements[oldIdx];
     const type = elements.movementType.value;
     const date = elements.movementDate.value;
-    const categoryId = elements.movementCategory.value;
-    const category = editFarm.categories.find((c) => c.id === categoryId);
+    // Se a categoria original foi renomeada/substituída e não existe mais na lista atual,
+    // o select fica sem seleção — nesse caso mantemos a categoria original do lançamento
+    // em vez de obrigar o usuário a escolher uma nova (edições antigas não devem exigir isso).
+    const selectedCategoryId = elements.movementCategory.value;
+    const categoryId = selectedCategoryId || oldMov.categoryId;
+    const liveCategory = editFarm.categories.find((c) => c.id === categoryId);
+    const category = liveCategory || (categoryId === oldMov.categoryId
+      ? { id: oldMov.categoryId, name: oldMov.categoryName, quantity: 0, allocation: {} }
+      : null);
+    const categoryIsGhost = !liveCategory && !!category;
     const quantity = Number(elements.movementQuantity.value);
     const adjustDirection = elements.adjustDirection.value;
     const notes = elements.movementNotes.value.trim();
@@ -9895,7 +9903,7 @@ async function handleMovementSubmit(event) {
       revertMovementEffect(editFarm, oldMov);
       ensureCategoryAllocation(category);
       const originQty = Number(category.allocation[originId] || 0);
-      if (originQty < quantity) {
+      if (!categoryIsGhost && originQty < quantity) {
         applyMovementEffect(editFarm, oldMov);
         const originName = originId === UNALLOCATED_POTREIRO_KEY ? "Sem potreiro" : (editFarm.potreiros.find((p) => p.id === originId)?.name || originId);
         alert(`Apenas ${formatInteger(originQty)} animais estão alocados em "${originName}" para essa categoria.`);
@@ -9914,7 +9922,7 @@ async function handleMovementSubmit(event) {
 
       revertMovementEffect(editFarm, oldMov);
 
-      if (category.quantity + newDelta < 0) {
+      if (!categoryIsGhost && category.quantity + newDelta < 0) {
         applyMovementEffect(editFarm, oldMov);
         alert("A quantidade informada deixa o estoque negativo para essa categoria.");
         return;

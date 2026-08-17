@@ -6285,10 +6285,6 @@ th {
 .movement-actions-cell {
   white-space: nowrap;
   text-align: right;
-  padding: 4px 8px !important;
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
 }
 
 .movement-action-btn {
@@ -6303,6 +6299,11 @@ th {
   opacity: 1;
   transition: opacity 0.15s, background 0.15s, border-color 0.15s, color 0.15s;
   line-height: 1;
+  margin-left: 6px;
+}
+
+.movement-action-btn:first-child {
+  margin-left: 0;
 }
 
 .movement-action-btn:hover {
