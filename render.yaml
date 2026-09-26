@@ -27,3 +27,5 @@ services:
         sync: false
       - key: ADMIN_BOOTSTRAP_PASSWORD
         sync: false
+      - key: GEMINI_API_KEY
+        sync: false

@@ -567,6 +567,9 @@ async function initDB() {
   }
 }
 
+// Minuano IA (Gemini no servidor; exige login). Chave: GEMINI_API_KEY
+require("./minuano-route")(app, { authMiddleware, rateLimit });
+
 // Handler de erro global — evita vazar stack trace nas respostas.
 app.use((err, req, res, next) => {
   if (err && err.message === "Origem nao permitida pelo CORS.") {
